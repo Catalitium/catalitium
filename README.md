@@ -11,6 +11,8 @@ Empowering people with technology.
 💬 Ask me about anything.  we´ll try to help you as much as I can.
 ⚡ Quote: We learn from history that we do not learn from history.
 📫 How to reach me: www.catalitium.com
+
+
  How about some stats ?
 📊 Weekly hourly development breakdown
 
