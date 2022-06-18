@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-N8G6ZYS32D');
+</script>
+
+
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
   <title>Inicio Catalitium - Empoderando con tecnología.</title>
@@ -36,28 +47,28 @@
       <h1 class="logo me-auto me-lg-0"><a href="index.html">Catalitium<span>.</span></a></h1>
       <nav id="navbar" class="navbar order-last order-lg-0">
         <ul>
-          <li><a class="nav-link scrollto active" href="#hero">Inicio</a></li>
-          <li><a class="nav-link scrollto" href="#about">Acerca</a></li>
-          <li><a class="nav-link scrollto" href="#services">Servicios</a></li>
-          <li><a class="nav-link scrollto " href="#portfolio">Portafolio</a></li>
-          <li><a class="nav-link scrollto" href="#team">Equipo</a></li>
-          <li class="dropdown"><a href="#"><span>Descargar Ofertas</span> <i class="bi bi-chevron-down"></i></a>
+          <li><a class="nav-link scrollto active" href="#hero" id="Nav_Inicio" >Inicio</a></li>
+          <li><a class="nav-link scrollto" href="#about" id="Nav_Acerca" >Acerca</a></li>
+          <li><a class="nav-link scrollto" href="#services" id="Nav_Servicios" >Servicios</a></li>
+          <li><a class="nav-link scrollto " href="#portfolio" id="Nav_Portfolio" >Portafolio</a></li>
+          <li><a class="nav-link scrollto" href="#team" id="Nav_Equipo" >Equipo</a></li>
+          <li class="dropdown" id="Nav_Descargar_Oferta" ><a href="#"><span>Descargar Ofertas</span> <i class="bi bi-chevron-down"></i></a>
             <ul>
               <li><a download href="assets/pdf/botfactory.pdf" >Bots-as-a-Service</a></li>
               <li class="dropdown"><a href="#"><span>Transformación Digital</span> <i class="bi bi-chevron-right"></i></a>
                 <ul>
-                  <li><a download href="assets/pdf/Website.pdf" >Páginas Web + QR</a></li>
-                  <li><a download href="assets/pdf/webapp.pdf" >Aplicación Web</a></li>
-                  <li><a download href="assets/pdf/digitalworker.pdf" >Trabajadores Digitales</a></li>
+                  <li><a id="Descargar_Oferta_QR" download href="assets/pdf/Website.pdf" >Páginas Web + QR</a></li>
+                  <li><a id="Descargar_Oferta_WebApp" download href="assets/pdf/webapp.pdf" >Aplicación Web</a></li>
+                  <li><a id="Descargar_Oferta_DigitalWorker" download href="assets/pdf/digitalworker.pdf" >Trabajadores Digitales</a></li>
                 </ul>
               </li>
-              <li><a download href="assets/pdf/Python101-Introduccion es.pdf" >Python 101</a></li>
-              <li><a download href="assets/pdf/botfactory.pdf" >RPA</a></li>
-              <li><a href="automatizacion.html">Otras...</a></li>
+              <li><a id="Descargar_Guia_Python101" download href="assets/pdf/Python101-Introduccion es.pdf" >Python 101</a></li>
+              <li><a id="Descargar_Oferta_BotFactory" download href="assets/pdf/botfactory.pdf" >RPA</a></li>
+              <li><a>Otras...</a></li>
             </ul>
           </li>
           <li><a class="nav-link scrollto" href="#contact">Contacto</a></li>
-          <li><a class="nav-link scrollto" > English</a></li> 
+          <li><a id="Nav_Cambiar_Idioma" class="nav-link scrollto" >English</a></li> 
         </ul>
         <i class="bi bi-list mobile-nav-toggle"></i>
       </nav><!-- .navbar -->
@@ -80,19 +91,19 @@
 
       <div class="row gy-4 mt-5 justify-content-center" data-aos="zoom-in" data-aos-delay="250">
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_AI&ML_Card" >
             <i class="bi bi-columns-gap"></i>
             <h3><a>A.I & Machine Learning</a></h3>
           </div>
         </div>
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_BBDD_Card">
             <i class="ri-database-2-line"></i>
             <h3><a>Bases de Datos</a></h3>
           </div>
         </div>
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_BotFactory_Card">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="#ffc451" class="bi bi-robot" viewBox="0 0 16 16">
               <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
               <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
@@ -102,13 +113,13 @@
         </div>
       
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_ChatBot_Card" >
             <i class="bi bi-chat-square-dots"></i>
             <h3><a>Chat Bots</a></h3>
           </div>
         </div>
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_QRWebs_Card" >
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="#ffc451" class="bi bi-qr-code-scan" viewBox="0 0 16 16">
               <path d="M0 .5A.5.5 0 0 1 .5 0h3a.5.5 0 0 1 0 1H1v2.5a.5.5 0 0 1-1 0v-3Zm12 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V1h-2.5a.5.5 0 0 1-.5-.5ZM.5 12a.5.5 0 0 1 .5.5V15h2.5a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5Zm15 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1 0-1H15v-2.5a.5.5 0 0 1 .5-.5ZM4 4h1v1H4V4Z"/>
               <path d="M7 2H2v5h5V2ZM3 3h3v3H3V3Zm2 8H4v1h1v-1Z"/>
@@ -120,7 +131,7 @@
           </div>
         </div>
         <div class="col-xl-2 col-md-4">
-          <div class="icon-box">
+          <div class="icon-box" id="Home_RPA_Card">
             <i class="bi bi-cloud-rain-heavy"></i>
             <h3><a>RPA</a></h3>
           </div>
@@ -192,7 +203,7 @@
               <i class="bx bx-cube-alt"></i>
               <h4>Amplificación</h4>
               <p>Nuestros bots no solo se pueden encargar de la logística de branding de contenidos a través de informes de analítica web. Tambien podemos automatizar sus procesos tediosos de back-office aumentando su potenciañ.</p>
-              <p><div><a download href="assets/pdf/digitalworker.pdf"> Ver Más...</b> </a></div></p>
+              <p><div><a id="Descargar_Oferta_DigitalWorker_Servicios"  download href="assets/pdf/digitalworker.pdf"> Ver Más...</b> </a></div></p>
 
             </div>
 
@@ -245,7 +256,6 @@
           <div class="col-lg-4 col-md-6 d-flex align-items-stretch mt-4 mt-lg-0" data-aos="zoom-in" data-aos-delay="300">
             <div class="icon-box">
               <div class="icon"><i class="bx bx-arch"></i></div>
-
               <h4><a href="">Bot-as-a-Service</a></h4>
               <p>Soluciones low-code en Python y bots de RPA para automatizar sus tares, operaciones y rutinas. De forma no invasiva podemos generar robustas soluciones automaziadas para mejorar cualquier aspecto de su idea.</p>
             </div>
@@ -280,11 +290,9 @@
       </div>
     </section><!-- End Services Section -->
 
-
     <!-- ======= Cta Section ======= -->
     <section id="cta" class="cta">
       <div class="container" data-aos="zoom-in">
-
         <div class="text-center">
           <h3>Contactanos para empezera!</h3>
           <p> Si puedes soñar sin que los sueños te dominen;
@@ -293,14 +301,12 @@
             y tratar a esos dos impostores de la misma manera.</p>
           <a class="cta-btn" href="#contact">Escribenos</a>
         </div>
-
       </div>
     </section><!-- End Cta Section -->
 
     <!-- ======= Portfolio Section ======= -->
     <section id="portfolio" class="portfolio">
       <div class="container" data-aos="fade-up">
-
         <div class="section-title">
           <h2>Portafolio de</h2>
           <p>Colaboraciones:</p>
