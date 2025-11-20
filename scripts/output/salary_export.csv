@@ -1,0 +1,42 @@
+geo_salary_id,location,median_salary,min_salary,currency_ticker,city,country,region,remote_type,loaded_at
+2,United Kingdom (Remote),37430.0,31461.0,GBP,,United Kingdom,Europe,Remote,2025-11-02T03:19:15Z
+3,Germany (Remote),51000.0,60000.0,EUR,,Germany,Europe,Remote,2025-11-02T03:19:15Z
+7,Colombia (Remote),32000.0,21000.0,USD,,Colombia,South America,Remote,2025-11-02T03:19:15Z
+8,Madrid Community of Madrid Spain (Hybrid),42000.0,30000.0,EUR,Madrid,Spain,Europe,Hybrid,2025-11-02T03:19:15Z
+9,Poland (Remote),21000.0,13500.0,EUR,,Poland,Europe,Remote,2025-11-02T03:19:15Z
+10,Mexico (Remote),28420.0,10000.0,USD,,Mexico,North America,Remote,2025-11-02T03:19:15Z
+11,Switzerland (Remote),106800.0,82500.0,CHF,,Switzerland,Europe,Remote,2025-11-02T03:19:15Z
+12,Dublin County Dublin Ireland (On-site),45000.0,35300.0,EUR,Dublin,Ireland,Europe,Onsite,2025-11-02T03:19:15Z
+13,Zurich Zurich Switzerland (On-site),110100.0,85000.0,CHF,Zurich,Switzerland,Europe,Onsite,2025-11-02T03:19:15Z
+14,Barcelona Catalonia Spain (Hybrid),36223.0,2048.0,EUR,Barcelona,Spain,Europe,Hybrid,2025-11-02T03:19:15Z
+15,Dublin County Dublin Ireland (Hybrid),45000.0,35300.0,EUR,Dublin,Ireland,Europe,Hybrid,2025-11-02T03:19:15Z
+16,Barcelona Catalonia Spain (On-site),36223.0,2048.0,EUR,Barcelona,Spain,Europe,Onsite,2025-11-02T03:19:15Z
+17,Paris,43849.0,2048.0,EUR,Paris,France,Europe,Onsite,2025-11-02T03:19:15Z
+18,Rome Latium Italy (Hybrid),32579.0,2017.0,EUR,Rome,Italy,Europe,Hybrid,2025-11-02T03:19:15Z
+19,Rome Latium Italy (On-site),32579.0,2017.0,EUR,Rome,Italy,Europe,Onsite,2025-11-02T03:19:15Z
+20,France (Remote),43849.0,2048.0,EUR,,France,Europe,Remote,2025-11-02T03:19:15Z
+21,London England United Kingdom (On-site),55275.0,39000.0,USD,London,United Kingdom,Europe,Onsite,2025-11-02T03:19:15Z
+23,India (Remote),45088.0,17673.0,INR,,India,Asia,Remote,2025-11-02T03:19:15Z
+24,Italy (Remote),42000.0,34000.0,EUR,,Italy,Europe,Remote,2025-11-02T03:19:15Z
+26,Warsaw (Hybrid),119190.0,6540.0,PLN,Warsaw,Poland,Europe,Hybrid,2025-11-02T03:19:15Z
+27,Milan (Hybrid),40000.0,34317.0,EUR,Milan,Italy,Europe,Hybrid,2025-11-02T03:19:15Z
+28,Portugal (Remote),24000.0,1329.0,EUR,,Portugal,Europe,Remote,2025-11-02T03:19:15Z
+29,Hamburg (On-site),58704.0,50000.0,EUR,Hamburg,Germany,Europe,Onsite,2025-11-02T03:19:15Z
+31,Switzerland (Remote),126500.0,88300.0,CHF,,Switzerland,Europe,Remote,2025-11-02T03:19:15Z
+32,Dublin County Dublin Ireland (on-site),55000.0,50000.0,EUR,Dublin,Ireland,Europe,Onsite,2025-11-02T03:19:15Z
+33,Barcelona Catalonia Spain (Hybrid),35000.0,30000.0,EUR,Barcelona,Spain,Europe,Hybrid,2025-11-02T03:19:15Z
+34,Dublin County Dublin Ireland (Hybrid),54000.0,50000.0,EUR,Dublin,Ireland,Europe,Hybrid,2025-11-02T03:19:15Z
+35,Barcelona Catalonia Spain (on-site),35000.0,30000.0,EUR,Barcelona,Spain,Europe,Onsite,2025-11-02T03:19:15Z
+36,Paris France (On-site),45000.0,35000.0,EUR,Paris,France,Europe,Onsite,2025-11-02T03:19:15Z
+37,Rome Latium Italy (Hybrid),35000.0,30000.0,EUR,Rome,Italy,Europe,Hybrid,2025-11-02T03:19:15Z
+38,Rome Latium Italy (on-site),35000.0,30000.0,EUR,Rome,Italy,Europe,Onsite,2025-11-02T03:19:15Z
+39,France (Remote),45000.0,35000.0,EUR,,France,Europe,Remote,2025-11-02T03:19:15Z
+40,London England United Kingdom (on-site),80000.0,50000.0,GBP,London,United Kingdom,Europe,Onsite,2025-11-02T03:19:15Z
+41,Austria (Remote),45000.0,50000.0,EUR,,Austria,Europe,Remote,2025-11-02T03:19:15Z
+42,Belgium (Remote),32000.0,48000.0,EUR,,Belgium,Europe,Remote,2025-11-02T03:19:15Z
+43,Finland (Remote),50000.0,45000.0,EUR,,Finland,Europe,Remote,2025-11-02T03:19:15Z
+44,Czech Republic (Remote),1100000.0,800000.0,CZK,,Czech Republic,Europe,Remote,2025-11-02T03:19:15Z
+49,Netherlands (Remote),55000.0,52000.0,EUR,,Netherlands,Europe,Remote,2025-11-02T03:19:15Z
+50,Greece (Remote),32000.0,24000.0,EUR,,Greece,Europe,Remote,2025-11-02T03:19:15Z
+51,Luxembourg (Remote),78000.0,60000.0,EUR,,Luxembourg,Europe,Remote,2025-11-02T03:19:15Z
+52,Caracas Venezuela (Remote),12000.0,8000.0,USD,Caracas,Venezuela,South America,Remote,2025-11-02T03:19:15Z

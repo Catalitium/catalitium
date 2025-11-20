@@ -1,0 +1,227 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Catalitium{% endblock %}</title>
+  <meta name="description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
+  <link rel="canonical" href="{{ request.base_url }}" />
+  <meta property="og:title" content="{{ (self.title() or 'Catalitium')|striptags }}" />
+  <meta property="og:description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="{{ request.base_url }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#1a73e8" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N8G6ZYS32D', { anonymize_ip: true });
+    window.catalitiumTrack = function(eventName, params){
+      if (typeof gtag === 'function') {
+        gtag('event', eventName, params || {});
+      }
+    };
+  </script>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: { brand: '#1a73e8' } } }
+    }
+  </script>
+  <!-- App styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen bg-white text-slate-800 antialiased">
+  <!-- Compact Header (sticky for mobile) -->
+  <header class="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+    <div class="mx-auto max-w-6xl px-3 sm:px-4 h-14 flex items-center justify-between">
+      <!-- Hamburger (hidden on md+) -->
+      <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
+              class="md:hidden inline-flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg></button>
+
+      <!-- Center logo -->
+      <a href="{{ url_for('index') }}" class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <span class="inline-grid place-items-center w-8 h-8 rounded-full bg-brand text-white font-semibold">C</span>
+        <span class="font-semibold tracking-tight">Catalitium</span>
+      </a>
+
+      <!-- Desktop nav (md+) -->
+      <nav class="hidden md:flex items-center gap-2 text-sm">
+        <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Jobs</a>
+        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Newsletter</a>
+        <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Bottom-sheet navigation (mobile-first) -->
+  <div id="navsheet"
+       class="fixed inset-0 z-[60] hidden"
+       role="dialog" aria-modal="true" aria-labelledby="navtitle" tabindex="-1">
+    <!-- Scrim -->
+    <div id="navscrim" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm opacity-0 motion-safe:transition-opacity motion-safe:duration-200" data-dismiss></div>
+    <!-- Sheet panel -->
+    <div id="navpanel"
+         class="fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl bg-white shadow-xl p-3 sm:max-w-md sm:mx-auto overflow-y-auto md:inset-y-0 md:right-0 md:bottom-0 md:top-0 md:mx-0 md:w-96 md:max-h-none md:h-full md:rounded-none md:rounded-l-2xl md:p-4 will-change-transform motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out translate-y-full md:translate-x-full"
+         style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
+      <div class="flex items-center justify-between px-1 py-1">
+        <h2 id="navtitle" class="text-sm font-semibold text-slate-600">Menu</h2>
+        <button class="p-2 rounded-md hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Close menu" data-dismiss>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="mt-1 px-1 grid grid-cols-3 gap-2">
+        <a href="#search" data-nav-action="search" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg>
+          <span>Search</span>
+        </a>
+        <a href="{{ url_for('index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 4 4L21 4l0 0"/></svg>
+          <span>Jobs</span>
+        </a>
+        <a href="#" data-open-subscribe class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/></svg>
+          <span>Subscribe</span>
+        </a>
+      </div>
+
+      <!-- Inline quick search -->
+      <form action="{{ url_for('index') }}" method="get" class="mt-3 px-1">
+        <label for="navsearch" class="sr-only">Quick search</label>
+        <div class="flex items-center gap-2">
+          <input id="navsearch" name="title" type="search" inputmode="search" autocapitalize="none" spellcheck="false" autocomplete="off" placeholder="Search jobs..."
+                 class="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none min-h-[44px]">
+          <button type="submit" class="rounded-xl bg-brand text-white px-4 py-3 hover:opacity-90 min-h-[44px]">Go</button>
+        </div>
+      </form>
+
+      <!-- Primary nav links -->
+      <ul class="mt-3 space-y-1 text-base">
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Home</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Newsletter</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <main id="content" class="mx-auto max-w-6xl px-4 py-8">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-6">
+          {% for category, msg in messages %}
+          <div class="rounded-lg border px-4 py-3 text-sm
+                      {% if category == 'success' %} border-emerald-300/60 bg-emerald-50 text-emerald-800
+                      {% elif category == 'error' %} border-rose-300/60 bg-rose-50 text-rose-800
+                      {% else %} border-slate-200 bg-slate-50 {% endif %}">
+            {{ msg }}
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-16 border-t border-slate-200">
+    <div class="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p> - {{ now().year if false else "" }} Catalitium - Empowering with Tech.</p>
+      <div class="flex items-center gap-4">
+        <a href="{{ url_for('index') }}" class="hover:text-brand">Jobs</a>
+        <a href="#" data-open-subscribe class="hover:text-brand">Newsletter</a>
+      </div>
+    </div>
+    <!-- AdSense placeholder -->
+    <div class="mx-auto max-w-6xl px-4 pb-6">
+      <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center text-slate-500 text-sm">
+        Ad placeholder (Google AdSense)
+      </div>
+    </div>
+  </footer>
+
+  <!-- Global Subscribe dialog -->
+  <dialog id="subscribeDialog" class="rounded-2xl p-0 backdrop:bg-slate-900/40"
+          aria-labelledby="subscribe-title">
+    <form method="dialog" class="absolute right-3 top-3">
+      <button aria-label="Close dialog"
+              class="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:text-slate-900 hover:border-slate-300">X</button>
+    </form>
+    <div class="p-6 sm:p-7 w-[90vw] max-w-md">
+      <div class="flex items-center gap-2">
+        <span class="inline-grid place-items-center w-9 h-9 rounded-full bg-brand text-white font-semibold">C</span>
+        <h2 id="subscribe-title" class="text-lg font-semibold">Weekly job reminders</h2>
+      </div>
+      <p class="mt-2 text-slate-600 text-sm">One tidy email with new high-signal roles. Unsubscribe anytime.</p>
+
+      <form action="{{ url_for('subscribe') }}" method="post"
+            class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+        <label for="subscribe-email" class="sr-only">Email</label>
+        <input id="subscribe-email"
+               name="email"
+               type="email"
+               required
+               autocomplete="email"
+               placeholder="you@company.com"
+               class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit"
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90">Submit</button>
+      </form>
+
+      <p class="mt-2 text-[11px] text-slate-500">Privacy-friendly. We only email once a week.</p>
+    </div>
+  </dialog>
+
+  <!-- Global Job Application Modal -->
+  <div id="jobModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40">
+    <dialog id="jobDialog" class="rounded-2xl p-0 bg-white shadow-xl w-[90vw] max-w-md">
+      <form id="jobModalForm" class="p-6">
+        <h2 class="text-lg font-semibold mb-2">
+          Apply for <span id="jobModalTitle"></span>
+        </h2>
+        <p id="jobModalSummary" class="text-sm text-slate-600 mb-3 hidden"></p>
+        <div id="jobModalError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 hidden"></div>
+        <input type="hidden" name="job_id" id="jobModalJobId">
+        <div class="mb-3">
+          <label class="block text-sm mb-1" for="jobModalEmail">Email</label>
+          <input id="jobModalEmail" name="email" type="email" required
+                 placeholder="you@company.com"
+                 class="w-full rounded-xl border border-slate-300 px-4 py-2 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+          <p class="text-[11px] text-slate-500 mt-1">We'll only use it to initiate the redirect.</p>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button type="submit" id="jobModalSubmit"
+                  class="rounded-xl bg-brand text-white px-5 py-2 hover:opacity-90 transition duration-300">Continue</button>
+          <button type="button" data-close-job-modal
+                  class="rounded-xl border border-slate-300 px-5 py-2 text-slate-700 hover:bg-slate-100 transition duration-300">Cancel</button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+
+  
+
+  <!-- Lightweight analytics triggers -->
+  
+
+  <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block body_extra %}{% endblock %}
+</body>
+</html>

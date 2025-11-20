@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% block title %}{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}{% endblock %}
+
+{% block meta %}
+<meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data. Browse {{ developer_jobs|default(932) }} developer positions and {{ total_jobs|default(13421) }} tech roles.{% else %}Search {{ total_jobs|default(13421) }} tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
+<meta name="keywords" content="tech jobs, developer jobs, software engineer, remote work, {{ title_q if title_q else 'technology' }}, {{ country_q if country_q else 'remote jobs' }}">
+<link rel="canonical" href="{{ url_for('index', _external=True) }}">
+<!-- Open Graph tags -->
+<meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
+<meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('index', _external=True) }}">
+<!-- Twitter Card tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}{% else %}Tech Jobs & Salary Insights{% endif %}">
+<meta name="twitter:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
+{% endblock %}
+
+{% block content %}
+<!-- HERO -->
+<section class="pt-6 sm:pt-10" role="region" aria-labelledby="jobs-hero">
+  <div class="mx-auto max-w-4xl text-center">
+    <h1 id="jobs-hero" class="text-3xl sm:text-4xl font-semibold tracking-tight">
+      {% if title_q %}
+        {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
+      {% else %}
+        <span class="text-brand">Top Tech Jobs</span> with Salary Insights
+      {% endif %}
+    </h1>
+    <p class="mt-3 text-slate-600">
+      {% if title_q %}
+        Browse {{ count|default(0) }} verified positions with real salary data
+      {% else %}
+        Search {{ total_jobs|default(13421) }} tech roles with free salary insights
+      {% endif %}
+    </p>
+    {% if title_q and count > 0 %}
+    <div class="mt-2 text-sm text-slate-500">
+      Updated {{ "2025-11-02"|datetime|timeago }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- SEARCH: What / Where -->
+  <div class="mx-auto mt-6 max-w-4xl px-3 sm:px-0">
+    <div class="sticky top-14 z-40 rounded-xl border border-slate-200 bg-white/95 backdrop-blur shadow-sm supports-[backdrop-filter]:bg-white/70 sm:static sm:border-transparent sm:bg-transparent sm:shadow-none">
+      <form id="search"
+            action="{{ url_for('index') }}"
+            method="get"
+            aria-label="Job search"
+            role="search"
+            aria-describedby="search-help"
+            class="grid grid-cols-1 sm:grid-cols-[1fr_240px_auto] gap-2 sm:gap-3 p-3 sm:p-0"
+            data-results-count="{{ count|default(0) }}">
+        <p id="search-help" class="sr-only">Search jobs by title and country.</p>
+
+        <label for="q" class="sr-only">Job title or keywords</label>
+        <input id="q"
+               name="title"
+               value="{{ title_q or '' }}"
+               type="search"
+               inputmode="search"
+               autocapitalize="none"
+               spellcheck="false"
+               autocomplete="off"
+               placeholder="Enter job title or salary (e.g. developer, >100k)"
+               class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none shadow-sm">
+
+        <div id="loc-wrap" class="block">
+          <label for="loc" class="sr-only">Country / region</label>
+          <div class="relative">
+            <input id="loc"
+                   name="country"
+                   value="{{ country_q or '' }}"
+                   type="search"
+                   inputmode="text"
+                   autocapitalize="characters"
+                   autocomplete="off"
+                   placeholder="🌍 Location (e.g. US, EU, London)"
+                   class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none shadow-sm">
+          </div>
+        </div>
+
+        <button type="submit"
+                class="rounded-xl bg-brand text-white px-5 py-3.5 sm:py-3 font-medium text-base sm:text-sm hover:opacity-90 hover:shadow-md focus:ring-2 focus:ring-brand/50 focus:outline-none active:transform active:translate-y-[1px] transition shadow-sm"
+                aria-label="Search {% if title_q %}{{ title_q }} {% endif %}jobs{% if country_q %} in {{ country_q }}{% endif %}">
+          Search Jobs
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- META / FILTERS -->
+  <div class="mx-auto max-w-4xl mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-0">
+    <div class="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+      {% if title_q and 'developer' in title_q|lower %}
+        <span class="font-medium text-slate-700">{{ count|default(0) }} curated roles</span>
+        <span class="text-slate-500">from {{ developer_jobs|default(932) }} developer positions</span>
+      {% else %}
+        <span class="font-medium text-slate-700">{{ count|default(0) }} curated results</span>
+        <span class="text-slate-500">from {{ total_jobs|default(13421) }} total jobs</span>
+      {% endif %}
+
+      {% if title_q or country_q %}
+        <span>-</span>
+        {% if title_q %}
+          <span class="rounded-full bg-slate-100 px-2 py-0.5 border border-slate-200">title: {{ title_q }}</span>
+        {% endif %}
+        {% if country_q %}
+          <span class="rounded-full bg-slate-100 px-2 py-0.5 border border-slate-200">country: {{ country_q }}</span>
+        {% endif %}
+        <a class="ml-2 underline hover:text-brand" href="{{ url_for('index') }}">Clear</a>
+      {% endif %}
+    </div>
+
+    <!-- Subscribe toggle -->
+    <label for="weekly-toggle" class="flex items-center gap-2 cursor-pointer select-none">
+      <input id="weekly-toggle"
+             type="checkbox"
+             class="peer sr-only"
+             aria-controls="subscribeDialog"
+             aria-describedby="weekly-help">
+      <span class="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-300 peer-checked:bg-brand transition">
+        <span class="absolute left-1 peer-checked:left-5 inline-block h-4 w-4 rounded-full bg-white shadow transition"></span>
+      </span>
+      <span class="text-slate-700">Subscribe for top jobs.</span>
+    </label>
+    <p id="weekly-help" class="sr-only">Opens the subscribe dialog so you can join the weekly newsletter.</p>
+  </div>
+  <div aria-live="polite" class="sr-only">
+    {{ count|default(0) }} result{{ '' if count==1 else 's' }}
+  </div>
+</section>
+
+<!-- Quick Filters -->
+  <div class="mx-auto max-w-4xl mt-3 sm:mt-4 px-3">
+  <div class="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none -mx-3 px-3 py-1.5">
+    {# Title chips #}
+    {% set t = (title_q or '') %}
+    {% set c = (country_q or '') %}
+    <a href="{{ url_for('index', title=(t ~ ' ai').strip(), country=c) }}" 
+       data-filter-chip="title" 
+       data-filter-value="ai" 
+       class="filter-chip inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-slate-200 text-sm text-slate-700 hover:border-brand hover:bg-blue-50/50 active:bg-blue-50 transition whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand font-medium' if 'ai' in (t|lower) else '' }}">AI</a>
+    <a href="{{ url_for('index', title=(t ~ ' developer').strip(), country=c) }}" data-filter-chip="title" data-filter-value="developer" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if 'developer' in (t|lower) else '' }}">Developer</a>
+    <a href="{{ url_for('index', title=(t ~ ' remote').strip(), country=c) }}" data-filter-chip="title" data-filter-value="remote" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if 'remote' in (t|lower) else '' }}">Remote</a>
+    <a href="{{ url_for('index', title=(t ~ ' senior').strip(), country=c) }}" data-filter-chip="title" data-filter-value="senior" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if 'senior' in (t|lower) else '' }}">Senior</a>
+    <a href="{{ url_for('index', title=(t ~ ' 100k').strip(), country=c) }}" data-filter-chip="title" data-filter-value=">100k" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if '100k' in (t|lower) else '' }}">>100k</a>
+    {# Country chips #}
+    <a href="{{ url_for('index', title=t, country='CH') }}" data-filter-chip="country" data-filter-value="CH" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if c=='CH' else '' }}">CH</a>
+    <a href="{{ url_for('index', title=t, country='EU') }}" data-filter-chip="country" data-filter-value="EU" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if c=='EU' else '' }}">EU</a>
+    <a href="{{ url_for('index', title=t, country='UK') }}" data-filter-chip="country" data-filter-value="UK" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if c=='UK' else '' }}">UK</a>
+    <a href="{{ url_for('index', title=t, country='US') }}" data-filter-chip="country" data-filter-value="US" class="filter-chip inline-flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 text-slate-700 hover:border-brand whitespace-nowrap snap-start {{ 'bg-blue-50 border-brand text-brand' if c=='US' else '' }}">US</a>
+  </div>
+  <div class="sr-only" aria-live="polite">Quick filters</div>
+  </div>
+
+<!-- RESULTS LIST -->
+<section class="mx-auto max-w-4xl mt-6" aria-label="Job results">
+  <div id="results" class="grid grid-cols-1 gap-3">
+    {% if results and results|length > 0 %}
+      {% for j in results %}
+        {% set card_index = loop.index %}
+        {% include 'components/job_card.html' %}
+        {% if loop.index == 3 %}
+          {% set promo_body -%}
+            Get more jobs <a href="#" class="underline" data-open-subscribe>Receive insights weekly</a>.
+          {%- endset %}
+          {% with %}
+            {% set params = {
+              'eyebrow': 'Top Jobs',
+              'body': promo_body,
+              'subcopy': 'See free insights below.',
+              'background_class': 'bg-blue-50',
+              'border_class': 'border-blue-300/60',
+              'text_class': 'text-blue-800'
+            } %}
+            {% include 'components/promo_card.html' with context %}
+          {% endwith %}
+        {% endif %}
+        {% if loop.index == 7 %}
+          {% set promo_body -%}
+            Your job here. Reach top talent. <a href="#" class="underline" data-open-subscribe>Contact us</a>.
+          {%- endset %}
+          {% with %}
+            {% set params = {
+              'eyebrow': 'Sponsored',
+              'body': promo_body,
+              'background_class': 'bg-amber-50',
+              'border_class': 'border-amber-300/60',
+              'text_class': 'text-amber-800'
+            } %}
+            {% include 'components/promo_card.html' with context %}
+          {% endwith %}
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="rounded-xl border border-slate-200 p-6 text-slate-600 text-center">
+        <p class="font-medium">No jobs found.</p>
+        <p class="text-xs mt-1">Try broader keywords (e.g., engineer, pm) or another region (e.g., CH, EU, UK, US).</p>
+      </div>
+    {% endif %}
+  </div>
+  <!-- Skeletons shown during form submit navigation -->
+  <div id="results-skeletons" class="mt-3 hidden">
+    <div class="rounded-xl border border-slate-200 p-4 animate-pulse h-24 bg-slate-50"></div>
+    <div class="rounded-xl border border-slate-200 p-4 animate-pulse h-24 bg-slate-50 mt-2"></div>
+    <div class="rounded-xl border border-slate-200 p-4 animate-pulse h-24 bg-slate-50 mt-2"></div>
+    <div class="rounded-xl border border-slate-200 p-4 animate-pulse h-24 bg-slate-50 mt-2"></div>
+  </div>
+</section>
+
+<!-- Pagination -->
+{% if pagination and (pagination.has_prev or pagination.has_next) %}
+<nav class="mx-auto max-w-4xl mt-4 flex items-center justify-between text-sm"
+     role="navigation" aria-label="Pagination">
+  <a rel="prev" aria-disabled="{{ 'false' if pagination.has_prev else 'true' }}" tabindex="{{ '0' if pagination.has_prev else '-1' }}" class="px-3 py-2 rounded-lg border border-slate-200 hover:border-brand {{ '' if pagination.has_prev else 'pointer-events-none opacity-50' }}"
+     href="{{ pagination.prev_url or '#' }}">? Prev</a>
+  <span class="text-slate-500">
+    Page {{ pagination.page }} of {{ pagination.pages }}  {{ pagination.total }} total
+  </span>
+  <a rel="next" aria-disabled="{{ 'false' if pagination.has_next else 'true' }}" tabindex="{{ '0' if pagination.has_next else '-1' }}" class="px-3 py-2 rounded-lg border border-slate-200 hover:border-brand {{ '' if pagination.has_next else 'pointer-events-none opacity-50' }}"
+     href="{{ pagination.next_url or '#' }}">Next</a>
+</nav>
+{% endif %}
+
+<!-- Subscribe dialog is defined globally in base.html -->
+{% endblock %}
+
+{% block body_extra %}
+<!-- Structured Data for Job Search -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "url": "{{ url_for('index', _external=True) }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "{{ url_for('index', _external=True) }}?title={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+{% if results and results|length > 0 %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {% for j in results %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "item": {
+        "@type": "JobPosting",
+        "title": "{{ j.title|e }}",
+        "description": "{{ j.description|truncate(200, True)|e }}",
+        "datePosted": "{{ j.date }}",
+        "employmentType": "FULL_TIME",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "name": "{{ j.company|e if j.company else 'Company' }}"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "{{ j.location|e }}"
+          }
+        }{% if j.estimated_salary_range_compact %},
+        "estimatedSalary": {
+          "@type": "MonetaryAmount",
+          "currency": "{{ j.median_salary_currency }}",
+          "value": {
+            "@type": "QuantitativeValue",
+            "minValue": {{ j.salary_min if j.salary_min else "null" }},
+            "maxValue": {{ j.salary_max if j.salary_max else "null" }},
+            "unitText": "YEAR"
+          }
+        }{% endif %}
+      }
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
+</attachment>

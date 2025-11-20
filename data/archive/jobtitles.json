@@ -1,0 +1,140 @@
+{
+  "generic_job_titles": [
+    {
+      "title": "Engineer",
+      "specific_roles": [
+        "Software Engineer / Developer",
+        "Full Stack Developer",
+        "Backend Developer",
+        "Frontend Engineer / React Developer",
+        "DevOps Engineer / Site Reliability Engineer",
+        "Cloud Architect / Cloud Engineer",
+        "Embedded Systems Engineer",
+        "QA Engineer / Test Automation Engineer"
+      ]
+    },
+    {
+      "title": "Programmer",
+      "specific_roles": [
+        "Python Developer",
+        "Java Developer",
+        "C++ / C# Developer",
+        "Web Developer",
+        "Mobile App Developer (iOS / Android)",
+        "Game Developer / Unity Developer",
+        "Automation Script Developer"
+      ]
+    },
+    {
+      "title": "Artificial Intelligence Specialist",
+      "specific_roles": [
+        "Machine Learning Engineer",
+        "Deep Learning Researcher",
+        "AI Engineer / Applied AI Specialist",
+        "Natural Language Processing (NLP) Engineer",
+        "Computer Vision Engineer",
+        "Data Scientist (AI Focus)",
+        "AI Prompt Engineer",
+        "AI Trainer / AI Annotation Specialist"
+      ]
+    },
+    {
+      "title": "Data",
+      "specific_roles": [
+        "Data Scientist / Machine Learning Engineer",
+        "Data Analyst / Business Intelligence Analyst",
+        "Big Data Engineer / Data Pipeline Developer",
+        "ETL Developer / Data Integration Specialist"
+      ]
+    },
+    {
+      "title": "Cybersecurity",
+      "specific_roles": [
+        "Cybersecurity Analyst / Information Security Specialist",
+        "Penetration Tester / Ethical Hacker",
+        "Security Operations Center (SOC) Analyst",
+        "Network Security Engineer"
+      ]
+    },
+    {
+      "title": "IT",
+      "specific_roles": [
+        "IT Support Specialist / Help Desk Technician",
+        "Systems Administrator / Network Administrator",
+        "Database Administrator (DBA)",
+        "Infrastructure Engineer / Systems Engineer",
+        "IT Consultant / Technical Support Engineer"
+      ]
+    },
+    {
+      "title": "Automation",
+      "specific_roles": [
+        "RPA Developer (UiPath / Automation Anywhere)",
+        "Industrial Automation Engineer",
+        "Test Automation Engineer",
+        "Workflow Automation Developer (Zapier / Power Automate)",
+        "Build & Release Engineer"
+      ]
+    },
+    {
+      "title": "Manager",
+      "specific_roles": [
+        "Product Manager",
+        "Project Manager",
+        "Engineering Manager / Tech Lead",
+        "IT Manager / Technical Program Manager"
+      ]
+    },
+    {
+      "title": "Designer",
+      "specific_roles": [
+        "UX / UI Designer",
+        "Graphic Designer / Visual Designer",
+        "Product Designer",
+        "Web Designer",
+        "Motion Designer / 3D Artist",
+        "Game Designer / Level Designer"
+      ]
+    },
+    {
+      "title": "Health Care",
+      "specific_roles": [
+        "Registered Nurse / Nurse Practitioner",
+        "Physician Assistant",
+        "Physical Therapist"
+      ]
+    },
+    {
+      "title": "Administrator",
+      "specific_roles": [
+        "Health Care Administrator / Medical Practice Manager",
+        "System Administrator / Office IT Coordinator"
+      ]
+    },
+    {
+      "title": "Marketing",
+      "specific_roles": [
+        "Digital Marketing Manager / SEO Specialist",
+        "Content Strategist / Social Media Manager",
+        "Marketing Automation Specialist",
+        "Email Marketing / CRM Manager"
+      ]
+    },
+    {
+      "title": "Support",
+      "specific_roles": [
+        "Sales Representative / Account Executive",
+        "Customer Success / Customer Support Manager",
+        "Business Development Representative (BDR)"
+      ]
+    },
+    {
+      "title": "Software",
+      "specific_roles": [
+        "Cloud",
+        "Databases",
+        "Automation"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+flask
+gunicorn
+psycopg[binary]
+python-dotenv
+flask-limiter
+email-validator

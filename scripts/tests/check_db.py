@@ -1,0 +1,11 @@
+import psycopg
+conn = psycopg.connect('postgresql://postgres.vothxnzbwurooisalgak:IbmmBC8LBHk5qjub@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?sslmode=require')
+cur = conn.cursor()
+cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+print('tables', cur.fetchall())
+cur.execute('SELECT COUNT(*) FROM jobs')
+print('jobs count', cur.fetchone())
+cur.execute('SELECT id, job_title FROM jobs LIMIT 5')
+print(cur.fetchall())
+cur.close()
+conn.close()

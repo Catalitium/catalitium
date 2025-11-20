@@ -1,0 +1,17 @@
+:root { --brand:#1a73e8; }
+::selection { background: rgba(26,115,232,.18); }
+
+/* Accessibility */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.focus\:not-sr-only:focus{position:static;width:auto;height:auto;margin:0;overflow:visible;clip:auto;white-space:normal}
+
+/* Line clamp helpers for long titles */
+.clamp-1 { display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+.clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
+/* Single-line ellipsis fallback */
+.ellipsis-1 { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* Horizontal chips: hide scrollbars cross-browser */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

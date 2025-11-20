@@ -1,0 +1,12 @@
+{# Re-usable promotional banner card #}
+<div class="rounded-xl border {{ border_class|default('border-slate-200') }} {{ background_class|default('bg-white') }} p-4 {{ text_class|default('text-slate-800') }}">
+  {% if eyebrow %}
+    <span class="text-xs uppercase tracking-wide font-semibold">{{ eyebrow }}</span>
+  {% endif %}
+  {% if body %}
+    <span class="text-sm block mt-1">{{ body|safe }}</span>
+  {% endif %}
+  {% if subcopy %}
+    <span class="text-xs block mt-1">{{ subcopy }}</span>
+  {% endif %}
+</div>

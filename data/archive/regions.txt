@@ -1,0 +1,61 @@
+loc_id,location,country,med_sal,min_sal,curr
+1,San Francisco,United States,140000,100000,USD
+2,San Jose,United States,150000,110000,USD
+3,Seattle,United States,135000,95000,USD
+4,New York,United States,130000,90000,USD
+5,Boston,United States,125000,85000,USD
+6,Washington DC,United States,120000,80000,USD
+7,Los Angeles,United States,120000,80000,USD
+8,Austin,United States,110000,70000,USD
+9,Chicago,United States,110000,70000,USD
+10,Denver,United States,105000,65000,USD
+11,Atlanta,United States,100000,60000,USD
+12,Dallas,United States,100000,60000,USD
+13,Miami,United States,95000,55000,USD
+14,Philadelphia,United States,95000,55000,USD
+15,San Diego,United States,110000,70000,USD
+16,London,United Kingdom,80000,50000,GBP
+17,Paris,France,80000,50000,EUR
+18,Berlin,Germany,85000,55000,EUR
+19,Amsterdam,Netherlands,90000,60000,EUR
+20,Zurich,Switzerland,130000,90000,CHF,
+21,Dublin,Ireland,95000,60000,EUR
+22,Munich,Germany,100000,65000,EUR
+23,Madrid,Spain,70000,45000,EUR
+24,Barcelona,Spain,68000,43000,EUR
+25,Milan,Italy,75000,45000,EUR
+26,Stockholm,Sweden,900000,600000,SEK
+27,Copenhagen,Denmark,750000,500000,DKK
+28,Vienna,Austria,85000,55000,EUR
+29,Oslo,Norway,1000000,700000,NOK,
+30,Brussels,Belgium,90000,55000,EUR
+31,Houston,United States,105000,70000,USD
+32,Phoenix,United States,100000,65000,USD
+33,Minneapolis,United States,105000,70000,USD
+34,Portland,United States,105000,68000,USD
+35,Charlotte,United States,100000,65000,USD
+36,Raleigh,United States,105000,70000,USD
+37,Salt Lake City,United States,100000,65000,USD
+38,Pittsburgh,United States,98000,62000,USD
+39,Frankfurt,Germany,95000,60000,EUR
+40,Hamburg,Germany,90000,58000,EUR
+41,Lisbon,Portugal,45000,30000,EUR
+42,Porto,Portugal,40000,28000,EUR
+43,Prague,Czech Republic,1100000,800000,CZK,
+44,Warsaw,Poland,150000,90000,PLN,
+45,Helsinki,Finland,65000,45000,EUR
+46,Nashville,United States,95000,58000,USD
+47,Columbus,United States,95000,58000,USD
+48,Indianapolis,United States,90000,55000,USD
+49,Tampa Bay,United States,92000,56000,USD
+50,Kansas City,United States,90000,54000,USD
+51,Baltimore,United States,98000,60000,USD
+52,Geneva,Switzerland,125000,85000,CHF,
+53,Glasgow,United Kingdom,65000,42000,GBP
+54,Manchester,United Kingdom,70000,45000,GBP
+55,Birmingham,United Kingdom,65000,42000,GBP 
+56,Edinburgh,United Kingdom,72000,45000,GBP
+57,Lyon,France,72000,45000,EUR
+58,Rotterdam,Netherlands,85000,55000,EUR
+59,Budapest,Hungary,1000000,700000,HUF
+60,Tallinn,Estonia,45000,30000,EUR
