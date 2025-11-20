@@ -1,2 +1,0 @@
-    return t.strip()
-    t = re.sub(r"^\s*Details\s*\n+", "", t, flags=re.IGNORECASE)

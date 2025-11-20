@@ -2,7 +2,7 @@
 {% block title %}{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}{% endblock %}
 
 {% block meta %}
-<meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data. Browse {{ developer_jobs|default(932) }} developer positions and {{ total_jobs|default(13421) }} tech roles.{% else %}Search {{ total_jobs|default(13421) }} tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
+<meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
 <meta name="keywords" content="tech jobs, developer jobs, software engineer, remote work, {{ title_q if title_q else 'technology' }}, {{ country_q if country_q else 'remote jobs' }}">
 <link rel="canonical" href="{{ url_for('index', _external=True) }}">
 <!-- Open Graph tags -->
@@ -29,9 +29,9 @@
     </h1>
     <p class="mt-3 text-slate-600">
       {% if title_q %}
-        Browse {{ count|default(0) }} verified positions with real salary data
+        Browse {{ count|default(0) }} curated roles with real salary data
       {% else %}
-        Search {{ total_jobs|default(13421) }} tech roles with free salary insights
+        Search curated tech roles with free salary insights
       {% endif %}
     </p>
     {% if title_q and count > 0 %}
@@ -93,13 +93,7 @@
   <!-- META / FILTERS -->
   <div class="mx-auto max-w-4xl mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-0">
     <div class="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
-      {% if title_q and 'developer' in title_q|lower %}
-        <span class="font-medium text-slate-700">{{ count|default(0) }} curated roles</span>
-        <span class="text-slate-500">from {{ developer_jobs|default(932) }} developer positions</span>
-      {% else %}
-        <span class="font-medium text-slate-700">{{ count|default(0) }} curated results</span>
-        <span class="text-slate-500">from {{ total_jobs|default(13421) }} total jobs</span>
-      {% endif %}
+      <span class="font-medium text-slate-700">{{ count|default(0) }} curated results</span>
 
       {% if title_q or country_q %}
         <span>-</span>
