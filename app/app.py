@@ -15,6 +15,7 @@ from flask import (
     flash,
     jsonify,
     g,
+    Response,
 )
 from email_validator import validate_email, EmailNotValidError
 from .models.db import (
@@ -303,6 +304,24 @@ def create_app() -> Flask:
                 )
             except Exception as exc:
                 logger.warning("Failed to log search event: %s", exc)
+        if (raw_title or raw_country) and total == 0:
+            try:
+                insert_search_event(
+                    raw_title=raw_title or title_q,
+                    raw_country=raw_country or country_q,
+                    norm_title=title_q,
+                    norm_country=q_country or "",
+                    sal_floor=sal_floor,
+                    sal_ceiling=sal_ceiling,
+                    result_count=0,
+                    page=max(1, page),
+                    per_page=per_page,
+                    source="web",
+                    event_type="zero_results",
+                    event_status="empty",
+                )
+            except Exception as exc:
+                logger.debug("zero_results log failed: %s", exc)
 
         items = []
         salary_cache = {}
@@ -365,24 +384,32 @@ def create_app() -> Flask:
                 except Exception:
                     range_compact = None
 
-            items.append(
-                {
-                    "id": row.get("id"),
-                    "title": title,
-                    "company": row.get("company_name") or "",
-                    "location": loc,
-                    "description": parse_job_description(row.get("job_description") or ""),
-                    "date_posted": format_job_date_string(job_date_str) if job_date_str else "",
-                    "link": link,
-                    "is_new": _job_is_new(job_date_raw, row.get("date")),
-                    "median_salary": int(median) if median is not None else None,
-                    "median_salary_currency": currency,
-                    "median_salary_compact": median_compact,
-                    "estimated_salary_range_compact": estimated_display,
-                    "estimated_salary_range_numeric": range_compact,
-                    "salary_uplift_factor": uplift_factor if uplift_factor and uplift_factor > 1.0 else None,
-                }
-            )
+            item_payload = {
+                "id": row.get("id"),
+                "title": title,
+                "company": row.get("company_name") or "",
+                "location": loc,
+                "description": parse_job_description(row.get("job_description") or ""),
+                "date_posted": format_job_date_string(job_date_str) if job_date_str else "",
+                "link": link,
+                "is_new": _job_is_new(job_date_raw, row.get("date")),
+                "median_salary": int(median) if median is not None else None,
+                "median_salary_currency": currency,
+                "median_salary_compact": median_compact,
+                "estimated_salary_range_compact": estimated_display,
+                "estimated_salary_range_numeric": range_compact,
+                "salary_uplift_factor": uplift_factor if uplift_factor and uplift_factor > 1.0 else None,
+            }
+
+            # If a salary floor is present (e.g., >100k filter), drop jobs whose estimated top end is below the floor.
+            if sal_floor and sal_floor >= 100000:
+                est_high = range_compact[1] if range_compact else None
+                med_val = median
+                basis = est_high if est_high is not None else med_val
+                if basis is None or basis < sal_floor:
+                    continue
+
+            items.append(item_payload)
 
         if not raw_title and not raw_country and not items:
             demo_jobs = _get_demo_jobs()
@@ -668,6 +695,59 @@ def create_app() -> Flask:
     def legal():
         """Display combined privacy policy and terms information."""
         return render_template("legal.html")
+
+    @app.get("/robots.txt")
+    def robots_txt():
+        """Expose robots.txt with sitemap reference."""
+        body = "\n".join(
+            [
+                "User-agent: *",
+                "Disallow:",
+                f"Sitemap: {url_for('sitemap', _external=True)}",
+            ]
+        )
+        return Response(body, mimetype="text/plain")
+
+    @app.get("/sitemap.xml")
+    def sitemap():
+        """Generate a lightweight XML sitemap for primary surfaces."""
+        today = datetime.utcnow().date().isoformat()
+        urls = []
+
+        def _add(loc: str, priority: str = "0.5", lastmod: str = today):
+            if loc:
+                urls.append({"loc": loc, "priority": priority, "lastmod": lastmod})
+
+        _add(url_for("index", _external=True), priority="1.0")
+        _add(url_for("legal", _external=True), priority="0.2")
+
+        filter_targets = [
+            {"title": "ai"},
+            {"title": "developer"},
+            {"title": "remote"},
+            {"title": "senior"},
+            {"title": ">100k"},
+            {"country": "EU"},
+            {"country": "US"},
+            {"country": "UK"},
+            {"country": "CH"},
+        ]
+        for target in filter_targets:
+            loc = url_for("index", title=target.get("title"), country=target.get("country"), _external=True)
+            _add(loc, priority="0.7")
+
+        xml_lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ]
+        for url in urls:
+            xml_lines.append("  <url>")
+            xml_lines.append(f"    <loc>{url['loc']}</loc>")
+            xml_lines.append(f"    <lastmod>{url['lastmod']}</lastmod>")
+            xml_lines.append(f"    <priority>{url['priority']}</priority>")
+            xml_lines.append("  </url>")
+        xml_lines.append("</urlset>")
+        return Response("\n".join(xml_lines), mimetype="application/xml")
 
     return app
 

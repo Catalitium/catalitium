@@ -477,6 +477,7 @@ COUNTRY_NORM = {
     "hungary":"HU","romania":"RO","slovakia":"SK","slovenia":"SI","bulgaria":"BG",
     "croatia":"HR","cyprus":"CY","czech republic":"CZ","czechia":"CZ","estonia":"EE",
     "latvia":"LV","lithuania":"LT","luxembourg":"LU","malta":"MT",
+    "india":"IN","bharat":"IN","in":"IN",
 }
 
 LOCATION_COUNTRY_HINTS = {
@@ -536,6 +537,20 @@ LOCATION_COUNTRY_HINTS = {
     "vienna": "AT",
     "washington": "US",
     "zurich": "CH",
+    # India hubs
+    "bangalore": "IN",
+    "bengaluru": "IN",
+    "mumbai": "IN",
+    "pune": "IN",
+    "delhi": "IN",
+    "new delhi": "IN",
+    "gurgaon": "IN",
+    "gurugram": "IN",
+    "noida": "IN",
+    "hyderabad": "IN",
+    "chennai": "IN",
+    "kolkata": "IN",
+    "ahmedabad": "IN",
 }
 
 TITLE_SYNONYMS = {
@@ -582,8 +597,8 @@ class Job:
         "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE",
         "IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"
     }
-    # Tightened list for EU filter matching (ensure key hubs show up on EU searches).
-    _EU_FILTER_CODES: Set[str] = {"DE", "ES", "FR", "NL"}
+    # Use full EU set for filter matching so EU queries return broad results.
+    _EU_FILTER_CODES: Set[str] = set(_EU_CODES)
     _CACHE_TTL = 30  # seconds
     _CACHE_MAX = 128
     _cache_count: Dict[Tuple[str, str], Tuple[float, int]] = {}
@@ -650,6 +665,16 @@ class Job:
 
         normalized_codes = {code.upper() for code in codes if code}
         for code in normalized_codes:
+            if code == "IN":
+                equals.update({"in", "india"})
+                india_aliases = {
+                    "india","bharat","bangalore","bengaluru","mumbai","pune","delhi","new delhi",
+                    "gurgaon","gurugram","noida","hyderabad","chennai","kolkata","ahmedabad"
+                }
+                for alias in india_aliases:
+                    add_like(f"%{Job._escape_like(alias)}%")
+                continue
+
             token = Job._escape_like(code.lower())
             equals.add(code.lower())
             for before in seps_before:
@@ -934,10 +959,30 @@ class Job:
         if country:
             c_raw = (country or "").strip().lower()
             if c_raw:
-                patterns_like: List[str] = []
-                equals_exact: List[str] = []
                 upper = c_raw.upper()
                 code = upper if len(upper) == 2 and upper.isalpha() else None
+
+                # City hubs for EU and India to tighten matching.
+                eu_hubs = ["madrid", "paris", "berlin", "barcelona", "milan", "milano"]
+                india_hubs = [
+                    "bangalore",
+                    "bengaluru",
+                    "mumbai",
+                    "pune",
+                    "delhi",
+                    "new delhi",
+                    "gurgaon",
+                    "gurugram",
+                    "noida",
+                    "hyderabad",
+                    "chennai",
+                    "kolkata",
+                    "ahmedabad",
+                ]
+
+                subclauses_pg: List[str] = []
+                subclauses_sqlite: List[str] = []
+                columns_to_search = ("location", "city", "region", "country")
 
                 if upper == "HIGH_PAY":
                     high_pay_cities = [
@@ -949,56 +994,116 @@ class Job:
                         "madrid",
                         "london",
                     ]
-                    for city in high_pay_cities:
-                        patterns_like.append(f"%{Job._escape_like(city)}%")
-                        equals_exact.append(city)
+                    placeholders_pg = ", ".join(["%s"] * len(high_pay_cities))
+                    placeholders_sqlite = ", ".join(["?"] * len(high_pay_cities))
+                    city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({placeholders_pg})"
+                    city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({placeholders_sqlite})"
+                    params_pg.extend([c.lower() for c in high_pay_cities])
+                    params_sqlite.extend([c.lower() for c in high_pay_cities])
+                    subclauses_pg.append(city_clause_pg)
+                    subclauses_sqlite.append(city_clause_sqlite)
                 elif upper == "EU":
-                    patterns_like, equals_exact = Job._country_patterns(Job._EU_FILTER_CODES | {"EU"})
+                    # Exact country codes + key hubs; avoid wide LIKE scans.
+                    eu_codes = sorted(Job._EU_FILTER_CODES)
+                    placeholders_pg = ", ".join(["%s"] * len(eu_codes))
+                    placeholders_sqlite = ", ".join(["?"] * len(eu_codes))
+                    country_clause_pg = f"LOWER(COALESCE(country, '')) IN ({placeholders_pg})"
+                    country_clause_sqlite = f"LOWER(COALESCE(country, '')) IN ({placeholders_sqlite})"
+                    params_pg.extend([c.lower() for c in eu_codes])
+                    params_sqlite.extend([c.lower() for c in eu_codes])
+                    subclauses_pg.append(country_clause_pg)
+                    subclauses_sqlite.append(country_clause_sqlite)
+
+                    if eu_hubs:
+                        hub_placeholders_pg = ", ".join(["%s"] * len(eu_hubs))
+                        hub_placeholders_sqlite = ", ".join(["?"] * len(eu_hubs))
+                        city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
+                        city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_sqlite})"
+                        params_pg.extend([h.lower() for h in eu_hubs])
+                        params_sqlite.extend([h.lower() for h in eu_hubs])
+                        subclauses_pg.append(city_clause_pg)
+                        subclauses_sqlite.append(city_clause_sqlite)
+                elif code == "IN":
+                    # Strict match on country plus key Indian cities.
+                    subclauses_pg.append("LOWER(COALESCE(country, '')) = %s")
+                    subclauses_sqlite.append("LOWER(COALESCE(country, '')) = ?")
+                    params_pg.append("in")
+                    params_sqlite.append("in")
+
+                    hub_placeholders_pg = ", ".join(["%s"] * len(india_hubs))
+                    hub_placeholders_sqlite = ", ".join(["?"] * len(india_hubs))
+                    city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
+                    city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_sqlite})"
+                    params_pg.extend([h.lower() for h in india_hubs])
+                    params_sqlite.extend([h.lower() for h in india_hubs])
+                    subclauses_pg.append(city_clause_pg)
+                    subclauses_sqlite.append(city_clause_sqlite)
                 elif upper == "CH":
                     patterns_like, equals_exact = Job._country_patterns({"CH"})
+                    if equals_exact:
+                        eq_pg = []
+                        eq_sqlite = []
+                        for value in equals_exact:
+                            value_lower = value.lower()
+                            for column in columns_to_search:
+                                eq_pg.append(f"LOWER(COALESCE({column}, '')) = %s")
+                                eq_sqlite.append(f"LOWER(COALESCE({column}, '')) = ?")
+                                params_pg.append(value_lower)
+                                params_sqlite.append(value_lower)
+                        if eq_pg:
+                            subclauses_pg.append("(" + " OR ".join(eq_pg) + ")")
+                            subclauses_sqlite.append("(" + " OR ".join(eq_sqlite) + ")")
+                    if patterns_like:
+                        like_pg = []
+                        like_sqlite = []
+                        for pattern in patterns_like:
+                            for column in columns_to_search:
+                                like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
+                                like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
+                                params_pg.append(pattern)
+                                params_sqlite.append(pattern)
+                        if like_pg:
+                            subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
+                            subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
                 elif code:
                     patterns_like, equals_exact = Job._country_patterns({code})
+                    if equals_exact:
+                        eq_pg = []
+                        eq_sqlite = []
+                        for value in equals_exact:
+                            value_lower = value.lower()
+                            for column in columns_to_search:
+                                eq_pg.append(f"LOWER(COALESCE({column}, '')) = %s")
+                                eq_sqlite.append(f"LOWER(COALESCE({column}, '')) = ?")
+                                params_pg.append(value_lower)
+                                params_sqlite.append(value_lower)
+                        if eq_pg:
+                            subclauses_pg.append("(" + " OR ".join(eq_pg) + ")")
+                            subclauses_sqlite.append("(" + " OR ".join(eq_sqlite) + ")")
+                    if patterns_like:
+                        like_pg = []
+                        like_sqlite = []
+                        for pattern in patterns_like:
+                            for column in columns_to_search:
+                                like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
+                                like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
+                                params_pg.append(pattern)
+                                params_sqlite.append(pattern)
+                        if like_pg:
+                            subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
+                            subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
                 else:
-                    patterns_like = [f"%{Job._escape_like(c_raw)}%"]
-
-                columns_to_search = ("location", "city", "region", "country")
-                subclauses_pg: List[str] = []
-                subclauses_sqlite: List[str] = []
-
-                if patterns_like:
-                    like_terms_pg: List[str] = []
-                    like_terms_sqlite: List[str] = []
-                    for pattern in patterns_like:
-                        for column in columns_to_search:
-                            like_terms_pg.append(
-                                f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'"
-                            )
-                            like_terms_sqlite.append(
-                                f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'"
-                            )
-                            params_pg.append(pattern)
-                            params_sqlite.append(pattern)
-                    if like_terms_pg:
-                        subclauses_pg.append("(" + " OR ".join(like_terms_pg) + ")")
-                        subclauses_sqlite.append("(" + " OR ".join(like_terms_sqlite) + ")")
-
-                if equals_exact:
-                    equals_terms_pg: List[str] = []
-                    equals_terms_sqlite: List[str] = []
-                    for value in equals_exact:
-                        value_lower = value.lower()
-                        for column in columns_to_search:
-                            equals_terms_pg.append(
-                                f"LOWER(COALESCE({column}, '')) = %s"
-                            )
-                            equals_terms_sqlite.append(
-                                f"LOWER(COALESCE({column}, '')) = ?"
-                            )
-                            params_pg.append(value_lower)
-                            params_sqlite.append(value_lower)
-                    if equals_terms_pg:
-                        subclauses_pg.append("(" + " OR ".join(equals_terms_pg) + ")")
-                        subclauses_sqlite.append("(" + " OR ".join(equals_terms_sqlite) + ")")
+                    pattern = f"%{Job._escape_like(c_raw)}%"
+                    like_pg = []
+                    like_sqlite = []
+                    for column in columns_to_search:
+                        like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
+                        like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
+                        params_pg.append(pattern)
+                        params_sqlite.append(pattern)
+                    if like_pg:
+                        subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
+                        subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
 
                 if subclauses_pg:
                     clause_pg = "(" + " OR ".join(subclauses_pg) + ")"
@@ -1019,22 +1124,25 @@ class Job:
             # Favor key EU hubs without forcing a full-table shuffle.
             return (
                 "ORDER BY CASE "
-                "WHEN LOWER(location) LIKE '%madrid%' THEN 0 "
-                "WHEN LOWER(location) LIKE '%paris%' THEN 1 "
-                "WHEN LOWER(location) LIKE '%munich%' THEN 2 "
-                "ELSE 3 END, "
+                "WHEN LOWER(location) LIKE '%%madrid%%' THEN 0 "
+                "WHEN LOWER(location) LIKE '%%paris%%' THEN 1 "
+                "WHEN LOWER(location) LIKE '%%berlin%%' THEN 2 "
+                "WHEN LOWER(location) LIKE '%%barcelona%%' THEN 3 "
+                "WHEN LOWER(location) LIKE '%%milan%%' THEN 4 "
+                "WHEN LOWER(location) LIKE '%%milano%%' THEN 5 "
+                "ELSE 6 END, "
                 "(date IS NULL) ASC, date DESC, id DESC"
             )
         if code == "HIGH_PAY":
             return (
                 "ORDER BY CASE "
-                "WHEN LOWER(location) LIKE '%san francisco%' THEN 0 "
-                "WHEN LOWER(location) LIKE '%new york%' THEN 1 "
-                "WHEN LOWER(location) LIKE '%zurich%' THEN 2 "
-                "WHEN LOWER(location) LIKE '%berlin%' THEN 3 "
-                "WHEN LOWER(location) LIKE '%paris%' THEN 4 "
-                "WHEN LOWER(location) LIKE '%madrid%' THEN 5 "
-                "WHEN LOWER(location) LIKE '%london%' THEN 6 "
+                "WHEN LOWER(location) LIKE '%%san francisco%%' THEN 0 "
+                "WHEN LOWER(location) LIKE '%%new york%%' THEN 1 "
+                "WHEN LOWER(location) LIKE '%%zurich%%' THEN 2 "
+                "WHEN LOWER(location) LIKE '%%berlin%%' THEN 3 "
+                "WHEN LOWER(location) LIKE '%%paris%%' THEN 4 "
+                "WHEN LOWER(location) LIKE '%%madrid%%' THEN 5 "
+                "WHEN LOWER(location) LIKE '%%london%%' THEN 6 "
                 "ELSE 7 END, "
                 "(date IS NULL) ASC, date DESC, id DESC"
             )
