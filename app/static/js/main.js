@@ -520,43 +520,6 @@ function sendAnalyticsPayload(payload){
 
 
 // --------------------------------------------------------------------
-// Auto-open job details on scroll
-// --------------------------------------------------------------------
-(function(){
-  if (!('IntersectionObserver' in window)) return;
-  var cards = document.querySelectorAll('article[data-job-id]');
-  if (!cards.length) return;
-  var userScrolled = false;
-  var opened = new WeakSet();
-
-  window.addEventListener('scroll', function onScroll(){
-    userScrolled = true;
-    window.removeEventListener('scroll', onScroll);
-  }, { passive: true });
-
-  var observer = new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
-      if (!entry.isIntersecting) return;
-      if (!userScrolled) return;
-      var card = entry.target;
-      var details = card.querySelector('details');
-      if (!details || details.open) return;
-      if (opened.has(details)) return;
-      opened.add(details);
-      try { details.open = true; } catch(_) {}
-    });
-  }, { threshold: 0.6 });
-
-  cards.forEach(function(card, idx){
-    if (idx === 0) {
-      // Keep first card collapsed until user interacts.
-      return observer.observe(card);
-    }
-    observer.observe(card);
-  });
-})();
-
-// --------------------------------------------------------------------
 // Filter chip analytics
 // --------------------------------------------------------------------
 (function(){

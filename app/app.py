@@ -44,6 +44,22 @@ BLACKLIST_LINKS = {
     "https://example.com/job/1",
 }
 
+TITLE_BUCKET2_KEYWORDS = (
+    "principal",
+    "staff",
+    "lead ",
+    "lead-",
+    "head of",
+    "director",
+)
+
+TITLE_BUCKET1_KEYWORDS = (
+    "senior",
+    "sr ",
+    "sr.",
+    "expert",
+)
+
 ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "development"
 
 def _get_demo_jobs():
@@ -113,15 +129,9 @@ def create_app() -> Flask:
     app = Flask(__name__, template_folder="views/templates")
     env = ENVIRONMENT or "production"
 
-    truthy_sqlite = {"1", "true", "on", "yes"}
-    force_sqlite_env = os.getenv("FORCE_SQLITE")
     if not SUPABASE_URL:
-        if force_sqlite_env is None or not force_sqlite_env.strip():
-            os.environ["FORCE_SQLITE"] = "1"
-            force_sqlite_env = "1"
-        elif force_sqlite_env.strip().lower() not in truthy_sqlite:
-            logger.error("SUPABASE_URL (or DATABASE_URL) must be configured before starting the app.")
-            raise SystemExit(1)
+        logger.error("SUPABASE_URL (or DATABASE_URL) must be configured before starting the app.")
+        raise SystemExit(1)
 
     app.config.update(
         SECRET_KEY=SECRET_KEY,
@@ -324,15 +334,34 @@ def create_app() -> Flask:
             range_compact = None
             median_compact = None
             estimated_display = None
+            uplift_factor = 1.0
             if median is not None:
                 try:
                     from .models import db as _db_helpers
-                    rng = _db_helpers.salary_range_around(median, pct=0.2)
-                    if rng:
-                        low_r, high_r, low_s, high_s = rng
-                        median_compact = _db_helpers._compact_salary_number(median)
-                        estimated_display = f"{low_s}\u2013{high_s}"
-                        range_compact = (low_r, high_r)
+                    title_lc = title.lower()
+                    if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS):
+                        uplift_factor = 1.10
+                    elif any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS):
+                        uplift_factor = 1.05
+
+                    base_rng = _db_helpers.salary_range_around(float(median), pct=0.2)
+                    if base_rng:
+                        base_low, base_high, base_low_s, base_high_s = base_rng
+                        base_median_compact = _db_helpers._compact_salary_number(float(median))
+
+                        if uplift_factor > 1.0:
+                            uplift_amount = float(median) * (uplift_factor - 1.0)
+                            adj_low = base_low + uplift_amount
+                            adj_high = base_high + uplift_amount
+                            low_s = _db_helpers._compact_salary_number(adj_low)
+                            high_s = _db_helpers._compact_salary_number(adj_high)
+                            range_compact = (int(adj_low), int(adj_high))
+                            estimated_display = f"{low_s}\u2013{high_s}"
+                        else:
+                            range_compact = (base_low, base_high)
+                            estimated_display = f"{base_low_s}\u2013{base_high_s}"
+
+                        median_compact = base_median_compact
                 except Exception:
                     range_compact = None
 
@@ -351,6 +380,7 @@ def create_app() -> Flask:
                     "median_salary_compact": median_compact,
                     "estimated_salary_range_compact": estimated_display,
                     "estimated_salary_range_numeric": range_compact,
+                    "salary_uplift_factor": uplift_factor if uplift_factor and uplift_factor > 1.0 else None,
                 }
             )
 

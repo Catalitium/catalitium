@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover - dotenv is optional
     load_dotenv = None
 
 if load_dotenv:
-    load_dotenv()
+    load_dotenv(dotenv_path="/opt/catalitium/.env", override=False)
 
 
 def _current_env() -> str:

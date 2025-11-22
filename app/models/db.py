@@ -3,14 +3,14 @@
 import os
 import re
 import logging
-import sqlite3
 import hashlib
 import uuid
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:
     import psycopg  # psycopg v3
@@ -34,11 +34,34 @@ def _normalize_pg_url(url: str) -> str:
     if not url or not url.startswith(("postgres://", "postgresql://")):
         return url
     parsed = urlparse(url)
-    query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != "pgbouncer"]
+    hostname = parsed.hostname or ""
+    port = parsed.port
+    # Supabase pooled hosts use pgbouncer on 6543; the UI sometimes shows 5432.
+    if hostname.endswith(".pooler.supabase.com") and (port is None or port == 5432):
+        port = 6543
+    # Keep existing params and add safe defaults.
+    query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)]
+    # Drop params psycopg/libpq will reject (Supabase adds pgbouncer=true for pooled URLs).
+    query_pairs = [(k, v) for k, v in query_pairs if k.lower() != "pgbouncer"]
     has_ssl = any(k.lower() == "sslmode" for k, _ in query_pairs)
     if not has_ssl:
         query_pairs.append(("sslmode", "require"))
+    has_connect_timeout = any(k.lower() == "connect_timeout" for k, _ in query_pairs)
+    if not has_connect_timeout:
+        query_pairs.append(("connect_timeout", "5"))
     new_query = urlencode(query_pairs)
+    auth = ""
+    user = quote(parsed.username) if parsed.username else ""
+    pwd = quote(parsed.password) if parsed.password else ""
+    if user:
+        auth = user
+        if parsed.password:
+            auth += f":{pwd}"
+        auth += "@"
+    hostport = hostname
+    if port:
+        hostport = f"{hostname}:{port}"
+    parsed = parsed._replace(netloc=f"{auth}{hostport}")
     return urlunparse(parsed._replace(query=new_query))
 
 def _truthy(value: str | None) -> bool:
@@ -52,12 +75,6 @@ _DEFAULT_SQLITE_PATH = str(PROJECT_ROOT / "data" / "catalitium.db")
 def _sqlite_path() -> str:
     return os.getenv("DB_PATH") or _DEFAULT_SQLITE_PATH
 
-def _should_use_sqlite() -> bool:
-    force = os.getenv("FORCE_SQLITE")
-    if force is not None:
-        return _truthy(force)
-    return not bool(os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL"))
-
 # Prefer DATABASE_URL for Postgres; fallback to SUPABASE_URL for backwards-compat
 _SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
 SUPABASE_URL = _normalize_pg_url(_SUPABASE_RAW)
@@ -65,6 +82,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 PER_PAGE_MAX = 100  # safety cap
 ANALYTICS_SALT = os.getenv("ANALYTICS_SALT", "dev")
 ANALYTICS_SESSION_COOKIE = os.getenv("ANALYTICS_SESSION_COOKIE", "sid")
+DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "4"))
 
 # ------------------------- Logging -------------------------------------------
 logging.basicConfig(
@@ -74,14 +92,14 @@ logging.basicConfig(
 logger = logging.getLogger("catalitium")
 
 # ------------------------- Database Connection Functions ----------------------
+_PG_POOL = None
 
-def _pg_connect():
-    """Connect to PostgreSQL database."""
-    import psycopg
-    if not SUPABASE_URL:
-        raise RuntimeError("SUPABASE_URL not set")
-    conn = psycopg.connect(SUPABASE_URL, autocommit=True)
-    # Apply safe session settings (best-effort)
+def _setup_connection(conn):
+    """Apply session settings and ensure autocommit."""
+    try:
+        conn.autocommit = True
+    except Exception:
+        pass
     try:
         with conn.cursor() as cur:
             # Keep queries snappy and fail fast; units in ms
@@ -90,82 +108,64 @@ def _pg_connect():
             cur.execute("SET application_name TO 'catalitium'")
     except Exception:
         pass
-    return conn
 
-class _SQLiteCursor(sqlite3.Cursor):
-    """SQLite cursor supporting context manager and %s-style placeholders."""
+def _init_pg_pool():
+    """Initialize a small connection pool when psycopg_pool is available."""
+    global _PG_POOL
+    if _PG_POOL is not None or not SUPABASE_URL:
+        return
+    try:
+        from psycopg_pool import ConnectionPool  # type: ignore
+    except Exception:
+        _PG_POOL = None
+        return
+    try:
+        _PG_POOL = ConnectionPool(
+            conninfo=SUPABASE_URL,
+            min_size=1,
+            max_size=max(1, DB_POOL_MAX),
+            timeout=5,
+        )
+    except Exception as exc:
+        logger.warning("ConnectionPool init failed, falling back to direct connects: %s", exc)
+        _PG_POOL = None
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
+def _acquire_connection():
+    """Get a connection from the pool or open a new one."""
+    global _PG_POOL
+    if _PG_POOL is None:
+        _init_pg_pool()
+    if _PG_POOL is not None:
         try:
-            if exc_type:
-                self.connection.rollback()
-            else:
-                self.connection.commit()
-        finally:
-            try:
-                self.close()
-            except Exception:
-                pass
-        # Propagate exceptions
-        return False
-
-    def _transform_sql(self, sql: str) -> str:
-        return sql.replace("%s", "?")
-
-    def execute(self, sql, parameters=None):
-        sql = self._transform_sql(sql)
-        if parameters is None:
-            return super().execute(sql)
-        return super().execute(sql, parameters)
-
-    def executemany(self, sql, seq_of_parameters):
-        sql = self._transform_sql(sql)
-        return super().executemany(sql, seq_of_parameters)
-
-class _SQLiteConnection(sqlite3.Connection):
-    """SQLite connection that produces compatible cursors."""
-
-    def cursor(self, factory=None):
-        factory = factory or _SQLiteCursor
-        return super().cursor(factory)
-
-def _sqlite_connect():
-    """Connect to SQLite database (testing / dev fallback)."""
-    path = Path(_sqlite_path())
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(
-        path,
-        detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES,
-        check_same_thread=False,
-        factory=_SQLiteConnection,
-    )
-    conn.row_factory = sqlite3.Row
+            conn = _PG_POOL.connection()
+            _setup_connection(conn)
+            return conn
+        except Exception as exc:
+            logger.warning("Pool connection failed, retrying direct connect: %s", exc)
+            _PG_POOL = None
+    # Fallback: direct connection
+    import psycopg
+    conn = psycopg.connect(SUPABASE_URL, autocommit=True)
+    _setup_connection(conn)
     return conn
 
-def is_sqlite_connection(conn) -> bool:
-    """Return True when the connection object comes from sqlite3."""
-    return isinstance(conn, sqlite3.Connection)
+
+def _pg_connect():
+    """Connect to PostgreSQL database."""
+    if not SUPABASE_URL:
+        raise RuntimeError("SUPABASE_URL not set")
+    return _acquire_connection()
 
 def get_db():
     """Get database connection from Flask g object."""
     from flask import g, current_app
 
     if "db" not in g:
-        if _should_use_sqlite():
-            try:
-                g.db = _sqlite_connect()
-            except Exception as e:
-                logger.error("SQLite connection failed: %s", e)
-                raise
-        else:
-            try:
-                g.db = _pg_connect()
-            except Exception as e:
-                logger.error("Postgres connection failed: %s", e)
-                raise
+        try:
+            g.db = _pg_connect()
+        except Exception as e:
+            logger.error("Postgres connection failed: %s", e)
+            raise
     return g.db
 
 def close_db(_e=None):
@@ -178,8 +178,6 @@ def close_db(_e=None):
 # ------------------------- Subscriber & Analytics Helpers --------------------
 
 def _is_unique_violation(exc: Exception) -> bool:
-    if isinstance(exc, sqlite3.IntegrityError):
-        return True
     if UniqueViolation is not None and isinstance(exc, UniqueViolation):
         return True
     return False
@@ -446,370 +444,14 @@ def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> Non
 
 
 def init_db():
-    """Ensure required tables exist in the primary Postgres database (or SQLite)."""
-    db = get_db()
-
-    if is_sqlite_connection(db):
-        db.executescript(
-            """
-            -- ---------------------- SQLite ----------------------
-
-            CREATE TABLE IF NOT EXISTS salary (
-                geo_salary_id    INTEGER PRIMARY KEY,
-                location         TEXT,
-                median_salary    REAL,
-                min_salary       REAL,
-                currency_ticker  TEXT,
-                city             TEXT,
-                country          TEXT,
-                region           TEXT,
-                remote_type      TEXT,
-                loaded_at        TEXT NOT NULL
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_salary_country     ON salary(country);
-            CREATE INDEX IF NOT EXISTS idx_salary_city        ON salary(city);
-            CREATE INDEX IF NOT EXISTS idx_salary_region      ON salary(region);
-            CREATE INDEX IF NOT EXISTS idx_salary_remote_type ON salary(remote_type);
-
-            
-            CREATE TABLE IF NOT EXISTS subscribers (
-                email TEXT PRIMARY KEY,
-                created_at TEXT
-            );
-
-            CREATE TABLE IF NOT EXISTS log_events (
-                id INTEGER PRIMARY KEY,
-                created_at TEXT,
-                raw_title TEXT,
-                raw_country TEXT,
-                norm_title TEXT,
-                norm_country TEXT,
-                sal_floor INTEGER,
-                sal_ceiling INTEGER,
-                result_count INTEGER,
-                page INTEGER,
-                per_page INTEGER,
-                user_agent TEXT,
-                referer TEXT,
-                ip_hash TEXT,
-                session_id TEXT,
-                source TEXT DEFAULT 'server',
-                event_status TEXT,
-                event_type TEXT DEFAULT 'search',
-                job_id TEXT,
-                job_title_event TEXT,
-                job_company_event TEXT,
-                job_location_event TEXT,
-                job_link_event TEXT,
-                job_summary_event TEXT,
-                email_hash TEXT,
-                meta_json TEXT
-            );
-
-            CREATE INDEX IF NOT EXISTS idx_log_events_created ON log_events(created_at);
-
-            /* Unified jobs table (consolidated date TEXT, consolidated link, robot_code default 0) */
-            CREATE TABLE IF NOT EXISTS jobs (
-                id               INTEGER PRIMARY KEY,
-                job_id           TEXT,
-                job_title        TEXT,
-                job_title_norm   TEXT,
-                normalized_job   TEXT,
-                company_name     TEXT,
-                job_description  TEXT,
-                location         TEXT,
-                city             TEXT,
-                region           TEXT,
-                country          TEXT,
-                geo_id           TEXT,
-                robot_code       INTEGER NOT NULL DEFAULT 0,
-                link             TEXT,
-                salary           TEXT,
-                date             TEXT
-            );
-
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link_unique   ON jobs(link);
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_job_id_unique ON jobs(job_id);
-            CREATE INDEX  IF NOT EXISTS idx_jobs_title_norm          ON jobs(job_title_norm);
-            CREATE INDEX  IF NOT EXISTS idx_jobs_location            ON jobs(location);
-            CREATE INDEX  IF NOT EXISTS idx_jobs_date                ON jobs(date);
-
-            /* Companies table (CompanyID -> id) */
-            CREATE TABLE IF NOT EXISTS companies (
-                id             INTEGER PRIMARY KEY,
-                company_name   TEXT NOT NULL,
-                website        TEXT,
-                industry       TEXT,
-                headcount      INTEGER,
-                founded_year   INTEGER,
-                location       TEXT,
-                about          TEXT,
-                specialties    TEXT,
-                tags           TEXT,
-                web_summary    TEXT,
-                contact_email  TEXT,
-                page_score     INTEGER
-            );
-
-            CREATE INDEX  IF NOT EXISTS idx_companies_name               ON companies(company_name);
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_website_unique ON companies(website);
-
-            CREATE TABLE IF NOT EXISTS leads (
-                id            INTEGER PRIMARY KEY,
-                link          TEXT NOT NULL,
-                robot_status  INTEGER NOT NULL DEFAULT 0,
-                date          TEXT CHECK (date IS NULL OR date GLOB '????-??-??T??:??:??Z')
-            );
-
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_link_unique ON leads(link);
-            CREATE INDEX  IF NOT EXISTS idx_leads_date         ON leads(date);
-            """
-        )
-
-        _ensure_sqlite_columns(
-            db,
-            "log_events",
-            {
-                "sal_floor": "sal_floor INTEGER",
-                "sal_ceiling": "sal_ceiling INTEGER",
-                "user_agent": "user_agent TEXT",
-                "referer": "referer TEXT",
-                "ip_hash": "ip_hash TEXT",
-                "session_id": "session_id TEXT",
-                "source": "source TEXT DEFAULT 'server'",
-                "event_status": "event_status TEXT",
-                "event_type": "event_type TEXT DEFAULT 'search'",
-                "job_id": "job_id TEXT",
-                "job_title_event": "job_title_event TEXT",
-                "job_company_event": "job_company_event TEXT",
-                "job_location_event": "job_location_event TEXT",
-                "job_link_event": "job_link_event TEXT",
-                "job_summary_event": "job_summary_event TEXT",
-                "email_hash": "email_hash TEXT",
-                "meta_json": "meta_json TEXT",
-            },
-        )
-        _ensure_sqlite_columns(
-            db,
-            "jobs",
-            {
-                "job_id": "job_id TEXT",
-                "job_title_norm": "job_title_norm TEXT",
-                "normalized_job": "normalized_job TEXT",
-                "company_name": "company_name TEXT",
-                "city": "city TEXT",
-                "region": "region TEXT",
-                "country": "country TEXT",
-                "geo_id": "geo_id TEXT",
-                "robot_code": "robot_code INTEGER DEFAULT 0",
-                "salary": "salary TEXT",
-                "date": "date TEXT",
-            },
-        )
-        _ensure_sqlite_columns(
-            db,
-            "companies",
-            {
-                "company_name": "company_name TEXT",
-                "website": "website TEXT",
-                "industry": "industry TEXT",
-                "headcount": "headcount INTEGER",
-                "founded_year": "founded_year INTEGER",
-                "location": "location TEXT",
-                "about": "about TEXT",
-                "specialties": "specialties TEXT",
-                "tags": "tags TEXT",
-                "web_summary": "web_summary TEXT",
-                "contact_email": "contact_email TEXT",
-                "page_score": "page_score INTEGER",
-            },
-        )
-        db.commit()
-        return
-
-    # --------------------------- Postgres ---------------------------
-    with db.cursor() as cur:
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS subscribers (
-                email TEXT UNIQUE,
-                created_at TIMESTAMP
-            );
-            """
-        )
-
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS log_events (
-                id SERIAL PRIMARY KEY,
-                created_at TIMESTAMP,
-                raw_title TEXT NULL,
-                raw_country TEXT NULL,
-                norm_title TEXT NULL,
-                norm_country TEXT NULL,
-                sal_floor INTEGER NULL,
-                sal_ceiling INTEGER NULL,
-                result_count INTEGER,
-                page INTEGER,
-                per_page INTEGER,
-                user_agent TEXT NULL,
-                referer TEXT NULL,
-                ip_hash TEXT NULL,
-                session_id TEXT NULL,
-                source TEXT DEFAULT 'server',
-                event_status TEXT,
-                event_type TEXT DEFAULT 'search',
-                job_id TEXT,
-                job_title_event TEXT,
-                job_company_event TEXT,
-                job_location_event TEXT,
-                job_link_event TEXT,
-                job_summary_event TEXT,
-                email_hash TEXT,
-                meta_json TEXT
-            );
-            """
-        )
-
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS jobs (
-                id               SERIAL PRIMARY KEY,
-                job_id           TEXT,
-                job_title        TEXT,
-                job_title_norm   TEXT,
-                normalized_job   TEXT,
-                company_name     TEXT,
-                job_description  TEXT,
-                location         TEXT,
-                city             TEXT,
-                region           TEXT,
-                country          TEXT,
-                geo_id           TEXT,
-                robot_code       INTEGER NOT NULL DEFAULT 0,
-                link             TEXT,
-                salary           TEXT,
-                date             TEXT
-            );
-            """
-        )
-
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS companies (
-                id             SERIAL PRIMARY KEY,
-                company_name   TEXT NOT NULL,
-                website        TEXT,
-                industry       TEXT,
-                headcount      INTEGER,
-                founded_year   INTEGER,
-                location       TEXT,
-                about          TEXT,
-                specialties    TEXT,
-                tags           TEXT,
-                web_summary    TEXT,
-                contact_email  TEXT,
-                page_score     INTEGER
-            );
-            """
-        )
-
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS leads (
-                id SERIAL PRIMARY KEY,
-                link TEXT NOT NULL,
-                robot_status INTEGER NOT NULL DEFAULT 0,
-                date TEXT
-            );
-            """
-        )
-
-    _ensure_postgres_columns(
-        db,
-        "log_events",
-        {
-            "sal_floor": "sal_floor INTEGER",
-            "sal_ceiling": "sal_ceiling INTEGER",
-            "user_agent": "user_agent TEXT",
-            "referer": "referer TEXT",
-            "ip_hash": "ip_hash TEXT",
-            "session_id": "session_id TEXT",
-            "source": "source TEXT DEFAULT 'server'",
-            "event_status": "event_status TEXT",
-            "event_type": "event_type TEXT DEFAULT 'search'",
-            "job_id": "job_id TEXT",
-            "job_title_event": "job_title_event TEXT",
-            "job_company_event": "job_company_event TEXT",
-            "job_location_event": "job_location_event TEXT",
-            "job_link_event": "job_link_event TEXT",
-            "job_summary_event": "job_summary_event TEXT",
-            "email_hash": "email_hash TEXT",
-            "meta_json": "meta_json TEXT",
-        },
-    )
-    _ensure_postgres_columns(
-        db,
-        "jobs",
-        {
-            "job_id": "job_id TEXT",
-            "job_title_norm": "job_title_norm TEXT",
-            "normalized_job": "normalized_job TEXT",
-            "company_name": "company_name TEXT",
-            "job_description": "job_description TEXT",
-            "location": "location TEXT",
-            "city": "city TEXT",
-            "region": "region TEXT",
-            "country": "country TEXT",
-            "geo_id": "geo_id TEXT",
-            "robot_code": "robot_code INTEGER DEFAULT 0",
-            "link": "link TEXT",
-            "salary": "salary TEXT",
-            "date": "date TEXT",
-        },
-    )
-    _ensure_postgres_columns(
-        db,
-        "companies",
-        {
-            "company_name": "company_name TEXT",
-            "website": "website TEXT",
-            "industry": "industry TEXT",
-            "headcount": "headcount INTEGER",
-            "founded_year": "founded_year INTEGER",
-            "location": "location TEXT",
-            "about": "about TEXT",
-            "specialties": "specialties TEXT",
-            "tags": "tags TEXT",
-            "web_summary": "web_summary TEXT",
-            "contact_email": "contact_email TEXT",
-            "page_score": "page_score INTEGER",
-        },
-    )
-    _ensure_postgres_columns(
-        db,
-        "leads",
-        {
-            "link": "link TEXT",
-            "robot_status": "robot_status INTEGER DEFAULT 0",
-            "date": "date TEXT",
-        },
-    )
-
-    with db.cursor() as cur:
-        cur.execute("""CREATE INDEX IF NOT EXISTS idx_log_events_created ON log_events(created_at);""")
-        cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_link_unique   ON jobs(link) WHERE link IS NOT NULL;""")
-        cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_job_id_unique ON jobs(job_id) WHERE job_id IS NOT NULL;""")
-        cur.execute("""CREATE INDEX  IF NOT EXISTS idx_jobs_title_norm          ON jobs(job_title_norm);""")
-        cur.execute("""CREATE INDEX  IF NOT EXISTS idx_jobs_location            ON jobs(location);""")
-        cur.execute("""CREATE INDEX  IF NOT EXISTS idx_jobs_date                ON jobs(date);""")
-        cur.execute("""CREATE INDEX IF NOT EXISTS idx_companies_name ON companies(company_name);""")
-        cur.execute(
-            """CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_website_unique ON companies(website) WHERE website IS NOT NULL;"""
-        )
-        cur.execute("""CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_link_unique ON leads(link);""")
-        cur.execute("""CREATE INDEX IF NOT EXISTS idx_leads_date ON leads(date);""")
+    """Lightweight connectivity check; Supabase owns schema/migrations."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute("SELECT 1")
+            cur.fetchone()
+    except Exception as exc:
+        logger.warning("init_db connectivity check failed: %s", exc)
 
 # ------------------------- Analytics Helpers ---------------------------------
 
@@ -940,7 +582,47 @@ class Job:
         "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE",
         "IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"
     }
-    _EU_FILTER_CODES: Set[str] = {"DE", "ES", "NL"}
+    # Tightened list for EU filter matching (ensure key hubs show up on EU searches).
+    _EU_FILTER_CODES: Set[str] = {"DE", "ES", "FR", "NL"}
+    _CACHE_TTL = 30  # seconds
+    _CACHE_MAX = 128
+    _cache_count: Dict[Tuple[str, str], Tuple[float, int]] = {}
+    _cache_search: Dict[Tuple[str, str, int, int], Tuple[float, List[Dict]]] = {}
+
+    @staticmethod
+    def _cache_prune(target: Dict):
+        if len(target) <= Job._CACHE_MAX:
+            return
+        # Drop oldest entries to keep memory bounded
+        oldest = sorted(target.items(), key=lambda kv: kv[1][0])[: len(target) - Job._CACHE_MAX]
+        for key, _ in oldest:
+            target.pop(key, None)
+
+    @staticmethod
+    def _cache_get_count(key: Tuple[str, str]) -> Optional[int]:
+        now = time.time()
+        hit = Job._cache_count.get(key)
+        if hit and now - hit[0] < Job._CACHE_TTL:
+            return hit[1]
+        return None
+
+    @staticmethod
+    def _cache_set_count(key: Tuple[str, str], value: int) -> None:
+        Job._cache_count[key] = (time.time(), int(value))
+        Job._cache_prune(Job._cache_count)
+
+    @staticmethod
+    def _cache_get_search(key: Tuple[str, str, int, int]) -> Optional[List[Dict]]:
+        now = time.time()
+        hit = Job._cache_search.get(key)
+        if hit and now - hit[0] < Job._CACHE_TTL:
+            return hit[1]
+        return None
+
+    @staticmethod
+    def _cache_set_search(key: Tuple[str, str, int, int], value: List[Dict]) -> None:
+        Job._cache_search[key] = (time.time(), value)
+        Job._cache_prune(Job._cache_search)
 
     @staticmethod
     def _normalize_title(value: Optional[str]) -> str:
@@ -998,15 +680,18 @@ class Job:
     @staticmethod
     def count(title: Optional[str] = None, country: Optional[str] = None) -> int:
         """Return number of jobs matching optional filters."""
-        where_sql, params_sqlite, params_pg = Job._where(title, country)
+        key = ((title or "").strip().lower(), (country or "").strip().lower())
+        cached = Job._cache_get_count(key)
+        if cached is not None:
+            return cached
+        where_sql, _params_sqlite, params_pg = Job._where(title, country)
         db = get_db()
         with db.cursor() as cur:
-            if is_sqlite_connection(db):
-                cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql['sqlite']}", params_sqlite)
-            else:
-                cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql['pg']}", params_pg)
+            cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql['pg']}", params_pg)
             row = cur.fetchone()
-            return int(row[0] if row else 0)
+            value = int(row[0] if row else 0)
+            Job._cache_set_count(key, value)
+            return value
 
     @staticmethod
     def search(
@@ -1016,28 +701,29 @@ class Job:
         offset: int = 0,
     ) -> List[Dict]:
         """Return matching jobs ordered by recency."""
-        where_sql, params_sqlite, params_pg = Job._where(title, country)
+        key = (
+            (title or "").strip().lower(),
+            (country or "").strip().lower(),
+            int(limit),
+            int(offset),
+        )
+        cached = Job._cache_get_search(key)
+        if cached is not None:
+            return cached
+        where_sql, _params_sqlite, params_pg = Job._where(title, country)
         db = get_db()
-        use_sqlite = is_sqlite_connection(db)
-        where_clause = where_sql["sqlite"] if use_sqlite else where_sql["pg"]
-        params = list(params_sqlite if use_sqlite else params_pg)
+        where_clause = where_sql["pg"]
+        params = list(params_pg)
         sql = f"""
             SELECT
                 id,
-                job_id,
                 job_title,
                 job_title_norm,
-                normalized_job,
                 company_name,
                 job_description,
                 location,
-                city,
-                region,
                 country,
-                geo_id,
-                robot_code,
                 link,
-                salary,
                 date
             FROM jobs {where_clause}
             {Job._order_by(country)}
@@ -1047,7 +733,9 @@ class Job:
         with db.cursor() as cur:
             cur.execute(sql, params)
             cols = [desc[0] for desc in cur.description]
-            return [dict(zip(cols, row)) for row in cur.fetchall()]
+            rows = [dict(zip(cols, row)) for row in cur.fetchall()]
+            Job._cache_set_search(key, rows)
+            return rows
 
     @staticmethod
     def insert_many(rows: List[Dict]) -> int:
@@ -1138,7 +826,7 @@ class Job:
             try:
                 db = get_db()
             except RuntimeError:
-                db = _sqlite_connect() if _should_use_sqlite() else _pg_connect()
+                db = _pg_connect()
                 close_after = True
             with db.cursor() as cur:
                 cur.executemany(sql, payload)
@@ -1252,7 +940,15 @@ class Job:
                 code = upper if len(upper) == 2 and upper.isalpha() else None
 
                 if upper == "HIGH_PAY":
-                    high_pay_cities = ["new york", "san francisco", "zurich"]
+                    high_pay_cities = [
+                        "san francisco",
+                        "new york",
+                        "zurich",
+                        "berlin",
+                        "paris",
+                        "madrid",
+                        "london",
+                    ]
                     for city in high_pay_cities:
                         patterns_like.append(f"%{Job._escape_like(city)}%")
                         equals_exact.append(city)
@@ -1320,14 +1016,26 @@ class Job:
             return "ORDER BY (date IS NULL) ASC, date DESC, id DESC"
         code = country.strip().upper()
         if code == "EU":
-            return "ORDER BY RANDOM()"
+            # Favor key EU hubs without forcing a full-table shuffle.
+            return (
+                "ORDER BY CASE "
+                "WHEN LOWER(location) LIKE '%madrid%' THEN 0 "
+                "WHEN LOWER(location) LIKE '%paris%' THEN 1 "
+                "WHEN LOWER(location) LIKE '%munich%' THEN 2 "
+                "ELSE 3 END, "
+                "(date IS NULL) ASC, date DESC, id DESC"
+            )
         if code == "HIGH_PAY":
             return (
                 "ORDER BY CASE "
                 "WHEN LOWER(location) LIKE '%san francisco%' THEN 0 "
                 "WHEN LOWER(location) LIKE '%new york%' THEN 1 "
                 "WHEN LOWER(location) LIKE '%zurich%' THEN 2 "
-                "ELSE 3 END, "
+                "WHEN LOWER(location) LIKE '%berlin%' THEN 3 "
+                "WHEN LOWER(location) LIKE '%paris%' THEN 4 "
+                "WHEN LOWER(location) LIKE '%madrid%' THEN 5 "
+                "WHEN LOWER(location) LIKE '%london%' THEN 6 "
+                "ELSE 7 END, "
                 "(date IS NULL) ASC, date DESC, id DESC"
             )
         return "ORDER BY (date IS NULL) ASC, date DESC, id DESC"
@@ -1398,10 +1106,13 @@ def get_salary_for_location(location: str):
     if not loc:
         return None
     db = get_db()
+    # Supabase Postgres schema: median_salary, min_salary, currency
+    median_col = "median_salary"
+    currency_col = "currency"
     # normalize pieces
     pieces = [p.strip() for p in re.split(r"[,;/\\-]|\\(|\\)", loc) if p and p.strip()]
     # try city, region, country in that order
-    candidates = []
+    candidates: List[str] = []
     if pieces:
         candidates.extend(pieces)
     # also try the full string
@@ -1414,7 +1125,7 @@ def get_salary_for_location(location: str):
                 if not cand:
                     continue
                 cur.execute(
-                    "SELECT median_salary, currency_ticker FROM salary WHERE lower(city) = lower(%s) AND median_salary IS NOT NULL LIMIT 1",
+                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(city) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
                     (cand,),
                 )
                 row = cur.fetchone()
@@ -1424,7 +1135,7 @@ def get_salary_for_location(location: str):
                 if not cand:
                     continue
                 cur.execute(
-                    "SELECT median_salary, currency_ticker FROM salary WHERE lower(region) = lower(%s) AND median_salary IS NOT NULL LIMIT 1",
+                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(region) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
                     (cand,),
                 )
                 row = cur.fetchone()
@@ -1434,7 +1145,7 @@ def get_salary_for_location(location: str):
                 if not cand:
                     continue
                 cur.execute(
-                    "SELECT median_salary, currency_ticker FROM salary WHERE lower(country) = lower(%s) AND median_salary IS NOT NULL LIMIT 1",
+                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(country) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
                     (cand,),
                 )
                 row = cur.fetchone()
@@ -1444,7 +1155,17 @@ def get_salary_for_location(location: str):
             # fallback: LIKE search in combined fields
             like_term = f"%{loc.lower()}%"
             cur.execute(
-                "SELECT median_salary, currency_ticker FROM salary WHERE (lower(location) LIKE %s OR lower(city) LIKE %s OR lower(region) LIKE %s) AND median_salary IS NOT NULL LIMIT 1",
+                f"""
+                SELECT {median_col}, {currency_col}
+                FROM salary
+                WHERE (
+                    lower(location) LIKE %s
+                    OR lower(city) LIKE %s
+                    OR lower(region) LIKE %s
+                )
+                AND {median_col} IS NOT NULL
+                LIMIT 1
+                """,
                 (like_term, like_term, like_term),
             )
             row = cur.fetchone()
