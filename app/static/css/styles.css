@@ -15,3 +15,6 @@
 /* Horizontal chips: hide scrollbars cross-browser */
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Logo sizing helper */
+.brand-logo { height: 44px; width: auto; }

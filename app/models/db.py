@@ -211,6 +211,85 @@ def _client_meta() -> Tuple[str, str, str, str]:
     sid = request.cookies.get(ANALYTICS_SESSION_COOKIE or "sid") or _ensure_session_id() or ""
     return (ua, ref, _hash(ip), sid)
 
+# Lightweight, in-memory rate limiter for analytics inserts (best-effort)
+_LOG_RATE: Dict[str, Tuple[float, int]] = {}
+_LOG_WINDOW_SECONDS = 15 * 60
+_LOG_LIMIT_SESSION = 80
+_LOG_LIMIT_IP = 300
+
+_BOT_UA_KEYWORDS = (
+    "bot",
+    "crawler",
+    "spider",
+    "scrapy",
+    "python-requests",
+    "curl",
+    "wget",
+    "httpclient",
+    "java/",
+    "okhttp",
+    "go-http-client",
+    "libwww",
+    "headless",
+    "phantom",
+    "selenium",
+    "puppeteer",
+    "playwright",
+    "lighthouse",
+    "snapshot",
+)
+
+def _looks_like_bot(ua: str) -> bool:
+    """Heuristic bot filter to drop obvious scrapers."""
+    if not ua or not ua.strip():
+        return True
+    u = ua.lower()
+    for kw in _BOT_UA_KEYWORDS:
+        if kw in u:
+            return True
+    return False
+
+def _rate_limited(key: Optional[str], limit: int) -> bool:
+    if not key:
+        return False
+    now = time.time()
+    start, count = _LOG_RATE.get(key, (now, 0))
+    if now - start > _LOG_WINDOW_SECONDS:
+        start, count = now, 0
+    count += 1
+    _LOG_RATE[key] = (start, count)
+    return count > limit
+
+def _skip_logging(sid: str, ip_hash: str, ua: str, event_status: str, event_type: str, job_title: str, job_id: str) -> bool:
+    """Centralized guard to avoid bot noise and floods."""
+    try:
+        from flask import g
+        new_session = getattr(g, "_analytics_sid_new", None) is not None
+    except Exception:
+        new_session = False
+
+    if _looks_like_bot(ua):
+        return True
+
+    if new_session:
+        # Skip first hit until the session cookie comes back
+        return True
+
+    st = (event_status or "").lower()
+    if "error" in st or "fail" in st or "invalid" in st:
+        return True
+
+    # Drop apply-like events with no meaningful job info
+    if event_type in {"apply", "job_apply"} and not (job_title or job_id):
+        return True
+
+    if _rate_limited(f"sid:{sid}", _LOG_LIMIT_SESSION):
+        return True
+    if _rate_limited(f"ip:{ip_hash}", _LOG_LIMIT_IP):
+        return True
+
+    return False
+
 def insert_subscriber(email: str) -> str:
     """Insert a subscriber record; return 'ok', 'duplicate', or 'error'."""
     db = get_db()
@@ -225,6 +304,57 @@ def insert_subscriber(email: str) -> str:
         if _is_unique_violation(exc):
             return "duplicate"
         logger.warning("insert_subscriber failed: %s", exc, exc_info=True)
+        return "error"
+
+def insert_contact(email: str, name_company: str, message: str) -> str:
+    """Insert a contact form submission; return 'ok' or 'error'."""
+    db = get_db()
+    email_clean = (email or "").strip()
+    name_clean = (name_company or "").strip()
+    msg_clean = (message or "").strip()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO contact_form(email, name_company, message, created_at)
+                VALUES(%s, %s, %s, %s)
+                """,
+                (email_clean, name_clean, msg_clean, _now_iso()),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_contact failed: %s", exc, exc_info=True)
+        return "error"
+
+def insert_job_posting(
+    *,
+    contact_email: str,
+    job_title: str,
+    company: str,
+    description: str,
+    salary_range: Optional[str] = None,
+) -> str:
+    """Insert an anonymous job posting submission; return 'ok' or 'error'."""
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO job_posting(contact_email, job_title, company, description, salary_range, created_at)
+                VALUES(%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    (contact_email or "").strip(),
+                    (job_title or "").strip(),
+                    (company or "").strip(),
+                    (description or "").strip(),
+                    (salary_range or "").strip() or None,
+                    _now_iso(),
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_job_posting failed: %s", exc, exc_info=True)
         return "error"
 
 def insert_subscribe_event(email: str, status: str, *, source: str = "form", job_link: Optional[str] = None) -> None:
@@ -296,6 +426,11 @@ def insert_search_event(
     safe_norm_country = (norm_country or "").strip()
 
     safe_email_hash = (email_hash or "").strip()
+    job_id_safe = (job_id or "").strip()[:160]
+
+    if _skip_logging(sid, ip_hash, ua, safe_event_status, safe_event_type, safe_job_title, job_id_safe):
+        return
+
     meta_json = ""
     if meta:
         meta_clean: Dict[str, str] = {}
@@ -311,24 +446,24 @@ def insert_search_event(
         safe_raw_title,
         safe_raw_country,
         safe_norm_title,
-        safe_norm_country,
-        int(sal_floor) if sal_floor is not None else None,
-        int(sal_ceiling) if sal_ceiling is not None else None,
-        int(result_count),
-        int(page),
+          safe_norm_country,
+          int(sal_floor) if sal_floor is not None else None,
+          int(sal_ceiling) if sal_ceiling is not None else None,
+          int(result_count),
+          int(page),
         int(per_page),
         ua,
         ref,
         ip_hash,
         sid,
-        (source or "server")[:50],
-        safe_event_status[:50] if safe_event_status else "",
-        safe_event_type[:20],
-        (job_id or "").strip()[:160],
-        safe_job_title[:300],
-        safe_job_company[:200],
-        safe_job_location[:200],
-        safe_job_link[:500],
+          (source or "server")[:50],
+          safe_event_status[:50] if safe_event_status else "",
+          safe_event_type[:20],
+          job_id_safe,
+          safe_job_title[:300],
+          safe_job_company[:200],
+          safe_job_location[:200],
+          safe_job_link[:500],
         safe_job_summary[:400],
         safe_email_hash[:200],
         meta_json,
@@ -373,6 +508,45 @@ def insert_search_event(
     except Exception as exc:
         logger.debug("log analytics skipped: %s", exc)
 
+# Simple wrapper for event logging with sane defaults
+def log_event(
+    *,
+    event_type: str,
+    status: str = "ok",
+    source: str = "web",
+    job_id: Optional[str] = None,
+    job_title: Optional[str] = None,
+    job_company: Optional[str] = None,
+    job_location: Optional[str] = None,
+    job_link: Optional[str] = None,
+    job_summary: Optional[str] = None,
+    meta: Optional[Dict[str, str]] = None,
+) -> None:
+    """Lightweight event logger that funnels into insert_search_event."""
+    safe_type = (event_type or "event").strip() or "event"
+    insert_search_event(
+        raw_title=safe_type,
+        raw_country=job_location or "",
+        norm_title=safe_type,
+        norm_country="",
+        sal_floor=None,
+        sal_ceiling=None,
+        result_count=0,
+        page=0,
+        per_page=0,
+        source=source,
+        event_type=safe_type,
+        event_status=status or "ok",
+        job_id=job_id,
+        job_title=job_title,
+        job_company=job_company,
+        job_location=job_location,
+        job_link=job_link,
+        job_summary=job_summary,
+        email_hash=None,
+        meta=meta,
+    )
+
 # ------------------------- Description Parsing ------------------------------
 
 # Small multilingual stopword set to keep summarizer lightweight
@@ -414,6 +588,7 @@ def summarize_two_sentences(text: str) -> str:
     top = sorted(scores.items(), key=lambda x: (-x[1], sentences.index(x[0])))[:2]
     final = sorted([t[0] for t in top], key=lambda x: sentences.index(x))
     return " ".join(final)
+
 
 def parse_job_description(text: str) -> str:
     """Clean and summarize a raw job description to a short, readable preview."""

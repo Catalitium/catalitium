@@ -91,6 +91,96 @@ function sendAnalyticsPayload(payload){
     });
   }
 
+  // Shared modal helpers for form modals
+  function createFormModal(opts){
+    var dialog = opts.dialog;
+    var form = opts.form;
+    var successEl = opts.successEl;
+    var errorEl = opts.errorEl;
+    var submitBtn = opts.submitBtn;
+    var focusEl = opts.focusEl;
+    var onOpen = opts.onOpen || function(){};
+    var onReset = opts.onReset || function(){};
+    var onSubmit = opts.onSubmit || function(){ return Promise.resolve(); };
+
+    var source = 'cta';
+
+    function setError(msg){
+      if (!errorEl) return;
+      if (msg){
+        errorEl.textContent = msg;
+        errorEl.classList.remove('hidden');
+      } else {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+      }
+    }
+    function toggleLoading(isLoading){
+      if (!submitBtn) return;
+      submitBtn.disabled = !!isLoading;
+      submitBtn.textContent = isLoading ? (opts.loadingText || submitBtn.textContent) : (opts.idleText || submitBtn.textContent);
+    }
+    function reset(){
+      setError('');
+      if (successEl) successEl.classList.add('hidden');
+      if (form) try { form.reset(); } catch(_){}
+      toggleLoading(false);
+      onReset();
+    }
+    function open(src){
+      if (!dialog) return;
+      source = src || 'cta';
+      reset();
+      onOpen(source);
+      try { dialog.showModal(); } catch(_) { dialog.open = true; }
+      try { if (focusEl) focusEl.focus(); } catch(_){}
+    }
+    function close(){
+      if (!dialog) return;
+      try { dialog.close(); } catch(_) { dialog.open = false; }
+    }
+    function attach(openAttr, closeAttr){
+      if (openAttr){
+        document.addEventListener('click', function(e){
+          var trg = e.target && e.target.closest('[' + openAttr + ']');
+          if(!trg) return;
+          e.preventDefault();
+          open(trg.getAttribute(openAttr) || 'cta');
+        });
+      }
+      if (closeAttr){
+        document.addEventListener('click', function(e){
+          var closeBtn = e.target && e.target.closest('[' + closeAttr + ']');
+          if(!closeBtn) return;
+          e.preventDefault();
+          close();
+        });
+      }
+      if (dialog){
+        dialog.addEventListener('click', function(e){
+          var rect = dialog.getBoundingClientRect();
+          if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom){
+            close();
+          }
+        });
+      }
+      if (form){
+        form.addEventListener('submit', function(e){
+          e.preventDefault();
+          setError('');
+          if (successEl) successEl.classList.add('hidden');
+          toggleLoading(true);
+          onSubmit({ source: source, setError: setError, toggleLoading: toggleLoading, showSuccess: function(){
+            if (successEl) successEl.classList.remove('hidden');
+          }, reset: reset }).finally(function(){
+            toggleLoading(false);
+          });
+        });
+      }
+    }
+    return { open: open, close: close, attach: attach, setError: setError, toggleLoading: toggleLoading, reset: reset, getSource: function(){ return source; } };
+  }
+
   // ------------------------------------------------------------------
   // Subscribe dialog triggers
   // ------------------------------------------------------------------
@@ -100,8 +190,236 @@ function sendAnalyticsPayload(payload){
       var trg = e.target.closest('[data-open-subscribe]');
       if(!trg) return;
       trackEvent('modal_open', { modal: 'subscribe', source: trg.getAttribute('data-open-subscribe') || 'cta' });
+      sendAnalyticsPayload({
+        event_type: 'modal_open',
+        status: 'ok',
+        source: 'web',
+        meta: { modal: 'subscribe', surface: trg.getAttribute('data-open-subscribe') || 'cta' }
+      });
       try { subscribeDialog.showModal(); } catch(_) { subscribeDialog.open = true; }
     });
+  }
+
+  // ------------------------------------------------------------------
+  // Contact dialog triggers + submission
+  // ------------------------------------------------------------------
+  var contactDialog = document.getElementById('contactDialog');
+  var contactForm = document.getElementById('contactForm');
+  var contactEmail = document.getElementById('contact-email');
+  var contactName = document.getElementById('contact-name');
+  var contactMsg = document.getElementById('contact-message');
+  var contactError = document.getElementById('contactError');
+  var contactSuccess = document.getElementById('contactSuccess');
+  var contactSubmit = document.getElementById('contactSubmit');
+  var contactModal = createFormModal({
+    dialog: contactDialog,
+    form: contactForm,
+    successEl: contactSuccess,
+    errorEl: contactError,
+    submitBtn: contactSubmit,
+    focusEl: contactEmail,
+    idleText: 'Send message',
+    loadingText: 'Sending…',
+    onOpen: function(source){
+      trackEvent('modal_open', { modal: 'contact', source: source || 'cta' });
+      sendAnalyticsPayload({
+        event_type: 'modal_open',
+        status: 'ok',
+        source: 'web',
+        meta: { modal: 'contact', surface: source || 'cta' }
+      });
+    },
+    onSubmit: function(ctx){
+      var email = (contactEmail && contactEmail.value || '').trim();
+      var name = (contactName && contactName.value || '').trim();
+      var message = (contactMsg && contactMsg.value || '').trim();
+      if (!/.+@.+\..+/.test(email)){
+        ctx.setError('Please enter a valid email.');
+        if (contactEmail) contactEmail.focus();
+        return Promise.resolve();
+      }
+      if (!name || name.length < 2){
+        ctx.setError('Please add your name or company.');
+        if (contactName) contactName.focus();
+        return Promise.resolve();
+      }
+      if (!message || message.length < 5){
+        ctx.setError('Please add a short message.');
+        if (contactMsg) contactMsg.focus();
+        return Promise.resolve();
+      }
+      return fetch('/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ email: email, name: name, message: message })
+      })
+        .then(function(resp){
+          return resp.json().catch(function(){ return {}; }).then(function(data){
+            return { ok: resp.ok, data: data || {} };
+          });
+        })
+        .then(function(result){
+          if (!result.ok || (result.data && result.data.error)){
+            throw new Error(result.data && result.data.error || 'contact_failed');
+          }
+          ctx.showSuccess();
+          trackEvent('contact_submit', { status: 'ok' });
+          sendAnalyticsPayload({
+            event_type: 'contact',
+            status: 'ok',
+            source: 'web',
+            meta: { surface: contactModal.getSource() || 'cta' }
+          });
+          if (contactForm) contactForm.reset();
+        })
+        .catch(function(err){
+          var msg = 'We could not send your message. Please try again.';
+          if (err && err.message === 'invalid_email') msg = 'Please enter a valid email.';
+          if (err && err.message === 'invalid_name') msg = 'Please add your name or company.';
+          if (err && err.message === 'invalid_message') msg = 'Please add a short message.';
+          ctx.setError(msg);
+          trackEvent('contact_submit', { status: 'error', error: (err && err.message) || 'unknown' });
+        });
+    }
+  });
+  contactModal.attach('data-open-contact', 'data-close-contact');
+
+  // ------------------------------------------------------------------
+  // Job posting dialog triggers + submission
+  // ------------------------------------------------------------------
+  var jobPostDialog = document.getElementById('jobPostDialog');
+  var jobPostForm = document.getElementById('jobPostForm');
+  var jobPostEmail = document.getElementById('jobpost-email');
+  var jobPostTitle = document.getElementById('jobpost-title-input');
+  var jobPostCompany = document.getElementById('jobpost-company');
+  var jobPostSalary = document.getElementById('jobpost-salary');
+  var jobPostDesc = document.getElementById('jobpost-description');
+  var jobPostCount = document.getElementById('jobpost-count');
+  var jobPostError = document.getElementById('jobPostError');
+  var jobPostSuccess = document.getElementById('jobPostSuccess');
+  var jobPostSubmit = document.getElementById('jobPostSubmit');
+
+  function wordCount(str){
+    if (!str) return 0;
+    var matches = str.match(/\b\w+\b/g);
+    return matches ? matches.length : 0;
+  }
+  function updateJobPostCount(){
+    if (!jobPostDesc || !jobPostCount) return;
+    var count = wordCount(jobPostDesc.value || '');
+    jobPostCount.textContent = count + " / ~5000 words max";
+    if (count > 5000){
+      jobPostCount.classList.add('text-rose-600');
+    } else {
+      jobPostCount.classList.remove('text-rose-600');
+    }
+  }
+  var jobPostModal = createFormModal({
+    dialog: jobPostDialog,
+    form: jobPostForm,
+    successEl: jobPostSuccess,
+    errorEl: jobPostError,
+    submitBtn: jobPostSubmit,
+    focusEl: jobPostTitle,
+    idleText: 'Submit job',
+    loadingText: 'Sending…',
+    onReset: function(){ updateJobPostCount(); },
+    onOpen: function(source){
+      trackEvent('modal_open', { modal: 'job_posting', source: source || 'cta' });
+      sendAnalyticsPayload({
+        event_type: 'modal_open',
+        status: 'ok',
+        source: 'web',
+        meta: { modal: 'job_posting', surface: source || 'cta' }
+      });
+    },
+    onSubmit: function(ctx){
+      var email = (jobPostEmail && jobPostEmail.value || '').trim();
+      var title = (jobPostTitle && jobPostTitle.value || '').trim();
+      var company = (jobPostCompany && jobPostCompany.value || '').trim();
+      var salary = (jobPostSalary && jobPostSalary.value || '').trim();
+      var desc = (jobPostDesc && jobPostDesc.value || '').trim();
+
+      if (!/.+@.+\..+/.test(email)){
+        ctx.setError('Please enter a valid contact email.');
+        if (jobPostEmail) jobPostEmail.focus();
+        return Promise.resolve();
+      }
+      if (!title || title.length < 2){
+        ctx.setError('Please add a job title.');
+        if (jobPostTitle) jobPostTitle.focus();
+        return Promise.resolve();
+      }
+      if (!company || company.length < 2){
+        ctx.setError('Please add a company name.');
+        if (jobPostCompany) jobPostCompany.focus();
+        return Promise.resolve();
+      }
+      if (!desc || desc.length < 10){
+        ctx.setError('Please add a short description.');
+        if (jobPostDesc) jobPostDesc.focus();
+        return Promise.resolve();
+      }
+      if (wordCount(desc) > 5000){
+        ctx.setError('Description is too long (max ~5000 words).');
+        if (jobPostDesc) jobPostDesc.focus();
+        return Promise.resolve();
+      }
+
+      return fetch('/job-posting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          contact_email: email,
+          job_title: title,
+          company: company,
+          salary_range: salary,
+          description: desc
+        })
+      })
+        .then(function(resp){
+          return resp.json().catch(function(){ return {}; }).then(function(data){
+            return { ok: resp.ok, data: data || {} };
+          });
+        })
+        .then(function(result){
+          if (!result.ok || (result.data && result.data.error)){
+            throw new Error(result.data && result.data.error || 'job_posting_failed');
+          }
+          ctx.showSuccess();
+          trackEvent('job_posting_submit', { status: 'ok' });
+          sendAnalyticsPayload({
+            event_type: 'job_posting',
+            status: 'ok',
+            source: 'web',
+            meta: { surface: jobPostModal.getSource() || 'cta' },
+            job_title: title,
+            job_company: company,
+            job_location: '',
+            job_link: '',
+            job_summary: ''
+          });
+          if (jobPostForm) jobPostForm.reset();
+          updateJobPostCount();
+        })
+        .catch(function(err){
+          var msg = 'We could not submit the job. Please try again.';
+          if (err && err.message === 'invalid_email') msg = 'Please enter a valid contact email.';
+          if (err && err.message === 'invalid_title') msg = 'Please add a job title.';
+          if (err && err.message === 'invalid_company') msg = 'Please add a company name.';
+          if (err && err.message === 'invalid_description') msg = 'Please add a short description.';
+          if (err && err.message === 'description_too_long') msg = 'Description is too long (max ~5000 words).';
+          ctx.setError(msg);
+          trackEvent('job_posting_submit', { status: 'error', error: (err && err.message) || 'unknown' });
+        });
+    }
+  });
+  jobPostModal.attach('data-open-job-posting', 'data-close-job-posting');
+  if (jobPostDesc){
+    jobPostDesc.addEventListener('input', updateJobPostCount);
+    updateJobPostCount();
   }
 
   // ------------------------------------------------------------------

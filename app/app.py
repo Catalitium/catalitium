@@ -36,6 +36,9 @@ from .models.db import (
     insert_subscriber,
     insert_search_event,
     insert_subscribe_event,
+    insert_contact,
+    insert_job_posting,
+    log_event,
     Job,
 )
 import random
@@ -145,7 +148,7 @@ def create_app() -> Flask:
     )
     app.teardown_appcontext(close_db)
 
-    def _resolve_pagination(default_per_page: int = 20) -> Tuple[int, int]:
+    def _resolve_pagination(default_per_page: int = 12) -> Tuple[int, int]:
         """Return (page, per_page_limit) constrained to safe bounds."""
         per_page_raw = request.args.get("per_page", default=default_per_page, type=int) or default_per_page
         per_page = max(1, min(per_page_raw, int(app.config.get("PER_PAGE_MAX", 100))))
@@ -174,6 +177,16 @@ def create_app() -> Flask:
                 samesite="Lax",
                 secure=secure_cookie,
             )
+        # Lightweight caching headers: long-cache static assets, short-cache everything else
+        try:
+            path = request.path or ""
+            if path.startswith("/static/"):
+                # 30d cache for versioned static files; adjust if assets aren't fingerprinted
+                response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
+            else:
+                response.headers.setdefault("Cache-Control", "public, max-age=60")
+        except Exception:
+            pass
         return response
 
     if not SECRET_KEY or SECRET_KEY == "dev-insecure-change-me":
@@ -580,6 +593,147 @@ def create_app() -> Flask:
         """Alias JSON endpoint for compatibility."""
         return subscribe()
 
+    @app.post("/contact")
+    def contact():
+        """Handle contact form submissions (JSON or form)."""
+        is_json = request.is_json
+        payload = request.get_json(silent=True) or {} if is_json else request.form
+        email_raw = (payload.get("email") or "").strip()
+        name_raw = (payload.get("name") or payload.get("name_company") or payload.get("company") or "").strip()
+        message_raw = (payload.get("message") or "").strip()
+
+        try:
+            email = validate_email(email_raw, check_deliverability=False).normalized
+        except EmailNotValidError:
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please enter a valid email.", "error")
+            return redirect(url_for("index"))
+
+        if not name_raw or len(name_raw) < 2:
+            if is_json:
+                return jsonify({"error": "invalid_name"}), 400
+            flash("Please add your name or company.", "error")
+            return redirect(url_for("index"))
+
+        if not message_raw or len(message_raw) < 5:
+            if is_json:
+                return jsonify({"error": "invalid_message"}), 400
+            flash("Please add a short message.", "error")
+            return redirect(url_for("index"))
+
+        status = insert_contact(email=email, name_company=name_raw, message=message_raw)
+        try:
+            log_event(
+                event_type="contact",
+                status=status,
+                source="web",
+                meta={"surface": "contact_modal"},
+            )
+        except Exception as exc:
+            logger.debug("contact event log failed: %s", exc)
+
+        if status != "ok":
+            if is_json:
+                return jsonify({"error": "contact_failed"}), 500
+            flash("We could not send your message. Please try again.", "error")
+            return redirect(url_for("index"))
+
+        if is_json:
+            return jsonify({"status": "ok"}), 200
+        flash("Thanks! We received your message.", "success")
+        return redirect(url_for("index"))
+
+    @app.post("/contact.json")
+    def contact_json():
+        """Alias JSON endpoint for compatibility."""
+        return contact()
+
+    @app.post("/job-posting")
+    def job_posting():
+        """Handle anonymous job posting submissions (JSON or form)."""
+        is_json = request.is_json
+        payload = request.get_json(silent=True) or {} if is_json else request.form
+
+        contact_email_raw = (payload.get("contact_email") or payload.get("email") or "").strip()
+        job_title_raw = (payload.get("job_title") or "").strip()
+        company_raw = (payload.get("company") or "").strip()
+        description_raw = (payload.get("description") or "").strip()
+        salary_range_raw = (payload.get("salary_range") or "").strip()
+
+        try:
+            contact_email = validate_email(contact_email_raw, check_deliverability=False).normalized
+        except EmailNotValidError:
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please enter a valid contact email.", "error")
+            return redirect(url_for("index"))
+
+        def _word_count(text: str) -> int:
+            if not text:
+                return 0
+            return len(re.findall(r"\b\w+\b", text))
+
+        if len(job_title_raw) < 2:
+            if is_json:
+                return jsonify({"error": "invalid_title"}), 400
+            flash("Please add a job title.", "error")
+            return redirect(url_for("index"))
+
+        if len(company_raw) < 2:
+            if is_json:
+                return jsonify({"error": "invalid_company"}), 400
+            flash("Please add a company name.", "error")
+            return redirect(url_for("index"))
+
+        if len(description_raw) < 10:
+            if is_json:
+                return jsonify({"error": "invalid_description"}), 400
+            flash("Please add a short description.", "error")
+            return redirect(url_for("index"))
+
+        if _word_count(description_raw) > 5000:
+            if is_json:
+                return jsonify({"error": "description_too_long"}), 400
+            flash("Description is too long (max ~5000 words).", "error")
+            return redirect(url_for("index"))
+
+        status = insert_job_posting(
+            contact_email=contact_email,
+            job_title=job_title_raw,
+            company=company_raw,
+            description=description_raw,
+            salary_range=salary_range_raw,
+        )
+
+        try:
+            log_event(
+                event_type="job_posting",
+                status=status,
+                source="web",
+                job_title=job_title_raw,
+                job_company=company_raw,
+                meta={"surface": "job_posting_modal"},
+            )
+        except Exception as exc:
+            logger.debug("job_posting event log failed: %s", exc)
+
+        if status != "ok":
+            if is_json:
+                return jsonify({"error": "job_posting_failed"}), 500
+            flash("We could not submit the job. Please try again.", "error")
+            return redirect(url_for("index"))
+
+        if is_json:
+            return jsonify({"status": "ok"}), 200
+        flash("Thanks! Your job submission was received.", "success")
+        return redirect(url_for("index"))
+
+    @app.post("/job-posting.json")
+    def job_posting_json():
+        """Alias JSON endpoint for compatibility."""
+        return job_posting()
+
     @app.post("/events/apply")
     def events_apply():
         """Record analytics events (apply/filter/etc.)."""
@@ -629,28 +783,31 @@ def create_app() -> Flask:
             if job_link:
                 meta_dict.setdefault("job_link", job_link)
 
-        insert_search_event(
-            raw_title=raw_title,
-            raw_country=raw_country,
-            norm_title=norm_title,
-            norm_country=norm_country,
-            sal_floor=None,
-            sal_ceiling=None,
-            result_count=0,
-            page=0,
-            per_page=0,
-            source=source,
-            event_type=event_type,
-            event_status=status,
-            job_id=job_id,
-            job_title=job_title,
-            job_company=job_company,
-            job_location=job_location,
-            job_link=job_link,
-            job_summary=job_summary,
-            email_hash=email_hash,
-            meta=meta_dict or None,
-        )
+        try:
+            insert_search_event(
+                raw_title=raw_title,
+                raw_country=raw_country,
+                norm_title=norm_title,
+                norm_country=norm_country,
+                sal_floor=None,
+                sal_ceiling=None,
+                result_count=0,
+                page=0,
+                per_page=0,
+                source=source,
+                event_type=event_type,
+                event_status=status,
+                job_id=job_id,
+                job_title=job_title,
+                job_company=job_company,
+                job_location=job_location,
+                job_link=job_link,
+                job_summary=job_summary,
+                email_hash=email_hash,
+                meta=meta_dict or None,
+            )
+        except Exception as exc:
+            logger.warning("events_apply logging failed: %s", exc)
         return jsonify({"status": "ok"}), 200
 
     @app.get("/api/salary-insights")
