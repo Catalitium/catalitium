@@ -14,6 +14,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
   <meta name="theme-color" content="#1a73e8" />
+  <meta name="google-adsense-account" content="ca-pub-5590142941805222" />
   <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   <link rel="dns-prefetch" href="https://www.googletagmanager.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
@@ -25,6 +26,14 @@
   <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
+
+  <!-- Consentmanager CMP -->
+  <script type="text/javascript"
+          data-cmp-ab="1"
+          src="https://cdn.consentmanager.net/delivery/autoblocking/4befa339d2ef7.js"
+          data-cmp-host="c.delivery.consentmanager.net"
+          data-cmp-cdn="cdn.consentmanager.net"
+          data-cmp-codesrc="0"></script>
 
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D"></script>
@@ -39,6 +48,9 @@
       }
     };
   </script>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
+          crossorigin="anonymous"></script>
 
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -68,7 +80,7 @@
 
       <!-- Center logo -->
       <a href="{{ url_for('index') }}" class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager">
         <span class="font-semibold tracking-tight">Catalitium</span>
       </a>
 
@@ -76,9 +88,9 @@
       <nav class="hidden md:flex items-center gap-2 text-sm">
         <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Jobs</a>
         <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Newsletter</a>
-        <a href="#" data-open-job-posting class="px-3 py-2 font-semibold text-brand hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-opacity">Submit job</a>
+        <a href="#" data-open-job-posting class="px-3 py-2 rounded-lg font-semibold text-brand bg-brand/10 hover:bg-brand/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
         <a href="#" data-open-contact class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Contact us</a>
-        <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Legal</a>
+        <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
       </nav>
     </div>
   </header>
@@ -111,7 +123,7 @@
           <span>Jobs</span>
         </a>
         <a href="#" data-open-subscribe class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" class="w-5 h-5 rounded">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" class="w-5 h-5 rounded" loading="lazy" decoding="async">
           <span>Subscribe</span>
         </a>
         <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
@@ -135,9 +147,9 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Home</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Newsletter</a></li>
-        <li><a class="block rounded-lg px-3 py-3 font-semibold text-brand hover:opacity-80" href="#" data-open-job-posting>Submit job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Legal</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
       </ul>
     </div>
   </div>
@@ -170,13 +182,29 @@
         <a href="#" data-open-subscribe class="hover:text-brand">Newsletter</a>
         <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
         <a href="#" data-open-contact class="hover:text-brand">Contact</a>
+        <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
+        <button type="button"
+                class="hover:text-brand underline underline-offset-2"
+                aria-label="Update cookie settings"
+                data-cmp-reopen>
+          Cookie settings
+        </button>
       </div>
     </div>
-    <!-- AdSense placeholder -->
-    <div class="mx-auto max-w-6xl px-4 pb-6">
-      <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center text-slate-500 text-sm">
-        Ad placeholder (Google AdSense)
+    <!-- Footer AdSense placement -->
+    <div class="mx-auto max-w-6xl px-4 pb-6" aria-label="Footer advertising slot">
+      <div class="rounded-xl border border-dashed border-slate-300 bg-white p-4" style="min-height: 120px;">
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-1">Sponsored</div>
+        <ins class="adsbygoogle"
+             style="display:block; min-height: 100px;"
+             data-ad-client="ca-pub-5590142941805222"
+             data-ad-slot="1234567890"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
       </div>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
     </div>
   </footer>
 
@@ -189,7 +217,7 @@
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-md">
       <div class="flex items-center gap-2">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
         <h2 id="subscribe-title" class="text-lg font-semibold">Weekly job reminders</h2>
       </div>
       <p class="mt-2 text-slate-600 text-sm">One tidy email with new high-signal roles. Unsubscribe anytime.</p>
@@ -221,7 +249,7 @@
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-lg">
       <div class="flex items-center gap-2">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
         <h2 id="contact-title" class="text-lg font-semibold">Contact us</h2>
       </div>
       <p class="mt-2 text-slate-600 text-sm">Questions, partnerships, or feedback? Drop a note and we'll reply.</p>
@@ -282,7 +310,7 @@
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-xl">
       <div class="flex items-center gap-2">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
         <h2 id="jobpost-title" class="text-lg font-semibold">Submit a job</h2>
       </div>
       <p class="mt-2 text-slate-600 text-sm">Share a role; we'll reach out via your email. Anonymous otherwise.</p>
@@ -385,6 +413,17 @@
   
 
   <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-cmp-reopen]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (window.__cmp) {
+            window.__cmp('openConsentLayer');
+          }
+        });
+      });
+    });
+  </script>
   {% block body_extra %}{% endblock %}
 </body>
 </html>
