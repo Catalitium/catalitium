@@ -268,6 +268,11 @@ def _skip_logging(sid: str, ip_hash: str, ua: str, event_status: str, event_type
     except Exception:
         new_session = False
 
+    sid_clean = (sid or "").strip()
+    ip_clean = (ip_hash or "").strip()
+    if not sid_clean and not ip_clean:
+        return True
+
     if _looks_like_bot(ua):
         return True
 
@@ -283,9 +288,9 @@ def _skip_logging(sid: str, ip_hash: str, ua: str, event_status: str, event_type
     if event_type in {"apply", "job_apply"} and not (job_title or job_id):
         return True
 
-    if _rate_limited(f"sid:{sid}", _LOG_LIMIT_SESSION):
+    if sid_clean and _rate_limited(f"sid:{sid_clean}", _LOG_LIMIT_SESSION):
         return True
-    if _rate_limited(f"ip:{ip_hash}", _LOG_LIMIT_IP):
+    if ip_clean and _rate_limited(f"ip:{ip_clean}", _LOG_LIMIT_IP):
         return True
 
     return False
@@ -420,8 +425,8 @@ def insert_search_event(
     safe_job_link = (job_link or "").strip()
     safe_job_summary = (job_summary or "").strip()
 
-    safe_raw_title = (raw_title or safe_job_title).strip() or "N/A"
-    safe_raw_country = (raw_country or safe_job_location).strip() or "N/A"
+    safe_event_title = (raw_title or safe_job_title).strip() or "N/A"
+    safe_event_country = (raw_country or safe_job_location).strip() or "N/A"
     safe_norm_title = (norm_title or ("apply" if safe_event_type == "apply" else "")).strip()
     safe_norm_country = (norm_country or "").strip()
 
@@ -443,8 +448,8 @@ def insert_search_event(
 
     payload = (
         _now_iso(),
-        safe_raw_title,
-        safe_raw_country,
+        safe_event_title,
+        safe_event_country,
         safe_norm_title,
           safe_norm_country,
           int(sal_floor) if sal_floor is not None else None,
@@ -474,8 +479,8 @@ def insert_search_event(
                 """
                 INSERT INTO log_events(
                     created_at,
-                    raw_title,
-                    raw_country,
+                    job_title,
+                    job_country,
                     norm_title,
                     norm_country,
                     sal_floor,
@@ -727,6 +732,28 @@ LOCATION_COUNTRY_HINTS = {
     "kolkata": "IN",
     "ahmedabad": "IN",
 }
+
+SWISS_LOCATION_TERMS = [
+    "switzerland",
+    "schweiz",
+    "suisse",
+    "svizzera",
+    "swiss",
+    "zurich",
+    "geneva",
+    "geneve",
+    "lausanne",
+    "lausane",
+    "basel",
+    "bern",
+    "zug",
+    "lucerne",
+    "luzern",
+    "winterthur",
+    "ticino",
+    "st gallen",
+    "st. gallen",
+]
 
 TITLE_SYNONYMS = {
     "swe":"software engineer","software eng":"software engineer","sw eng":"software engineer",
@@ -1159,6 +1186,21 @@ class Job:
                 subclauses_sqlite: List[str] = []
                 columns_to_search = ("location", "city", "region", "country")
 
+                if upper == "UK":
+                    stop_terms = ("tukums", "latvia")
+                    block_pg: List[str] = []
+                    block_sqlite: List[str] = []
+                    for term in stop_terms:
+                        pattern = f"%{Job._escape_like(term)}%"
+                        for column in ("location", "city", "region"):
+                            block_pg.append(f"LOWER(COALESCE({column}, '')) NOT LIKE %s ESCAPE '\\'")
+                            block_sqlite.append(f"LOWER(COALESCE({column}, '')) NOT LIKE ? ESCAPE '\\'")
+                            params_pg.append(pattern)
+                            params_sqlite.append(pattern)
+                    if block_pg:
+                        clauses_pg.append("(" + " AND ".join(block_pg) + ")")
+                        clauses_sqlite.append("(" + " AND ".join(block_sqlite) + ")")
+
                 if upper == "HIGH_PAY":
                     high_pay_cities = [
                         "san francisco",
@@ -1214,32 +1256,17 @@ class Job:
                     subclauses_pg.append(city_clause_pg)
                     subclauses_sqlite.append(city_clause_sqlite)
                 elif upper == "CH":
-                    patterns_like, equals_exact = Job._country_patterns({"CH"})
-                    if equals_exact:
-                        eq_pg = []
-                        eq_sqlite = []
-                        for value in equals_exact:
-                            value_lower = value.lower()
-                            for column in columns_to_search:
-                                eq_pg.append(f"LOWER(COALESCE({column}, '')) = %s")
-                                eq_sqlite.append(f"LOWER(COALESCE({column}, '')) = ?")
-                                params_pg.append(value_lower)
-                                params_sqlite.append(value_lower)
-                        if eq_pg:
-                            subclauses_pg.append("(" + " OR ".join(eq_pg) + ")")
-                            subclauses_sqlite.append("(" + " OR ".join(eq_sqlite) + ")")
-                    if patterns_like:
-                        like_pg = []
-                        like_sqlite = []
-                        for pattern in patterns_like:
-                            for column in columns_to_search:
-                                like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
-                                like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
-                                params_pg.append(pattern)
-                                params_sqlite.append(pattern)
-                        if like_pg:
-                            subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
-                            subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
+                    swiss_like_pg: List[str] = []
+                    swiss_like_sqlite: List[str] = []
+                    for term in SWISS_LOCATION_TERMS:
+                        pattern = f"%{Job._escape_like(term)}%"
+                        swiss_like_pg.append("LOWER(COALESCE(location, '')) LIKE %s ESCAPE '\\'")
+                        swiss_like_sqlite.append("LOWER(COALESCE(location, '')) LIKE ? ESCAPE '\\'")
+                        params_pg.append(pattern)
+                        params_sqlite.append(pattern)
+                    if swiss_like_pg:
+                        subclauses_pg.append("(" + " OR ".join(swiss_like_pg) + ")")
+                        subclauses_sqlite.append("(" + " OR ".join(swiss_like_sqlite) + ")")
                 elif code:
                     patterns_like, equals_exact = Job._country_patterns({code})
                     if equals_exact:
