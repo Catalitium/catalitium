@@ -24,20 +24,20 @@
 <!-- HERO -->
 <section class="pt-6 sm:pt-10" role="region" aria-labelledby="jobs-hero">
   <div class="mx-auto max-w-4xl text-center">
-    <h1 id="jobs-hero" class="text-3xl sm:text-4xl font-semibold tracking-tight">
-      {% if title_q %}
-        {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
-      {% else %}
-        <span class="text-brand">Top Tech Jobs</span> with Salary Insights
-      {% endif %}
-    </h1>
-    <p class="mt-3 text-slate-600">
-      {% if title_q %}
-        Browse {{ count|default(0) }} curated roles with real salary data
-      {% else %}
-        Search curated tech roles with free salary insights
-      {% endif %}
-    </p>
+      <h1 id="jobs-hero" class="text-3xl sm:text-4xl font-semibold tracking-tight">
+        {% if title_q %}
+          {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
+        {% else %}
+          <a href="{{ url_for('recruiter_salary_board') }}" class="text-inherit no-underline hover:text-brand transition-colors">See Jobs and Salary information</a>
+        {% endif %}
+      </h1>
+      <p class="mt-3 text-slate-600">
+        {% if title_q %}
+          Browse {{ count|default(0) }} curated roles with transparent salary cues so you don't have to open ten tabs to compare offers.
+        {% else %}
+          We clean noisy job feeds, normalize titles and locations, and add salary ranges so engineers and product people can scan the market in minutes.
+        {% endif %}
+      </p>
     {% if title_q and count > 0 %}
     <div class="mt-2 text-sm text-slate-500">
       Updated {{ "2025-11-02"|datetime|timeago }}
@@ -80,7 +80,7 @@
                    inputmode="text"
                    autocapitalize="characters"
                    autocomplete="off"
-                   placeholder="🌍 Location (e.g. US, EU, London)"
+                   placeholder="Location (e.g. US, EU, London)"
                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base sm:text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none shadow-sm">
           </div>
         </div>
@@ -260,16 +260,16 @@
       {% endfor %}
     {% else %}
       <div class="rounded-xl border border-slate-200 p-6 text-slate-600 text-center">
-        <p class="font-medium">No jobs found.</p>
+        <p class="font-medium">No jobs matched these filters yet.</p>
         <p class="text-xs mt-1">
           {% if country_q and country_q|lower == 'eu' %}
             Try nearby hubs like Paris, Berlin, or Madrid, or broaden to Remote/US/UK.
           {% elif country_q and country_q|lower in ['in','india'] %}
             Try major hubs like Bangalore, Mumbai, or Delhi, or broaden to Remote/SG.
           {% elif title_q and '100k' in title_q|lower %}
-            Adjust salary floor (e.g., 80k) or pair with a region like US/EU to expand results.
+            Adjust the salary floor (for example ">80k") or pair it with a region like US/EU to expand results.
           {% else %}
-            Try broader keywords (e.g., engineer, pm) or another region (e.g., CH, EU, UK, US).
+            Try a broader keyword (for example "engineer") or remove the region filter to see more roles.
           {% endif %}
         </p>
       </div>
@@ -295,21 +295,21 @@
           Every listing is sourced from employer feeds and hand-reviewed for clarity, compensation, location accuracy, and spam signals before it is surfaced in search.
         </p>
         <ul class="mt-3 space-y-2 text-sm text-slate-600">
-          <li>• Titles and locations get normalized so filters stay reliable.</li>
-          <li>• Suspicious redirects or missing companies are flagged and removed.</li>
-          <li>• We rotate fresh roles daily so the feed stays under 7 days old.</li>
+          <li>Titles and locations get normalized so filters stay reliable.</li>
+          <li>Suspicious redirects or missing companies are flagged and removed.</li>
+          <li>We rotate fresh roles daily so the feed stays under 7 days old.</li>
         </ul>
       </div>
       <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
         <p class="text-[13px] font-semibold uppercase tracking-wide text-slate-500">Salary insights</p>
         <h3 class="mt-1 text-lg font-semibold text-slate-900">Transparency promise</h3>
         <p class="mt-2 text-sm text-slate-600">
-          Salary tags blend employer provided ranges with Catalitium estimates. We mark ranges with “Est.”, note any missing data, and never inflate compensation to boost clicks.
+          Salary tags blend employer provided ranges with Catalitium estimates. We mark ranges with Est. labels, note any missing data, and never inflate compensation to boost clicks.
         </p>
         <div class="mt-3 text-sm text-slate-600 space-y-1.5">
-          <p>• Currency harmonized to USD/EUR/GBP/CHF to avoid surprises.</p>
-          <p>• Outliers are reviewed manually before they appear on a card.</p>
-          <p>• Sponsored employers follow the same disclosure and pay rules.</p>
+          <p>Currency harmonized to USD/EUR/GBP/CHF to avoid surprises.</p>
+          <p>Outliers are reviewed manually before they appear on a card.</p>
+          <p>Sponsored employers follow the same disclosure and pay rules.</p>
         </div>
       </div>
     </div>
@@ -365,21 +365,21 @@
           Are remote AI roles hiring in the EU?
           <svg class="w-4 h-4 transition-transform group-open:rotate-180 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
         </summary>
-        <p class="mt-1 text-sm text-slate-700">Yes—our EU feed includes remote-friendly AI roles. Use the “AI” and “EU” filters together to surface them quickly.</p>
+        <p class="mt-1 text-sm text-slate-700">Yes, our EU feed includes remote-friendly AI roles. Use the AI and EU filters together to surface them quickly.</p>
       </details>
       <details class="group rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
         <summary class="flex items-center justify-between cursor-pointer text-sm font-medium text-slate-700 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded-lg py-1">
           How fresh are the postings?
           <svg class="w-4 h-4 transition-transform group-open:rotate-180 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
         </summary>
-        <p class="mt-1 text-sm text-slate-700">We refresh listings regularly and tag new arrivals. Look for the “New” badge and the posted date pill on each card.</p>
+        <p class="mt-1 text-sm text-slate-700">We refresh listings regularly and tag new arrivals. Look for the Ã¢â‚¬Å“NewÃ¢â‚¬ badge and the posted date pill on each card.</p>
       </details>
       <details class="group rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
         <summary class="flex items-center justify-between cursor-pointer text-sm font-medium text-slate-700 hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded-lg py-1">
           Do roles include salary estimates?
           <svg class="w-4 h-4 transition-transform group-open:rotate-180 text-slate-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
         </summary>
-        <p class="mt-1 text-sm text-slate-700">Many cards show “Est.” salary pills. If a range is missing, we flag it so you know before clicking through.</p>
+        <p class="mt-1 text-sm text-slate-700">Many cards show Ã¢â‚¬Å“Est.Ã¢â‚¬ salary pills. If a range is missing, we flag it so you know before clicking through.</p>
       </details>
     </div>
   </div>
@@ -472,7 +472,7 @@
       "name": "Are remote AI roles hiring in the EU?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes—our EU feed includes remote-friendly AI roles. Use the AI and EU filters together to surface them quickly."
+        "text": "Yes, our EU feed includes remote-friendly AI roles. Use the AI and EU filters together to surface them quickly."
       }
     },
     {

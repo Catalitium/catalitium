@@ -30,6 +30,7 @@ from .models.db import (
     normalize_country,
     normalize_title,
     parse_salary_query,
+    parse_salary_range_string,
     parse_job_description,
     format_job_date_string,
     clean_job_description_text,
@@ -461,25 +462,69 @@ def create_app() -> Flask:
             pagination=pagination,
         )
 
+    @app.get("/recruiter-salary-board")
+    def recruiter_salary_board():
+        """Surface the dedicated job browser experience."""
+        job_api_url = url_for("api_jobs")
+        return render_template(
+            "job_browser.html",
+            job_api=job_api_url,
+        )
+
     @app.get("/api/jobs")
     def api_jobs():
-        """Return jobs as JSON with pagination metadata."""
+        """Return jobs as JSON with pagination metadata.
+
+        Uses the same title/country normalization as the main index route
+        so the job browser and the homepage see the same Supabase jobs.
+        """
         raw_title = (request.args.get("title") or "").strip()
         raw_country = (request.args.get("country") or "").strip()
         page, per_page = _resolve_pagination()
         per_page_display = _display_per_page(per_page)
 
-        cleaned_title, _, _ = parse_salary_query(raw_title)
-        country_q = normalize_country(raw_country)
-        title_q = normalize_title(cleaned_title)
+        # Reuse the shared search param parsing to keep behavior consistent
+        title_q, country_q, sal_floor, sal_ceiling = safe_parse_search_params(raw_title, raw_country)
+        if raw_title and not title_q:
+            title_q = normalize_title(raw_title)
+        if raw_country and not country_q:
+            country_q = normalize_country(raw_country)
+
+        q_title = title_q or None
+        q_country = country_q or None
+
+        total: Optional[int]
+        rows = []
+
+        # First try: normal count+search. If COUNT is too heavy and times out,
+        # fall back to search without relying on COUNT so we still show jobs.
+        try:
+            total = Job.count(q_title, q_country)
+        except Exception:
+            logger.exception("Job COUNT failed in api_jobs; falling back to search-only")
+            total = None
 
         try:
-            total = Job.count(title_q or None, country_q or None)
             offset = (max(1, page) - 1) * per_page
-            rows = Job.search(title_q or None, country_q or None, limit=per_page, offset=offset)
+            rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
         except Exception:
-            total = 0
+            logger.exception("Job SEARCH failed in api_jobs")
             rows = []
+
+        # If we have a title but no rows, relax the title filter once and try
+        # a greedy country-only search so users still see something.
+        if not rows and (q_title or raw_title):
+            try:
+                q_title = None
+                offset = (max(1, page) - 1) * per_page
+                rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
+                if total is None:
+                    total = len(rows)
+            except Exception:
+                logger.exception("Fallback country-only search failed in api_jobs")
+
+        if total is None:
+            total = len(rows)
 
         items = []
         for row in rows:
@@ -488,16 +533,36 @@ def create_app() -> Flask:
             link = row.get("link")
             if link in BLACKLIST_LINKS:
                 link = None
+            title = (row.get("job_title") or "").strip()
+            company = (row.get("company_name") or "").strip()
+            location = row.get("location") or "Remote / Anywhere"
+            description = clean_job_description_text(row.get("job_description") or "")
+            
+            # Format job_date as YYYY-MM-DD
+            job_date_formatted = ""
+            if job_date_raw:
+                dt = _coerce_datetime(job_date_raw)
+                if dt:
+                    job_date_formatted = dt.date().isoformat()
+            
             items.append(
                 {
                     "id": row.get("id"),
-                    "title": _to_lc(row.get("job_title") or ""),
-                    "description": clean_job_description_text(row.get("job_description") or ""),
-                    "link": link,
-                    "location": row.get("location"),
-                    "job_date": format_job_date_string(job_date_str) if job_date_str else "",
+                    "title": title,
+                    "job_title": title,  # alias for compatibility
+                    "job_company_name": company,
+                    "company": company,  # alias
+                    "description": description,
+                    "job_description": description,  # alias
+                    "link": link or "",
+                    "location": location,
+                    "city": row.get("city") or "",
+                    "country": row.get("country") or "",
+                    "region": row.get("region") or "",
+                    "job_date": job_date_formatted,
                     "date": row.get("date"),
                     "is_new": _job_is_new(job_date_raw, row.get("date")),
+                    "job_salary_range": row.get("job_salary_range") or "",
                 }
             )
 
@@ -514,6 +579,124 @@ def create_app() -> Flask:
                     "has_prev": page > 1,
                     "has_next": page < pages_display,
                 },
+            }
+        )
+
+    @app.get("/api/jobs/summary")
+    def api_jobs_summary():
+        """Return summary statistics for jobs matching filters: count, median salary, remote share.
+
+        Salary resolution order:
+        - Prefer numeric job_salary from jobs table when available.
+        - Fallback to parsing job_salary_range strings.
+        - Finally, fallback to salary table via get_salary_for_location.
+        """
+        raw_title = (request.args.get("title") or "").strip()
+        raw_country = (request.args.get("country") or "").strip()
+
+        cleaned_title, _, _ = parse_salary_query(raw_title)
+        country_q = normalize_country(raw_country)
+        title_q = normalize_title(cleaned_title)
+
+        try:
+            total = Job.count(title_q or None, country_q or None)
+        except Exception:
+            total = 0
+
+        # Get a sample of jobs for salary calculation (limit to reasonable size)
+        max_samples = 1000
+        try:
+            rows = Job.search(title_q or None, country_q or None, limit=max_samples, offset=0)
+        except Exception:
+            rows = []
+
+        # Collect salary values, preferring numeric job_salary and falling back to job_salary_range
+        salary_values = []
+        sample_locations = []
+
+        for row in rows:
+            # Prefer numeric job_salary if present
+            job_salary_val = row.get("job_salary")
+            if job_salary_val is not None:
+                try:
+                    salary_values.append(float(job_salary_val))
+                except Exception:
+                    pass
+            else:
+                # Fallback to parsing job_salary_range string
+                salary_range_str = row.get("job_salary_range") or ""
+                if salary_range_str:
+                    parsed = parse_salary_range_string(salary_range_str)
+                    if parsed is not None:
+                        salary_values.append(parsed)
+
+            # Collect sample locations for salary-table fallback
+            location = row.get("location") or ""
+            if location and location not in sample_locations:
+                sample_locations.append(location)
+
+        # Compute median/average from collected salary values, with a heuristic
+        # to downscale cent-based values (e.g. 12_100_000 -> 121_000).
+        median_salary = None
+        currency = None
+
+        if salary_values:
+            sorted_vals = sorted(salary_values)
+            n = len(sorted_vals)
+
+            # Heuristic: if median is very large, try treating values as cents
+            # and rescale by 1/100 when that produces a plausible annual salary.
+            median_raw = sorted_vals[n // 2]
+            if median_raw >= 1_000_000:
+                scaled = [v / 100.0 for v in salary_values]
+                scaled_sorted = sorted(scaled)
+                scaled_median = scaled_sorted[n // 2]
+                if 20_000 <= scaled_median <= 500_000:
+                    sorted_vals = scaled_sorted
+                    salary_values = scaled
+
+            if n >= 3:
+                if n % 2 == 0:
+                    median_salary = (sorted_vals[n // 2 - 1] + sorted_vals[n // 2]) / 2.0
+                else:
+                    median_salary = float(sorted_vals[n // 2])
+            else:
+                median_salary = sum(sorted_vals) / n
+            currency = "USD"
+        else:
+            # No direct salary values, try fallback to salary table
+            fallback_salaries = []
+            for loc in sample_locations[:5]:
+                result = get_salary_for_location(loc)
+                if result:
+                    salary_val, curr = result
+                    if salary_val:
+                        fallback_salaries.append(salary_val)
+                        if currency is None and curr:
+                            currency = curr
+
+            if fallback_salaries:
+                median_salary = sum(fallback_salaries) / len(fallback_salaries)
+                if currency is None:
+                    currency = "USD"
+
+        # Calculate remote share (simple heuristic: check if location contains "remote")
+        remote_count = 0
+        for row in rows:
+            location = (row.get("location") or "").lower()
+            if "remote" in location:
+                remote_count += 1
+
+        remote_share = remote_count / len(rows) if rows else 0.0
+
+        return jsonify(
+            {
+                "count": total,
+                "salary": {
+                    "median": int(median_salary) if median_salary is not None else None,
+                    "currency": currency or None,
+                },
+                "remote_share": round(remote_share, 2),
             }
         )
 
@@ -910,14 +1093,14 @@ def create_app() -> Flask:
 
 
 def _job_is_new(job_date_raw, row_date) -> bool:
-    """Return True when the job was posted within the last two days."""
+    """Return True when the job was posted within the last 7 days."""
     dt = _coerce_datetime(row_date) or _coerce_datetime(job_date_raw)
     if not dt:
         return False
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
-    return (now - dt) <= timedelta(days=2)
+    return (now - dt) <= timedelta(days=7)
 
 
 def _coerce_datetime(value) -> Optional[datetime]:

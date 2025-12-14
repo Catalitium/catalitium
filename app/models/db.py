@@ -941,6 +941,8 @@ class Job:
         db = get_db()
         where_clause = where_sql["pg"]
         params = list(params_pg)
+        # Use the existing textual salary column and expose it to callers
+        # as job_salary_range for compatibility with API consumers.
         sql = f"""
             SELECT
                 id,
@@ -949,9 +951,12 @@ class Job:
                 company_name,
                 job_description,
                 location,
+                city,
+                region,
                 country,
                 link,
-                date
+                date,
+                COALESCE(salary, '') AS job_salary_range
             FROM jobs {where_clause}
             {Job._order_by(country)}
             LIMIT %s OFFSET %s
@@ -1116,47 +1121,55 @@ class Job:
                 core_tokens = [tok for tok in tokens if tok not in specials]
                 core_query = " ".join(core_tokens).strip()
 
+                # Core title query: keep this cheap and index-friendly by
+                # only searching title fields, not full descriptions.
                 if core_query:
                     like = f"%{Job._escape_like(core_query)}%"
-                    clause_pg = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\' OR LOWER(job_description) LIKE %s ESCAPE '\\')"
-                    clause_sqlite = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\' OR LOWER(job_description) LIKE ? ESCAPE '\\')"
+                    clause_pg = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\')"
+                    clause_sqlite = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\')"
                     clauses_pg.append(clause_pg)
                     clauses_sqlite.append(clause_sqlite)
-                    params_pg.extend([like, like, like])
-                    params_sqlite.extend([like, like, like])
+                    params_pg.extend([like, like])
+                    params_sqlite.extend([like, like])
 
+                # Remote flag: look for 'remote' in title or location, but
+                # avoid scanning job_description.
                 if remote_flag:
                     remote_like = f"%{Job._escape_like('remote')}%"
-                    clause_pg_remote = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\' OR LOWER(job_description) LIKE %s ESCAPE '\\' OR LOWER(location) LIKE %s ESCAPE '\\')"
-                    clause_sqlite_remote = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\' OR LOWER(job_description) LIKE ? ESCAPE '\\' OR LOWER(location) LIKE ? ESCAPE '\\')"
+                    clause_pg_remote = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\' OR LOWER(location) LIKE %s ESCAPE '\\')"
+                    clause_sqlite_remote = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\' OR LOWER(location) LIKE ? ESCAPE '\\')"
                     clauses_pg.append(clause_pg_remote)
                     clauses_sqlite.append(clause_sqlite_remote)
-                    params_pg.extend([remote_like, remote_like, remote_like, remote_like])
-                    params_sqlite.extend([remote_like, remote_like, remote_like, remote_like])
+                    params_pg.extend([remote_like, remote_like, remote_like])
+                    params_sqlite.extend([remote_like, remote_like, remote_like])
 
+                # Developer-style queries: bias towards software/dev titles,
+                # but again restrict to title fields only.
                 if developer_flag:
                     dev_terms = ["developer", "programmer", "coder", "software developer", "software engineer"]
                     patterns = [f"%{Job._escape_like(term)}%" for term in dev_terms]
                     clause_pg_terms: List[str] = []
                     clause_sqlite_terms: List[str] = []
                     for _ in dev_terms:
-                        clause_pg_terms.extend([
-                            "job_title_norm ILIKE %s ESCAPE '\\'",
-                            "LOWER(job_title) LIKE %s ESCAPE '\\'",
-                            "LOWER(job_description) LIKE %s ESCAPE '\\'",
-                        ])
-                        clause_sqlite_terms.extend([
-                            "job_title_norm LIKE ? ESCAPE '\\'",
-                            "LOWER(job_title) LIKE ? ESCAPE '\\'",
-                            "LOWER(job_description) LIKE ? ESCAPE '\\'",
-                        ])
+                        clause_pg_terms.extend(
+                            [
+                                "job_title_norm ILIKE %s ESCAPE '\\'",
+                                "LOWER(job_title) LIKE %s ESCAPE '\\'",
+                            ]
+                        )
+                        clause_sqlite_terms.extend(
+                            [
+                                "job_title_norm LIKE ? ESCAPE '\\'",
+                                "LOWER(job_title) LIKE ? ESCAPE '\\'",
+                            ]
+                        )
                     clause_pg_dev = "(" + " OR ".join(clause_pg_terms) + ")"
                     clause_sqlite_dev = "(" + " OR ".join(clause_sqlite_terms) + ")"
                     clauses_pg.append(clause_pg_dev)
                     clauses_sqlite.append(clause_sqlite_dev)
                     for pattern in patterns:
-                        params_pg.extend([pattern, pattern, pattern])
-                        params_sqlite.extend([pattern, pattern, pattern])
+                        params_pg.extend([pattern, pattern])
+                        params_sqlite.extend([pattern, pattern])
 
         if country:
             c_raw = (country or "").strip().lower()
@@ -1555,7 +1568,47 @@ def salary_range_around(median: float, pct: float = 0.2):
     high_r = _round_ceil_10k(high)
     return (low_r, high_r, _compact_salary_number(low_r), _compact_salary_number(high_r))
 
-    return (s, None, None)
+
+def parse_salary_range_string(s: str) -> Optional[float]:
+    """Parse a salary range string and return the midpoint as a float.
+    
+    Handles formats like:
+    - "110k-120k" or "110k–120k" (en dash)
+    - "$110,000 - $120,000"
+    - "120000" or "120k" (single value)
+    - "CHF 120k-150k" or "USD 100k-120k" (with currency prefix)
+    
+    Returns None if unparseable.
+    """
+    if not s or not isinstance(s, str):
+        return None
+    
+    s = s.strip()
+    if not s:
+        return None
+    
+    # Remove common currency prefixes (case-insensitive)
+    s_clean = re.sub(r'^(USD|CHF|EUR|GBP|USD\$|\$)\s*', '', s, flags=re.IGNORECASE)
+    
+    # Try to match range pattern: "110k-120k" or "110,000 - 120,000"
+    range_match = re.search(r'(\d[\d,.\s]*k?)\s*[-–—]\s*(\d[\d,.\s]*k?)', s_clean)
+    if range_match:
+        low_vals = parse_money_numbers(range_match.group(1))
+        high_vals = parse_money_numbers(range_match.group(2))
+        if low_vals and high_vals:
+            midpoint = (low_vals[0] + high_vals[-1]) / 2.0
+            return float(midpoint)
+        elif low_vals:
+            return float(low_vals[0])
+        elif high_vals:
+            return float(high_vals[-1])
+    
+    # Try single value: "120k" or "120000"
+    single_vals = parse_money_numbers(s_clean)
+    if single_vals:
+        return float(single_vals[0])
+    
+    return None
 
 
 # ------------------------- Formatting Helpers ------------------------------

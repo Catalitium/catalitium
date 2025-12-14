@@ -64,7 +64,7 @@
 <body class="min-h-screen bg-white text-slate-800 antialiased">
   <!-- Compact Header (sticky for mobile) -->
   <header class="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-    <div class="mx-auto max-w-6xl px-3 sm:px-4 h-14 flex items-center justify-between">
+      <div class="mx-auto max-w-6xl px-3 sm:px-4 h-14 grid grid-cols-[auto,1fr,auto] items-center gap-x-2 sm:gap-x-4">
       <!-- Hamburger (hidden on md+) -->
       <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
               class="md:hidden inline-flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
@@ -73,18 +73,21 @@
         </svg></button>
 
       <!-- Center logo -->
-      <a href="{{ url_for('index') }}" class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2 justify-self-center">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager">
         <span class="font-semibold tracking-tight">Catalitium</span>
       </a>
 
       <!-- Desktop nav (md+) -->
       <nav class="hidden md:flex items-center gap-2 text-sm">
-        <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Jobs</a>
-        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Newsletter</a>
-        <a href="#" data-open-job-posting class="px-3 py-2 rounded-lg font-semibold text-brand bg-brand/10 hover:bg-brand/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
-        <a href="#" data-open-contact class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Contact us</a>
-        <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
+        <div class="flex items-center gap-2">
+          <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Jobs</a>
+          <a href="{{ url_for('recruiter_salary_board') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Salary Board</a>
+          <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Newsletter</a>
+          <a href="#" data-open-contact class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Contact us</a>
+          <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
+        </div>
+        <a href="#" data-open-job-posting class="ml-auto px-3 py-2 rounded-lg font-semibold text-brand bg-brand/10 hover:bg-brand/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
       </nav>
     </div>
   </header>
@@ -120,6 +123,9 @@
           <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" class="w-5 h-5 rounded" loading="lazy" decoding="async">
           <span>Subscribe</span>
         </a>
+        <a href="{{ url_for('recruiter_salary_board') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <span class="font-semibold text-brand">Salary Board</span>
+        </a>
         <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
           <span class="font-semibold text-brand">Submit job</span>
@@ -140,6 +146,7 @@
       <ul class="mt-3 space-y-1 text-base">
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Home</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Newsletter</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
