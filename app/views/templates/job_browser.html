@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Recruitment Board | Catalitium{% endblock %}
+
+{% block content %}
+<section class="space-y-8 py-10" aria-labelledby="job-browser-title">
+  <div class="mx-auto max-w-7xl space-y-6">
+    <!-- Header -->
+    <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/60">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">Recruitment Board</p>
+          <h1 id="job-browser-title" class="mt-2 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
+            Catalitium Recruitment Board
+          </h1>
+          <p class="mt-3 max-w-2xl text-base text-slate-600">
+            Browse fresh tech jobs with transparent salary insights. Post jobs to reach qualified candidates.
+          </p>
+          <p class="mt-2 text-sm text-slate-500">
+            Prefer the main list view?
+            <a href="{{ url_for('index') }}" class="underline text-slate-700 hover:text-brand">
+              Switch to the main search page
+            </a>
+            for more filters and full job cards.
+          </p>
+        </div>
+        <a href="#" data-open-job-posting
+           class="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand/30 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white whitespace-nowrap">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Post a Job
+        </a>
+      </div>
+
+      <!-- Filters -->
+      <form id="jobBrowserForm" class="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+        <label class="flex flex-col gap-1 text-sm text-slate-600">
+          <span class="font-semibold text-slate-800">Title</span>
+          <input id="jobBrowserTitle"
+                 name="title"
+                 type="text"
+                 aria-label="Job title"
+                 placeholder="Software engineer"
+                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40">
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-slate-600">
+          <span class="font-semibold text-slate-800">Region</span>
+          <select id="jobBrowserCountry"
+                  name="country"
+                  aria-label="Country or region"
+                  class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-900 shadow-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40">
+            <option value="">Anywhere / Remote</option>
+            <option value="EU">Europe (EU hubs)</option>
+            <option value="US">United States</option>
+            <option value="UK">UK &amp; Ireland</option>
+            <option value="CH">Switzerland</option>
+            <option value="IN">India</option>
+          </select>
+        </label>
+        <button type="submit"
+                class="rounded-2xl bg-brand px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand/30 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white self-end">
+          Search
+        </button>
+      </form>
+
+      <!-- Summary Stats -->
+      <div class="grid gap-4 md:grid-cols-2 mt-6">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Results</p>
+          <p id="jobBrowserCount" class="mt-2 text-2xl font-semibold text-slate-900" aria-live="polite">Start your search</p>
+          <p id="jobBrowserContext" class="text-sm text-slate-500">Filter by title and region.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Salary insight</p>
+          <p id="salaryOverview" class="mt-2 text-2xl font-semibold text-slate-900" aria-live="polite">Search to see salary bands</p>
+          <p class="text-sm text-slate-500">Median ranges from roles with stated pay.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Estimates only, not offers.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Cards Container -->
+    <div id="jobCardsContainer" class="space-y-4" aria-live="polite">
+      <!-- Job cards will be inserted here -->
+    </div>
+
+    <!-- Pagination -->
+    <div id="paginationContainer" class="flex items-center justify-center gap-2">
+      <!-- Pagination will be inserted here -->
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block body_extra %}
+<script>
+(() => {
+  const form = document.getElementById("jobBrowserForm");
+  const titleInput = document.getElementById("jobBrowserTitle");
+  const countryInput = document.getElementById("jobBrowserCountry");
+  const countEl = document.getElementById("jobBrowserCount");
+  const salaryEl = document.getElementById("salaryOverview");
+  const cardsContainer = document.getElementById("jobCardsContainer");
+  const paginationContainer = document.getElementById("paginationContainer");
+  const apiUrl = "{{ job_api|e }}";
+  const crawlerPattern = /bot|crawler|spider|slurp|curl|wget|python|playwright|headless|phantom|scrapy|httpclient|axios|java/i;
+  const analyticsThrottleMs = 15000;
+  let lastAnalyticsTs = 0;
+  let currentPage = 1;
+  let currentMeta = null;
+
+  // Read URL params on load
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlTitle = urlParams.get("title") || "";
+  const urlCountry = urlParams.get("country") || "";
+  const urlPage = parseInt(urlParams.get("page") || "1", 10);
+  if (urlTitle) titleInput.value = urlTitle;
+  if (urlCountry) countryInput.value = urlCountry;
+  if (urlPage > 0) currentPage = urlPage;
+
+  const shouldSkipAnalytics = () => {
+    if (typeof navigator !== "undefined" && crawlerPattern.test(navigator.userAgent || "")) {
+      return true;
+    }
+    return !(typeof sendAnalyticsPayload === "function" || typeof trackEvent === "function");
+  };
+
+  const sendBrowserAnalytics = (status, resultCount, eventType = "job_browser_search") => {
+    if (shouldSkipAnalytics()) return;
+    const now = Date.now();
+    if (now - lastAnalyticsTs < analyticsThrottleMs && eventType === "job_browser_search") {
+      return;
+    }
+    lastAnalyticsTs = now;
+    const meta = {
+      title: titleInput?.value?.trim() || "empty",
+      country: countryInput?.value || "any",
+      result_count: String(resultCount || 0),
+    };
+    if (typeof trackEvent === "function") {
+      trackEvent(eventType, {
+        status: status || "unknown",
+        title: meta.title,
+        country: meta.country,
+        count: resultCount || 0,
+      });
+    }
+    if (typeof sendAnalyticsPayload === "function") {
+      sendAnalyticsPayload({
+        event_type: eventType,
+        status: status || "unknown",
+        source: "web",
+        meta: meta,
+      });
+    }
+  };
+
+  const formatSalary = (value, currency = "USD") => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return null;
+    }
+    try {
+      // Map currency codes to proper format
+      const currencyMap = {
+        "USD": "USD",
+        "CHF": "CHF",
+        "EUR": "EUR",
+        "GBP": "GBP"
+      };
+      const currencyCode = currencyMap[currency] || "USD";
+      
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currencyCode,
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      return `${Math.round(value).toLocaleString()} ${currency || "USD"}`;
+    }
+  };
+
+  const formatSalaryCompact = (value, currency = "USD") => {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      return null;
+    }
+    const num = Math.round(value);
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M ${currency}`;
+    } else if (num >= 1000) {
+      return `${Math.round(num / 1000)}k ${currency}`;
+    }
+    return `${num} ${currency}`;
+  };
+
+  const truncateText = (text, maxLength = 200) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + "...";
+  };
+
+  const renderJobCard = (job) => {
+    const desc = truncateText(job.description || job.job_description || "", 150);
+    const location = job.location || "Remote / Anywhere";
+    const company = job.company || job.job_company_name || "Company not specified";
+    const isNew = job.is_new ? '<span class="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5 ml-2">New</span>' : '';
+    const salaryRange = job.job_salary_range || "";
+    const salaryDisplay = salaryRange ? `<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-amber-800 font-semibold" title="Salary range">
+      <span class="text-amber-700 text-[10px]">Est.</span>
+      <span class="text-xs">${(salaryRange || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
+    </span>` : '';
+    
+    return `
+      <article class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 hover:border-slate-300 transition-all hover:shadow-md" data-job-id="${job.id || ''}">
+        <header class="flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-2">
+            <div class="min-w-0 flex-1">
+              <h2 class="text-lg sm:text-xl font-semibold leading-tight text-slate-900 flex items-center gap-2">
+                ${(job.title || job.job_title || "Untitled").replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                ${isNew}
+              </h2>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-600">
+            <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-1">
+              <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M5 7h14M5 12h14M5 17h14"/></svg>
+              ${company.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+            </span>
+            <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 text-sky-800">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 21s7-5.5 7-11.2A7 7 0 0012 3a7 7 0 00-7 6.8C5 15.5 12 21 12 21z"/><circle cx="12" cy="10" r="2.5"/></svg>
+              ${location.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+            </span>
+            ${job.job_date ? `<span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2.5 py-1 text-indigo-800">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M7 4v3M17 4v3M5 9h14M7 6h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+              ${job.job_date.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+            </span>` : ''}
+            ${salaryDisplay}
+          </div>
+        </header>
+        ${desc ? `<p class="mt-3 text-sm text-slate-700 line-clamp-3">${desc.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>` : ''}
+        <div class="mt-4 flex gap-2">
+          ${job.link ? `<a href="${job.link.replace(/"/g, "&quot;")}" target="_blank" rel="noopener" 
+            class="inline-flex items-center gap-2 rounded-lg bg-brand text-white px-4 py-2 text-sm font-semibold hover:bg-brand/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+            data-job-click="true"
+            data-job-id="${job.id || ''}"
+            data-job-title="${(job.title || job.job_title || '').replace(/"/g, "&quot;")}"
+            data-job-company="${company.replace(/"/g, "&quot;")}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Apply
+          </a>` : '<button type="button" disabled class="inline-flex items-center gap-2 rounded-lg bg-slate-300 text-slate-600 px-4 py-2 text-sm font-semibold cursor-not-allowed">No link available</button>'}
+        </div>
+      </article>
+    `;
+  };
+
+  const renderPagination = (meta) => {
+    if (!meta || meta.pages <= 1) {
+      paginationContainer.innerHTML = "";
+      return;
+    }
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, meta.page - Math.floor(maxVisible / 2));
+    let end = Math.min(meta.pages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    const prevDisabled = !meta.has_prev ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-100";
+    const nextDisabled = !meta.has_next ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-100";
+    paginationContainer.innerHTML = `
+      <nav class="flex items-center gap-2" aria-label="Pagination">
+        <button type="button" id="paginationPrev" ${!meta.has_prev ? "disabled" : ""} 
+          class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 ${prevDisabled} transition-colors">
+          Previous
+        </button>
+        ${pages.map(p => `
+          <button type="button" data-page="${p}" 
+            class="rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              p === meta.page 
+                ? "bg-brand text-white border-brand" 
+                : "border-slate-300 text-slate-700 hover:bg-slate-100"
+            }">
+            ${p}
+          </button>
+        `).join("")}
+        <button type="button" id="paginationNext" ${!meta.has_next ? "disabled" : ""} 
+          class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 ${nextDisabled} transition-colors">
+          Next
+        </button>
+      </nav>
+    `;
+    const prevBtn = document.getElementById("paginationPrev");
+    const nextBtn = document.getElementById("paginationNext");
+    if (prevBtn && meta.has_prev) {
+      prevBtn.addEventListener("click", () => {
+        currentPage = Math.max(1, meta.page - 1);
+        updateURL();
+        fetchJobs();
+      });
+    }
+    if (nextBtn && meta.has_next) {
+      nextBtn.addEventListener("click", () => {
+        currentPage = Math.min(meta.pages, meta.page + 1);
+        updateURL();
+        fetchJobs();
+      });
+    }
+    document.querySelectorAll("[data-page]").forEach(btn => {
+      const page = parseInt(btn.getAttribute("data-page"), 10);
+      if (page !== meta.page) {
+        btn.addEventListener("click", () => {
+          currentPage = page;
+          updateURL();
+          fetchJobs();
+        });
+      }
+    });
+  };
+
+  const updateURL = () => {
+    const params = new URLSearchParams();
+    if (titleInput?.value?.trim()) params.set("title", titleInput.value.trim());
+    if (countryInput?.value) params.set("country", countryInput.value);
+    if (currentPage > 1) params.set("page", String(currentPage));
+    const newUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "");
+    window.history.pushState({}, "", newUrl);
+  };
+
+  const updateSummary = (items, total, summaryData = null) => {
+    if (!Array.isArray(items)) {
+      countEl.textContent = "Data unavailable";
+      salaryEl.textContent = "Salary info unavailable";
+      return;
+    }
+    countEl.textContent = `${total || items.length} result${(total || items.length) === 1 ? "" : "s"}`;
+    
+    // Update salary insight from summary data
+    if (summaryData && summaryData.salary && summaryData.salary.median !== null && summaryData.salary.median !== undefined) {
+      const median = summaryData.salary.median;
+      const currency = summaryData.salary.currency || "USD";
+      const formatted = formatSalaryCompact(median, currency);
+      salaryEl.textContent = formatted ? `Median: ${formatted}` : "Median: Ã¢â‚¬â€";
+    } else {
+      salaryEl.textContent = "Median: Ã¢â‚¬â€";
+    }
+  };
+
+  const fetchSummary = async () => {
+    const params = new URLSearchParams();
+    if (titleInput?.value?.trim()) params.set("title", titleInput.value.trim());
+    if (countryInput?.value) params.set("country", countryInput.value);
+    
+    try {
+      const response = await fetch(`/api/jobs/summary?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      // Silent fail for summary - not critical
+      console.debug("Summary fetch failed:", error);
+    }
+    return null;
+  };
+
+  const fetchJobs = async () => {
+    const params = new URLSearchParams();
+    if (titleInput?.value?.trim()) params.set("title", titleInput.value.trim());
+    if (countryInput?.value) params.set("country", countryInput.value);
+    params.set("per_page", "12");
+    params.set("page", String(currentPage));
+    
+    countEl.textContent = "Loading...";
+    salaryEl.textContent = "Loading...";
+    cardsContainer.innerHTML = '<div class="text-center py-12 text-slate-500"><p class="text-base">Loading jobs...</p></div>';
+    paginationContainer.innerHTML = "";
+    
+    try {
+      // Fetch jobs and summary in parallel
+      const [jobsResponse, summaryData] = await Promise.all([
+        fetch(`${apiUrl}?${params.toString()}`),
+        fetchSummary()
+      ]);
+      
+      if (!jobsResponse.ok) {
+        throw new Error("Server error");
+      }
+      
+      const payload = await jobsResponse.json();
+      const jobs = payload.items || [];
+      currentMeta = payload.meta || null;
+      
+      // Update summary with both jobs data and summary data
+      updateSummary(jobs, currentMeta?.total, summaryData);
+
+      // Refine summary context and salary copy based on active filters
+      const activeTitle = titleInput?.value?.trim();
+      const activeCountry = countryInput?.value || "";
+      const contextEl = document.getElementById("jobBrowserContext");
+      if (contextEl) {
+        if (!activeTitle && !activeCountry) {
+          contextEl.textContent = "Showing all recent roles.";
+        } else if (activeTitle && activeCountry) {
+          contextEl.textContent = `Showing roles in ${activeCountry}.`;
+        } else if (activeTitle) {
+          contextEl.textContent = `Showing roles in all regions.`;
+        } else {
+          contextEl.textContent = `Showing roles in ${activeCountry}.`;
+        }
+      }
+
+      if (summaryData && summaryData.salary && summaryData.salary.median !== null && summaryData.salary.median !== undefined) {
+        const median = summaryData.salary.median;
+        const currency = summaryData.salary.currency || "USD";
+        const formatted = formatSalaryCompact(median, currency);
+        salaryEl.textContent = formatted ? `Median band: ${formatted}` : "Median band unavailable";
+      } else if (jobs.length > 0) {
+        salaryEl.textContent = "Not enough salary data yet";
+      } else {
+        salaryEl.textContent = "Search to see salary bands";
+      }
+      
+      if (jobs.length === 0) {
+        cardsContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-500">
+            <p class="text-lg font-medium">No roles match these filters yet.</p>
+            <p class="text-sm mt-2">
+              Try a broader title (e.g. Ã¢â‚¬Å“engineerÃ¢â‚¬) or remove the region filter to see more roles.
+            </p>
+            <button type="button"
+              class="mt-4 rounded-2xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              id="jobBrowserReset">
+              Clear filters
+            </button>
+          </div>
+        `;
+        const resetBtn = document.getElementById("jobBrowserReset");
+        if (resetBtn) {
+          resetBtn.addEventListener("click", () => {
+            titleInput.value = "";
+            countryInput.value = "";
+            currentPage = 1;
+            updateURL();
+            fetchJobs();
+          });
+        }
+      } else {
+        cardsContainer.innerHTML = jobs.map(renderJobCard).join("");
+        // Attach click handlers
+        document.querySelectorAll("[data-job-click]").forEach(link => {
+          link.addEventListener("click", (e) => {
+            const jobId = link.getAttribute("data-job-id");
+            const jobTitle = link.getAttribute("data-job-title");
+            const jobCompany = link.getAttribute("data-job-company");
+            sendBrowserAnalytics("click", 1, "job_browser_click");
+            if (typeof fetch === "function") {
+              fetch("/events/apply", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  event_type: "apply",
+                  job_id: jobId,
+                  job_title: jobTitle,
+                  job_company: jobCompany,
+                  source: "web",
+                }),
+              }).catch(() => {});
+            }
+          });
+        });
+      }
+      
+      renderPagination(currentMeta);
+      sendBrowserAnalytics("success", jobs.length);
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      countEl.textContent = "Unable to load results";
+      salaryEl.textContent = "Error loading data";
+      cardsContainer.innerHTML = '<div class="text-center py-12 text-red-500"><p class="text-lg font-medium">Couldn\'t load jobs</p><p class="text-sm mt-2">Please try again later</p><button type="button" onclick="window.location.reload()" class="mt-4 rounded-lg bg-brand text-white px-4 py-2 text-sm font-semibold hover:bg-brand/90 transition-colors">Retry</button></div>';
+      paginationContainer.innerHTML = "";
+      sendBrowserAnalytics("error", 0);
+    }
+  };
+
+  if (form) {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      currentPage = 1;
+      updateURL();
+      fetchJobs();
+    });
+  }
+
+  // Load jobs on page load if URL has params
+  if (urlTitle || urlCountry) {
+    fetchJobs();
+  }
+})();
+</script>
+{% endblock %}
