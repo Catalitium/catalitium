@@ -35,11 +35,8 @@ from .models.db import (
     format_job_date_string,
     clean_job_description_text,
     insert_subscriber,
-    insert_search_event,
-    insert_subscribe_event,
     insert_contact,
     insert_job_posting,
-    log_event,
     Job,
 )
 import random
@@ -302,40 +299,6 @@ def create_app() -> Flask:
             rows = []
             total = 0
 
-        if raw_title or raw_country:
-            try:
-                insert_search_event(
-                    raw_title=raw_title,
-                    raw_country=raw_country,
-                    norm_title=title_q,
-                    norm_country=q_country or "",
-                    sal_floor=sal_floor,
-                    sal_ceiling=sal_ceiling,
-                    result_count=total,
-                    page=max(1, page),
-                    per_page=per_page,
-                    source="web",
-                )
-            except Exception as exc:
-                logger.warning("Failed to log search event: %s", exc)
-        if (raw_title or raw_country) and total == 0:
-            try:
-                insert_search_event(
-                    raw_title=raw_title or title_q,
-                    raw_country=raw_country or country_q,
-                    norm_title=title_q,
-                    norm_country=q_country or "",
-                    sal_floor=sal_floor,
-                    sal_ceiling=sal_ceiling,
-                    result_count=0,
-                    page=max(1, page),
-                    per_page=per_page,
-                    source="web",
-                    event_type="zero_results",
-                    event_status="empty",
-                )
-            except Exception as exc:
-                logger.debug("zero_results log failed: %s", exc)
 
         items = []
         salary_cache = {}
@@ -721,10 +684,6 @@ def create_app() -> Flask:
         if not job_link and next_url:
             job_link = next_url
         status = insert_subscriber(email)
-        source = "api" if is_json else "form"
-        if job_link:
-            source = f"{source}_job"
-        insert_subscribe_event(email=email, status=status, source=source, job_link=job_link)
 
         if job_link:
             if status == "error":
@@ -806,15 +765,6 @@ def create_app() -> Flask:
             return redirect(url_for("index"))
 
         status = insert_contact(email=email, name_company=name_raw, message=message_raw)
-        try:
-            log_event(
-                event_type="contact",
-                status=status,
-                source="web",
-                meta={"surface": "contact_modal"},
-            )
-        except Exception as exc:
-            logger.debug("contact event log failed: %s", exc)
 
         if status != "ok":
             if is_json:
@@ -889,18 +839,6 @@ def create_app() -> Flask:
             salary_range=salary_range_raw,
         )
 
-        try:
-            log_event(
-                event_type="job_posting",
-                status=status,
-                source="web",
-                job_title=job_title_raw,
-                job_company=company_raw,
-                meta={"surface": "job_posting_modal"},
-            )
-        except Exception as exc:
-            logger.debug("job_posting event log failed: %s", exc)
-
         if status != "ok":
             if is_json:
                 return jsonify({"error": "job_posting_failed"}), 500
@@ -966,31 +904,6 @@ def create_app() -> Flask:
             if job_link:
                 meta_dict.setdefault("job_link", job_link)
 
-        try:
-            insert_search_event(
-                raw_title=raw_title,
-                raw_country=raw_country,
-                norm_title=norm_title,
-                norm_country=norm_country,
-                sal_floor=None,
-                sal_ceiling=None,
-                result_count=0,
-                page=0,
-                per_page=0,
-                source=source,
-                event_type=event_type,
-                event_status=status,
-                job_id=job_id,
-                job_title=job_title,
-                job_company=job_company,
-                job_location=job_location,
-                job_link=job_link,
-                job_summary=job_summary,
-                email_hash=email_hash,
-                meta=meta_dict or None,
-            )
-        except Exception as exc:
-            logger.warning("events_apply logging failed: %s", exc)
         return jsonify({"status": "ok"}), 200
 
     @app.get("/api/salary-insights")
