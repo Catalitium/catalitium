@@ -859,3 +859,429 @@ function sendAnalyticsPayload(payload){
     });
   });
 })();
+
+// ====================================================================
+// VIBE FEATURES — shared util
+// ====================================================================
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ====================================================================
+// FEATURE 1: INSTANT SEARCH (debounced, no page reload)
+// ====================================================================
+(function(){
+  var titleInput  = document.getElementById('q');
+  var countryInput= document.getElementById('loc');
+  var resultsEl   = document.getElementById('results');
+  var skeletons   = document.getElementById('results-skeletons');
+  if (!titleInput || !resultsEl) return;
+
+  var abortCtrl  = null;
+  var debounceT  = null;
+
+  function buildCard(job, index){
+    var id        = escHtml(String(job.id||''));
+    var title     = escHtml(job.title||job.job_title||'');
+    var company   = escHtml(job.company||job.job_company_name||'');
+    var location  = escHtml(job.location||'Remote / Anywhere');
+    var link      = String(job.link||'');
+    var date      = escHtml(job.job_date||'');
+    var salary    = escHtml(job.job_salary_range||'');
+    var rawDesc   = String(job.description||job.job_description||'');
+    var desc      = escHtml(rawDesc);
+    var descShort = escHtml(rawDesc.slice(0,200));
+    var safeLink  = escHtml(link);
+
+    var newBadge     = job.is_new ? '<span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>' : '';
+    var companyBadge = company ? '<span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1">'+company+'</span>' : '';
+    var locBadge     = '<span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-1 text-sky-800">'+location+'</span>';
+    var dateBadge    = date ? '<span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-1 text-indigo-800">'+date+'</span>' : '';
+    var salaryBadge  = salary ? '<span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-1 text-amber-800 font-semibold">'+salary+'</span>' : '';
+
+    var applyBtn;
+    if (index <= 2 && link){
+      applyBtn = '<a href="'+safeLink+'" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-md bg-gradient-to-b from-blue-600 to-blue-600/95 text-white px-4 py-2 text-sm font-semibold shadow-md hover:from-blue-700 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Easy Apply</a>';
+    } else {
+      applyBtn = '<button type="button" class="inline-flex items-center gap-2 rounded-md bg-brand text-white px-4 py-2 text-sm font-semibold shadow-md hover:bg-brand/90 transition-transform active:translate-y-px w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" data-apply data-title="'+title+'" data-link="'+safeLink+'" data-company="'+company+'" data-location="'+location+'" data-description="'+descShort+'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Apply</button>';
+    }
+
+    var bmBtn = '<button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" data-bookmark-btn data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-link="'+safeLink+'" data-job-date="'+date+'" aria-pressed="false" aria-label="Save '+title+'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 3h14a1 1 0 011 1v18l-7-4-7 4V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="bookmark-label">Save</span></button>';
+
+    return '<article class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 hover:border-slate-300 transition-colors hover:shadow-md hover:-translate-y-[1px]" data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-summary="'+descShort+'">'
+      +'<header class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3"><div class="min-w-0">'
+      +'<div class="flex items-center gap-2"><h2 class="text-lg sm:text-xl font-semibold leading-snug break-words">'+title+'</h2>'+newBadge+'</div>'
+      +'<div class="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-slate-700">'+companyBadge+locBadge+dateBadge+salaryBadge+'</div>'
+      +'</div></header>'
+      +'<details id="details-dyn-'+id+'" class="mt-2 group"><summary class="list-none inline-flex items-center gap-1 text-[13px] underline cursor-pointer text-slate-600 hover:text-blue-600 focus:outline-none px-2 py-1 rounded-lg select-none"><span>More details</span><svg class="w-3 h-3 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg></summary>'
+      +'<div class="mt-2"><p class="text-sm text-slate-700 whitespace-pre-line">'+desc+'</p></div></details>'
+      +'<div class="mt-4 flex flex-col sm:flex-row gap-2">'+applyBtn+bmBtn+'</div>'
+      +'</article>';
+  }
+
+  function showEmpty(){
+    resultsEl.innerHTML='<div class="rounded-xl border border-slate-200 p-6 text-slate-600 text-center"><p class="font-medium">No jobs matched these filters yet.</p><p class="text-xs mt-1">Try a broader keyword or remove the region filter.</p></div>';
+  }
+
+  function setSkeleton(on){
+    if(skeletons) skeletons.classList.toggle('hidden',!on);
+    resultsEl.classList.toggle('opacity-50',on);
+  }
+
+  function updateCount(n){
+    var el=document.getElementById('js-results-count');
+    if(el) el.textContent = n+' curated results';
+  }
+
+  function doFetch(title, country){
+    if(abortCtrl){ try{ abortCtrl.abort(); }catch(_){} }
+    if(typeof AbortController!=='undefined') abortCtrl=new AbortController();
+    var params=new URLSearchParams();
+    if(title) params.set('title',title);
+    if(country) params.set('country',country);
+    var qs=params.toString();
+    try{ history.replaceState(null,'',qs?'?'+qs:window.location.pathname); }catch(_){}
+    setSkeleton(true);
+    var opts={ credentials:'same-origin' };
+    if(abortCtrl) opts.signal=abortCtrl.signal;
+    fetch('/api/jobs'+(qs?'?'+qs:''),opts)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        setSkeleton(false);
+        var items=data.items||[];
+        updateCount((data.meta&&data.meta.total)||items.length);
+        if(!items.length){ showEmpty(); return; }
+        var html='';
+        items.forEach(function(job,i){ html+=buildCard(job,i+1); });
+        resultsEl.innerHTML=html;
+        try{ if(typeof window.__initBookmarks==='function') window.__initBookmarks(); }catch(_){}
+      })
+      .catch(function(e){ if(e&&e.name==='AbortError') return; setSkeleton(false); });
+  }
+
+  function onInput(){
+    clearTimeout(debounceT);
+    debounceT=setTimeout(function(){
+      doFetch((titleInput.value||'').trim(),(countryInput?countryInput.value:'').trim());
+    },380);
+  }
+
+  titleInput.addEventListener('input',onInput);
+  if(countryInput) countryInput.addEventListener('input',onInput);
+})();
+
+// ====================================================================
+// FEATURE 2: BOOKMARKS (localStorage)
+// ====================================================================
+(function(){
+  var KEY='catalitium_bookmarks';
+
+  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(_){ return []; } }
+  function save(arr){ try{ localStorage.setItem(KEY,JSON.stringify(arr)); }catch(_){} }
+  function has(id){ return get().some(function(b){ return String(b.id)===String(id); }); }
+
+  function add(job){
+    var arr=get();
+    if(!arr.some(function(b){ return String(b.id)===String(job.id); })){ arr.unshift(job); save(arr); }
+  }
+  function remove(id){ save(get().filter(function(b){ return String(b.id)!==String(id); })); }
+
+  function styleBtn(btn,saved){
+    btn.setAttribute('aria-pressed',saved?'true':'false');
+    var path=btn.querySelector('svg path');
+    var label=btn.querySelector('.bookmark-label');
+    if(saved){
+      btn.classList.add('text-amber-600','border-amber-300','bg-amber-50');
+      btn.classList.remove('text-slate-600');
+      if(path) path.setAttribute('fill','currentColor');
+      if(label) label.textContent='Saved';
+    } else {
+      btn.classList.remove('text-amber-600','border-amber-300','bg-amber-50');
+      btn.classList.add('text-slate-600');
+      if(path) path.removeAttribute('fill');
+      if(label) label.textContent='Save';
+    }
+  }
+
+  function initBtns(){
+    document.querySelectorAll('[data-bookmark-btn]').forEach(function(btn){
+      styleBtn(btn,has(btn.getAttribute('data-job-id')));
+    });
+  }
+
+  function syncUI(){
+    var count=get().length;
+    var badge=document.getElementById('saved-jobs-count');
+    if(badge) badge.textContent=count;
+    var sbtn=document.getElementById('saved-jobs-btn');
+    if(sbtn){ sbtn.style.display=count>0?'inline-flex':'none'; }
+    var panel=document.getElementById('saved-jobs-panel');
+    if(panel&&!panel.classList.contains('hidden')) renderPanel();
+  }
+
+  function renderPanel(){
+    var list=document.getElementById('saved-jobs-list');
+    if(!list) return;
+    var bookmarks=get();
+    if(!bookmarks.length){
+      list.innerHTML='<p class="text-sm text-amber-800 text-center py-2">No saved jobs yet. Click Save on any card.</p>';
+      return;
+    }
+    var html='<div class="space-y-2">';
+    bookmarks.forEach(function(job){
+      var jid=escHtml(String(job.id||''));
+      html+='<div class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm">'
+        +'<div class="min-w-0"><p class="font-semibold text-slate-800 truncate">'+escHtml(job.title||'')+'</p>'
+        +'<p class="text-slate-500 text-xs">'+escHtml(job.company||'')+(job.location?' · '+escHtml(job.location):'')+'</p></div>'
+        +'<div class="flex items-center gap-2 flex-shrink-0">'
+        +(job.link?'<a href="'+escHtml(job.link)+'" target="_blank" rel="noopener" class="text-brand text-xs font-medium hover:underline">Apply</a>':'')
+        +'<button type="button" class="text-slate-400 hover:text-rose-500 transition" data-remove-bookmark="'+jid+'" aria-label="Remove saved job"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>'
+        +'</div></div>';
+    });
+    html+='</div>';
+    list.innerHTML=html;
+  }
+
+  document.addEventListener('click',function(e){
+    // Bookmark toggle on card
+    var bmBtn=e.target&&e.target.closest('[data-bookmark-btn]');
+    if(bmBtn){
+      e.preventDefault();
+      var id=bmBtn.getAttribute('data-job-id');
+      if(has(id)){
+        remove(id); styleBtn(bmBtn,false);
+        trackEvent('bookmark_remove',{job_id:id});
+      } else {
+        add({ id:id, title:bmBtn.getAttribute('data-job-title')||'',
+              company:bmBtn.getAttribute('data-job-company')||'',
+              location:bmBtn.getAttribute('data-job-location')||'',
+              link:bmBtn.getAttribute('data-job-link')||'',
+              date:bmBtn.getAttribute('data-job-date')||'' });
+        styleBtn(bmBtn,true);
+        trackEvent('bookmark_add',{job_id:id});
+      }
+      syncUI(); return;
+    }
+    // Remove from saved panel
+    var rmBtn=e.target&&e.target.closest('[data-remove-bookmark]');
+    if(rmBtn){
+      var rmId=rmBtn.getAttribute('data-remove-bookmark');
+      remove(rmId);
+      var cardBtn=document.querySelector('[data-bookmark-btn][data-job-id="'+rmId+'"]');
+      if(cardBtn) styleBtn(cardBtn,false);
+      syncUI(); return;
+    }
+    // Toggle saved panel
+    var savedToggle=e.target&&e.target.closest('#saved-jobs-btn');
+    if(savedToggle){
+      e.preventDefault();
+      var panel=document.getElementById('saved-jobs-panel');
+      if(!panel) return;
+      var isOpen=!panel.classList.contains('hidden');
+      panel.classList.toggle('hidden',isOpen);
+      savedToggle.setAttribute('aria-expanded',String(!isOpen));
+      if(!isOpen) renderPanel();
+    }
+  });
+
+  window.__initBookmarks=function(){ initBtns(); syncUI(); };
+  initBtns();
+  syncUI();
+})();
+
+// ====================================================================
+// FEATURE 3: PERSONALIZED SUBSCRIBE (search-aware dialog)
+// ====================================================================
+(function(){
+  var subDialog =document.getElementById('subscribeDialog');
+  if(!subDialog) return;
+  var subTitle  =document.getElementById('subscribe-title');
+  var subSub    =subDialog.querySelector('p.mt-2');
+  var hidTitle  =document.getElementById('subscribe-search-title');
+  var hidCountry=document.getElementById('subscribe-search-country');
+
+  function getCtx(){
+    try{
+      var p=new URLSearchParams(window.location.search);
+      return { title:p.get('title')||'', country:p.get('country')||'' };
+    }catch(_){ return {title:'',country:''}; }
+  }
+
+  function personalize(){
+    var ctx=getCtx();
+    var t=ctx.title, c=ctx.country;
+    if(hidTitle)   hidTitle.value=t;
+    if(hidCountry) hidCountry.value=c;
+    if(!subTitle)  return;
+    if(t&&c){
+      subTitle.textContent=(t.charAt(0).toUpperCase()+t.slice(1))+' jobs in '+c;
+      if(subSub) subSub.textContent='Get fresh '+t+' roles in '+c+' — one email a week. Unsubscribe anytime.';
+    } else if(t){
+      subTitle.textContent=(t.charAt(0).toUpperCase()+t.slice(1))+' job alerts';
+      if(subSub) subSub.textContent='Get the best '+t+' roles delivered weekly. Unsubscribe anytime.';
+    } else if(c){
+      subTitle.textContent='Top jobs in '+c;
+      if(subSub) subSub.textContent='Weekly digest of high-signal roles in '+c+'. Unsubscribe anytime.';
+    } else {
+      subTitle.textContent='Weekly job reminders';
+      if(subSub) subSub.textContent='One tidy email with new high-signal roles. Unsubscribe anytime.';
+    }
+  }
+
+  document.addEventListener('click',function(e){
+    if(e.target&&e.target.closest('[data-open-subscribe]')) setTimeout(personalize,0);
+  });
+  var toggle=document.getElementById('weekly-toggle');
+  if(toggle) toggle.addEventListener('change',function(){ if(toggle.checked) setTimeout(personalize,0); });
+})();
+
+// ====================================================================
+// FEATURE 4: SALARY EXPLORER WIDGET
+// ====================================================================
+(function(){
+  var titleEl  =document.getElementById('salary-explorer-title');
+  var countryEl=document.getElementById('salary-explorer-country');
+  var btn      =document.getElementById('salary-explorer-btn');
+  var resultEl =document.getElementById('salary-explorer-result');
+  if(!titleEl||!resultEl) return;
+
+  function fmt(val,cur){
+    if(!val) return 'N/A';
+    var sym=cur==='EUR'?'€':cur==='GBP'?'£':cur==='CHF'?'CHF ':'$';
+    return val>=1000 ? sym+Math.round(val/1000)+'k' : sym+Math.round(val);
+  }
+
+  function explore(){
+    var t=(titleEl.value||'').trim();
+    var c=(countryEl?countryEl.value:'').trim();
+    if(!t&&!c){
+      resultEl.innerHTML='<p class="text-sm text-slate-500">Enter a role or country to see salary data.</p>';
+      resultEl.classList.remove('hidden'); return;
+    }
+    resultEl.innerHTML='<p class="text-sm text-slate-400 animate-pulse">Loading salary data…</p>';
+    resultEl.classList.remove('hidden');
+    var params=new URLSearchParams();
+    if(t) params.set('title',t);
+    if(c) params.set('country',c);
+    fetch('/api/jobs/summary?'+params.toString(),{credentials:'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var count=data.count||0;
+        var sal=data.salary||{};
+        var med=sal.median, cur=sal.currency||'USD';
+        var remote=Math.round((data.remote_share||0)*100);
+        var lo=med?Math.round(med*0.8):null, hi=med?Math.round(med*1.2):null;
+
+        var bar='';
+        if(med){
+          bar='<div class="mt-3">'
+            +'<div class="flex justify-between text-[11px] text-slate-500 mb-1">'
+            +'<span>'+fmt(lo,cur)+'</span>'
+            +'<span class="font-semibold text-slate-800">~'+fmt(med,cur)+' median</span>'
+            +'<span>'+fmt(hi,cur)+'</span></div>'
+            +'<div class="relative h-2 rounded-full bg-slate-200">'
+            +'<div class="absolute inset-0 rounded-full bg-gradient-to-r from-brand/40 to-brand"></div>'
+            +'<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-brand shadow"></div>'
+            +'</div></div>';
+        }
+
+        resultEl.innerHTML='<div class="grid grid-cols-3 gap-3 text-center">'
+          +'<div><p class="text-2xl font-bold text-slate-900">'+count+'</p><p class="text-xs text-slate-500">jobs found</p></div>'
+          +'<div><p class="text-xl font-bold text-brand">'+(med?fmt(med,cur)+'/yr':'No data')+'</p><p class="text-xs text-slate-500">median salary</p></div>'
+          +'<div><p class="text-2xl font-bold text-emerald-600">'+remote+'%</p><p class="text-xs text-slate-500">remote</p></div>'
+          +'</div>'+bar;
+        trackEvent('salary_explore',{title:t,country:c,median:med||0});
+      })
+      .catch(function(){
+        resultEl.innerHTML='<p class="text-sm text-rose-600">Could not load salary data. Try again.</p>';
+      });
+  }
+
+  if(btn) btn.addEventListener('click',explore);
+
+  // Auto-explore if we landed with search params
+  try{
+    var p=new URLSearchParams(window.location.search);
+    if(p.get('title')||p.get('country')){
+      var det=document.getElementById('salary-explorer-details');
+      if(det){ det.open=true; explore(); }
+    }
+  }catch(_){}
+})();
+
+// ====================================================================
+// FEATURE 5: TITLE AUTOCOMPLETE (custom dropdown)
+// ====================================================================
+(function(){
+  var titleInput=document.getElementById('q');
+  if(!titleInput) return;
+  var wrap=document.getElementById('q-wrap');
+  if(!wrap) return;
+
+  var drop=document.createElement('div');
+  drop.id='autocomplete-drop';
+  drop.setAttribute('role','listbox');
+  drop.className='absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden hidden';
+  wrap.appendChild(drop);
+
+  var debT=null, selIdx=-1, suggestions=[];
+
+  function hide(){ drop.classList.add('hidden'); selIdx=-1; }
+
+  function render(items){
+    if(!items||!items.length){ hide(); return; }
+    suggestions=items; selIdx=-1;
+    drop.innerHTML='';
+    items.forEach(function(s,i){
+      var d=document.createElement('div');
+      d.className='px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 text-slate-800';
+      d.setAttribute('role','option');
+      d.setAttribute('data-idx',String(i));
+      d.textContent=s;
+      d.addEventListener('mousedown',function(e){
+        e.preventDefault();
+        titleInput.value=s;
+        hide();
+        titleInput.dispatchEvent(new Event('input',{bubbles:true}));
+      });
+      drop.appendChild(d);
+    });
+    drop.classList.remove('hidden');
+  }
+
+  function fetchAC(q){
+    if(!q||q.length<2){ hide(); return; }
+    fetch('/api/autocomplete?q='+encodeURIComponent(q),{credentials:'same-origin'})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ render(d.suggestions||[]); })
+      .catch(function(){});
+  }
+
+  titleInput.addEventListener('input',function(){
+    clearTimeout(debT);
+    debT=setTimeout(function(){ fetchAC((titleInput.value||'').trim()); },200);
+  });
+
+  titleInput.addEventListener('keydown',function(e){
+    var opts=drop.querySelectorAll('[role="option"]');
+    if(!opts.length||drop.classList.contains('hidden')) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); selIdx=Math.min(selIdx+1,opts.length-1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); selIdx=Math.max(selIdx-1,-1); }
+    else if(e.key==='Enter'&&selIdx>=0){
+      e.preventDefault();
+      titleInput.value=suggestions[selIdx];
+      hide();
+      titleInput.dispatchEvent(new Event('input',{bubbles:true}));
+      return;
+    } else if(e.key==='Escape'){ hide(); return; }
+    else { return; }
+    opts.forEach(function(el,i){
+      el.classList.toggle('bg-slate-100',i===selIdx);
+    });
+  });
+
+  titleInput.addEventListener('blur',function(){ setTimeout(hide,150); });
+  document.addEventListener('click',function(e){
+    if(!drop.contains(e.target)&&e.target!==titleInput) hide();
+  });
+})();

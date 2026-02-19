@@ -210,6 +210,8 @@
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+        <input type="hidden" name="search_title" id="subscribe-search-title" value="">
+        <input type="hidden" name="search_country" id="subscribe-search-country" value="">
         <label for="subscribe-email" class="sr-only">Email</label>
         <input id="subscribe-email"
                name="email"

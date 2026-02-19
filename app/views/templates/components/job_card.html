@@ -119,5 +119,23 @@
         <span>Apply</span>
       </button>
     {% endif %}
+    <button
+      type="button"
+      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+      data-bookmark-btn
+      data-job-id="{{ j.id }}"
+      data-job-title="{{ (j.title or '')|e }}"
+      data-job-company="{{ (j.company or '')|e }}"
+      data-job-location="{{ (j.location or 'Remote / Anywhere')|e }}"
+      data-job-link="{{ (j.link or '')|e }}"
+      data-job-date="{{ j.date_posted or '' }}"
+      aria-label="Save {{ (j.title or '')|e }}"
+      aria-pressed="false"
+    >
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 3h14a1 1 0 011 1v18l-7-4-7 4V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <span class="bookmark-label">Save</span>
+    </button>
   </div>
 </article>
