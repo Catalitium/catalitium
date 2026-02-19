@@ -932,6 +932,28 @@ def create_app() -> Flask:
             }
         )
 
+    @app.get("/api/autocomplete")
+    def api_autocomplete():
+        """Return distinct job title suggestions for autocomplete."""
+        q = (request.args.get("q") or "").strip().lower()
+        if len(q) < 2:
+            return jsonify({"suggestions": []})
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT DISTINCT job_title FROM jobs "
+                    "WHERE LOWER(job_title) LIKE %s "
+                    "ORDER BY job_title LIMIT 8",
+                    (f"%{q}%",),
+                )
+                rows = cur.fetchall()
+                suggestions = [r[0] for r in rows if r[0]]
+        except Exception:
+            logger.exception("Autocomplete query failed")
+            suggestions = []
+        return jsonify({"suggestions": suggestions})
+
     @app.get("/health")
     def health():
         """Expose a readiness probe indicating the database is reachable."""
