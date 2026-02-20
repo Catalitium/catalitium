@@ -1130,16 +1130,12 @@ def create_app() -> Flask:
         try:
             db = get_db()
             with db.cursor() as cur:
-                cur.execute(r"""
+                cur.execute("""
                     WITH parsed AS (
                         SELECT
                             job_title,
                             location,
-                            CASE
-                                WHEN date ~ E'^\\d{4}-\\d{2}-\\d{2}' THEN date::date
-                                WHEN date ~ E'^\\d{4}\\.\\d{2}\\.\\d{2}' THEN TO_DATE(date, 'YYYY.MM.DD')
-                                ELSE NULL
-                            END AS parsed_date
+                            date::date AS parsed_date
                         FROM jobs
                         WHERE date IS NOT NULL
                     )
