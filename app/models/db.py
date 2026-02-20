@@ -766,6 +766,29 @@ class Job:
                     pass
 
     @staticmethod
+    def get_by_id(job_id: str) -> Optional[Dict]:
+        """Return a single job row by primary key id."""
+        try:
+            pk = int(str(job_id).strip())
+        except (TypeError, ValueError):
+            return None
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(
+                    """SELECT id, job_title, company_name, job_description,
+                              location, city, region, country, link, date,
+                              COALESCE(salary, '') AS job_salary_range
+                       FROM jobs WHERE id = %s LIMIT 1""",
+                    [pk],
+                )
+                cols = [d[0] for d in cur.description]
+                row = cur.fetchone()
+                return dict(zip(cols, row)) if row else None
+        except Exception:
+            return None
+
+    @staticmethod
     def get_link(job_id: Optional[str]) -> Optional[str]:
         """Return the outbound link for a job id if available."""
         if job_id is None:
