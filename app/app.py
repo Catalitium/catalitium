@@ -1067,6 +1067,8 @@ def create_app() -> Flask:
                 urls.append({"loc": loc, "priority": priority, "lastmod": lastmod})
 
         _add(url_for("index", _external=True), priority="1.0")
+        _add(url_for("about", _external=True), priority="0.8")
+        _add(url_for("resources", _external=True), priority="0.9")
         _add(url_for("tracker", _external=True), priority="0.6")
         _add(url_for("salary_report", _external=True), priority="0.7")
         _add(url_for("legal", _external=True), priority="0.2")
@@ -1314,6 +1316,22 @@ def create_app() -> Flask:
         resp.headers["Service-Worker-Allowed"] = "/"
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return resp
+
+    # ------------------------------------------------------------------
+    # About page
+    # ------------------------------------------------------------------
+    @app.get("/about")
+    def about():
+        """Render the About Catalitium page."""
+        return render_template("about.html")
+
+    # ------------------------------------------------------------------
+    # Resources hub
+    # ------------------------------------------------------------------
+    @app.get("/resources")
+    def resources():
+        """Render the Resources & research hub."""
+        return render_template("resources.html")
 
     # ------------------------------------------------------------------
     # Application Tracker page
