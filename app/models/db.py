@@ -319,14 +319,61 @@ def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> Non
 
 
 def init_db():
-    """Lightweight connectivity check; Supabase owns schema/migrations."""
+    """Connectivity check + ensure job_summaries cache table exists."""
     try:
         db = get_db()
         with db.cursor() as cur:
             cur.execute("SELECT 1")
             cur.fetchone()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS job_summaries (
+                    job_id     INTEGER PRIMARY KEY,
+                    bullets    JSONB    NOT NULL DEFAULT '[]'::jsonb,
+                    skills     JSONB    NOT NULL DEFAULT '[]'::jsonb,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+            db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
+
+
+def get_job_summary(job_id: int) -> Optional[Dict]:
+    """Return cached AI summary for job_id, or None if not yet generated."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT bullets, skills FROM job_summaries WHERE job_id = %s",
+                [job_id],
+            )
+            row = cur.fetchone()
+            if row:
+                return {"bullets": list(row[0] or []), "skills": list(row[1] or [])}
+    except Exception as exc:
+        logger.debug("get_job_summary error: %s", exc)
+    return None
+
+
+def save_job_summary(job_id: int, bullets: list, skills: list) -> None:
+    """Upsert AI summary for job_id into the cache table."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO job_summaries (job_id, bullets, skills, created_at)
+                VALUES (%s, %s::jsonb, %s::jsonb, NOW())
+                ON CONFLICT (job_id) DO UPDATE
+                  SET bullets    = EXCLUDED.bullets,
+                      skills     = EXCLUDED.skills,
+                      created_at = NOW()
+                """,
+                [job_id, json.dumps(bullets), json.dumps(skills)],
+            )
+            db.commit()
+    except Exception as exc:
+        logger.warning("save_job_summary error: %s", exc)
 
 # ------------------------- Analytics Helpers ---------------------------------
 
