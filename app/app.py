@@ -1,10 +1,10 @@
 """Flask application entry point and route definitions for Catalitium."""
 
 import os
-import logging
 import re
 from datetime import datetime, timezone, timedelta
 from typing import Tuple, Optional, Dict
+from urllib.parse import urlparse
 
 from flask import (
     Flask,
@@ -43,8 +43,158 @@ from .models.db import (
     Job,
 )
 import json as _json
-import random
 import urllib.request as _urllib_req
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+try:
+    from flask_limiter import Limiter
+    from flask_limiter.util import get_remote_address
+except Exception:  # pragma: no cover
+    Limiter = None  # type: ignore[assignment]
+    get_remote_address = None  # type: ignore[assignment]
+
+
+_CATEGORY_CONTEXTS = {
+    "ai": {
+        "headline": "AI & Machine Learning Jobs",
+        "intro": "AI and machine learning roles are the fastest-growing segment in tech, commanding 15–25% higher salaries than the general developer average. Roles span LLM engineering, MLOps, computer vision, NLP, data science, and applied AI research.",
+        "salary_note": "Typical range: $130k–$200k USD &middot; &euro;100k–&euro;160k EUR",
+    },
+    "developer": {
+        "headline": "Software Developer & Engineer Jobs",
+        "intro": "Software development remains the largest category in tech hiring globally. Whether you specialise in full-stack, backend, frontend, mobile or DevOps, demand for strong engineers continues to outpace supply across all major markets.",
+        "salary_note": "Typical range: $100k–$165k USD &middot; &euro;65k–&euro;110k EUR",
+    },
+    "remote": {
+        "headline": "Remote-First Tech Jobs",
+        "intro": "Remote tech roles have grown over 30% year-on-year. While base salaries may be 8–12% below equivalent on-site roles, the effective purchasing power is often significantly higher for candidates based in lower-cost regions.",
+        "salary_note": "Typical range: $90k–$155k USD &middot; &euro;55k–&euro;95k EUR",
+    },
+    "senior": {
+        "headline": "Senior, Lead & Principal Engineer Roles",
+        "intro": "Senior roles typically require 5+ years of experience and command a significant compensation premium. Leadership scope, system design ownership, and cross-functional influence are the differentiators at this level.",
+        "salary_note": "Typical range: $140k–$210k USD &middot; &euro;90k–&euro;135k EUR",
+    },
+    "eu": {
+        "headline": "Tech Jobs in Europe",
+        "intro": "The EU tech market is concentrated around hubs in Germany (Berlin, Munich), France (Paris), Netherlands (Amsterdam), Spain (Barcelona, Madrid), and Switzerland (Zurich). Salaries are quoted in local currency and normalised to EUR.",
+        "salary_note": "Typical range: &euro;60k–&euro;120k EUR &middot; CHF 90k–CHF 145k",
+    },
+    "us": {
+        "headline": "Tech Jobs in the United States",
+        "intro": "The US remains the highest-paying market for tech globally. Major hubs include the San Francisco Bay Area, New York, Seattle, Austin, and Boston — alongside fully remote-first companies headquartered across the country.",
+        "salary_note": "Typical range: $110k–$185k USD",
+    },
+    "uk": {
+        "headline": "Tech Jobs in the United Kingdom",
+        "intro": "London leads UK tech hiring, followed by Manchester, Edinburgh, and Bristol. The UK market features strong fintech, media, and deep-tech sectors, with competitive compensation relative to European peers.",
+        "salary_note": "Typical range: &pound;62k–&pound;115k GBP",
+    },
+    "ch": {
+        "headline": "Tech Jobs in Switzerland",
+        "intro": "Switzerland offers some of the highest tech salaries in Europe, concentrated in Zurich, Geneva, and Basel. The market favours senior engineering, fintech, pharmatech, and multilingual professionals.",
+        "salary_note": "Typical range: CHF 100k–CHF 165k",
+    },
+    "data": {
+        "headline": "Data Science & Analytics Jobs",
+        "intro": "Data science roles bridge statistics, programming, and business intelligence. Demand is strong across all sectors — from fintech to e-commerce — with Python, SQL, and cloud data platforms (Snowflake, BigQuery, dbt) as the core stack.",
+        "salary_note": "Typical range: $110k–$170k USD &middot; &euro;75k–&euro;120k EUR",
+    },
+}
+
+
+def _get_category_context(title_q: str, country_q: str) -> Optional[Dict]:
+    """Return editorial context dict for the active search, or None if no match."""
+    t = (title_q or "").lower()
+    c = (country_q or "").lower()
+    for key in (t, c):
+        if key in _CATEGORY_CONTEXTS:
+            return _CATEGORY_CONTEXTS[key]
+    # Partial matches for compound searches (e.g. "senior developer")
+    for key, ctx in _CATEGORY_CONTEXTS.items():
+        if key in t:
+            return ctx
+    return None
+
+
+def _query_tokens(value: str) -> set[str]:
+    """Return normalized search tokens used for lightweight match scoring."""
+    return {tok for tok in re.findall(r"[a-z0-9]+", (value or "").lower()) if len(tok) > 1}
+
+
+def _salary_band_label(sal_floor: Optional[int], sal_ceiling: Optional[int]) -> str:
+    """Return a compact salary filter label for subscription context."""
+    if sal_floor and sal_ceiling:
+        return f"{int(sal_floor/1000)}k-{int(sal_ceiling/1000)}k"
+    if sal_floor:
+        return f"{int(sal_floor/1000)}k+"
+    if sal_ceiling:
+        return f"Up to {int(sal_ceiling/1000)}k"
+    return ""
+
+
+def _compute_match_score(
+    *,
+    job_title: str,
+    job_location: str,
+    query_title: str,
+    query_country: str,
+    has_salary: bool,
+    has_apply_link: bool,
+) -> tuple[int, list[str]]:
+    """Return a simple, explainable match score and up to 3 trust/match reasons."""
+    score = 35
+    reasons: list[str] = []
+
+    title_tokens = _query_tokens(query_title)
+    job_title_tokens = _query_tokens(job_title)
+    if title_tokens:
+        overlap = len(title_tokens & job_title_tokens)
+        coverage = overlap / max(1, len(title_tokens))
+        score += int(round(coverage * 35))
+        if overlap:
+            reasons.append("Title matches your search")
+
+    q_country = (query_country or "").strip().lower()
+    loc = (job_location or "").lower()
+    if q_country:
+        if q_country == "high_pay":
+            score += 10
+            reasons.append("High-pay market focus")
+        elif q_country in loc:
+            score += 20
+            reasons.append("Location matches your filter")
+        else:
+            score -= 6
+
+    if has_salary:
+        score += 12
+        reasons.append("Salary estimate available")
+
+    if "remote" in loc:
+        score += 6
+        reasons.append("Remote-friendly listing")
+
+    if has_apply_link:
+        score += 5
+        reasons.append("Direct apply link")
+
+    score = max(25, min(99, score))
+    # Keep 3 concise reasons prioritizing relevance/trust.
+    return score, reasons[:3]
+
+
+def _is_safe_redirect_target(target: str) -> bool:
+    """Allow only relative URLs or absolute http(s) URLs."""
+    if not target:
+        return False
+    parsed = urlparse(target.strip())
+    if not parsed.scheme and not parsed.netloc:
+        # Relative path like /jobs/123
+        return target.startswith("/")
+    if parsed.scheme.lower() in {"http", "https"} and parsed.netloc:
+        return True
+    return False
 
 
 def _call_anthropic(description: str, api_key: str):
@@ -132,7 +282,7 @@ TITLE_BUCKET1_KEYWORDS = (
     "expert",
 )
 
-ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "development"
+ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
 
 def _get_demo_jobs():
     """Return demo jobs for empty search results."""
@@ -200,6 +350,8 @@ def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
     app = Flask(__name__, template_folder="views/templates")
     env = ENVIRONMENT or "production"
+    if env == "production":
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)  # type: ignore[assignment]
 
     if not SUPABASE_URL:
         logger.error("SUPABASE_URL (or DATABASE_URL) must be configured before starting the app.")
@@ -210,11 +362,24 @@ def create_app() -> Flask:
         TEMPLATES_AUTO_RELOAD=(env != "production"),
         PER_PAGE_MAX=PER_PAGE_MAX,
         SUPABASE_URL=SUPABASE_URL,
+        MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", "1048576")),  # 1MB default
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
+    trusted_hosts_env = os.getenv("TRUSTED_HOSTS", "").strip()
+    if trusted_hosts_env:
+        app.config["TRUSTED_HOSTS"] = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()]
     app.teardown_appcontext(close_db)
+    limiter = None
+    if Limiter is not None and get_remote_address is not None:
+        limiter = Limiter(
+            key_func=get_remote_address,
+            app=app,
+            default_limits=[os.getenv("RATE_LIMIT_DEFAULT", "240 per minute")],
+            storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
+            strategy="fixed-window",
+        )
 
     def _resolve_pagination(default_per_page: int = 12) -> Tuple[int, int]:
         """Return (page, per_page_limit) constrained to safe bounds."""
@@ -229,6 +394,14 @@ def create_app() -> Flask:
         if per_page < 5:
             return per_page
         return max(per_page, 10)
+
+    def _limit(rule: str):
+        """Apply rate limit only when flask-limiter is available."""
+        def _decorator(fn):
+            if limiter is None:
+                return fn
+            return limiter.limit(rule)(fn)
+        return _decorator
 
     @app.after_request
     def apply_analytics_cookie(response):
@@ -255,6 +428,20 @@ def create_app() -> Flask:
                 response.headers.setdefault("Cache-Control", "public, max-age=60")
         except Exception:
             pass
+        # Baseline security headers for all responses.
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "geolocation=(), microphone=(), camera=()",
+        )
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        if env == "production":
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains",
+            )
         return response
 
     if not SECRET_KEY or SECRET_KEY == "dev-insecure-change-me":
@@ -275,6 +462,17 @@ def create_app() -> Flask:
     def handle_server_error(error):
         logger.exception("Unhandled error", exc_info=error)
         return jsonify({"error": "internal error"}), 500
+
+    @app.errorhandler(413)
+    def handle_payload_too_large(_error):
+        return jsonify({"error": "payload_too_large"}), 413
+
+    @app.errorhandler(429)
+    def handle_rate_limited(_error):
+        if (request.path or "").startswith("/api/") or request.is_json:
+            return jsonify({"error": "rate_limited"}), 429
+        flash("Too many requests. Please wait and try again.", "error")
+        return redirect(url_for("index"))
 
     def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
         """Safely parse and normalize search parameters."""
@@ -450,6 +648,17 @@ def create_app() -> Flask:
                 "salary_uplift_factor": uplift_factor if uplift_factor and uplift_factor > 1.0 else None,
             }
 
+            match_score, match_reasons = _compute_match_score(
+                job_title=title,
+                job_location=loc,
+                query_title=title_q,
+                query_country=search_country or "",
+                has_salary=bool(estimated_display or median),
+                has_apply_link=bool(link),
+            )
+            item_payload["match_score"] = match_score
+            item_payload["match_reasons"] = match_reasons
+
             # If a salary floor is present (e.g., >100k filter), drop jobs whose estimated top end is below the floor.
             if sal_floor and sal_floor >= 100000:
                 est_high = range_compact[1] if range_compact else None
@@ -487,6 +696,9 @@ def create_app() -> Flask:
         }
 
         display_country = display_country or ""
+        salary_band = _salary_band_label(sal_floor, sal_ceiling)
+
+        cat_ctx = _get_category_context(title_q, display_country) if (title_q or display_country) else None
 
         return render_template(
             "index.html",
@@ -494,7 +706,9 @@ def create_app() -> Flask:
             count=total,
             title_q=title_q,
             country_q=display_country,
+            salary_band=salary_band,
             pagination=pagination,
+            cat_ctx=cat_ctx,
         )
 
     @app.get("/recruiter-salary-board")
@@ -737,12 +951,18 @@ def create_app() -> Flask:
         )
 
     @app.post("/subscribe")
+    @_limit("20 per minute")
     def subscribe():
         """Handle newsletter subscriptions from form or JSON payloads."""
         is_json = request.is_json
         payload = request.get_json(silent=True) or {} if is_json else request.form
         email = (payload.get("email") or "").strip()
         job_id_raw = (payload.get("job_id") or "").strip()
+        search_title = (payload.get("search_title") or "").strip()
+        search_country = (payload.get("search_country") or "").strip()
+        search_salary_band = (payload.get("search_salary_band") or "").strip()
+        digest_label_parts = [p for p in [search_title, search_country, search_salary_band] if p]
+        digest_label = " / ".join(digest_label_parts[:3])
 
         try:
             email = validate_email(email, check_deliverability=False).normalized
@@ -754,7 +974,7 @@ def create_app() -> Flask:
 
         job_link = Job.get_link(job_id_raw)
         next_url = (payload.get("next") or "").strip()
-        if not job_link and next_url:
+        if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
         status = insert_subscriber(email)
 
@@ -776,20 +996,36 @@ def create_app() -> Flask:
             return redirect(job_link)
 
         if status == "ok":
-            message = "You're subscribed! You're all set."
+            message = "You're subscribed to the weekly high-match digest."
+            if digest_label:
+                message = f"{message} Focus: {digest_label}."
             if is_json:
-                body = {"status": "ok"}
+                body = {
+                    "status": "ok",
+                    "digest": {
+                        "title": search_title,
+                        "country": search_country,
+                        "salary_band": search_salary_band,
+                    },
+                }
                 if job_link:
                     body["redirect"] = job_link
                 return jsonify(body), 200
             flash(message, "success")
         elif status == "duplicate":
             if is_json:
-                body = {"error": "duplicate"}
+                body = {
+                    "error": "duplicate",
+                    "digest": {
+                        "title": search_title,
+                        "country": search_country,
+                        "salary_band": search_salary_band,
+                    },
+                }
                 if job_link:
                     body["redirect"] = job_link
                 return jsonify(body), 200
-            flash("You're already on the list.", "success")
+            flash("You're already subscribed to the weekly digest.", "success")
         else:
             if is_json:
                 return jsonify({"error": "subscribe_failed"}), 500
@@ -804,11 +1040,13 @@ def create_app() -> Flask:
         return redirect(url_for("index"))
 
     @app.post("/subscribe.json")
+    @_limit("20 per minute")
     def subscribe_json():
         """Alias JSON endpoint for compatibility."""
         return subscribe()
 
     @app.post("/contact")
+    @_limit("12 per minute")
     def contact():
         """Handle contact form submissions (JSON or form)."""
         is_json = request.is_json
@@ -851,11 +1089,13 @@ def create_app() -> Flask:
         return redirect(url_for("index"))
 
     @app.post("/contact.json")
+    @_limit("12 per minute")
     def contact_json():
         """Alias JSON endpoint for compatibility."""
         return contact()
 
     @app.post("/job-posting")
+    @_limit("10 per minute")
     def job_posting():
         """Handle anonymous job posting submissions (JSON or form)."""
         is_json = request.is_json
@@ -924,11 +1164,13 @@ def create_app() -> Flask:
         return redirect(url_for("index"))
 
     @app.post("/job-posting.json")
+    @_limit("10 per minute")
     def job_posting_json():
         """Alias JSON endpoint for compatibility."""
         return job_posting()
 
     @app.post("/events/apply")
+    @_limit("120 per minute")
     def events_apply():
         """Record analytics events (apply/filter/etc.)."""
         payload = request.get_json(silent=True) or {}
@@ -1006,6 +1248,7 @@ def create_app() -> Flask:
         )
 
     @app.get("/api/autocomplete")
+    @_limit("90 per minute")
     def api_autocomplete():
         """Return distinct job title suggestions for autocomplete."""
         q = (request.args.get("q") or "").strip().lower()
@@ -1087,6 +1330,22 @@ def create_app() -> Flask:
         for target in filter_targets:
             loc = url_for("index", title=target.get("title"), country=target.get("country"), _external=True)
             _add(loc, priority="0.7")
+
+        # Add individual job pages (last 60 days, up to 500)
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(
+                    """SELECT id, date FROM jobs
+                       WHERE date >= NOW() - INTERVAL '60 days'
+                       ORDER BY date DESC LIMIT 500"""
+                )
+                for jid, jdate in cur.fetchall():
+                    jloc = url_for("job_detail", job_id=jid, _external=True)
+                    jmod = jdate.strftime("%Y-%m-%d") if hasattr(jdate, "strftime") else today
+                    _add(jloc, priority="0.5", lastmod=jmod)
+        except Exception as exc:
+            logger.debug("sitemap job entries failed: %s", exc)
 
         xml_lines = [
             '<?xml version="1.0" encoding="UTF-8"?>',
@@ -1192,60 +1451,29 @@ def create_app() -> Flask:
             "salary_min": salary_min,
             "salary_max": salary_max,
         }
-        return render_template("job_detail.html", job=job, related=related)
-
-    # ------------------------------------------------------------------
-    # Market trends API
-    # ------------------------------------------------------------------
-    @app.get("/api/trends")
-    def api_trends():
-        """Return weekly job posting counts for the last 8 weeks by category."""
+        detail_salary_band = ""
+        if salary_min and salary_max:
+            detail_salary_band = f"{int(salary_min/1000)}k-{int(salary_max/1000)}k"
+        elif salary_range:
+            detail_salary_band = str(salary_range).strip()[:48]
+        # Fetch cached AI summary for server-side rendering (crawlable by Google)
         try:
-            db = get_db()
-            with db.cursor() as cur:
-                cur.execute("""
-                    WITH parsed AS (
-                        SELECT
-                            job_title,
-                            location,
-                            date::date AS parsed_date
-                        FROM jobs
-                        WHERE date IS NOT NULL
-                    )
-                    SELECT
-                        DATE_TRUNC('week', parsed_date)::date AS week_start,
-                        COUNT(*) AS total,
-                        COUNT(CASE WHEN LOWER(job_title) LIKE '%ai%'
-                                     OR LOWER(job_title) LIKE '%machine learning%'
-                                     OR LOWER(job_title) LIKE '%ml engineer%' THEN 1 END) AS ai,
-                        COUNT(CASE WHEN LOWER(job_title) LIKE '%developer%'
-                                     OR LOWER(job_title) LIKE '%engineer%' THEN 1 END) AS dev,
-                        COUNT(CASE WHEN LOWER(job_title) LIKE '%senior%' THEN 1 END) AS senior,
-                        COUNT(CASE WHEN LOWER(location) LIKE '%remote%' THEN 1 END) AS remote
-                    FROM parsed
-                    WHERE parsed_date IS NOT NULL
-                      AND parsed_date >= CURRENT_DATE - INTERVAL '8 weeks'
-                    GROUP BY week_start
-                    ORDER BY week_start ASC
-                """)
-                cols = [d[0] for d in cur.description]
-                weeks = []
-                for row in cur.fetchall():
-                    d = dict(zip(cols, row))
-                    ws = d.get("week_start")
-                    label = ws.strftime("%b %d") if hasattr(ws, "strftime") else str(ws)[:10]
-                    weeks.append({
-                        "week": label,
-                        "total": int(d.get("total") or 0),
-                        "ai": int(d.get("ai") or 0),
-                        "dev": int(d.get("dev") or 0),
-                        "senior": int(d.get("senior") or 0),
-                        "remote": int(d.get("remote") or 0),
-                    })
+            pk = int(str(job_id).strip())
+            ai_summary = get_job_summary(pk)
         except Exception:
-            logger.exception("Trends query failed")
-            weeks = []
-        return jsonify({"weeks": weeks})
+            ai_summary = None
+
+        return render_template(
+            "job_detail.html",
+            job=job,
+            related=related,
+            ai_summary=ai_summary,
+            subscribe_ctx={
+                "title": title,
+                "country": loc,
+                "salary_band": detail_salary_band,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Salary report (printable HTML)
@@ -1444,4 +1672,6 @@ def _to_lc(value: str) -> str:
 
 if __name__ == "__main__":
     application = create_app()
-    application.run(debug=True)
+    debug_env = os.getenv("FLASK_DEBUG", "")
+    debug = debug_env.lower() in {"1", "true", "yes", "on"}
+    application.run(debug=debug)

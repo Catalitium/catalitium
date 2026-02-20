@@ -93,7 +93,7 @@
             Tracker
             <span id="tracker-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none"></span>
           </a>
-          <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Newsletter</a>
+          <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Weekly Digest</a>
           <a href="#" data-open-contact class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Contact us</a>
           <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
         </div>
@@ -165,7 +165,7 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('tracker') }}">My Tracker</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Newsletter</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
@@ -201,7 +201,7 @@
         <a href="{{ url_for('resources') }}" class="hover:text-brand font-semibold">Resources</a>
         <a href="{{ url_for('tracker') }}" class="hover:text-brand">Tracker</a>
         <a href="{{ url_for('about') }}" class="hover:text-brand">About</a>
-        <a href="#" data-open-subscribe class="hover:text-brand">Newsletter</a>
+        <a href="#" data-open-subscribe class="hover:text-brand">Weekly Digest</a>
         <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
         <a href="#" data-open-contact class="hover:text-brand">Contact</a>
         <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
@@ -225,14 +225,15 @@
     <div class="p-6 sm:p-7 w-[90vw] max-w-md">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="subscribe-title" class="text-lg font-semibold">Weekly job reminders</h2>
+        <h2 id="subscribe-title" class="text-lg font-semibold">Weekly high-match job digest</h2>
       </div>
-      <p class="mt-2 text-slate-600 text-sm">One tidy email with new high-signal roles. Unsubscribe anytime.</p>
+      <p class="mt-2 text-slate-600 text-sm">One weekly email with your best matches and salary signal. Unsubscribe anytime.</p>
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
         <input type="hidden" name="search_title" id="subscribe-search-title" value="">
         <input type="hidden" name="search_country" id="subscribe-search-country" value="">
+        <input type="hidden" name="search_salary_band" id="subscribe-search-salary-band" value="">
         <label for="subscribe-email" class="sr-only">Email</label>
         <input id="subscribe-email"
                name="email"
@@ -242,10 +243,10 @@
                placeholder="you@company.com"
                class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         <button type="submit"
-                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90">Submit</button>
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90">Get Weekly Digest</button>
       </form>
 
-      <p class="mt-2 text-[11px] text-slate-500">Privacy-friendly. We only email once a week.</p>
+      <p class="mt-2 text-[11px] text-slate-500">Privacy-friendly. One email per week.</p>
     </div>
   </dialog>
 

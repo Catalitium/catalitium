@@ -185,10 +185,38 @@ function sendAnalyticsPayload(payload){
   // Subscribe dialog triggers
   // ------------------------------------------------------------------
   var subscribeDialog = document.getElementById('subscribeDialog');
+  var subscribeTitleInput = document.getElementById('subscribe-search-title');
+  var subscribeCountryInput = document.getElementById('subscribe-search-country');
+  var subscribeSalaryInput = document.getElementById('subscribe-search-salary-band');
+
+  function readSubscribeContext(trigger){
+    var title = (trigger && trigger.getAttribute('data-subscribe-title')) || '';
+    var country = (trigger && trigger.getAttribute('data-subscribe-country')) || '';
+    var salary = (trigger && trigger.getAttribute('data-subscribe-salary')) || '';
+    if (!title && !country && !salary) {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        title = p.get('title') || '';
+        country = p.get('country') || '';
+      } catch(_){}
+    }
+    return { title: title.trim(), country: country.trim(), salary: salary.trim() };
+  }
+
+  function applySubscribeContext(ctx){
+    if (subscribeTitleInput && typeof ctx.title === 'string') subscribeTitleInput.value = ctx.title;
+    if (subscribeCountryInput && typeof ctx.country === 'string') subscribeCountryInput.value = ctx.country;
+    if (subscribeSalaryInput && typeof ctx.salary === 'string') subscribeSalaryInput.value = ctx.salary;
+    try {
+      window.dispatchEvent(new CustomEvent('catalitium:subscribe-context', { detail: ctx }));
+    } catch(_){}
+  }
+
   if(subscribeDialog){
     document.addEventListener('click', function(e){
       var trg = e.target.closest('[data-open-subscribe]');
       if(!trg) return;
+      applySubscribeContext(readSubscribeContext(trg));
       trackEvent('modal_open', { modal: 'subscribe', source: trg.getAttribute('data-open-subscribe') || 'cta' });
       sendAnalyticsPayload({
         event_type: 'modal_open',
@@ -775,7 +803,16 @@ function sendAnalyticsPayload(payload){
     if(q) q.value = titleVal;
     if(loc) loc.value = countryVal;
   }); }
-  if(toggle && subDlg){ toggle.addEventListener('change', function(){ if(toggle.checked){ try{subDlg.showModal();}catch(_) {subDlg.open=true;} var em=document.getElementById('subscribe-email'); if(em) em.focus(); }}); subDlg.addEventListener('close', function(){ toggle.checked=false; }); }
+  if(toggle && subDlg){ toggle.addEventListener('change', function(){ if(toggle.checked){
+    try{
+      var ctxParams = new URLSearchParams(window.location.search);
+      window.dispatchEvent(new CustomEvent('catalitium:subscribe-context', { detail: {
+        title: ctxParams.get('title') || '',
+        country: ctxParams.get('country') || '',
+        salary: ''
+      }}));
+    }catch(_){}
+    try{subDlg.showModal();}catch(_) {subDlg.open=true;} var em=document.getElementById('subscribe-email'); if(em) em.focus(); }}); subDlg.addEventListener('close', function(){ toggle.checked=false; }); }
   // Log subscribe dialog native form submission (newsletter)
 })();
 
@@ -1104,34 +1141,48 @@ function escHtml(s){
   var subSub    =subDialog.querySelector('p.mt-2');
   var hidTitle  =document.getElementById('subscribe-search-title');
   var hidCountry=document.getElementById('subscribe-search-country');
+  var hidSalary =document.getElementById('subscribe-search-salary-band');
+  var overrideCtx=null;
 
   function getCtx(){
+    if (overrideCtx) return overrideCtx;
     try{
       var p=new URLSearchParams(window.location.search);
-      return { title:p.get('title')||'', country:p.get('country')||'' };
-    }catch(_){ return {title:'',country:''}; }
+      return { title:p.get('title')||'', country:p.get('country')||'', salary:'' };
+    }catch(_){ return {title:'',country:'',salary:''}; }
   }
 
   function personalize(){
     var ctx=getCtx();
-    var t=ctx.title, c=ctx.country;
+    var t=ctx.title, c=ctx.country, s=ctx.salary;
     if(hidTitle)   hidTitle.value=t;
     if(hidCountry) hidCountry.value=c;
+    if(hidSalary)  hidSalary.value=s||'';
     if(!subTitle)  return;
     if(t&&c){
       subTitle.textContent=(t.charAt(0).toUpperCase()+t.slice(1))+' jobs in '+c;
-      if(subSub) subSub.textContent='Get fresh '+t+' roles in '+c+' — one email a week. Unsubscribe anytime.';
+      if(subSub) subSub.textContent='Get top matches for '+t+' in '+c+(s?(' around '+s):'')+' in one weekly digest.';
     } else if(t){
-      subTitle.textContent=(t.charAt(0).toUpperCase()+t.slice(1))+' job alerts';
-      if(subSub) subSub.textContent='Get the best '+t+' roles delivered weekly. Unsubscribe anytime.';
+      subTitle.textContent=(t.charAt(0).toUpperCase()+t.slice(1))+' weekly digest';
+      if(subSub) subSub.textContent='Get top matches for '+t+(s?(' around '+s):'')+' in one weekly digest.';
     } else if(c){
-      subTitle.textContent='Top jobs in '+c;
-      if(subSub) subSub.textContent='Weekly digest of high-signal roles in '+c+'. Unsubscribe anytime.';
+      subTitle.textContent='Weekly digest in '+c;
+      if(subSub) subSub.textContent='Get top matches in '+c+' with salary signal in one weekly email.';
     } else {
-      subTitle.textContent='Weekly job reminders';
-      if(subSub) subSub.textContent='One tidy email with new high-signal roles. Unsubscribe anytime.';
+      subTitle.textContent='Weekly high-match job digest';
+      if(subSub) subSub.textContent='One weekly email with your best matches and salary signal.';
     }
   }
+
+  window.addEventListener('catalitium:subscribe-context',function(ev){
+    var detail=(ev&&ev.detail)||{};
+    overrideCtx={
+      title:(detail.title||'').trim(),
+      country:(detail.country||'').trim(),
+      salary:(detail.salary||'').trim()
+    };
+    personalize();
+  });
 
   document.addEventListener('click',function(e){
     if(e.target&&e.target.closest('[data-open-subscribe]')) setTimeout(personalize,0);
@@ -1326,74 +1377,6 @@ function escHtml(s){
   /* Run once on load, then again after instant-search fetches replace the DOM */
   showBanner();
   document.addEventListener('catalitium:results-updated', showBanner);
-})();
-
-/* ── Market Trends chart ─────────────────────────────────────── */
-(function(){
-  var details = document.getElementById('trends-details');
-  if(!details) return;
-
-  var chartEl = document.getElementById('trends-chart');
-  var radios  = document.querySelectorAll('input[name="trend-cat"]');
-  if(!chartEl) return;
-
-  var cache = null;
-
-  function renderChart(data, cat){
-    if(!data || !data.weeks || !data.weeks.length){
-      chartEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No trend data yet.</p>';
-      return;
-    }
-    var weeks = data.weeks;
-    var vals  = weeks.map(function(w){ return w[cat] || 0; });
-    var max   = Math.max.apply(null, vals) || 1;
-    var barW  = Math.floor(560 / weeks.length) - 4;
-    barW = Math.max(barW, 8);
-
-    var bars = weeks.map(function(w, i){
-      var v   = w[cat] || 0;
-      var h   = Math.round((v / max) * 80);
-      var x   = i * (barW + 4) + 2;
-      var y   = 90 - h;
-      var lbl = (w.week||'').slice(5,10); /* MM-DD */
-      return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="2" fill="#1a73e8" opacity="0.8"/>'
-           + '<text x="'+(x+barW/2)+'" y="106" text-anchor="middle" font-size="8" fill="#94a3b8">'+lbl+'</text>'
-           + (v ? '<text x="'+(x+barW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="8" fill="#475569">'+v+'</text>' : '');
-    }).join('');
-
-    var svgW = weeks.length * (barW + 4) + 4;
-    chartEl.innerHTML = '<svg viewBox="0 0 '+svgW+' 114" width="100%" style="max-height:130px">'
-      +'<line x1="0" y1="90" x2="'+svgW+'" y2="90" stroke="#e2e8f0" stroke-width="1"/>'
-      + bars
-      +'</svg>';
-  }
-
-  function load(){
-    if(cache){ renderChart(cache, getActiveCat()); return; }
-    chartEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading…</p>';
-    fetch('/api/trends', { credentials:'same-origin' })
-      .then(function(r){ return r.json(); })
-      .then(function(d){ cache=d; renderChart(d, getActiveCat()); })
-      .catch(function(){ chartEl.innerHTML='<p class="text-xs text-red-400 text-center py-4">Could not load trends.</p>'; });
-  }
-
-  function getActiveCat(){
-    var checked = document.querySelector('input[name="trend-cat"]:checked');
-    return checked ? checked.value : 'total';
-  }
-
-  radios.forEach(function(r){
-    r.addEventListener('change', function(){
-      if(cache) renderChart(cache, getActiveCat());
-    });
-  });
-
-  details.addEventListener('toggle', function(){
-    if(details.open) load();
-  });
-
-  /* Auto-load if already open on page load */
-  if(details.open) load();
 })();
 
 /* ── Track button handler (all pages) ───────────────────────── */

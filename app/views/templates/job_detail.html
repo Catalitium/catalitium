@@ -96,7 +96,7 @@
     {% endif %}
   </div>
 
-  <!-- AI Summary (loaded async via /api/summary/<id>) -->
+  <!-- AI Summary (pre-rendered when cached; JS enhances if not yet cached) -->
   <section id="ai-summary-detail"
            data-job-id="{{ job.id }}"
            class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6"
@@ -109,6 +109,29 @@
       <h2 class="text-sm font-semibold text-slate-700">AI Summary</h2>
       <span class="text-[11px] text-slate-400 ml-auto">Powered by Claude</span>
     </div>
+    {% if ai_summary and ai_summary.bullets %}
+    {# Server-side render — visible to Google without JS #}
+    <div class="ai-skeleton hidden" aria-hidden="true"></div>
+    <div class="ai-content">
+      <ul class="space-y-2 mb-4">
+        {% for bullet in ai_summary.bullets %}
+        <li class="flex gap-2 text-sm text-slate-700">
+          <svg class="w-4 h-4 mt-0.5 text-violet-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.2"/></svg>
+          <span>{{ bullet }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if ai_summary.skills %}
+      <div class="flex flex-wrap gap-1.5">
+        {% for skill in ai_summary.skills %}
+        <a href="{{ url_for('index', title=skill) }}"
+           class="inline-flex items-center rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-[12px] font-medium text-violet-700 hover:bg-violet-100 transition">{{ skill }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    {# Skeleton shown until JS fetches from /api/summary/<id> #}
     <div class="ai-skeleton space-y-2.5" aria-hidden="true">
       <div class="h-3 rounded-full bg-slate-100 animate-pulse w-3/4"></div>
       <div class="h-3 rounded-full bg-slate-100 animate-pulse w-full"></div>
@@ -120,6 +143,7 @@
       </div>
     </div>
     <div class="ai-content hidden"></div>
+    {% endif %}
   </section>
 
   <!-- Description -->
@@ -127,6 +151,22 @@
     <h2 class="text-base font-semibold text-slate-800 mb-4">Job description</h2>
     <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700 whitespace-pre-line">{{ job.description }}</div>
   </div>
+
+  <section class="mt-5 rounded-2xl border border-brand/20 bg-brand/5 p-5 sm:p-6">
+    <h2 class="text-base font-semibold text-slate-900">Get a weekly digest of similar roles</h2>
+    <p class="mt-1 text-sm text-slate-600">
+      Save this search for {{ subscribe_ctx.title }}{% if subscribe_ctx.country %} in {{ subscribe_ctx.country }}{% endif %}{% if subscribe_ctx.salary_band %} around {{ subscribe_ctx.salary_band }}{% endif %} and get the strongest matches every week.
+    </p>
+    <button type="button"
+            class="mt-3 inline-flex items-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            data-open-subscribe="job_detail_cta"
+            data-subscribe-title="{{ subscribe_ctx.title }}"
+            data-subscribe-country="{{ subscribe_ctx.country }}"
+            data-subscribe-salary="{{ subscribe_ctx.salary_band }}">
+      Get Weekly Digest
+    </button>
+    <p class="mt-2 text-xs text-slate-500">Privacy-first. Unsubscribe anytime.</p>
+  </section>
 
   <!-- Related jobs -->
   {% if related %}
