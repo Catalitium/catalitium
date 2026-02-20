@@ -887,13 +887,16 @@ function escHtml(s){
     var location  = escHtml(job.location||'Remote / Anywhere');
     var link      = String(job.link||'');
     var date      = escHtml(job.job_date||'');
+    var dateRaw   = String(job.date_raw||'');
+    var isGhost   = !!job.is_ghost;
     var salary    = escHtml(job.job_salary_range||'');
     var rawDesc   = String(job.description||job.job_description||'');
     var desc      = escHtml(rawDesc);
     var descShort = escHtml(rawDesc.slice(0,200));
     var safeLink  = escHtml(link);
 
-    var newBadge     = job.is_new ? '<span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>' : '';
+    var newBadge   = job.is_new ? '<span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>' : '';
+    var ghostBadge = isGhost ? '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5" title="Posted over 30 days ago — may already be filled"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>May be filled</span>' : '';
     var companyBadge = company ? '<span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1">'+company+'</span>' : '';
     var locBadge     = '<span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-1 text-sky-800">'+location+'</span>';
     var dateBadge    = date ? '<span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-1 text-indigo-800">'+date+'</span>' : '';
@@ -908,9 +911,9 @@ function escHtml(s){
 
     var bmBtn = '<button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" data-bookmark-btn data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-link="'+safeLink+'" data-job-date="'+date+'" aria-pressed="false" aria-label="Save '+title+'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 3h14a1 1 0 011 1v18l-7-4-7 4V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="bookmark-label">Save</span></button>';
 
-    return '<article class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 hover:border-slate-300 transition-colors hover:shadow-md hover:-translate-y-[1px]" data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-summary="'+descShort+'">'
+    return '<article class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 hover:border-slate-300 transition-colors hover:shadow-md hover:-translate-y-[1px]" data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-summary="'+descShort+'" data-job-date="'+escHtml(dateRaw)+'">'
       +'<header class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3"><div class="min-w-0">'
-      +'<div class="flex items-center gap-2"><h2 class="text-lg sm:text-xl font-semibold leading-snug break-words">'+title+'</h2>'+newBadge+'</div>'
+      +'<div class="flex items-center gap-2 flex-wrap"><h2 class="text-lg sm:text-xl font-semibold leading-snug break-words"><a href="/jobs/'+id+'" class="hover:text-brand transition-colors">'+title+'</a></h2>'+newBadge+ghostBadge+'</div>'
       +'<div class="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-slate-700">'+companyBadge+locBadge+dateBadge+salaryBadge+'</div>'
       +'</div></header>'
       +'<details id="details-dyn-'+id+'" class="mt-2 group"><summary class="list-none inline-flex items-center gap-1 text-[13px] underline cursor-pointer text-slate-600 hover:text-blue-600 focus:outline-none px-2 py-1 rounded-lg select-none"><span>More details</span><svg class="w-3 h-3 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg></summary>'
@@ -955,6 +958,7 @@ function escHtml(s){
         items.forEach(function(job,i){ html+=buildCard(job,i+1); });
         resultsEl.innerHTML=html;
         try{ if(typeof window.__initBookmarks==='function') window.__initBookmarks(); }catch(_){}
+        try{ document.dispatchEvent(new CustomEvent('catalitium:results-updated')); }catch(_){}
       })
       .catch(function(e){ if(e&&e.name==='AbortError') return; setSkeleton(false); });
   }
@@ -1284,4 +1288,109 @@ function escHtml(s){
   document.addEventListener('click',function(e){
     if(!drop.contains(e.target)&&e.target!==titleInput) hide();
   });
+})();
+
+/* ── New-since-last-visit banner ─────────────────────────────── */
+(function(){
+  var LS_KEY = 'catalitium_last_visit';
+  var banner  = document.getElementById('new-since-banner');
+  var countEl = document.getElementById('new-since-text');
+  if(!banner || !countEl) return;
+
+  var lastVisit = localStorage.getItem(LS_KEY);
+  /* Update timestamp for next visit */
+  localStorage.setItem(LS_KEY, new Date().toISOString());
+  if(!lastVisit) return; /* First visit — nothing to compare */
+
+  var lastTs = new Date(lastVisit).getTime();
+  if(!lastTs) return;
+
+  function countNew(){
+    var articles = document.querySelectorAll('[data-job-date]');
+    var n = 0;
+    articles.forEach(function(el){
+      var d = el.getAttribute('data-job-date');
+      if(d && new Date(d).getTime() > lastTs) n++;
+    });
+    return n;
+  }
+
+  function showBanner(){
+    var n = countNew();
+    if(n < 1) return;
+    countEl.textContent = n + ' new listing' + (n === 1 ? '' : 's') + ' since your last visit';
+    banner.classList.remove('hidden');
+  }
+
+  /* Run once on load, then again after instant-search fetches replace the DOM */
+  showBanner();
+  document.addEventListener('catalitium:results-updated', showBanner);
+})();
+
+/* ── Market Trends chart ─────────────────────────────────────── */
+(function(){
+  var details = document.getElementById('trends-details');
+  if(!details) return;
+
+  var chartEl = document.getElementById('trends-chart');
+  var radios  = document.querySelectorAll('input[name="trend-cat"]');
+  if(!chartEl) return;
+
+  var cache = null;
+
+  function renderChart(data, cat){
+    if(!data || !data.weeks || !data.weeks.length){
+      chartEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No trend data yet.</p>';
+      return;
+    }
+    var weeks = data.weeks;
+    var vals  = weeks.map(function(w){ return w[cat] || 0; });
+    var max   = Math.max.apply(null, vals) || 1;
+    var barW  = Math.floor(560 / weeks.length) - 4;
+    barW = Math.max(barW, 8);
+
+    var bars = weeks.map(function(w, i){
+      var v   = w[cat] || 0;
+      var h   = Math.round((v / max) * 80);
+      var x   = i * (barW + 4) + 2;
+      var y   = 90 - h;
+      var lbl = (w.week||'').slice(5,10); /* MM-DD */
+      return '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" rx="2" fill="#1a73e8" opacity="0.8"/>'
+           + '<text x="'+(x+barW/2)+'" y="106" text-anchor="middle" font-size="8" fill="#94a3b8">'+lbl+'</text>'
+           + (v ? '<text x="'+(x+barW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="8" fill="#475569">'+v+'</text>' : '');
+    }).join('');
+
+    var svgW = weeks.length * (barW + 4) + 4;
+    chartEl.innerHTML = '<svg viewBox="0 0 '+svgW+' 114" width="100%" style="max-height:130px">'
+      +'<line x1="0" y1="90" x2="'+svgW+'" y2="90" stroke="#e2e8f0" stroke-width="1"/>'
+      + bars
+      +'</svg>';
+  }
+
+  function load(){
+    if(cache){ renderChart(cache, getActiveCat()); return; }
+    chartEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading…</p>';
+    fetch('/api/trends', { credentials:'same-origin' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ cache=d; renderChart(d, getActiveCat()); })
+      .catch(function(){ chartEl.innerHTML='<p class="text-xs text-red-400 text-center py-4">Could not load trends.</p>'; });
+  }
+
+  function getActiveCat(){
+    var checked = document.querySelector('input[name="trend-cat"]:checked');
+    return checked ? checked.value : 'total';
+  }
+
+  radios.forEach(function(r){
+    r.addEventListener('change', function(){
+      if(cache) renderChart(cache, getActiveCat());
+    });
+  });
+
+  details.addEventListener('toggle', function(){
+    if(details.open) load();
+  });
+
+  /* Auto-load if already open on page load */
+  if(details.open) load();
 })();

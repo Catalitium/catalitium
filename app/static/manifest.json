@@ -1,0 +1,37 @@
+{
+  "name": "Catalitium — Tech Jobs",
+  "short_name": "Catalitium",
+  "description": "Curated tech job listings with salary insights",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#1a73e8",
+  "background_color": "#ffffff",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Jobs",
+      "url": "/",
+      "description": "See latest tech job listings"
+    },
+    {
+      "name": "Salary Report",
+      "url": "/salary-report",
+      "description": "View tech salary insights"
+    }
+  ]
+}
