@@ -29,6 +29,11 @@
       </div>
 
       <div class="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-slate-700" data-job-meta="true">
+        {% if j.match_score %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-1 text-emerald-800 font-semibold" title="Relevance + trust score">
+          Match {{ j.match_score }}%
+        </span>
+        {% endif %}
         {% if j.company %}
         <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1">
           <svg class="w-3.5 h-3.5 text-slate-500" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -52,6 +57,19 @@
         </span>
         {% endif %}
       </div>
+      {% if j.match_reasons %}
+      <p class="mt-1 text-[12px] text-slate-500">
+        {{ j.match_reasons|join(" • ") }}
+      </p>
+      <a href="#"
+         class="mt-1 inline-flex items-center text-[12px] font-medium text-brand hover:underline"
+         data-open-subscribe="match_card"
+         data-subscribe-title="{{ j.title }}"
+         data-subscribe-country="{{ j.location }}"
+         data-subscribe-salary="{{ j.estimated_salary_range_compact or '' }}">
+        Get weekly matches like this
+      </a>
+      {% endif %}
 
       {% if loop.index == 1 and j.summary %}
       <div class="mt-2 text-slate-700 text-sm bg-slate-50 rounded-lg p-3 border border-slate-200">
