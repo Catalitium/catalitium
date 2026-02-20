@@ -16,6 +16,7 @@ from flask import (
     jsonify,
     g,
     Response,
+    send_from_directory,
 )
 from email_validator import validate_email, EmailNotValidError
 from .models.db import (
@@ -368,8 +369,10 @@ def create_app() -> Flask:
                 "location": loc,
                 "description": parse_job_description(row.get("job_description") or ""),
                 "date_posted": format_job_date_string(job_date_str) if job_date_str else "",
+                "date_raw": job_date_str,
                 "link": link,
                 "is_new": _job_is_new(job_date_raw, row.get("date")),
+                "is_ghost": _job_is_ghost(job_date_raw),
                 "median_salary": int(median) if median is not None else None,
                 "median_salary_currency": currency,
                 "median_salary_compact": median_compact,
@@ -525,6 +528,7 @@ def create_app() -> Flask:
                     "job_date": job_date_formatted,
                     "date": row.get("date"),
                     "is_new": _job_is_new(job_date_raw, row.get("date")),
+                    "is_ghost": _job_is_ghost(job_date_raw),
                     "job_salary_range": row.get("job_salary_range") or "",
                 }
             )
@@ -1024,6 +1028,226 @@ def create_app() -> Flask:
         xml_lines.append("</urlset>")
         return Response("\n".join(xml_lines), mimetype="application/xml")
 
+    # ------------------------------------------------------------------
+    # Individual job detail page
+    # ------------------------------------------------------------------
+    @app.get("/jobs/<job_id>")
+    def job_detail(job_id: str):
+        """Render a dedicated page for a single job listing."""
+        row = Job.get_by_id(job_id)
+        if not row:
+            return jsonify({"error": "not found"}), 404
+
+        title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
+        company = (row.get("company_name") or "").strip()
+        loc = row.get("location") or "Remote / Anywhere"
+        description = parse_job_description(row.get("job_description") or "")
+        link = row.get("link")
+        if link in BLACKLIST_LINKS:
+            link = None
+        date_raw = row.get("date")
+        date_str = str(date_raw).strip() if date_raw is not None else ""
+        date_posted = format_job_date_string(date_str) if date_str else ""
+        is_new = _job_is_new(date_raw, date_raw)
+        is_ghost = _job_is_ghost(date_raw)
+        salary_range = row.get("job_salary_range") or ""
+
+        median = None
+        currency = None
+        try:
+            rec = get_salary_for_location(loc)
+            if rec:
+                median, currency = rec[0], rec[1]
+        except Exception:
+            pass
+
+        estimated_display = None
+        salary_min = salary_max = None
+        if median is not None:
+            try:
+                from .models import db as _db_helpers
+                title_lc = title.lower()
+                uplift = 1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else (
+                    1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else 1.0)
+                base_rng = _db_helpers.salary_range_around(float(median), pct=0.2)
+                if base_rng:
+                    base_low, base_high, base_low_s, base_high_s = base_rng
+                    if uplift > 1.0:
+                        amt = float(median) * (uplift - 1.0)
+                        low_s = _db_helpers._compact_salary_number(base_low + amt)
+                        high_s = _db_helpers._compact_salary_number(base_high + amt)
+                        estimated_display = f"{low_s}\u2013{high_s}"
+                        salary_min, salary_max = int(base_low + amt), int(base_high + amt)
+                    else:
+                        estimated_display = f"{base_low_s}\u2013{base_high_s}"
+                        salary_min, salary_max = base_low, base_high
+            except Exception:
+                pass
+
+        # Related jobs: same first keyword, exclude self
+        related = []
+        try:
+            first_word = normalize_title((title.split()[0] if title else ""))
+            rel_rows = Job.search(first_word or None, None, limit=5, offset=0)
+            for r in rel_rows:
+                if str(r.get("id")) != str(job_id) and len(related) < 3:
+                    rd = r.get("date")
+                    related.append({
+                        "id": r.get("id"),
+                        "title": (r.get("job_title") or "").strip(),
+                        "company": (r.get("company_name") or "").strip(),
+                        "location": r.get("location") or "Remote",
+                        "date": format_job_date_string(str(rd).strip()) if rd else "",
+                    })
+        except Exception:
+            pass
+
+        job = {
+            "id": job_id,
+            "title": title,
+            "company": company,
+            "location": loc,
+            "description": description,
+            "date_posted": date_posted,
+            "date_raw": date_str,
+            "link": link,
+            "is_new": is_new,
+            "is_ghost": is_ghost,
+            "salary_range": salary_range,
+            "estimated_salary_range_compact": estimated_display,
+            "median_salary_currency": currency,
+            "salary_min": salary_min,
+            "salary_max": salary_max,
+        }
+        return render_template("job_detail.html", job=job, related=related)
+
+    # ------------------------------------------------------------------
+    # Market trends API
+    # ------------------------------------------------------------------
+    @app.get("/api/trends")
+    def api_trends():
+        """Return weekly job posting counts for the last 8 weeks by category."""
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(r"""
+                    WITH parsed AS (
+                        SELECT
+                            job_title,
+                            location,
+                            CASE
+                                WHEN date ~ E'^\\d{4}-\\d{2}-\\d{2}' THEN date::date
+                                WHEN date ~ E'^\\d{4}\\.\\d{2}\\.\\d{2}' THEN TO_DATE(date, 'YYYY.MM.DD')
+                                ELSE NULL
+                            END AS parsed_date
+                        FROM jobs
+                        WHERE date IS NOT NULL
+                    )
+                    SELECT
+                        DATE_TRUNC('week', parsed_date)::date AS week_start,
+                        COUNT(*) AS total,
+                        COUNT(CASE WHEN LOWER(job_title) LIKE '%ai%'
+                                     OR LOWER(job_title) LIKE '%machine learning%'
+                                     OR LOWER(job_title) LIKE '%ml engineer%' THEN 1 END) AS ai,
+                        COUNT(CASE WHEN LOWER(job_title) LIKE '%developer%'
+                                     OR LOWER(job_title) LIKE '%engineer%' THEN 1 END) AS dev,
+                        COUNT(CASE WHEN LOWER(job_title) LIKE '%senior%' THEN 1 END) AS senior,
+                        COUNT(CASE WHEN LOWER(location) LIKE '%remote%' THEN 1 END) AS remote
+                    FROM parsed
+                    WHERE parsed_date IS NOT NULL
+                      AND parsed_date >= CURRENT_DATE - INTERVAL '8 weeks'
+                    GROUP BY week_start
+                    ORDER BY week_start ASC
+                """)
+                cols = [d[0] for d in cur.description]
+                weeks = []
+                for row in cur.fetchall():
+                    d = dict(zip(cols, row))
+                    ws = d.get("week_start")
+                    label = ws.strftime("%b %d") if hasattr(ws, "strftime") else str(ws)[:10]
+                    weeks.append({
+                        "week": label,
+                        "total": int(d.get("total") or 0),
+                        "ai": int(d.get("ai") or 0),
+                        "dev": int(d.get("dev") or 0),
+                        "senior": int(d.get("senior") or 0),
+                        "remote": int(d.get("remote") or 0),
+                    })
+        except Exception:
+            logger.exception("Trends query failed")
+            weeks = []
+        return jsonify({"weeks": weeks})
+
+    # ------------------------------------------------------------------
+    # Salary report (printable HTML)
+    # ------------------------------------------------------------------
+    @app.get("/salary-report")
+    def salary_report():
+        """Render a printable salary insights report."""
+        categories = [
+            ("AI / ML", "ai"),
+            ("Developer", "developer"),
+            ("Senior", "senior"),
+            ("Remote", "remote"),
+            ("Data", "data"),
+        ]
+        regions = ["US", "EU", "UK", "CH"]
+        data = {}
+        for label, keyword in categories:
+            rows = Job.search(normalize_title(keyword), None, limit=200, offset=0)
+            salaries = []
+            for r in rows:
+                sal_str = r.get("job_salary_range") or ""
+                if sal_str:
+                    parsed = parse_salary_range_string(sal_str)
+                    if parsed:
+                        salaries.append(parsed)
+                else:
+                    rec = get_salary_for_location(r.get("location") or "")
+                    if rec and rec[0]:
+                        salaries.append(rec[0])
+            if salaries:
+                salaries.sort()
+                n = len(salaries)
+                med = salaries[n // 2] if n % 2 != 0 else (salaries[n // 2 - 1] + salaries[n // 2]) / 2
+                data[label] = {"count": len(rows), "median": int(med), "min": int(salaries[0]), "max": int(salaries[-1])}
+            else:
+                data[label] = {"count": len(rows), "median": None, "min": None, "max": None}
+
+        region_data = {}
+        for region in regions:
+            rows = Job.search(None, normalize_country(region), limit=200, offset=0)
+            salaries = []
+            for r in rows:
+                rec = get_salary_for_location(r.get("location") or "")
+                if rec and rec[0]:
+                    salaries.append(rec[0])
+            if salaries:
+                salaries.sort()
+                n = len(salaries)
+                med = salaries[n // 2] if n % 2 != 0 else (salaries[n // 2 - 1] + salaries[n // 2]) / 2
+                region_data[region] = {"count": len(rows), "median": int(med)}
+            else:
+                region_data[region] = {"count": len(rows), "median": None}
+
+        generated = datetime.now(timezone.utc).strftime("%B %Y")
+        return render_template("salary_report.html", data=data, region_data=region_data, generated=generated)
+
+    # ------------------------------------------------------------------
+    # Service worker (must be served from root scope)
+    # ------------------------------------------------------------------
+    @app.get("/sw.js")
+    def service_worker():
+        """Serve the PWA service worker from root so it controls all pages."""
+        resp = send_from_directory(
+            os.path.join(os.path.dirname(__file__), "static", "js"),
+            "sw.js",
+            mimetype="application/javascript",
+        )
+        resp.headers["Service-Worker-Allowed"] = "/"
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return resp
+
     return app
 
 
@@ -1036,6 +1260,16 @@ def _job_is_new(job_date_raw, row_date) -> bool:
         dt = dt.replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
     return (now - dt) <= timedelta(days=7)
+
+
+def _job_is_ghost(job_date_raw) -> bool:
+    """Return True when the job was posted more than 30 days ago (may be filled)."""
+    dt = _coerce_datetime(job_date_raw)
+    if not dt:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - dt) > timedelta(days=30)
 
 
 def _coerce_datetime(value) -> Optional[datetime]:

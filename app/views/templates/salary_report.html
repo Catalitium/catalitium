@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ generated }} Tech Salary Report | Catalitium{% endblock %}
+
+{% block head_extra %}
+<style>
+  @media print {
+    header, footer, nav, .no-print { display: none !important; }
+    body { font-size: 11pt; color: #1e293b; }
+    .print-break { page-break-before: always; }
+    .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
+    a { text-decoration: none; color: inherit; }
+    #print-btn { display: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between mb-8">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Catalitium Research</p>
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Tech Salary Report</h1>
+      <p class="mt-1 text-slate-500">{{ generated }} edition &mdash; based on live job data</p>
+    </div>
+    <button id="print-btn" onclick="window.print()"
+            class="no-print inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-brand hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Save as PDF
+    </button>
+  </div>
+
+  <!-- Key insight banner -->
+  <div class="rounded-2xl bg-brand/5 border border-brand/20 px-5 py-4 mb-8">
+    <p class="text-sm font-semibold text-brand mb-1">Key insight</p>
+    {% set top_cat = data | dictsort(by='value', attribute='median') | reverse | first %}
+    <p class="text-slate-700 text-sm">
+      <strong>{{ top_cat[0] }}</strong> roles command the highest estimated median salaries on Catalitium.
+      Remote-friendly positions continue to grow across all categories.
+      Data reflects {{ generated }} live listings.
+    </p>
+  </div>
+
+  <!-- By role category -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-slate-900 mb-4">Salary by role category</h2>
+    <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <th class="px-4 py-3">Category</th>
+            <th class="px-4 py-3 text-right">Roles found</th>
+            <th class="px-4 py-3 text-right">Min</th>
+            <th class="px-4 py-3 text-right">Median</th>
+            <th class="px-4 py-3 text-right">Max</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for cat, d in data.items() %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-medium text-slate-800">{{ cat }}</td>
+            <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
+            <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}${{ '{:,}'.format(d.min) }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}${{ '{:,}'.format(d.median) }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}${{ '{:,}'.format(d.max) }}{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- By region -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary by region</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {% for region, d in region_data.items() %}
+      <div class="rounded-xl border border-slate-200 bg-white p-4 text-center">
+        <p class="text-2xl font-bold text-slate-900">
+          {% if d.median %}${{ (d.median // 1000)|int }}k{% else %}—{% endif %}
+        </p>
+        <p class="text-xs font-semibold text-brand mt-0.5">{{ region }}</p>
+        <p class="text-xs text-slate-400 mt-1">{{ d.count }} roles</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Visual bar chart by category -->
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary comparison</h2>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+      {% set max_med = data.values() | selectattr('median') | map(attribute='median') | max | default(1) %}
+      {% for cat, d in data.items() %}
+      {% if d.median %}
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-medium text-slate-700">{{ cat }}</span>
+          <span class="text-brand font-semibold">${{ '{:,}'.format(d.median) }}</span>
+        </div>
+        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-2 rounded-full bg-gradient-to-r from-brand/60 to-brand" style="width: {{ ((d.median / max_med) * 100)|int }}%"></div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Methodology -->
+  <section class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs text-slate-500 space-y-1.5">
+    <p class="font-semibold text-slate-700 text-sm">Methodology</p>
+    <p>Salary estimates are derived from Catalitium's curated job database, blending employer-disclosed ranges with location-based reference data normalized to USD. Figures represent annual compensation estimates. Outliers are excluded from median calculations.</p>
+    <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>. All figures are estimates — verify compensation directly with employers.</p>
+    <p class="mt-2"><a href="{{ url_for('index') }}" class="text-brand hover:underline">Browse live jobs →</a></p>
+  </section>
+
+</div>
+{% endblock %}

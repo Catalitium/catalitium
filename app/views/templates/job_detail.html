@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} at {{ job.company }} — {{ job.location }} | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="{{ job.title }} at {{ job.company }} in {{ job.location }}. {% if job.estimated_salary_range_compact %}Estimated salary {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}. {% endif %}{{ job.description|truncate(120, True) }}">
+<link rel="canonical" href="{{ url_for('job_detail', job_id=job.id, _external=True) }}">
+<meta property="og:title" content="{{ job.title }} at {{ job.company }} | Catalitium">
+<meta property="og:description" content="{{ job.location }}{% if job.estimated_salary_range_compact %} · {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}{% endif %}">
+<meta property="og:type" content="website">
+{% endblock %}
+
+{% block content %}
+<!-- Breadcrumb -->
+<nav class="text-xs text-slate-500 flex items-center gap-1 mb-4" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
+  <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+  <span class="truncate max-w-xs text-slate-700">{{ job.title }}</span>
+</nav>
+
+<div class="max-w-3xl mx-auto">
+
+  <!-- Job header card -->
+  <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+          {% if job.is_new %}
+          <span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>
+          {% endif %}
+          {% if job.is_ghost %}
+          <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5" title="Posted over 30 days ago">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            May be filled
+          </span>
+          {% endif %}
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">{{ job.title }}</h1>
+        {% if job.company %}
+        <p class="mt-1 text-lg text-slate-600 font-medium">{{ job.company }}</p>
+        {% endif %}
+
+        <!-- Meta badges -->
+        <div class="mt-3 flex flex-wrap gap-2 text-sm">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 px-3 py-1 text-sky-800">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11.2A7 7 0 0012 3a7 7 0 00-7 6.8C5 15.5 12 21 12 21z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.1"/></svg>
+            {{ job.location }}
+          </span>
+          {% if job.date_posted %}
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-indigo-800">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><path d="M7 4v3M17 4v3M5 9h14M7 6h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            {{ job.date_posted }}
+          </span>
+          {% endif %}
+          {% if job.estimated_salary_range_compact %}
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-amber-800 font-semibold" title="Estimated salary range">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Est. {{ job.median_salary_currency }} {{ job.estimated_salary_range_compact }}
+          </span>
+          {% elif job.salary_range %}
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-amber-800 font-semibold">
+            {{ job.salary_range }}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="flex flex-col gap-2 sm:items-end flex-shrink-0">
+        {% if job.link %}
+        <a href="{{ job.link }}"
+           target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-6 py-3 font-semibold text-sm hover:opacity-90 shadow-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Apply now
+        </a>
+        {% endif %}
+        <a href="{{ url_for('index') }}" class="text-xs text-slate-500 hover:text-brand transition text-center">← Back to search</a>
+      </div>
+    </div>
+
+    <!-- Salary range bar if we have min/max -->
+    {% if job.salary_min and job.salary_max %}
+    <div class="mt-5 pt-5 border-t border-slate-100">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Estimated salary range</p>
+      <div class="flex justify-between text-xs text-slate-500 mb-1">
+        <span>{{ '{:,}'.format(job.salary_min) }}</span>
+        <span class="font-semibold text-slate-800">{{ job.median_salary_currency }}</span>
+        <span>{{ '{:,}'.format(job.salary_max) }}</span>
+      </div>
+      <div class="relative h-2 rounded-full bg-slate-200">
+        <div class="absolute inset-0 rounded-full bg-gradient-to-r from-brand/40 to-brand"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2 border-brand shadow"></div>
+      </div>
+      <p class="mt-1 text-[11px] text-slate-400">Estimate based on location data. Verify with employer.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Description -->
+  <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
+    <h2 class="text-base font-semibold text-slate-800 mb-4">Job description</h2>
+    <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700 whitespace-pre-line">{{ job.description }}</div>
+  </div>
+
+  <!-- Related jobs -->
+  {% if related %}
+  <div class="mt-5">
+    <h3 class="text-sm font-semibold text-slate-700 mb-3 px-1">Similar roles</h3>
+    <div class="grid grid-cols-1 gap-2">
+      {% for r in related %}
+      <a href="{{ url_for('job_detail', job_id=r.id) }}"
+         class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-brand hover:shadow-sm transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <div class="min-w-0">
+          <p class="font-medium text-slate-800 group-hover:text-brand transition truncate">{{ r.title }}</p>
+          <p class="text-xs text-slate-500 truncate">{{ r.company }}{% if r.location %} · {{ r.location }}{% endif %}</p>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 group-hover:text-brand flex-shrink-0 ml-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "{{ job.title|e }}",
+  "description": "{{ job.description|truncate(500, True)|e }}",
+  "datePosted": "{{ job.date_raw }}",
+  "employmentType": "FULL_TIME",
+  "hiringOrganization": {
+    "@type": "Organization",
+    "name": "{{ job.company|e if job.company else 'Company' }}"
+  },
+  "jobLocation": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "{{ job.location|e }}"
+    }
+  }{% if job.salary_min and job.salary_max %},
+  "estimatedSalary": {
+    "@type": "MonetaryAmount",
+    "currency": "{{ job.median_salary_currency }}",
+    "value": {
+      "@type": "QuantitativeValue",
+      "minValue": {{ job.salary_min }},
+      "maxValue": {{ job.salary_max }},
+      "unitText": "YEAR"
+    }
+  }{% endif %}
+}
+</script>
+{% endblock %}
