@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}My Job Tracker — Application Pipeline | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Track every job application in one place. Move roles through Applied → Phone Screen → Interview → Offer. Your personal Kanban board, no login needed.">
+<link rel="canonical" href="{{ url_for('tracker', _external=True) }}">
+<meta property="og:title" content="Job Application Tracker | Catalitium">
+<meta property="og:description" content="Free Kanban board to track your tech job applications. No account required — data stays on your device.">
+<meta property="og:type" content="website">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .col-scroll { scrollbar-width: thin; scrollbar-color: #e2e8f0 transparent; }
+  .col-scroll::-webkit-scrollbar { width: 4px; }
+  .col-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+  @media print {
+    header, footer, nav, .no-print { display: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+
+  <!-- Page header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Catalitium</p>
+      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">My Job Tracker</h1>
+      <p class="mt-1 text-slate-500 text-sm">Your personal application pipeline — stored privately on this device.</p>
+    </div>
+    <div class="flex items-center gap-3 flex-shrink-0 no-print">
+      <button type="button" data-export-csv
+              class="inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-brand hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export CSV
+      </button>
+      <a href="{{ url_for('index') }}"
+         class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Browse Jobs
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="rounded-2xl border border-slate-200 bg-white px-5 py-4 mb-6 flex items-center gap-6 flex-wrap" id="tracker-stats" aria-live="polite">
+    <!-- Populated by tracker.js -->
+    <div class="flex items-center gap-1.5"><span class="text-2xl font-bold text-slate-900">0</span><span class="text-sm text-slate-500">tracked</span></div>
+    <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
+    <div class="flex items-center gap-1.5"><span class="text-2xl font-bold text-slate-900">0</span><span class="text-sm text-slate-500">active</span></div>
+    <div class="w-px h-8 bg-slate-200 hidden sm:block"></div>
+    <div class="flex items-center gap-1.5"><span class="text-2xl font-bold text-brand">0%</span><span class="text-sm text-slate-500">response rate</span></div>
+  </div>
+
+  <!-- Empty state (hidden when cards exist) -->
+  <div id="tracker-empty" class="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-10 text-center mb-8">
+    <svg class="w-12 h-12 text-slate-300 mx-auto mb-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M12 12h.01M12 16h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>
+    <h2 class="text-lg font-semibold text-slate-700 mb-2">No applications tracked yet</h2>
+    <p class="text-slate-500 text-sm mb-5 max-w-sm mx-auto">Hit the <strong>Track</strong> button on any job listing to add it to your pipeline.</p>
+    <a href="{{ url_for('index') }}"
+       class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+      Browse open roles →
+    </a>
+  </div>
+
+  <!-- Kanban board -->
+  <div class="overflow-x-auto -mx-4 px-4 pb-4">
+    <div class="flex gap-4 min-w-[680px]">
+
+      {% set stage_config = [
+        ('applied',   'Applied',      'blue-500',   'blue-50',   'blue-200'  ),
+        ('screen',    'Phone Screen', 'indigo-500', 'indigo-50', 'indigo-200'),
+        ('interview', 'Interview',    'amber-500',  'amber-50',  'amber-200' ),
+        ('offer',     'Offer',        'emerald-500','emerald-50','emerald-200'),
+        ('closed',    'Closed',       'rose-400',   'rose-50',   'rose-200'  ),
+      ] %}
+
+      {% for stage_id, stage_label, dot_color, bg_color, border_color in stage_config %}
+      <div id="col-{{ stage_id }}"
+           class="flex-1 min-w-[180px] rounded-2xl border border-slate-200 bg-slate-50 p-3 transition motion-safe:transition-all"
+           aria-label="{{ stage_label }} column">
+        <!-- Column header -->
+        <div class="flex items-center gap-2 mb-3 px-0.5">
+          <span class="w-2 h-2 rounded-full bg-{{ dot_color }} flex-shrink-0"></span>
+          <h2 class="text-xs font-bold uppercase tracking-wide text-slate-600">{{ stage_label }}</h2>
+          <span id="col-count-{{ stage_id }}"
+                class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-slate-200 text-slate-600 text-[11px] font-semibold px-1.5">0</span>
+        </div>
+        <!-- Cards -->
+        <div class="col-scroll space-y-2.5 max-h-[70vh] overflow-y-auto pr-0.5" data-card-list aria-live="polite">
+          <div class="rounded-xl border-2 border-dashed border-slate-200 p-4 text-center text-xs text-slate-400">Drop here</div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+  </div>
+
+  <!-- FAQ (SEO) -->
+  <section class="mt-12 max-w-2xl" aria-label="Frequently asked questions">
+    <h2 class="text-lg font-bold text-slate-900 mb-4">About the Tracker</h2>
+    <div class="space-y-2">
+
+      {% set faqs = [
+        ("How does the Job Tracker work?",
+         "Hit the Track button on any job card to add it to your pipeline at the Applied stage. Then drag or tap the move buttons to advance it through Phone Screen → Interview → Offer → Closed as your process moves forward."),
+        ("Is my data stored on Catalitium's servers?",
+         "No. Everything is stored in your browser's localStorage. Nothing is sent to our servers — your application data is completely private and lives only on your device."),
+        ("Can I export my tracked applications?",
+         "Yes. Click the Export CSV button at the top of the page to download all your tracked jobs, including the current stage, days in stage, and any notes you've added."),
+        ("Does the tracker sync across devices?",
+         "Not yet — it's device-specific. For sync across devices, subscribe to our newsletter and we'll let you know when cross-device tracking launches."),
+        ("What is a good response rate for tech jobs?",
+         "Industry data suggests a 10–30% response rate is typical for cold applications. Warm introductions and referrals can push this above 50%. Use the Catalitium salary insights to ensure your target roles match your compensation expectations before applying."),
+      ] %}
+
+      {% for q, a in faqs %}
+      <details class="group rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <summary class="flex items-center justify-between px-4 py-3.5 cursor-pointer text-sm font-semibold text-slate-800 hover:bg-slate-50 select-none list-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          {{ q }}
+          <svg class="w-4 h-4 text-slate-400 flex-shrink-0 transition-transform group-open:rotate-180 motion-safe:transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+        </summary>
+        <p class="px-4 pb-4 text-sm text-slate-600 leading-relaxed">{{ a }}</p>
+      </details>
+      {% endfor %}
+
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"How does the Job Tracker work?","acceptedAnswer":{"@type":"Answer","text":"Hit the Track button on any job card to add it to your pipeline at the Applied stage. Then drag or tap the move buttons to advance it through Phone Screen, Interview, Offer, and Closed as your process moves forward."}},
+    {"@type":"Question","name":"Is my data stored on Catalitium's servers?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is stored in your browser's localStorage. Nothing is sent to our servers — your application data is completely private and lives only on your device."}},
+    {"@type":"Question","name":"Can I export my tracked applications?","acceptedAnswer":{"@type":"Answer","text":"Yes. Click the Export CSV button at the top of the page to download all your tracked jobs, including the current stage, days in stage, and any notes."}},
+    {"@type":"Question","name":"Does the tracker sync across devices?","acceptedAnswer":{"@type":"Answer","text":"Not yet — it is device-specific. For sync across devices, subscribe to the Catalitium newsletter to be notified when cross-device tracking launches."}}
+  ]
+}
+</script>
+<script defer src="{{ url_for('static', filename='js/tracker.js') }}"></script>
+{% endblock %}

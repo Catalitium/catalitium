@@ -910,6 +910,7 @@ function escHtml(s){
     }
 
     var bmBtn = '<button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" data-bookmark-btn data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-link="'+safeLink+'" data-job-date="'+date+'" aria-pressed="false" aria-label="Save '+title+'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M5 3h14a1 1 0 011 1v18l-7-4-7 4V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg><span class="bookmark-label">Save</span></button>';
+    var trackBtn = '<button type="button" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:border-violet-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50" data-track-btn data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-link="'+safeLink+'" aria-label="Track application for '+title+'"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="track-label">Track</span></button>';
 
     return '<article class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 hover:border-slate-300 transition-colors hover:shadow-md hover:-translate-y-[1px]" data-job-id="'+id+'" data-job-title="'+title+'" data-job-company="'+company+'" data-job-location="'+location+'" data-job-summary="'+descShort+'" data-job-date="'+escHtml(dateRaw)+'">'
       +'<header class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3"><div class="min-w-0">'
@@ -918,7 +919,7 @@ function escHtml(s){
       +'</div></header>'
       +'<details id="details-dyn-'+id+'" class="mt-2 group"><summary class="list-none inline-flex items-center gap-1 text-[13px] underline cursor-pointer text-slate-600 hover:text-blue-600 focus:outline-none px-2 py-1 rounded-lg select-none"><span>More details</span><svg class="w-3 h-3 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg></summary>'
       +'<div class="mt-2"><p class="text-sm text-slate-700 whitespace-pre-line">'+desc+'</p></div></details>'
-      +'<div class="mt-4 flex flex-col sm:flex-row gap-2">'+applyBtn+bmBtn+'</div>'
+      +'<div class="mt-4 flex flex-col sm:flex-row gap-2">'+applyBtn+bmBtn+trackBtn+'</div>'
       +'</article>';
   }
 
@@ -1393,4 +1394,61 @@ function escHtml(s){
 
   /* Auto-load if already open on page load */
   if(details.open) load();
+})();
+
+/* ── Track button handler (all pages) ───────────────────────── */
+(function(){
+  var STORE = 'catalitium_tracker_v1';
+
+  function getState(){
+    try{ return JSON.parse(localStorage.getItem(STORE)||'{"cards":[]}'); }catch(_){ return {cards:[]}; }
+  }
+  function setState(s){ try{ localStorage.setItem(STORE, JSON.stringify(s)); }catch(_){} }
+
+  function syncBadges(n){
+    var label = n > 99 ? '99+' : String(n);
+    ['tracker-badge','tracker-badge-mobile'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      if(n > 0){ el.textContent = label; el.classList.remove('hidden'); }
+      else el.classList.add('hidden');
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var btn = e.target && e.target.closest('[data-track-btn]');
+    if(!btn) return;
+    e.preventDefault();
+    var jobId   = btn.getAttribute('data-job-id') || '';
+    var title   = btn.getAttribute('data-job-title') || '';
+    var company = btn.getAttribute('data-job-company') || '';
+    var loc     = btn.getAttribute('data-job-location') || '';
+    var link    = btn.getAttribute('data-job-link') || '';
+
+    var state = getState();
+    state.cards = state.cards || [];
+    var exists = state.cards.some(function(c){ return String(c.id) === String(jobId); });
+
+    if(!exists){
+      state.cards.unshift({
+        id: jobId, title: title, company: company,
+        location: loc, link: link,
+        stage: 'applied',
+        trackedAt: new Date().toISOString(),
+        enteredStageAt: new Date().toISOString(),
+        note: ''
+      });
+      setState(state);
+    }
+
+    /* Optimistic UI */
+    var label = btn.querySelector('.track-label');
+    if(label) label.textContent = exists ? 'Tracked ✓' : 'Tracked ✓';
+    btn.classList.add('text-violet-600','border-violet-300','bg-violet-50');
+    btn.disabled = true;
+
+    /* Update badge */
+    var active = state.cards.filter(function(c){ return c.stage !== 'closed'; }).length;
+    syncBadges(active);
+  });
 })();

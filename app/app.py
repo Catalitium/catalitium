@@ -38,9 +38,78 @@ from .models.db import (
     insert_subscriber,
     insert_contact,
     insert_job_posting,
+    get_job_summary,
+    save_job_summary,
     Job,
 )
+import json as _json
 import random
+import urllib.request as _urllib_req
+
+
+def _call_anthropic(description: str, api_key: str):
+    """Call Claude Haiku to extract 3 bullets + up to 8 skill tags from a job description.
+
+    Returns (bullets: list[str], skills: list[str]) or (None, None) on failure.
+    Tries the anthropic SDK first; falls back to raw urllib.request.
+    """
+    prompt = (
+        "Analyze this job description and return ONLY valid JSON (no markdown, no extra text):\n"
+        '{"bullets":["What you\'ll do in 1 sentence","What you need: key skills/exp in 1 sentence","What you get: comp/perks in 1 sentence"],'
+        '"skills":["Skill1","Skill2",...up to 8 tech skills or tools]}\n\n'
+        f"Job description:\n{description[:3000]}"
+    )
+    text = None
+    try:
+        import anthropic  # type: ignore
+        client = anthropic.Anthropic(api_key=api_key)
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = msg.content[0].text
+    except ImportError:
+        # Fallback: raw HTTP
+        try:
+            body = _json.dumps({
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 400,
+                "messages": [{"role": "user", "content": prompt}],
+            }).encode()
+            req = _urllib_req.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=body,
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                method="POST",
+            )
+            with _urllib_req.urlopen(req, timeout=20) as resp:
+                result = _json.loads(resp.read())
+                text = result["content"][0]["text"]
+        except Exception as exc:
+            logger.warning("Anthropic urllib fallback failed: %s", exc)
+            return None, None
+    except Exception as exc:
+        logger.warning("Anthropic SDK call failed: %s", exc)
+        return None, None
+
+    if not text:
+        return None, None
+
+    try:
+        clean = re.sub(r"^```json?\s*", "", text.strip(), flags=re.MULTILINE)
+        clean = re.sub(r"```\s*$", "", clean.strip(), flags=re.MULTILINE)
+        parsed = _json.loads(clean)
+        bullets = [str(b) for b in (parsed.get("bullets") or [])[:3]]
+        skills  = [str(s) for s in (parsed.get("skills")  or [])[:8]]
+        return bullets, skills
+    except Exception as exc:
+        logger.warning("Failed to parse Anthropic response: %s | raw: %.200s", exc, text)
+        return None, None
 
 
 BLACKLIST_LINKS = {
@@ -998,6 +1067,8 @@ def create_app() -> Flask:
                 urls.append({"loc": loc, "priority": priority, "lastmod": lastmod})
 
         _add(url_for("index", _external=True), priority="1.0")
+        _add(url_for("tracker", _external=True), priority="0.6")
+        _add(url_for("salary_report", _external=True), priority="0.7")
         _add(url_for("legal", _external=True), priority="0.2")
 
         filter_targets = [
@@ -1243,6 +1314,47 @@ def create_app() -> Flask:
         resp.headers["Service-Worker-Allowed"] = "/"
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         return resp
+
+    # ------------------------------------------------------------------
+    # Application Tracker page
+    # ------------------------------------------------------------------
+    @app.get("/tracker")
+    def tracker():
+        """Render the application tracker Kanban page."""
+        return render_template("tracker.html")
+
+    # ------------------------------------------------------------------
+    # AI Job Summary API (Claude Haiku, DB-cached)
+    # ------------------------------------------------------------------
+    @app.get("/api/summary/<int:job_id>")
+    def api_summary(job_id: int):
+        """Return AI-generated bullets + skill tags for a job (cached in DB)."""
+        cached = get_job_summary(job_id)
+        if cached:
+            return jsonify(cached), 200
+
+        row = Job.get_by_id(str(job_id))
+        if not row:
+            return jsonify({"error": "not_found"}), 404
+
+        description = (row.get("job_description") or "").strip()
+        if len(description) < 50:
+            return jsonify({"error": "no_description"}), 404
+
+        api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        if not api_key:
+            return jsonify({"error": "no_api_key"}), 503
+
+        bullets, skills = _call_anthropic(description, api_key)
+        if bullets is None:
+            return jsonify({"error": "api_failed"}), 503
+
+        try:
+            save_job_summary(job_id, bullets, skills)
+        except Exception:
+            pass
+
+        return jsonify({"bullets": bullets, "skills": skills}), 200
 
     return app
 

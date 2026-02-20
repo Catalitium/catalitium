@@ -146,5 +146,21 @@
       </svg>
       <span class="bookmark-label">Save</span>
     </button>
+    <button
+      type="button"
+      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:border-violet-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50"
+      data-track-btn
+      data-job-id="{{ j.id }}"
+      data-job-title="{{ (j.title or '')|e }}"
+      data-job-company="{{ (j.company or '')|e }}"
+      data-job-location="{{ (j.location or 'Remote / Anywhere')|e }}"
+      data-job-link="{{ (j.link or '')|e }}"
+      aria-label="Track application for {{ (j.title or '')|e }}"
+    >
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="track-label">Track</span>
+    </button>
   </div>
 </article>
