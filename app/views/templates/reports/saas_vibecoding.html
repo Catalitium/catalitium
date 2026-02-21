@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+
+{% block title %}The Death of SaaS: How Vibecoding Is Killing a $315 Billion Industry | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="35% of companies have already replaced a SaaS tool with a custom AI build. Catalitium's data-driven report on how vibecoding is structurally disrupting a $315 billion industry.">
+<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:title" content="{{ report.title }}">
+<meta property="og:description" content="{{ report.description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta name="keywords" content="{{ report.keywords | join(', ') }}">
+<meta name="author" content="Catalitium">
+<meta property="article:published_time" content="{{ report.published }}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Ad slot: top -->
+<div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center">
+  <!-- Google AdSense slot -->
+</div>
+
+<!-- Breadcrumb -->
+<nav class="mb-6 text-sm text-slate-500 flex items-center gap-2" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Home</a>
+  <span>&rsaquo;</span>
+  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <span>&rsaquo;</span>
+  <span class="text-slate-700 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
+</nav>
+
+<!-- Two-column layout: article + sticky TOC -->
+<div class="max-w-6xl mx-auto lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 lg:items-start">
+
+  <!-- ═══ MAIN ARTICLE ═══ -->
+  <article>
+
+    <!-- Hero / title block -->
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
+        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+      </p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-4">
+        {{ report.title }}
+      </h1>
+      <p class="text-lg text-slate-600 mb-5 leading-relaxed">{{ report.description }}</p>
+
+      <!-- Meta row -->
+      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 border-y border-slate-100 py-4">
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+          Published {{ report.published_display }}
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/>
+          </svg>
+          {{ report.read_time }}
+        </span>
+        <span class="text-slate-400">&bull;</span>
+        <span class="text-slate-600 font-medium">Global Scope &bull; 45 sources</span>
+        <button onclick="window.print()"
+                class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+          </svg>
+          Download PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile collapsible TOC -->
+    <details class="lg:hidden rounded-xl border border-slate-200 bg-slate-50 p-4 mb-8">
+      <summary class="font-semibold text-slate-700 cursor-pointer select-none">Table of Contents</summary>
+      <ol class="mt-3 space-y-1 text-sm text-brand list-decimal list-inside">
+        <li><a href="#how-to-use" class="hover:underline">How to Use This Report</a></li>
+        <li><a href="#executive-summary" class="hover:underline">Executive Summary</a></li>
+        <li><a href="#market-size-cracks" class="hover:underline">SaaS Market: Size, Growth &amp; Stress Fractures</a></li>
+        <li><a href="#vibecoding-adoption" class="hover:underline">Vibecoding: Definition, Scale &amp; Adoption</a></li>
+        <li><a href="#build-vs-buy" class="hover:underline">The Build vs. Buy Equation Has Broken</a></li>
+        <li><a href="#winners-ai-tools" class="hover:underline">Winners: The AI Coding Tool Economy</a></li>
+        <li><a href="#saas-evolves" class="hover:underline">Counterpoint: SaaS Evolves, Not Dies</a></li>
+        <li><a href="#economics" class="hover:underline">The Economics of Building vs. Renting</a></li>
+        <li><a href="#forward-outlook" class="hover:underline">Forward Outlook: 2026&ndash;2030</a></li>
+        <li><a href="#bifurcation" class="hover:underline">Growing vs. Declining</a></li>
+        <li><a href="#recommendations" class="hover:underline">Catalitium Recommendations</a></li>
+        <li><a href="#faq" class="hover:underline">Frequently Asked Questions</a></li>
+        <li><a href="#methodology" class="hover:underline">Methodology &amp; Sources</a></li>
+      </ol>
+    </details>
+
+    <!-- ─── KEY STATS ─── -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-10">
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <p class="text-3xl font-bold text-brand mb-1">$315B</p>
+        <p class="text-xs text-slate-600 leading-snug">Global SaaS market size, 2025</p>
+      </div>
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <p class="text-3xl font-bold text-brand mb-1">35%</p>
+        <p class="text-xs text-slate-600 leading-snug">Companies that replaced a SaaS tool with a custom AI build</p>
+      </div>
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <p class="text-3xl font-bold text-brand mb-1">$1B ARR</p>
+        <p class="text-xs text-slate-600 leading-snug">Cursor &mdash; reached in 24 months from $1M</p>
+      </div>
+      <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 text-center">
+        <p class="text-3xl font-bold text-amber-700 mb-1">$19.8M</p>
+        <p class="text-xs text-slate-600 leading-snug">Avg. annual SaaS license waste per enterprise</p>
+      </div>
+      <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
+        <p class="text-3xl font-bold text-emerald-700 mb-1">88%</p>
+        <p class="text-xs text-slate-600 leading-snug">YC Summer 2025 cohort classified as AI-native</p>
+      </div>
+      <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
+        <p class="text-3xl font-bold text-emerald-700 mb-1">4.3&times;</p>
+        <p class="text-xs text-slate-600 leading-snug">AI-native startups grow faster than traditional SaaS</p>
+      </div>
+    </div>
+
+    <!-- ─── HOW TO USE ─── -->
+    <section id="how-to-use" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">How to Use This Report</h2>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <ul class="space-y-3 text-sm text-slate-700">
+          <li class="flex gap-3"><span class="text-brand font-bold flex-shrink-0">&rarr;</span><span><strong class="text-slate-900">Founders &amp; Builders:</strong> Start with Sections 3 and 4. Use the disruption data to pressure-test your SaaS moat or identify categories with weakened competition you can now enter faster and cheaper.</span></li>
+          <li class="flex gap-3"><span class="text-brand font-bold flex-shrink-0">&rarr;</span><span><strong class="text-slate-900">SaaS Companies:</strong> Go to Sections 5 and 6 first. Map your product against the vulnerability framework. Understand which pricing model transition is relevant to your category.</span></li>
+          <li class="flex gap-3"><span class="text-brand font-bold flex-shrink-0">&rarr;</span><span><strong class="text-slate-900">Enterprises &amp; Procurement Teams:</strong> Sections 3 and the Recommendations section contain the build vs. buy analysis and the SaaS sprawl data. The financial case for consolidation starts there.</span></li>
+          <li class="flex gap-3"><span class="text-brand font-bold flex-shrink-0">&rarr;</span><span><strong class="text-slate-900">Investors:</strong> Sections 4 and 7 map where capital is concentrating and what the 2026&ndash;2030 analyst consensus looks like. The AI-native vs. traditional SaaS performance table in Section 5 is the core data point.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ─── EXECUTIVE SUMMARY ─── -->
+    <section id="executive-summary" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Executive Summary</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The global SaaS market &mdash; valued at $315&ndash;$408 billion in 2025 &mdash; is not collapsing. But its internal architecture is cracking at the foundation. While headline numbers still grow, the structural forces have shifted: AI-native companies grow at 4.3&times; the rate of traditional SaaS. Vibecoding tools like Cursor went from $1M to $1B ARR in 24 months. $300 billion was erased from SaaS market caps in a single day in February 2026. The build vs. buy equation &mdash; stable for two decades &mdash; has permanently changed. This is not a SaaS problem. It is a business model problem.
+      </p>
+      <ul class="space-y-3 text-sm text-slate-700">
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>SaaS annual growth decelerated from <strong class="text-slate-900">36% to ~12%</strong> over a decade and is forecast to continue falling [Aventis Advisors]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span><strong class="text-slate-900">35% of companies</strong> have already replaced at least one SaaS tool with a custom AI build; <strong class="text-slate-900">78%</strong> plan to build more in 2026 [Retool, Feb 2026]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>Cursor: <strong class="text-slate-900">$1M &rarr; $1B ARR in 24 months</strong> &mdash; widely considered the fastest $1M-to-$1B in software history [Sacra]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>GitHub Copilot: <strong class="text-slate-900">20M users, 90% Fortune 100 adoption</strong>, generates 46% of average user's code [GitHub/Microsoft Q4 FY25]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>YC AI-native cohort share: <strong class="text-slate-900">25% (Winter 2025) &rarr; 88% (Summer 2025)</strong> &mdash; exponential, not linear [YC/Snyk]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>AI-native SaaS: <strong class="text-slate-900">100% median growth rate, 132% NRR</strong> vs. 23% growth / 108% NRR for traditional SaaS [Emergence Capital]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>Build cost for an internal tool: <strong class="text-slate-900">$5K&ndash;$42K in 2&ndash;4 weeks</strong> vs. $180K&ndash;$350K agency over 12 weeks &mdash; a 70&ndash;90% collapse</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span><strong class="text-slate-900">$19.8M</strong> in SaaS license waste per enterprise annually; average enterprise runs <strong class="text-slate-900">447 apps</strong> with only 47&ndash;53% utilized [Zylo 2026]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>SaaS valuation multiples compressed: <strong class="text-slate-900">15&ndash;20&times; ARR (2021) &rarr; 6&ndash;10&times; ARR (2025)</strong> [Altimeter/SaaStr]</span></li>
+        <li class="flex gap-3"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0 mt-1.5"></span><span>Deloitte projects AI agent solutions could represent <strong class="text-slate-900">60% of the total software market by 2030</strong></span></li>
+      </ul>
+    </section>
+
+    <!-- ─── SECTION 1: Market Size ─── -->
+    <section id="market-size-cracks" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">SaaS Market: Size, Growth, and Stress Fractures</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The numbers are still large. Fortune Business Insights values the global SaaS market at $315.68 billion in 2025, with projections reaching $1.48 trillion by 2034. Precedence Research places it higher at $408 billion. Gartner &mdash; the conservative voice &mdash; pegged end-user SaaS spending at $247 billion in 2024. All three agree on direction: the market is still growing.
+      </p>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        Large numbers obscure a harder truth. The growth engine is losing pressure. SaaS expansion rates collapsed from 36% annually to approximately 12% over the past decade, with analysts at Aventis Advisors projecting continued deceleration to 11% and below. Public SaaS revenue multiples tell the same story: the 15&ndash;20&times; ARR of the 2021 peak has halved to 6&ndash;10&times; by 2025. Maturity, for businesses built on hypergrowth assumptions, is its own crisis.
+      </p>
+
+      <!-- CSS growth rate visualization -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 mb-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-4">SaaS Annual Growth Rate Deceleration (2015&ndash;2026F)</p>
+        <div class="space-y-2">
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2015</span><span class="font-semibold">36%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:100%"></div></div></div>
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2018</span><span class="font-semibold">23%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:64%"></div></div></div>
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2021</span><span class="font-semibold">20%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:56%"></div></div></div>
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2023</span><span class="font-semibold">13%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-amber-400" style="width:36%"></div></div></div>
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2025E</span><span class="font-semibold">11.5%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-amber-400" style="width:32%"></div></div></div>
+          <div><div class="flex justify-between text-xs text-slate-600 mb-0.5"><span>2026F</span><span class="font-semibold">~11%</span></div><div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-rose-400" style="width:30%"></div></div></div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3">Source: Aventis Advisors, SaaStr, Gartner. E = estimate. F = forward forecast.</p>
+      </div>
+
+      <!-- SaaS sprawl table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Company Size</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Avg. SaaS Apps</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">License Utilization</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">Source</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 font-medium text-slate-900">SMBs</td><td class="px-4 py-3 text-slate-600">253 apps</td><td class="px-4 py-3 text-slate-600">47&ndash;53% active</td><td class="px-4 py-3 text-slate-400 text-xs hidden sm:table-cell">Productiv / Spendesk</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">Mid-market</td><td class="px-4 py-3 text-slate-600">335 apps</td><td class="px-4 py-3 text-slate-600">47&ndash;53% active</td><td class="px-4 py-3 text-slate-400 text-xs hidden sm:table-cell">Productiv</td></tr>
+            <tr><td class="px-4 py-3 font-medium text-slate-900">Enterprise (&gt;10K employees)</td><td class="px-4 py-3 text-slate-600">447 apps</td><td class="px-4 py-3 text-slate-600">47&ndash;53% active</td><td class="px-4 py-3 text-slate-400 text-xs hidden sm:table-cell">MadX Digital</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">All companies (avg.)</td><td class="px-4 py-3 text-slate-600">342 apps (2024)</td><td class="px-4 py-3 text-rose-700 font-semibold">35% unused or underused</td><td class="px-4 py-3 text-slate-400 text-xs hidden sm:table-cell">Productiv, July 2024</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The startup layer is feeling it harder. Carta data shows 966 startups shut down on their platform in 2024 &mdash; up 25.6% from 2023. Enterprise SaaS companies made up 32% of those shutdowns. B2B SaaS closures rose from 5.2% to 7.7% of all startup closures in 2025, with Series A shutdowns jumping from ~6% to 14%. VC seed funding dropped 37% year-over-year in Q1 2025 &mdash; a seven-year low.
+      </p>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Catalitium's read:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The headline market number ($315B) is real. But it masks a bifurcation. Horizontal, seat-based, tool-for-tool SaaS is contracting. AI-native SaaS with clear ROI and deep workflow integration is expanding. The question is which category your stack belongs to.</p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 2: Vibecoding ─── -->
+    <section id="vibecoding-adoption" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Vibecoding: Definition, Scale, and Adoption</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The term "vibecoding" was coined by Andrej Karpathy on February 2, 2025. By year end, Collins Dictionary named it their Word of the Year. One year later, Karpathy called it a "throwaway tweet" and proposed "agentic engineering" as the more precise professional term &mdash; but the cultural moment had already arrived.
+      </p>
+
+      <!-- Pull quote -->
+      <blockquote class="border-l-4 border-brand bg-brand/5 px-5 py-4 rounded-r-xl mb-5">
+        <p class="text-sm text-slate-700 italic leading-relaxed mb-2">"There's a new kind of coding I call 'vibe coding', where you fully give in to the vibes, embrace exponentials, and forget that the code even exists... I 'Accept All' always, I don't read the diffs anymore."</p>
+        <cite class="text-xs text-slate-500 font-semibold not-italic">&mdash; Andrej Karpathy, X (formerly Twitter), February 2, 2025</cite>
+      </blockquote>
+
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The adoption story is not about recreational code generation. It is about a structural shift in who can build software &mdash; and at what cost. GitHub Copilot alone has 20 million cumulative users, 90% Fortune 100 adoption, and generates 46% of the average user's code (61% for Java). Satya Nadella stated on Microsoft's Q4 FY25 earnings that Copilot is now a larger business than GitHub itself was at its $7.5 billion acquisition.
+      </p>
+
+      <!-- AI coding tools table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Tool</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Scale / ARR</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Timeline</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 font-semibold text-slate-900">Cursor</td><td class="px-4 py-3 text-brand font-semibold">$1B ARR</td><td class="px-4 py-3 text-slate-600">~24 months</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">$29.3B valuation. Fastest $1M&rarr;$1B ever.</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-semibold text-slate-900">GitHub Copilot</td><td class="px-4 py-3 text-brand font-semibold">20M users</td><td class="px-4 py-3 text-slate-600">July 2025</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">42% market share. Bigger than GitHub at acquisition.</td></tr>
+            <tr><td class="px-4 py-3 font-semibold text-slate-900">Replit</td><td class="px-4 py-3 text-brand font-semibold">$240M revenue</td><td class="px-4 py-3 text-slate-600">2025</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">~$9B valuation. $10M&rarr;$100M ARR in 6 months post-Agent launch.</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-semibold text-slate-900">Lovable</td><td class="px-4 py-3 text-brand font-semibold">$120M+ ARR</td><td class="px-4 py-3 text-slate-600">8 months</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">Possibly fastest company to $100M ARR in history.</td></tr>
+            <tr><td class="px-4 py-3 font-semibold text-slate-900">Bolt.new</td><td class="px-4 py-3 text-brand font-semibold">$4M&rarr;$40M ARR</td><td class="px-4 py-3 text-slate-600">&lt;3 months</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">10&times; in under a quarter.</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-semibold text-slate-900">Windsurf</td><td class="px-4 py-3 text-brand font-semibold">$3B acquisition</td><td class="px-4 py-3 text-slate-600">May 2025</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">Acquired by OpenAI.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        84% of developers are using or planning to use AI coding tools (Stack Overflow 2025), but 72% say vibecoding is not part of their professional workflow. The disruption is not being driven by vibe coders throwing prompts at walls. It is being driven by mainstream developers who are now 55% faster at task completion, shipping 61% more code, and choosing to build internal tools instead of buying SaaS subscriptions.
+      </p>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Catalitium's read:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The real story is not "anyone can code now." It is "the cost of building software has dropped 70&ndash;90%, permanently." That economic shift is what threatens SaaS &mdash; not the cultural phenomenon of vibecoding.</p>
+      </div>
+    </section>
+
+    <!-- Ad slot: mid-article -->
+    <div id="ad-mid-article" class="my-8 text-center min-h-[250px] flex items-center justify-center rounded-xl border border-dashed border-slate-200">
+      <!-- Google AdSense slot -->
+    </div>
+
+    <!-- ─── SECTION 3: Build vs Buy ─── -->
+    <section id="build-vs-buy" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">The Build vs. Buy Equation Has Broken</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        For decades, building custom software had a clear answer: buy. SaaS made it affordable to access best-in-class tools without bearing development cost. That logic is now breaking down at its foundation. Retool surveyed 817 builders in their February 2026 Build vs. Buy report: 35% have already replaced at least one SaaS tool with a custom-built alternative. 78% plan to build more in 2026.
+      </p>
+
+      <!-- Cost comparison table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Build Route</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Cost</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Timeline</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 text-slate-600">Traditional agency</td><td class="px-4 py-3 text-rose-700 font-semibold">$180K&ndash;$350K</td><td class="px-4 py-3 text-slate-600">12 weeks</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-slate-600">In-house dev team</td><td class="px-4 py-3 text-amber-700 font-semibold">$100K&ndash;$200K+</td><td class="px-4 py-3 text-slate-600">3&ndash;6 months</td></tr>
+            <tr><td class="px-4 py-3 text-slate-600">AI MVP builder</td><td class="px-4 py-3 text-brand font-semibold">$25K&ndash;$80K</td><td class="px-4 py-3 text-slate-600">3&ndash;6 weeks</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-semibold text-slate-900">Developer + AI tooling</td><td class="px-4 py-3 text-emerald-700 font-bold">$5K&ndash;$42K</td><td class="px-4 py-3 text-emerald-700 font-semibold">2&ndash;4 weeks</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Real-world case: an HR onboarding portal &mdash; the kind a company might pay Workday or BambooHR for &mdash; was built for $42K in 4 weeks using AI-assisted development, versus agency quotes of $210K over 14 weeks. The cost difference is 5&times;. The time difference is 3.5&times;. This is the math driving the build-instead-of-buy shift at the ground level.
+      </p>
+
+      <!-- Vulnerability table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Risk Level</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">SaaS Categories</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">Why</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 text-rose-700 font-bold">High Risk</td><td class="px-4 py-3 text-slate-600">Project management, CRM, Help desk</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">Core workflows (task tracking, ticket routing) are exactly what AI agents automate best</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-amber-700 font-bold">Medium Risk</td><td class="px-4 py-3 text-slate-600">BI/Analytics, HR tools, Internal dashboards</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">AI generates insights from raw data; scheduling and screening are highly automatable</td></tr>
+            <tr><td class="px-4 py-3 text-emerald-700 font-bold">Lower Risk</td><td class="px-4 py-3 text-slate-600">Security, Compliance, Infrastructure SaaS</td><td class="px-4 py-3 text-slate-500 text-xs hidden sm:table-cell">Consequences of AI errors too severe; regulatory barriers remain high</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Catalitium's read:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The companies most at risk are the ones solving thin problems with thick subscription costs. If your product does one or two things and charges $100+/user/month, you are now competing against a developer with Cursor and a weekend.</p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 4: Winners ─── -->
+    <section id="winners-ai-tools" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Winners: The AI Coding Tool Economy</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Every disruption produces winners. As traditional SaaS subscription revenue leaks to custom-built alternatives, value is concentrating in a new layer: AI developer infrastructure. The AI code tools market grew from effectively zero in 2023 to $7.37 billion in 2025 &mdash; projected at $23.97 billion by 2030 at a 26.6% CAGR. That is more than twice the growth rate of the market it is disrupting.
+      </p>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The VC signal is unambiguous. AI captured approximately 50% of all global venture capital funding in 2025: $202.3 billion total, up 75%+ from $114 billion in 2024. Foundation model companies alone raised $80 billion. This is capital fleeing traditional SaaS and flowing into the infrastructure that replaces it.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+          <p class="text-2xl font-bold text-emerald-700 mb-1">$202.3B</p>
+          <p class="text-sm text-slate-700">Total AI venture investment in 2025 &mdash; up 75% from $114B in 2024</p>
+        </div>
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+          <p class="text-2xl font-bold text-emerald-700 mb-1">$3.70</p>
+          <p class="text-sm text-slate-700">Average ROI per $1 invested in AI tooling; $10.30 for top implementations</p>
+        </div>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Below the infrastructure layer, a new economy is forming. Solo developers are launching profitable micro-SaaS products in days using AI-powered stacks. "Software composers" &mdash; non-traditional developers from business and operations roles &mdash; are building production tools via natural language prompts. The barrier to building a software product has never been lower in the history of computing.
+      </p>
+
+      <div class="rounded-xl bg-amber-50 border border-amber-200 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 mb-2">Catalitium's Read</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The seat-based SaaS business model is already dead. Most companies just have not been told yet. When one AI agent replaces 5&ndash;10 human seats, the entire revenue equation collapses. Usage-based companies grow 31% faster. 85% of SaaS leaders have adopted usage-based models. Salesforce launched Agentforce specifically to get ahead of this. The transition from seats to outcomes is not a prediction &mdash; it is already in earnings calls.</p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 5: Counterpoint ─── -->
+    <section id="saas-evolves" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Counterpoint: SaaS Evolves, Not Dies</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The headline "SaaS is Dead" &mdash; used by a16z in their January 2026 report &mdash; is directionally true but narratively imprecise. A $315&ndash;$408 billion market does not cease to exist. What is happening is more specific: horizontal, commoditized, thin-moat SaaS is being structurally disrupted. Vertical, AI-native, deep-workflow SaaS is actually accelerating.
+      </p>
+
+      <!-- AI-native vs traditional SaaS comparison -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Metric</th>
+              <th class="text-left px-4 py-3 font-semibold text-brand">AI-Native SaaS</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-500">Traditional SaaS</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700 hidden sm:table-cell">Advantage</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 text-slate-600">Median growth rate</td><td class="px-4 py-3 text-brand font-bold">100%</td><td class="px-4 py-3 text-slate-500">23%</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">4.3&times; faster</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-slate-600">Net revenue retention</td><td class="px-4 py-3 text-brand font-bold">132%</td><td class="px-4 py-3 text-slate-500">108%</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">+24 points</td></tr>
+            <tr><td class="px-4 py-3 text-slate-600">Gross revenue retention</td><td class="px-4 py-3 text-brand font-bold">89%</td><td class="px-4 py-3 text-slate-500">81%</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">+8 points</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-slate-600">New logo velocity (YoY)</td><td class="px-4 py-3 text-brand font-bold">360%</td><td class="px-4 py-3 text-slate-500">24%</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">15&times;</td></tr>
+            <tr><td class="px-4 py-3 text-slate-600">ARR per employee (&gt;$50M)</td><td class="px-4 py-3 text-brand font-bold">$396,635</td><td class="px-4 py-3 text-slate-500">~$265,000</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">50% higher</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-slate-600">Sales efficiency</td><td class="px-4 py-3 text-brand font-bold">1.6&times; better</td><td class="px-4 py-3 text-slate-500">Baseline</td><td class="px-4 py-3 text-emerald-700 font-semibold text-xs hidden sm:table-cell">60% higher</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-slate-400 mb-5">Source: Emergence Capital "Beyond Benchmarks 2025"</p>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Legacy players are not standing still. Salesforce launched Agentforce &mdash; autonomous AI agents that explicitly acknowledge the end of per-seat logic. ServiceNow's Q3 2025 revenue hit $3.41B (+22% YoY) with AI-related contract value approaching $500M. Google's Sundar Pichai addressed the "SaaS is dead" narrative directly on Q4 2025 earnings: "95% of the top 20 SaaS companies are using Gemini."
+      </p>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        A METR randomized controlled trial (July 2025) found that experienced developers took 19% longer on familiar, complex codebases with AI tools &mdash; suggesting productivity gains are concentrated in greenfield builds and less expert contexts. 85% of SaaS spend goes to renewals. Deep switching costs and workflow integration remain powerful retention moats for incumbent tools.
+      </p>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">The correct frame:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">Commodity SaaS is being structurally disrupted. AI-native SaaS with genuine workflow depth is experiencing the best growth conditions in the industry's history. Know which one your tools are.</p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 6: Economics ─── -->
+    <section id="economics" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">The Economics of Building vs. Renting Software</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The productivity data from AI coding tools is material. GitHub Copilot: 55% faster task completion. Cursor: 47% faster. Amazon CodeWhisperer: 57% faster. McKinsey estimates up to 45% productivity improvement. A study of 300 engineers found 31.8% efficiency gains and 61.3% more code shipped (ArXiv, September 2025). The nuance: a METR RCT found experienced developers took 19% longer on familiar codebases &mdash; the gains are concentrated in greenfield and less expert contexts.
+      </p>
+
+      <!-- Productivity comparison -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 mb-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-4">Developer Productivity Gains by Tool</p>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span class="text-slate-700">GitHub Copilot (GitHub/Accenture, 4,800 devs)</span><span class="font-semibold text-brand">55% faster</span></div>
+            <div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:55%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span class="text-slate-700">Amazon CodeWhisperer</span><span class="font-semibold text-brand">57% faster</span></div>
+            <div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:57%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span class="text-slate-700">Cursor</span><span class="font-semibold text-brand">47% faster</span></div>
+            <div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-brand" style="width:47%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1"><span class="text-slate-700">McKinsey enterprise estimate</span><span class="font-semibold text-amber-600">up to 45%</span></div>
+            <div class="h-2.5 rounded-full bg-slate-100"><div class="h-full rounded-full bg-amber-400" style="width:45%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The startup formation cost tells the same story. AI's influence on software development cost determination grew from 28.79% (2023) to 64.62% (2025) &mdash; a 2.2&times; increase in two years. AI reduces MVP costs by 30&ndash;40% and accelerates timelines by up to 50%. The 88% of YC Summer 2025 companies that are AI-native are not using AI as a tool &mdash; they are building in an environment where AI has restructured their entire cost base.
+      </p>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Catalitium's read:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The companies most at risk right now are not startups &mdash; they are established SaaS vendors whose pricing was built for a world where building was expensive. That world no longer exists.</p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 7: Forward Outlook ─── -->
+    <section id="forward-outlook" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Forward Outlook: 2026&ndash;2030</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The forward projections are unusually aligned across institutions with different methodologies and incentives. Deloitte's 2026 Global Software Industry Outlook projects AI agent-powered solutions could represent 60% of the total addressable software market by 2030. Gartner forecasts enterprise software spend rising at least 40% by 2027. AI-enabled application spend hit $644 billion in 2025 &mdash; up 76.4% from 2024.
+      </p>
+
+      <!-- Pricing model transition table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Era</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Model</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Logic</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 text-slate-500">Old</td><td class="px-4 py-3 font-semibold text-slate-700">Per seat</td><td class="px-4 py-3 text-slate-600">Pay for potential to work</td><td class="px-4 py-3 text-rose-700 font-semibold text-xs">Dying &mdash; incompatible with AI agents</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 text-slate-500">Current</td><td class="px-4 py-3 font-semibold text-slate-700">Usage-based</td><td class="px-4 py-3 text-slate-600">Pay for act of working</td><td class="px-4 py-3 text-amber-700 font-semibold text-xs">Transitional &mdash; adopted by 85% of SaaS leaders</td></tr>
+            <tr><td class="px-4 py-3 text-slate-500">Emerging</td><td class="px-4 py-3 font-semibold text-brand">Outcome-based</td><td class="px-4 py-3 text-slate-600">Pay for result of the work</td><td class="px-4 py-3 text-brand font-semibold text-xs">Growing &mdash; Gartner: 30%+ enterprise SaaS by 2025</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The M&amp;A wave is building. 2,600+ SaaS M&amp;A transactions were recorded in 2025 &mdash; activity expected to surpass that in 2026 as overcrowded AI categories consolidate. US software companies spent more on AI acquisitions in 2025 than in the previous three years combined (Deloitte). The competitive landscape for software is entering a compression phase: fewer, stronger players with genuine AI differentiation versus a long tail of undifferentiated tools being absorbed or abandoned.
+      </p>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Catalitium's read:</p>
+        <p class="text-sm text-slate-700 leading-relaxed">The companies that will define the next software era are building now. They are AI-native by architecture, not by press release. They price on outcomes, not seats. They deploy faster than their competitors can procure. The window for first-mover advantage in this transition is 18&ndash;36 months.</p>
+      </div>
+    </section>
+
+    <!-- ─── BIFURCATION ─── -->
+    <section id="bifurcation" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">What Is Growing vs. What Is Declining</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+          <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            Growing
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>AI-native SaaS (100% median growth, 132% NRR)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>Vertical SaaS with deep domain data and workflow</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>AI coding tools &amp; developer infrastructure ($7.37B &rarr; $24B)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>Outcome-based and usage-based pricing models</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>Solo builder and micro-SaaS economy</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>AI agent platforms (Agentforce, ServiceNow AI)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>Foundation model companies (raised $80B in 2025)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>"Software as Labor" business models</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0 mt-1.5"></span>Internal AI-built tooling replacing subscriptions</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+          <h3 class="font-bold text-rose-800 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/></svg>
+            Declining
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Horizontal, undifferentiated SaaS with thin moats</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Per-seat pricing models in AI-aware markets</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>General-purpose project management at SMB level</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Traditional CRM for smaller teams</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Point-solution SaaS with no AI differentiation</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>SaaS valuation multiples (15&ndash;20&times; &rarr; 6&ndash;10&times; ARR)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Early-stage SaaS VC funding (seed down 37% in Q1 2025)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>Traditional software agencies ($180K for what AI does for $42K)</li>
+            <li class="flex items-start gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0 mt-1.5"></span>SaaS sprawl (33% of orgs consolidating; 21% cutting spend)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── RECOMMENDATIONS ─── -->
+    <section id="recommendations" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Catalitium Recommendations</h2>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For Founders &amp; Builders</h3>
+      <ul class="space-y-2 text-sm text-slate-700 mb-6">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Audit your horizontal SaaS moat: can the core workflow be replicated with AI tooling in under a month? If yes, rebuild your defensibility argument before someone else does.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Price on outcomes, not seats. Model your revenue around value delivered &mdash; not users provisioned.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Build vertical depth. Proprietary domain data, industry-specific workflows, and regulatory complexity are the new moats. Horizontal features are not.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Study the YC Summer 2025 cohort (88% AI-native). That is your competitive pipeline. Build like they do.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Use AI coding tools to ship faster than competitors can procure. The speed advantage is real: 47&ndash;57% faster task completion across major tools.</li>
+      </ul>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For SaaS Companies</h3>
+      <ul class="space-y-2 text-sm text-slate-700 mb-6">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Map your product against the vulnerability framework: horizontal + thin moat + seat-based = high risk. Move urgently on pricing model transition.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Add AI-native capabilities as core product features, not marketing add-ons. High Alpha confirms AI-core companies grow twice as fast as AI-as-supporting-feature companies.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Transition toward usage-based or outcome-based models before customers force the negotiation.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Invest in proprietary data assets. The companies that own workflow data and industry knowledge will be acquisition targets. The ones that do not will be replaced by a prompt.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Evaluate M&amp;A proactively. 2,600+ transactions in 2025. Strategic acquisitions of AI-native tools are better than competing against them.</li>
+      </ul>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For Enterprises &amp; Teams</h3>
+      <ul class="space-y-2 text-sm text-slate-700">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Conduct a SaaS sprawl audit. With 447 apps on average and $19.8M in wasted licenses annually, the financial case for consolidation is straightforward.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Apply the build vs. buy re-evaluation to your 10 highest-cost SaaS subscriptions. Run the math: $42K custom build vs. $200K/year subscription.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Identify your highest-ROI build candidates inside operations: internal dashboards, reporting tools, onboarding portals, and data entry workflows.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Partner with or hire AI-native builders ("software composers") before your procurement cycle locks you into another 3-year enterprise SaaS contract at 2022 prices.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Before auto-renewing any SaaS contract above $50K/year, run a build-alternative feasibility check using your AI-enabled developers.</li>
+      </ul>
+    </section>
+
+    <!-- Email signup -->
+    <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10">
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Get the next Catalitium report in your inbox</h3>
+      <p class="text-sm text-slate-600 mb-4">One weekly email with market signal and the best tech jobs. No spam. Unsubscribe anytime.</p>
+      <form action="{{ url_for('subscribe') }}" method="post" class="flex flex-col sm:flex-row gap-3">
+        <input type="hidden" name="search_title" value="market-research-r03">
+        <label for="r03-subscribe-email" class="sr-only">Your email</label>
+        <input id="r03-subscribe-email" name="email" type="email" required autocomplete="email"
+               placeholder="you@company.com"
+               class="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit"
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 whitespace-nowrap">
+          Subscribe
+        </button>
+      </form>
+      <p class="text-[11px] text-slate-500 mt-2">Privacy-friendly. One email per week.</p>
+    </div>
+
+    <!-- ─── FAQ ─── -->
+    <section id="faq" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Frequently Asked Questions</h2>
+
+      <div class="space-y-5">
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="font-bold text-slate-900 mb-2">Is SaaS actually dying or just changing shape?</h3>
+          <p class="text-sm text-slate-700 leading-relaxed">Not dying in aggregate &mdash; the global SaaS market is valued at $315&ndash;$408 billion and still growing. What is dying is a specific category: horizontal, seat-based, undifferentiated SaaS without AI-native capabilities. AI-native SaaS is growing at 4.3&times; the rate of traditional SaaS, with 100% median growth vs. 23%.</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="font-bold text-slate-900 mb-2">Will every company start building instead of buying SaaS?</h3>
+          <p class="text-sm text-slate-700 leading-relaxed">No. 35% have already replaced at least one SaaS tool &mdash; not all of them. Building wins for commodity and internal tools. SaaS still wins for complex compliance workflows, multi-organization platforms, deeply regulated verticals, and tools where the moat is proprietary data or network effects rather than the interface.</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="font-bold text-slate-900 mb-2">How do we know if our SaaS product is replaceable by vibecoding?</h3>
+          <p class="text-sm text-slate-700 leading-relaxed">Ask three questions: (1) Can the core workflow be described in under 500 words? (2) Does our value come from the interface, or from proprietary data and integrations? (3) Would a developer with Cursor and four weeks deliver 80% of our value? If yes to all three, your category is structurally exposed.</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="font-bold text-slate-900 mb-2">What should enterprises track quarterly to know if this is hitting their category?</h3>
+          <p class="text-sm text-slate-700 leading-relaxed">Track: renewal pushback rate from internal stakeholders; build-vs-buy requests from your engineering team; number of internal tools deployed vs. the same period last year; SaaS spend as a percentage of headcount (it should be declining). Also watch whether your top SaaS vendors are announcing pricing model changes &mdash; that signals they are feeling the pressure.</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="font-bold text-slate-900 mb-2">What is "Software as Labor" and why does it matter?</h3>
+          <p class="text-sm text-slate-700 leading-relaxed">a16z's framing for AI that delivers outcomes rather than tools. Instead of buying a seat in a platform, you buy a result. Salesforce's Agentforce is the first mainstream commercial implementation. Gartner projects 30%+ of enterprise SaaS will incorporate outcome-based components. This is the business model transition that makes per-seat pricing obsolete &mdash; not vibecoding per se, but the AI agent layer above it.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── METHODOLOGY ─── -->
+    <section id="methodology" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Research Methodology &amp; Sources</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        This report synthesizes data from publicly available sources published between 2023 and 2026. All statistics are attributed to their original source with publication dates where available. Confidence levels: <strong class="text-slate-900">[confirmed]</strong> = directly cited from primary research; <strong class="text-slate-900">[estimate]</strong> = industry approximations from credible analysts; <strong class="text-slate-900">[projected]</strong> = forward-looking forecasts.
+      </p>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Where figures conflict between sources &mdash; notably SaaS market size, where Fortune Business Insights ($315B) and Precedence Research ($408B) diverge significantly &mdash; both estimates are reported with explanatory context. Catalitium interpretation sections represent editorial analysis applied to sourced data, not original research claims.
+      </p>
+      <p class="text-sm text-slate-500 mb-5">
+        Report edition: February 2026 &bull; Published: {{ report.published_display }} &bull; Publisher: Catalitium &bull; 45 sources cited
+      </p>
+
+      <div class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Primary Sources Include</p>
+        <p class="text-xs text-slate-600 leading-relaxed">Gartner, Fortune Business Insights, Precedence Research, Emergence Capital ("Beyond Benchmarks 2025"), Bessemer Venture Partners, a16z, Y Combinator, Retool (Build vs. Buy 2026), Zylo, Productiv, BetterCloud, Carta, SimpleClosure, Stack Overflow (2025 Developer Survey), Deloitte (2026 Global Software Industry Outlook), McKinsey, Sacra, GitHub/Microsoft (Q4 FY25 earnings), Forbes, Business Insider, ArXiv (METR RCT, September 2025), Aventis Advisors, SaaStr, Crunchbase, High Alpha (2025 SaaS Benchmarks), Mordor Intelligence.</p>
+      </div>
+    </section>
+
+    <!-- About Catalitium -->
+    <section class="mb-10 scroll-mt-20 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">About Catalitium</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        <strong>Catalitium</strong> is a high-signal tech job board and market intelligence platform. Our mission is to equip tech talent with the tools, insights, and clarity they need to navigate and shape the future of work in AI, automation, and software.
+      </p>
+      <div class="flex flex-wrap gap-4 text-sm">
+        <a href="{{ url_for('index') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">Browse Tech Jobs</a>
+        <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 text-slate-700 px-4 py-2 font-medium hover:bg-slate-100 transition">All Reports</a>
+        <a href="{{ url_for('about') }}" class="text-brand hover:underline py-2 text-sm">About Us</a>
+        <a href="{{ url_for('legal') }}" class="text-slate-500 hover:underline py-2 text-sm">Privacy &amp; Terms</a>
+      </div>
+    </section>
+
+    <!-- PDF download CTA at bottom -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-brand/20 bg-brand/5 p-5 mb-10">
+      <div>
+        <p class="font-semibold text-slate-900 mb-1">Download the full PDF report</p>
+        <p class="text-sm text-slate-600">Save for offline reading or share with your team.</p>
+      </div>
+      <a href="{{ url_for('static', filename=report.pdf_path) }}"
+         download
+         class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+        </svg>
+        Download PDF
+      </a>
+    </div>
+
+  </article>
+
+  <!-- ═══ STICKY DESKTOP TOC ═══ -->
+  <aside class="hidden lg:block">
+    <div class="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Contents</p>
+      <ol class="space-y-1 text-sm">
+        <li><a href="#how-to-use" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">How to Use</a></li>
+        <li><a href="#executive-summary" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Executive Summary</a></li>
+        <li><a href="#market-size-cracks" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">SaaS Market</a></li>
+        <li><a href="#vibecoding-adoption" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Vibecoding</a></li>
+        <li><a href="#build-vs-buy" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Build vs. Buy</a></li>
+        <li><a href="#winners-ai-tools" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">AI Tool Winners</a></li>
+        <li><a href="#saas-evolves" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Counterpoint</a></li>
+        <li><a href="#economics" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Economics</a></li>
+        <li><a href="#forward-outlook" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Forward Outlook</a></li>
+        <li><a href="#bifurcation" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Growing vs. Declining</a></li>
+        <li><a href="#recommendations" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Recommendations</a></li>
+        <li><a href="#faq" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">FAQ</a></li>
+        <li><a href="#methodology" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Methodology</a></li>
+      </ol>
+      <div class="mt-4 pt-4 border-t border-slate-100">
+        <a href="{{ url_for('static', filename=report.pdf_path) }}"
+           download
+           class="w-full flex items-center justify-center gap-2 rounded-xl border border-brand text-brand px-4 py-2.5 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+          </svg>
+          Download PDF
+        </a>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- end two-column -->
+
+<!-- Ad slot: bottom -->
+<div id="ad-bottom" class="mt-8 text-center min-h-[90px] flex items-center justify-center">
+  <!-- Google AdSense slot -->
+</div>
+
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ report.title }}",
+  "description": "{{ report.description }}",
+  "author": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "datePublished": "{{ report.published }}",
+  "dateModified": "{{ report.published }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ url_for('market_research_report', slug=report.slug, _external=True) }}"
+  },
+  "keywords": "{{ report.keywords | join(', ') }}",
+  "inLanguage": "en",
+  "about": [
+    {"@type": "Thing", "name": "SaaS Industry"},
+    {"@type": "Thing", "name": "Artificial Intelligence"},
+    {"@type": "Thing", "name": "Software Development"},
+    {"@type": "Thing", "name": "Vibecoding"},
+    {"@type": "Thing", "name": "Build vs Buy"},
+    {"@type": "Thing", "name": "AI Coding Tools"}
+  ]
+}
+</script>
+{% endblock %}

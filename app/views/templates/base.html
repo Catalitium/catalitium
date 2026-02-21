@@ -65,6 +65,26 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
      crossorigin="anonymous"></script>
   {% block head_extra %}{% endblock %}
+  <style>
+    @media print {
+      header, footer, nav, #ad-top, #ad-mid-article, #ad-bottom, .no-print, aside {
+        display: none !important;
+      }
+      /* Collapse two-column report layout — article spans full page width */
+      article {
+        grid-column: 1 / -1 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      body { background: #fff !important; color: #111 !important; font-size: 11pt; }
+      article, main { max-width: 100% !important; }
+      a { color: #111 !important; text-decoration: none !important; }
+      h1, h2, h3 { page-break-after: avoid; }
+      p, li, blockquote { orphans: 3; widows: 3; }
+      section, table, figure { page-break-inside: avoid; }
+      @page { margin: 15mm 20mm; size: A4; }
+    }
+  </style>
 </head>
 <body class="min-h-screen bg-white text-slate-800 antialiased">
   <!-- Compact Header (sticky for mobile) -->
@@ -87,15 +107,10 @@
       <nav class="hidden md:flex items-center gap-2 text-sm">
         <div class="flex items-center gap-2">
           <a href="{{ url_for('index') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Jobs</a>
-          <a href="{{ url_for('resources') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors font-semibold">Resources</a>
+          <a href="{{ url_for('market_research_index') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors font-semibold">Market Research</a>
+          <a href="{{ url_for('salary_report') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Salary Tool</a>
           <a href="{{ url_for('recruiter_salary_board') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Salary Board</a>
-          <a href="{{ url_for('tracker') }}" class="relative px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">
-            Tracker
-            <span id="tracker-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center px-1 leading-none"></span>
-          </a>
           <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Weekly Digest</a>
-          <a href="#" data-open-contact class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Contact us</a>
-          <a href="{{ url_for('legal') }}" class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Privacy &amp; Terms</a>
         </div>
         <a href="#" data-open-job-posting class="ml-auto px-3 py-2 rounded-lg font-semibold text-brand bg-brand/10 hover:bg-brand/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
       </nav>
@@ -136,10 +151,9 @@
         <a href="{{ url_for('recruiter_salary_board') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <span class="font-semibold text-brand">Salary Board</span>
         </a>
-        <a href="{{ url_for('tracker') }}" class="relative flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Tracker</span>
-          <span id="tracker-badge-mobile" class="hidden absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full bg-brand text-white text-[9px] font-bold flex items-center justify-center px-0.5 leading-none"></span>
+        <a href="{{ url_for('market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>Research</span>
         </a>
         <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
@@ -159,11 +173,10 @@
 
       <!-- Primary nav links -->
       <ul class="mt-3 space-y-1 text-base">
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Home</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold" href="{{ url_for('resources') }}">Resources</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('salary_report') }}">Salary Tool</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('tracker') }}">My Tracker</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
@@ -195,11 +208,11 @@
   <!-- Footer -->
   <footer class="mt-16 border-t border-slate-200">
     <div class="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <p> - {{ now().year if false else "" }} Catalitium - Empowering with Tech.</p>
+      <p>&copy; 2026 Catalitium &mdash; Empowering tech talent.</p>
       <div class="flex items-center gap-4">
         <a href="{{ url_for('index') }}" class="hover:text-brand">Jobs</a>
-        <a href="{{ url_for('resources') }}" class="hover:text-brand font-semibold">Resources</a>
-        <a href="{{ url_for('tracker') }}" class="hover:text-brand">Tracker</a>
+        <a href="{{ url_for('market_research_index') }}" class="hover:text-brand font-semibold">Market Research</a>
+        <a href="{{ url_for('salary_report') }}" class="hover:text-brand">Salary Tool</a>
         <a href="{{ url_for('about') }}" class="hover:text-brand">About</a>
         <a href="#" data-open-subscribe class="hover:text-brand">Weekly Digest</a>
         <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
@@ -424,20 +437,6 @@
 
   <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block body_extra %}{% endblock %}
-  <script>
-    /* Tracker badge sync — reads localStorage on every page without loading tracker.js */
-    (function(){
-      try {
-        var data = JSON.parse(localStorage.getItem('catalitium_tracker_v1') || '{"cards":[]}');
-        var n = (data.cards || []).filter(function(c){ return c.stage !== 'closed'; }).length;
-        ['tracker-badge','tracker-badge-mobile'].forEach(function(id){
-          var el = document.getElementById(id);
-          if (!el) return;
-          if (n > 0) { el.textContent = n > 99 ? '99+' : n; el.classList.remove('hidden'); }
-        });
-      } catch(_) {}
-    })();
-  </script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {

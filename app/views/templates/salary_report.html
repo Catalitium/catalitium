@@ -1,120 +1,522 @@
 {% extends "base.html" %}
-{% block title %}{{ generated }} Tech Salary Report | Catalitium{% endblock %}
+{% block title %}Salary Tool &amp; Talent Arbitrage Calculator | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Live tech salary benchmarks by role and region, plus an interactive talent arbitrage calculator. Compare local vs. global engineering hire costs instantly. Updated {{ generated }}."/>
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tool"/>
+<meta property="og:title" content="Salary Tool &amp; Talent Arbitrage Calculator | Catalitium"/>
+<meta property="og:description" content="Free tech salary benchmarks and talent arbitrage modelling for engineering teams. Updated live from Catalitium job data."/>
+<meta property="og:type" content="website"/>
+<meta name="keywords" content="tech salary tool, software engineer salary 2026, talent arbitrage calculator, global vs local engineering costs, developer salary benchmarks"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Catalitium Salary Tool",
+  "description": "Interactive tech salary benchmarks and talent arbitrage calculator for engineering teams.",
+  "url": "{{ request.url_root.rstrip('/') }}/salary-tool",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+{% endblock %}
 
 {% block head_extra %}
 <style>
+  /* Range thumb — Tailwind can't do pseudo-elements */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #1a73e8;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #1a73e8;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
   @media print {
     header, footer, nav, .no-print { display: none !important; }
     body { font-size: 11pt; color: #1e293b; }
     .print-break { page-break-before: always; }
-    .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
     a { text-decoration: none; color: inherit; }
-    #print-btn { display: none !important; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto px-1">
 
-  <!-- Header -->
-  <div class="flex items-start justify-between mb-8">
-    <div>
-      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Catalitium Research</p>
-      <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Tech Salary Report</h1>
-      <p class="mt-1 text-slate-500">{{ generated }} edition &mdash; based on live job data</p>
-    </div>
-    <button id="print-btn" onclick="window.print()"
-            class="no-print inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-brand hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Save as PDF
+  <!-- Page header -->
+  <div class="mb-6">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Catalitium Tools</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Salary Tool</h1>
+    <p class="mt-1 text-slate-500">Live salary benchmarks &amp; talent arbitrage modelling &mdash; updated {{ generated }}</p>
+  </div>
+
+  <!-- Tab navigation -->
+  <div class="no-print flex border-b border-slate-200 mb-8">
+    <button id="tab-btn-salary"
+            onclick="switchTab('salary')"
+            class="tab-btn px-5 py-3 text-sm border-b-2 border-brand text-brand font-semibold transition-colors -mb-px">
+      Salary Report
+    </button>
+    <button id="tab-btn-arbitrage"
+            onclick="switchTab('arbitrage')"
+            class="tab-btn px-5 py-3 text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors -mb-px">
+      Talent Arbitrage Calculator
     </button>
   </div>
 
-  <!-- Key insight banner -->
-  <div class="rounded-2xl bg-brand/5 border border-brand/20 px-5 py-4 mb-8">
-    <p class="text-sm font-semibold text-brand mb-1">Key insight</p>
-    {% set top_cat = data | dictsort(by='value', attribute='median') | reverse | first %}
-    <p class="text-slate-700 text-sm">
-      <strong>{{ top_cat[0] }}</strong> roles command the highest estimated median salaries on Catalitium.
-      Remote-friendly positions continue to grow across all categories.
-      Data reflects {{ generated }} live listings.
+  <!-- ─────────────────────────────────────────── -->
+  <!--  DASHBOARD 1 — SALARY REPORT               -->
+  <!-- ─────────────────────────────────────────── -->
+  <div id="panel-salary">
+
+    <div class="flex justify-end mb-4">
+      <button onclick="window.print()"
+              class="no-print inline-flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:border-brand hover:text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+          <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"
+                stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Save as PDF
+      </button>
+    </div>
+
+    <!-- Key insight -->
+    <div class="rounded-2xl bg-brand/5 border border-brand/20 px-5 py-4 mb-8">
+      <p class="text-sm font-semibold text-brand mb-1">Key insight</p>
+      {% set top_cat = data | dictsort(by='value', attribute='median') | reverse | first %}
+      <p class="text-slate-700 text-sm">
+        <strong>{{ top_cat[0] }}</strong> roles command the highest estimated median salaries on Catalitium.
+        Remote-friendly positions continue to grow across all categories.
+        Data reflects {{ generated }} live listings.
+      </p>
+    </div>
+
+    <!-- By role category -->
+    <section class="mb-8">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Salary by role category</h2>
+      <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <th class="px-4 py-3">Category</th>
+              <th class="px-4 py-3 text-right">Roles found</th>
+              <th class="px-4 py-3 text-right">Min</th>
+              <th class="px-4 py-3 text-right">Median</th>
+              <th class="px-4 py-3 text-right">Max</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {% for cat, d in data.items() %}
+            <tr class="hover:bg-slate-50 transition">
+              <td class="px-4 py-3 font-medium text-slate-800">{{ cat }}</td>
+              <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
+              <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}${{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}${{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}${{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- By region -->
+    <section class="mb-8">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary by region</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {% for region, d in region_data.items() %}
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-center">
+          <p class="text-2xl font-bold text-slate-900">
+            {% if d.median %}${{ (d.median // 1000)|int }}k{% else %}&mdash;{% endif %}
+          </p>
+          <p class="text-xs font-semibold text-brand mt-0.5">{{ region }}</p>
+          <p class="text-xs text-slate-400 mt-1">{{ d.count }} roles</p>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Bar chart -->
+    <section class="mb-8">
+      <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary comparison</h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+        {% set max_med = data.values() | selectattr('median') | map(attribute='median') | max | default(1) %}
+        {% for cat, d in data.items() %}
+        {% if d.median %}
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-medium text-slate-700">{{ cat }}</span>
+            <span class="text-brand font-semibold">${{ '{:,}'.format(d.median) }}</span>
+          </div>
+          <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-2 rounded-full bg-gradient-to-r from-brand/60 to-brand"
+                 style="width: {{ ((d.median / max_med) * 100)|int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Methodology -->
+    <section class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs text-slate-500 space-y-1.5">
+      <p class="font-semibold text-slate-700 text-sm">Methodology</p>
+      <p>Salary estimates are derived from Catalitium&rsquo;s curated job database, blending employer-disclosed ranges
+         with location-based reference data normalised to USD. Figures represent annual compensation estimates.
+         Outliers are excluded from median calculations.</p>
+      <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>.
+         All figures are estimates &mdash; verify compensation directly with employers.</p>
+      <p class="mt-2"><a href="{{ url_for('index') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
+    </section>
+
+  </div><!-- /panel-salary -->
+
+  <!-- ─────────────────────────────────────────── -->
+  <!--  DASHBOARD 2 — TALENT ARBITRAGE CALCULATOR  -->
+  <!-- ─────────────────────────────────────────── -->
+  <div id="panel-arbitrage" class="hidden">
+
+    <!-- Section intro (SEO + AdSense content) -->
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-slate-900 mb-2">Talent Arbitrage Calculator</h2>
+      <p class="text-slate-500 text-sm max-w-2xl">
+        Model the real cost difference between a local senior engineering hire and placing elite global contractors.
+        Adjust salary, overhead, client rate, and headcount to see annual savings, your margin, and client-ready
+        talking points &mdash; calculated live in your browser.
+      </p>
+    </div>
+
+    <!-- Presets -->
+    <div class="no-print flex gap-2 flex-wrap mb-6">
+      <button id="preset-base" onclick="loadPreset('base', event)"
+              class="preset-pill text-xs font-semibold px-4 py-1.5 rounded-full border transition bg-brand text-white border-brand">
+        Base Case (3 seniors)
+      </button>
+      <button id="preset-aggressive" onclick="loadPreset('aggressive', event)"
+              class="preset-pill text-xs font-semibold px-4 py-1.5 rounded-full border transition bg-white text-slate-500 border-slate-200 hover:border-brand hover:text-brand">
+        Aggressive (4 placements)
+      </button>
+      <button id="preset-conservative" onclick="loadPreset('conservative', event)"
+              class="preset-pill text-xs font-semibold px-4 py-1.5 rounded-full border transition bg-white text-slate-500 border-slate-200 hover:border-brand hover:text-brand">
+        Conservative (low margin)
+      </button>
+    </div>
+
+    <!-- Input grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+
+      <!-- Local hire costs -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Local Hire Costs</p>
+
+        <div class="mb-4">
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Base Salary <span class="text-xs text-slate-400 font-normal">CHF / EUR / year</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 text-sm font-semibold shrink-0">&euro;</span>
+            <input type="number" id="localBase" value="110000" step="5000" oninput="arb_calc()"
+                   class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+          </div>
+        </div>
+
+        <div>
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Overhead % <span class="text-xs text-slate-400 font-normal">taxes, benefits, 13th month</span>
+          </label>
+          <div class="flex items-center gap-3 mb-1.5">
+            <input type="range" id="overheadRange" min="10" max="60" step="1" value="35"
+                   oninput="arb_syncR('overhead'); arb_calc()"/>
+            <span class="text-sm font-semibold text-brand shrink-0 w-9 text-right" id="overheadVal">35%</span>
+          </div>
+          <input type="number" id="overhead" value="35" min="0" max="100" oninput="arb_syncI('overhead'); arb_calc()"
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+        </div>
+      </div>
+
+      <!-- Global contractor -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-5">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Global Contractor Model</p>
+
+        <div class="mb-4">
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Client Rate / Engineer <span class="text-xs text-slate-400 font-normal">monthly</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 text-sm font-semibold shrink-0">&euro;</span>
+            <input type="number" id="clientRate" value="6500" step="100" oninput="arb_calc()"
+                   class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Engineer Cost <span class="text-xs text-slate-400 font-normal">monthly, what you pay</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 text-sm font-semibold shrink-0">&euro;</span>
+            <input type="number" id="engCost" value="4550" step="100" oninput="arb_calc()"
+                   class="flex-1 min-w-0 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Placements <span class="text-xs text-slate-400 font-normal">number of contractors</span>
+          </label>
+          <div class="flex items-center gap-3 mb-1.5">
+            <input type="range" id="placementsRange" min="1" max="10" step="1" value="3"
+                   oninput="arb_syncR('placements'); arb_calc()"/>
+            <span class="text-sm font-semibold text-brand shrink-0 w-9 text-right" id="placementsVal">3</span>
+          </div>
+          <input type="number" id="placements" value="3" min="1" max="20" oninput="arb_syncI('placements'); arb_calc()"
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+        </div>
+
+        <div>
+          <label class="flex justify-between text-sm font-medium text-slate-700 mb-1.5">
+            Months Running <span class="text-xs text-slate-400 font-normal">contract duration</span>
+          </label>
+          <div class="flex items-center gap-3 mb-1.5">
+            <input type="range" id="monthsRange" min="1" max="24" step="1" value="12"
+                   oninput="arb_syncR('months'); arb_calc()"/>
+            <span class="text-sm font-semibold text-brand shrink-0 w-9 text-right" id="monthsVal">12</span>
+          </div>
+          <input type="number" id="months" value="12" min="1" max="36" oninput="arb_syncI('months'); arb_calc()"
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/30"/>
+        </div>
+      </div>
+
+    </div><!-- /input grid -->
+
+    <!-- Results card -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 mb-6">
+      <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-5">Results</p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-6">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Local All-In Cost</p>
+          <p class="text-2xl font-bold text-rose-500" id="arb-localAllin">&mdash;</p>
+          <p class="text-xs text-slate-400 mt-1">per year, one engineer</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Global Total (client)</p>
+          <p class="text-2xl font-bold text-brand" id="arb-globalClient">&mdash;</p>
+          <p class="text-xs text-slate-400 mt-1" id="arb-globalSub">per year</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Your Margin</p>
+          <p class="text-2xl font-bold text-emerald-500" id="arb-margin">&mdash;</p>
+          <p class="text-xs text-slate-400 mt-1">recurring / year</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Client Savings</p>
+          <p class="text-2xl font-bold text-emerald-500" id="arb-savings">&mdash;</p>
+          <p class="text-xs text-slate-400 mt-1" id="arb-savingsSub">vs. local hires</p>
+        </div>
+      </div>
+
+      <hr class="border-slate-100 mb-5"/>
+
+      <!-- Comparison bar -->
+      <div class="mb-5">
+        <div class="flex justify-between text-xs text-slate-500 mb-2">
+          <span>Cost comparison (local vs. global)</span>
+          <span class="font-semibold text-emerald-500" id="arb-savingsPct"></span>
+        </div>
+        <div class="relative h-7 rounded-lg bg-slate-100 overflow-hidden border border-slate-200">
+          <div id="arb-barLocal"
+               class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-semibold text-rose-500 bg-rose-50 border-r-2 border-rose-300 transition-all duration-300"
+               style="width:100%">Local</div>
+          <div id="arb-barGlobal"
+               class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-semibold text-emerald-600 bg-emerald-50 border-r-2 border-emerald-300 transition-all duration-300"
+               style="width:60%">Global</div>
+        </div>
+      </div>
+
+      <!-- Monthly insight callout -->
+      <div class="rounded-xl bg-brand/5 border border-brand/15 px-4 py-3 text-sm text-slate-600 leading-relaxed">
+        Local runs <strong class="text-slate-800" id="arb-insLocal">&mdash;</strong>/mo per engineer.
+        Your global team costs the client <strong class="text-slate-800" id="arb-insGlobal">&mdash;</strong>/mo
+        (<strong id="arb-insN">&mdash;</strong> engineers).
+        That&rsquo;s <strong class="text-emerald-600" id="arb-insSave">&mdash;</strong>/mo saved
+        &mdash; you pocket <strong class="text-brand" id="arb-insMargin">&mdash;</strong>/mo margin.
+      </div>
+    </div>
+
+    <!-- Shareable insights -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 mb-6">
+      <p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Shareable Insights</p>
+      {% for i in [1, 2, 3] %}
+      <div class="relative rounded-xl bg-slate-50 border border-slate-200 p-4 mb-3 last:mb-0">
+        <p class="text-sm text-slate-700 leading-relaxed pr-20" id="arb-copy{{ i }}"></p>
+        <button onclick="arb_copyText({{ i }})" id="arb-copybtn{{ i }}"
+                class="absolute top-3 right-3 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:border-brand hover:text-brand transition">
+          Copy
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Disclaimer -->
+    <p class="text-xs text-slate-400 text-center mb-8">
+      All figures are illustrative models only. Verify rates, taxes, and obligations with qualified professionals.
     </p>
-  </div>
 
-  <!-- By role category -->
-  <section class="mb-8">
-    <h2 class="text-lg font-bold text-slate-900 mb-4">Salary by role category</h2>
-    <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <th class="px-4 py-3">Category</th>
-            <th class="px-4 py-3 text-right">Roles found</th>
-            <th class="px-4 py-3 text-right">Min</th>
-            <th class="px-4 py-3 text-right">Median</th>
-            <th class="px-4 py-3 text-right">Max</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {% for cat, d in data.items() %}
-          <tr class="hover:bg-slate-50 transition">
-            <td class="px-4 py-3 font-medium text-slate-800">{{ cat }}</td>
-            <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
-            <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}${{ '{:,}'.format(d.min) }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}${{ '{:,}'.format(d.median) }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}${{ '{:,}'.format(d.max) }}{% else %}—{% endif %}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+  </div><!-- /panel-arbitrage -->
 
-  <!-- By region -->
-  <section class="mb-8">
-    <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary by region</h2>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {% for region, d in region_data.items() %}
-      <div class="rounded-xl border border-slate-200 bg-white p-4 text-center">
-        <p class="text-2xl font-bold text-slate-900">
-          {% if d.median %}${{ (d.median // 1000)|int }}k{% else %}—{% endif %}
-        </p>
-        <p class="text-xs font-semibold text-brand mt-0.5">{{ region }}</p>
-        <p class="text-xs text-slate-400 mt-1">{{ d.count }} roles</p>
-      </div>
-      {% endfor %}
-    </div>
-  </section>
+</div><!-- /container -->
 
-  <!-- Visual bar chart by category -->
-  <section class="mb-8">
-    <h2 class="text-lg font-bold text-slate-900 mb-4">Median salary comparison</h2>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
-      {% set max_med = data.values() | selectattr('median') | map(attribute='median') | max | default(1) %}
-      {% for cat, d in data.items() %}
-      {% if d.median %}
-      <div>
-        <div class="flex justify-between text-xs mb-1">
-          <span class="font-medium text-slate-700">{{ cat }}</span>
-          <span class="text-brand font-semibold">${{ '{:,}'.format(d.median) }}</span>
-        </div>
-        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-2 rounded-full bg-gradient-to-r from-brand/60 to-brand" style="width: {{ ((d.median / max_med) * 100)|int }}%"></div>
-        </div>
-      </div>
-      {% endif %}
-      {% endfor %}
-    </div>
-  </section>
+<script>
+/* ── Tab switching ── */
+function switchTab(name) {
+  ['salary', 'arbitrage'].forEach(function(t) {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
+    var btn = document.getElementById('tab-btn-' + t);
+    if (t === name) {
+      btn.classList.add('border-brand', 'text-brand', 'font-semibold');
+      btn.classList.remove('border-transparent', 'text-slate-500');
+    } else {
+      btn.classList.remove('border-brand', 'text-brand', 'font-semibold');
+      btn.classList.add('border-transparent', 'text-slate-500');
+    }
+  });
+}
 
-  <!-- Methodology -->
-  <section class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs text-slate-500 space-y-1.5">
-    <p class="font-semibold text-slate-700 text-sm">Methodology</p>
-    <p>Salary estimates are derived from Catalitium's curated job database, blending employer-disclosed ranges with location-based reference data normalized to USD. Figures represent annual compensation estimates. Outliers are excluded from median calculations.</p>
-    <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>. All figures are estimates — verify compensation directly with employers.</p>
-    <p class="mt-2"><a href="{{ url_for('index') }}" class="text-brand hover:underline">Browse live jobs →</a></p>
-  </section>
+/* ── Arbitrage calculator ── */
+var ARB_PRESETS = {
+  base:         { localBase:110000, overhead:35, clientRate:6500, engCost:4550, placements:3, months:12 },
+  aggressive:   { localBase:140000, overhead:35, clientRate:6200, engCost:4340, placements:4, months:12 },
+  conservative: { localBase:110000, overhead:35, clientRate:6000, engCost:4200, placements:3, months:12 }
+};
 
-</div>
+function arb_fmt(n) {
+  return '\u20AC' + Math.round(n).toLocaleString('en-EU');
+}
+
+function arb_syncR(key) {
+  var r = document.getElementById(key + 'Range');
+  document.getElementById(key).value = r.value;
+  document.getElementById(key + 'Val').textContent = key === 'overhead' ? r.value + '%' : r.value;
+}
+
+function arb_syncI(key) {
+  var n = document.getElementById(key);
+  document.getElementById(key + 'Range').value = n.value;
+  document.getElementById(key + 'Val').textContent = key === 'overhead' ? n.value + '%' : n.value;
+}
+
+function arb_calc() {
+  var localBase   = parseFloat(document.getElementById('localBase').value)   || 0;
+  var ovhPct      = parseFloat(document.getElementById('overhead').value)    / 100 || 0;
+  var clientRate  = parseFloat(document.getElementById('clientRate').value)  || 0;
+  var engCost     = parseFloat(document.getElementById('engCost').value)     || 0;
+  var n           = parseInt(document.getElementById('placements').value)    || 1;
+  var months      = parseInt(document.getElementById('months').value)        || 12;
+
+  var localAllin     = localBase * (1 + ovhPct);
+  var globalClientAnn = clientRate * n * months;
+  var marginAnn      = (clientRate - engCost) * n * months;
+  var marginMo       = marginAnn / months;
+  var localAllinN    = localAllin * n;
+  var clientSavings  = localAllinN - globalClientAnn;
+  var monthlySave    = (localAllinN / 12) - (clientRate * n);
+  var savingsPct     = localAllinN > 0 ? (clientSavings / localAllinN * 100) : 0;
+
+  document.getElementById('arb-localAllin').textContent   = arb_fmt(localAllin);
+  document.getElementById('arb-globalClient').textContent = arb_fmt(globalClientAnn);
+  document.getElementById('arb-globalSub').textContent    = n + ' engineer' + (n > 1 ? 's' : '') + ' \u00D7 ' + months + ' mo';
+  document.getElementById('arb-margin').textContent       = arb_fmt(marginAnn);
+  document.getElementById('arb-savings').textContent      = arb_fmt(Math.abs(clientSavings));
+  document.getElementById('arb-savings').className        = 'text-2xl font-bold ' + (clientSavings < 0 ? 'text-rose-500' : 'text-emerald-500');
+  document.getElementById('arb-savingsSub').textContent   = clientSavings >= 0
+    ? 'saved vs. ' + n + ' local hire' + (n > 1 ? 's' : '')
+    : 'more than ' + n + ' local hire' + (n > 1 ? 's' : '');
+
+  var barMax = Math.max(localAllinN, globalClientAnn);
+  document.getElementById('arb-barLocal').style.width  = (barMax > 0 ? localAllinN / barMax * 100 : 100) + '%';
+  document.getElementById('arb-barGlobal').style.width = (barMax > 0 ? globalClientAnn / barMax * 100 : 100) + '%';
+  document.getElementById('arb-savingsPct').textContent = savingsPct.toFixed(1) + '% cheaper';
+
+  document.getElementById('arb-insLocal').textContent  = arb_fmt(localAllin / 12);
+  document.getElementById('arb-insGlobal').textContent = arb_fmt(clientRate * n);
+  document.getElementById('arb-insN').textContent      = n;
+  document.getElementById('arb-insSave').textContent   = arb_fmt(monthlySave);
+  document.getElementById('arb-insMargin').textContent = arb_fmt(marginMo);
+
+  document.getElementById('arb-copy1').textContent =
+    arb_fmt(localAllin) + ' local senior vs ' + arb_fmt(globalClientAnn) + ' for ' + n +
+    ' global engineer' + (n > 1 ? 's' : '') + '. Client saves ' + arb_fmt(clientSavings) +
+    '/year. The maths on global talent speaks for itself.';
+
+  document.getElementById('arb-copy2').textContent =
+    'Why pay ' + arb_fmt(localAllin / 12) + '/mo for one engineer when you get ' + n +
+    ' production-grade engineer' + (n > 1 ? 's' : '') + ' for ' + arb_fmt(clientRate * n) +
+    '/mo? 7 days to place vs. 5 months to hire.';
+
+  document.getElementById('arb-copy3').textContent =
+    'Runway optimisation: replace ' + n + ' local hire' + (n > 1 ? 's' : '') +
+    ' with elite global engineers. Save ' + arb_fmt(monthlySave) +
+    '/mo \u2014 compliance handled, shipping velocity up.';
+}
+
+function loadPreset(name, ev) {
+  document.querySelectorAll('.preset-pill').forEach(function(b) {
+    b.classList.remove('bg-brand', 'text-white', 'border-brand');
+    b.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+  });
+  ev.currentTarget.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+  ev.currentTarget.classList.add('bg-brand', 'text-white', 'border-brand');
+  var p = ARB_PRESETS[name];
+  document.getElementById('localBase').value  = p.localBase;
+  document.getElementById('overhead').value   = p.overhead;
+  document.getElementById('clientRate').value = p.clientRate;
+  document.getElementById('engCost').value    = p.engCost;
+  document.getElementById('placements').value = p.placements;
+  document.getElementById('months').value     = p.months;
+  ['overhead', 'placements', 'months'].forEach(arb_syncI);
+  arb_calc();
+}
+
+async function arb_copyText(n) {
+  var text = document.getElementById('arb-copy' + n).textContent;
+  try { await navigator.clipboard.writeText(text); } catch (e) {}
+  var btn = document.getElementById('arb-copybtn' + n);
+  var orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  btn.classList.add('border-emerald-400', 'text-emerald-600');
+  setTimeout(function() {
+    btn.textContent = orig;
+    btn.classList.remove('border-emerald-400', 'text-emerald-600');
+  }, 1800);
+}
+
+/* Init */
+arb_calc();
+</script>
 {% endblock %}

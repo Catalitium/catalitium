@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block title %}{{ report.title }} | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Data-driven analysis of AI's impact on tech jobs, skills in demand, salaries by region (US, Europe, India), and fastest growing roles for 2025-2026. By Catalitium.">
+<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:title" content="{{ report.title }}">
+<meta property="og:description" content="{{ report.description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta name="keywords" content="{{ report.keywords | join(', ') }}">
+<meta name="author" content="Catalitium">
+<meta property="article:published_time" content="{{ report.published }}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Ad slot: top of page -->
+<div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center">
+  <!-- Google AdSense slot — insert ad code here -->
+</div>
+
+<!-- Breadcrumb -->
+<nav class="mb-6 text-sm text-slate-500 flex items-center gap-2" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Home</a>
+  <span>&rsaquo;</span>
+  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <span>&rsaquo;</span>
+  <span class="text-slate-700 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
+</nav>
+
+<!-- Two-column layout: article + sticky TOC -->
+<div class="max-w-6xl mx-auto lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 lg:items-start">
+
+  <!-- ═══ MAIN ARTICLE ═══ -->
+  <article>
+
+    <!-- Hero / title block -->
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
+        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+      </p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-4">
+        {{ report.title }}
+      </h1>
+      <p class="text-lg text-slate-600 mb-5 leading-relaxed">{{ report.description }}</p>
+
+      <!-- Meta row: date · read time · PDF download -->
+      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 border-y border-slate-100 py-4">
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+          Published {{ report.published_display }}
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/>
+          </svg>
+          {{ report.read_time }}
+        </span>
+        <span class="flex items-center gap-1.5 font-medium text-slate-600">
+          Published by Catalitium
+        </span>
+        <a href="{{ url_for('static', filename=report.pdf_path) }}"
+           download
+           class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+          </svg>
+          Download PDF
+        </a>
+      </div>
+    </header>
+
+    <!-- Mobile collapsible TOC -->
+    <details class="lg:hidden rounded-xl border border-slate-200 bg-slate-50 p-4 mb-8">
+      <summary class="font-semibold text-slate-700 cursor-pointer select-none">Table of Contents</summary>
+      <ol class="mt-3 space-y-1 text-sm text-brand list-decimal list-inside">
+        <li><a href="#executive-summary" class="hover:underline">Executive Summary</a></li>
+        <li><a href="#key-forces" class="hover:underline">Key Forces Shaping the Tech Job Market</a></li>
+        <li><a href="#top-skills" class="hover:underline">Top Technical &amp; Power Skills (2025)</a></li>
+        <li><a href="#remote-hybrid-trends" class="hover:underline">Remote &amp; Hybrid Work Trends (2019&ndash;2025)</a></li>
+        <li><a href="#skills-breakdown" class="hover:underline">Full Breakdown of In-Demand Skills</a></li>
+        <li><a href="#salaries-by-region" class="hover:underline">2025 Tech Salaries by Region</a></li>
+        <li><a href="#ai-impact" class="hover:underline">Global AI Impact: Job Creation vs Displacement</a></li>
+        <li><a href="#role-shifts" class="hover:underline">Fastest Growing &amp; Declining Roles</a></li>
+        <li><a href="#recommendations" class="hover:underline">Catalitium Recommendations</a></li>
+        <li><a href="#methodology" class="hover:underline">Research Methodology &amp; Sources</a></li>
+        <li><a href="#about-catalitium" class="hover:underline">About Catalitium</a></li>
+      </ol>
+    </details>
+
+    <!-- ─── SECTION 1: Executive Summary ─── -->
+    <section id="executive-summary" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Executive Summary</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        The global tech and AI job market is undergoing its most significant structural shift in decades.
+        Artificial intelligence is simultaneously eliminating routine tasks and creating entirely new
+        categories of high-value work. This report analyzes data across major hiring markets —
+        the United States, Western Europe, and India — to give tech professionals and organizations
+        a clear picture of where the market is heading.
+      </p>
+
+      <!-- Key stat callout boxes -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+        <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+          <p class="text-3xl font-bold text-brand mb-1">86%</p>
+          <p class="text-sm text-slate-700">of companies are accelerating AI and automation adoption in their workforce.</p>
+        </div>
+        <div class="rounded-xl bg-brand/5 border border-brand/20 p-4">
+          <p class="text-3xl font-bold text-brand mb-1">70%</p>
+          <p class="text-sm text-slate-700">of global executives say AI disruptions are directly affecting their workforce today.</p>
+        </div>
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+          <p class="text-3xl font-bold text-emerald-700 mb-1">170M</p>
+          <p class="text-sm text-slate-700">new jobs expected to be created by AI by 2030 — a net positive for global employment.</p>
+        </div>
+        <div class="rounded-xl bg-amber-50 border border-amber-200 p-4">
+          <p class="text-3xl font-bold text-amber-700 mb-1">92M</p>
+          <p class="text-sm text-slate-700">jobs at risk of displacement, concentrated in repetitive and manual roles.</p>
+        </div>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed">
+        The core insight: <strong class="text-slate-900">AI eliminates tasks, not talent.</strong>
+        Professionals who invest in AI fluency, analytical thinking, and adaptability are positioned
+        to capture the largest share of the new opportunity.
+      </p>
+    </section>
+
+    <!-- ─── SECTION 2: Key Forces ─── -->
+    <section id="key-forces" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Key Forces Shaping the Tech Job Market</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Three macro-level forces are converging to reshape hiring, skills, and career trajectories across the global tech sector:
+      </p>
+      <ul class="space-y-4">
+        <li class="flex gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center mt-0.5">1</span>
+          <div>
+            <h3 class="font-semibold text-slate-900 mb-1">AI Acceleration</h3>
+            <p class="text-sm text-slate-700 leading-relaxed">
+              Generative AI, LLMs, and automation tools are being embedded across every software product and business process.
+              This is increasing demand for AI-native skills while compressing demand for purely manual technical execution.
+            </p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center mt-0.5">2</span>
+          <div>
+            <h3 class="font-semibold text-slate-900 mb-1">Remote Work Normalization</h3>
+            <p class="text-sm text-slate-700 leading-relaxed">
+              Hybrid is now the global standard at approximately 40% of tech roles.
+              Fully remote has stabilized around 22%, down from its 2021 peak, while on-site arrangements
+              dropped from 78% to 38% of positions over six years — a permanent structural shift.
+            </p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand text-white text-xs font-bold flex items-center justify-center mt-0.5">3</span>
+          <div>
+            <h3 class="font-semibold text-slate-900 mb-1">Global Salary Convergence</h3>
+            <p class="text-sm text-slate-700 leading-relaxed">
+              While the US remains the highest-paying market for specialized roles, India is the fastest-growing
+              salary market at +12&ndash;18% annual increases. Western Europe offers strong stability and benefits packages
+              that increasingly offset headline compensation differences.
+            </p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ─── SECTION 3: Top Skills ─── -->
+    <section id="top-skills" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Top Technical &amp; Power Skills in Tech (2025)</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        Employer demand in 2025 bifurcates clearly between <strong class="text-slate-900">technical skills</strong>
+        (what you build with) and <strong class="text-slate-900">power skills</strong> (how you work with others and
+        navigate complexity). Both categories now carry equal weight in senior hiring decisions.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-sky-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-slate-900">Technical Skills</h3>
+          </div>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>AI / ML &amp; LLM Engineering</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>Python, SQL</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>Cloud (AWS, Azure, GCP)</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>Cybersecurity &amp; DevSecOps</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>DevOps &amp; Platform Engineering</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>Prompt Engineering</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0"></span>Automation &amp; MLOps</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-slate-900">Power Skills</h3>
+          </div>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>Analytical thinking &amp; problem solving</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>Adaptability &amp; learning agility</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>Communication &amp; cross-functional collaboration</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>Leadership &amp; team influence</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span><strong>AI fluency</strong> — fastest-emerging soft skill globally</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>Strategic thinking under ambiguity</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 4: Remote & Hybrid ─── -->
+    <section id="remote-hybrid-trends" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Remote &amp; Hybrid Work Trends (2019&ndash;2025)</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The distribution of work modalities in tech has undergone a fundamental, permanent shift since 2019.
+        Hybrid arrangements have become the dominant model, while on-site fell dramatically and fully-remote
+        settled into a stable minority share.
+      </p>
+
+      <!-- Visual representation of work modality data -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 mb-5">
+        <h3 class="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-4">Work Modality Share — Tech Roles (2025)</h3>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="font-medium text-slate-700">Hybrid</span>
+              <span class="text-slate-500">~40%</span>
+            </div>
+            <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full rounded-full bg-brand" style="width: 40%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="font-medium text-slate-700">On-site</span>
+              <span class="text-slate-500">~38%</span>
+            </div>
+            <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full rounded-full bg-slate-400" style="width: 38%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="font-medium text-slate-700">Fully Remote</span>
+              <span class="text-slate-500">~22%</span>
+            </div>
+            <div class="h-3 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full rounded-full bg-emerald-500" style="width: 22%"></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Note: On-site was 78% in 2019. AI and data roles remain the most remote-friendly categories.</p>
+      </div>
+
+      <div class="rounded-xl bg-amber-50 border border-amber-200 p-4">
+        <p class="text-sm text-slate-700 leading-relaxed">
+          <strong class="text-amber-800">Key insight:</strong> Fully remote peaked in 2021 and has since stabilized around 22% of tech roles.
+          The "new normal" is hybrid — not fully remote. Companies expecting on-site full-time are increasingly struggling to attract top talent.
+        </p>
+      </div>
+    </section>
+
+    <!-- Ad slot: mid-article -->
+    <div id="ad-mid-article" class="my-8 text-center min-h-[250px] flex items-center justify-center rounded-xl border border-dashed border-slate-200">
+      <!-- Google AdSense slot — insert ad code here -->
+    </div>
+
+    <!-- ─── SECTION 5: Skills Breakdown ─── -->
+    <section id="skills-breakdown" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Full Breakdown of In-Demand Skills</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        Beyond headline rankings, the 2025 skills landscape shows clear differentiation by role family,
+        with some technologies maintaining cross-category dominance while others serve specific niches.
+      </p>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Skill / Technology</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Category</th>
+              <th class="text-left px-4 py-3 font-semibold text-slate-700">Demand Trend</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 font-medium text-slate-900">AI / ML Engineering</td><td class="px-4 py-3 text-slate-600">AI & Data</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Rapid growth</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">Python</td><td class="px-4 py-3 text-slate-600">Engineering</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Dominant</td></tr>
+            <tr><td class="px-4 py-3 font-medium text-slate-900">SQL &amp; Data Engineering</td><td class="px-4 py-3 text-slate-600">Data</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Strong demand</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">Cloud Platforms (AWS/Azure/GCP)</td><td class="px-4 py-3 text-slate-600">Infrastructure</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Strong demand</td></tr>
+            <tr><td class="px-4 py-3 font-medium text-slate-900">Cybersecurity</td><td class="px-4 py-3 text-slate-600">Security</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Critical shortage</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">DevOps / Platform Engineering</td><td class="px-4 py-3 text-slate-600">Infrastructure</td><td class="px-4 py-3 text-emerald-700 font-semibold">&#8593; Strong demand</td></tr>
+            <tr><td class="px-4 py-3 font-medium text-slate-900">Prompt Engineering</td><td class="px-4 py-3 text-slate-600">AI (Emerging)</td><td class="px-4 py-3 text-brand font-semibold">&#8593; New &amp; emerging</td></tr>
+            <tr class="bg-slate-50/50"><td class="px-4 py-3 font-medium text-slate-900">Traditional IT Support</td><td class="px-4 py-3 text-slate-600">Operations</td><td class="px-4 py-3 text-rose-600 font-semibold">&#8595; Declining</td></tr>
+            <tr><td class="px-4 py-3 font-medium text-slate-900">Manual QA Testing</td><td class="px-4 py-3 text-slate-600">Quality</td><td class="px-4 py-3 text-rose-600 font-semibold">&#8595; Declining</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 6: Salaries ─── -->
+    <section id="salaries-by-region" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">2025 Tech Salaries by Region (US, Europe, India)</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        Compensation varies significantly by geography, but the gap is narrowing — particularly for
+        remote-eligible roles. Here is how the major markets compare for AI and tech professionals.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="text-base font-bold text-slate-900 mb-1">🇺🇸 United States</h3>
+          <p class="text-2xl font-bold text-brand mb-2">$130k&ndash;$210k+</p>
+          <p class="text-xs text-slate-600 leading-relaxed">Highest-paying market globally for AI/ML and senior specialized roles. Bay Area and New York command the top-end premiums.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="text-base font-bold text-slate-900 mb-1">🇪🇺 Western Europe</h3>
+          <p class="text-2xl font-bold text-brand mb-2">€70k&ndash;€140k</p>
+          <p class="text-xs text-slate-600 leading-relaxed">Competitive stability with strong benefits, work-life balance, and growing AI hubs in Berlin, Paris, Amsterdam, and Zurich (CHF 100k&ndash;165k).</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <h3 class="text-base font-bold text-slate-900 mb-1">🇮🇳 India</h3>
+          <p class="text-2xl font-bold text-brand mb-2">+12&ndash;18% / yr</p>
+          <p class="text-xs text-slate-600 leading-relaxed">Fastest-growing salary market. Absolute figures remain below Western levels, but purchasing power and rate of increase are accelerating rapidly.</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+        <p class="text-sm text-slate-700 leading-relaxed">
+          <strong class="text-slate-900">Regional consistency:</strong> Cloud, cybersecurity, and DevOps roles show the
+          smallest salary disparities between regions — making them excellent targets for professionals in emerging markets
+          looking to compete globally.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 7: AI Impact ─── -->
+    <section id="ai-impact" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Global AI Impact: Job Creation vs Displacement</h2>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        The net impact of AI on global employment is projected to be <strong class="text-slate-900">positive</strong>,
+        but the transition will be uneven across roles, industries, and regions. Understanding the breakdown is
+        essential for career planning.
+      </p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
+          <p class="text-4xl font-bold text-emerald-700 mb-2">170M</p>
+          <p class="font-semibold text-slate-900 mb-1">New Jobs Created by 2030</p>
+          <p class="text-xs text-slate-600">High-growth families: AI/ML engineering, data science, cloud architecture, cybersecurity, product management, automation operations.</p>
+        </div>
+        <div class="rounded-xl bg-rose-50 border border-rose-200 p-5 text-center">
+          <p class="text-4xl font-bold text-rose-700 mb-2">92M</p>
+          <p class="font-semibold text-slate-900 mb-1">Jobs Displaced</p>
+          <p class="text-xs text-slate-600">Predominantly repetitive, manual, or rule-based roles: data entry, traditional IT support, administrative assistants, manual QA.</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-5">
+        <p class="font-semibold text-slate-900 mb-2">"AI eliminates tasks, not talent."</p>
+        <p class="text-sm text-slate-700 leading-relaxed">
+          The roles most at risk are those defined by their tasks rather than their judgment.
+          The roles that thrive are those requiring synthesis, creativity, ethical reasoning, and cross-functional
+          decision-making — areas where humans retain a durable advantage. Upskilling in AI fluency is the
+          single highest-leverage investment a tech professional can make today.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 8: Role Shifts ─── -->
+    <section id="role-shifts" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Fastest Growing &amp; Declining Roles (2025&ndash;2026)</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+          <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+            </svg>
+            High-Growth Roles
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>AI / ML Engineer</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>Cloud Security Engineer</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>AI Ops / Automation Engineer</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>Data Engineer</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>DevOps / Platform Engineer</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>Cybersecurity Analyst</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>Generative AI Specialist</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600 flex-shrink-0"></span>Product Manager (AI-integrated)</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+          <h3 class="font-bold text-rose-800 mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
+            </svg>
+            Structural Decline
+          </h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>Traditional IT Support</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>Administrative Assistants</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>Manual QA Testers</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>Data Entry Operators</li>
+            <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span>Routine Operations Roles</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SECTION 9: Recommendations ─── -->
+    <section id="recommendations" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Catalitium Recommendations</h2>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For Job Seekers</h3>
+      <ul class="space-y-2 text-sm text-slate-700 mb-6">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Invest in AI fluency — start with prompt engineering and AI tooling relevant to your current role.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Target hybrid-friendly roles; they offer the best balance of compensation and flexibility.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Build skills in at least one high-demand vertical: cloud, cybersecurity, or data engineering.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Prioritize learning agility over mastery of any single tool — the stack will keep changing.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Use salary data to negotiate confidently — especially if you are in Europe or India where increases are accelerating.</li>
+      </ul>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For Recruiters</h3>
+      <ul class="space-y-2 text-sm text-slate-700 mb-6">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Publish salary ranges — candidates increasingly filter out listings without transparency.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Reduce time-to-offer for AI/ML candidates; the top talent has multiple competing offers.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Offer hybrid as a default, not a perk — it is now a baseline expectation in most markets.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Focus job descriptions on outcomes and impact, not task lists.</li>
+      </ul>
+
+      <h3 class="text-lg font-bold text-slate-900 mb-3">For Companies</h3>
+      <ul class="space-y-2 text-sm text-slate-700">
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Build internal AI upskilling programs — retraining existing talent is faster than replacing it.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Invest in cybersecurity hiring; threats are scaling faster than most security teams.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Monitor India's salary market closely as a source of high-quality, cost-competitive AI talent.</li>
+        <li class="flex gap-2"><span class="text-brand font-bold flex-shrink-0">&#10003;</span>Create clear AI-augmented role definitions to avoid talent uncertainty and attrition.</li>
+      </ul>
+    </section>
+
+    <!-- Email signup -->
+    <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10">
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Get the next Catalitium report in your inbox</h3>
+      <p class="text-sm text-slate-600 mb-4">One weekly email with the best tech jobs and market signal. No spam. Unsubscribe anytime.</p>
+      <form action="{{ url_for('subscribe') }}" method="post"
+            class="flex flex-col sm:flex-row gap-3">
+        <input type="hidden" name="search_title" value="market-research">
+        <label for="report-subscribe-email" class="sr-only">Your email</label>
+        <input id="report-subscribe-email"
+               name="email"
+               type="email"
+               required
+               autocomplete="email"
+               placeholder="you@company.com"
+               class="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit"
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 whitespace-nowrap">
+          Subscribe
+        </button>
+      </form>
+      <p class="text-[11px] text-slate-500 mt-2">Privacy-friendly. One email per week.</p>
+    </div>
+
+    <!-- ─── SECTION 10: Methodology ─── -->
+    <section id="methodology" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">Research Methodology &amp; Sources</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        This report draws on a synthesis of publicly available labor market datasets, job posting analysis,
+        and industry research published through 2025. Key data sources include global job market
+        reports from leading research institutions, salary surveys from major tech employment platforms,
+        and Catalitium's own proprietary job listing analysis.
+      </p>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        Salary figures represent medians and ranges compiled from multiple sources and are intended as
+        directional benchmarks. Regional comparisons use local currency where noted; USD equivalents
+        are approximate. AI job creation and displacement projections are forward-looking estimates
+        and carry inherent uncertainty.
+      </p>
+      <p class="text-sm text-slate-500">
+        Report edition: November 2025 &bull; Published: {{ report.published_display }} &bull; Publisher: Catalitium
+      </p>
+    </section>
+
+    <!-- ─── SECTION 11: About Catalitium ─── -->
+    <section id="about-catalitium" class="mb-10 scroll-mt-20 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">About Catalitium</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">
+        <strong>Catalitium</strong> is a high-signal tech job board and market intelligence platform.
+        Our mission is to equip tech talent with the tools, insights, and clarity they need to navigate
+        and shape the future of work in AI, automation, and software.
+      </p>
+      <p class="text-slate-700 leading-relaxed mb-5">
+        <em>"Empowering Individuals and Organizations with Technology."</em>
+      </p>
+      <div class="flex flex-wrap gap-4 text-sm">
+        <a href="{{ url_for('index') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">
+          Browse Tech Jobs
+        </a>
+        <a href="{{ url_for('resources') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 text-slate-700 px-4 py-2 font-medium hover:bg-slate-100 transition">
+          Explore Resources
+        </a>
+        <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 text-slate-700 px-4 py-2 font-medium hover:bg-slate-100 transition">
+          All Reports
+        </a>
+        <a href="{{ url_for('about') }}" class="text-brand hover:underline py-2 text-sm">About Us</a>
+        <a href="{{ url_for('legal') }}" class="text-slate-500 hover:underline py-2 text-sm">Privacy &amp; Terms</a>
+      </div>
+    </section>
+
+    <!-- PDF download CTA at bottom -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-brand/20 bg-brand/5 p-5 mb-10">
+      <div>
+        <p class="font-semibold text-slate-900 mb-1">Download the full PDF report</p>
+        <p class="text-sm text-slate-600">Save for offline reading or share with your team.</p>
+      </div>
+      <a href="{{ url_for('static', filename=report.pdf_path) }}"
+         download
+         class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+        </svg>
+        Download PDF
+      </a>
+    </div>
+
+  </article>
+
+  <!-- ═══ STICKY DESKTOP TOC ═══ -->
+  <aside class="hidden lg:block">
+    <div class="sticky top-24 rounded-2xl border border-slate-200 bg-white p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Contents</p>
+      <ol class="space-y-1 text-sm">
+        <li><a href="#executive-summary" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Executive Summary</a></li>
+        <li><a href="#key-forces" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Key Forces</a></li>
+        <li><a href="#top-skills" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Top Skills (2025)</a></li>
+        <li><a href="#remote-hybrid-trends" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Remote &amp; Hybrid Trends</a></li>
+        <li><a href="#skills-breakdown" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Skills Breakdown</a></li>
+        <li><a href="#salaries-by-region" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Salaries by Region</a></li>
+        <li><a href="#ai-impact" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">AI Impact</a></li>
+        <li><a href="#role-shifts" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Role Shifts</a></li>
+        <li><a href="#recommendations" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Recommendations</a></li>
+        <li><a href="#methodology" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">Methodology</a></li>
+        <li><a href="#about-catalitium" class="block py-1 text-slate-600 hover:text-brand transition-colors rounded px-2 hover:bg-slate-50">About Catalitium</a></li>
+      </ol>
+      <div class="mt-4 pt-4 border-t border-slate-100">
+        <a href="{{ url_for('static', filename=report.pdf_path) }}"
+           download
+           class="w-full flex items-center justify-center gap-2 rounded-xl border border-brand text-brand px-4 py-2.5 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+          </svg>
+          Download PDF
+        </a>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- end two-column layout -->
+
+<!-- Ad slot: bottom of page -->
+<div id="ad-bottom" class="mt-8 text-center min-h-[90px] flex items-center justify-center">
+  <!-- Google AdSense slot — insert ad code here -->
+</div>
+
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ report.title }}",
+  "description": "{{ report.description }}",
+  "author": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "datePublished": "{{ report.published }}",
+  "dateModified": "{{ report.published }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ url_for('market_research_report', slug=report.slug, _external=True) }}"
+  },
+  "keywords": "{{ report.keywords | join(', ') }}",
+  "inLanguage": "en",
+  "about": [
+    {"@type": "Thing", "name": "Artificial Intelligence"},
+    {"@type": "Thing", "name": "Tech Jobs"},
+    {"@type": "Thing", "name": "Software Engineering Careers"},
+    {"@type": "Thing", "name": "Tech Salaries"},
+    {"@type": "Thing", "name": "Remote Work"}
+  ]
+}
+</script>
+{% endblock %}

@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Free tech career resources, salary guides, and original market research on AI jobs, hiring trends, and the future of work — built from real job data by Catalitium.">
+<link rel="canonical" href="{{ url_for('market_research_index', _external=True) }}">
+<meta property="og:title" content="Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends | Catalitium">
+<meta property="og:description" content="Salary benchmarks, AI market reports, hiring trend data, and job search guides. Free, no signup required. Published by Catalitium.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('market_research_index', _external=True) }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <!-- Header -->
+  <div class="mb-10">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">Catalitium Research</p>
+    <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight mb-4">Market Research &amp; Resources</h1>
+    <p class="text-lg text-slate-600 max-w-2xl">
+      Original reports and data-driven guides on tech salaries, AI careers, and the future of work. Built from real job market data — use them to navigate your next move.
+    </p>
+  </div>
+
+  <!-- ── PUBLISHED REPORTS ── -->
+  {% if reports %}
+  <section class="mb-12">
+    <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      Published Reports
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {% for report in reports %}
+      <a href="{{ url_for('market_research_report', slug=report.slug) }}"
+         class="group rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 hover:shadow-md motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <span class="text-xs font-semibold uppercase tracking-wide text-brand bg-brand/10 rounded-full px-2.5 py-0.5 flex-shrink-0">
+            {{ report.published_display }}
+          </span>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-2 group-hover:text-brand transition-colors leading-snug">
+          {{ report.short_title }}
+        </h3>
+        <p class="text-sm text-slate-600 mb-4 leading-relaxed">{{ report.description }}</p>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-500">{{ report.read_time }}</span>
+          <span class="text-sm font-semibold text-brand flex items-center gap-1 group-hover:gap-2 transition-all">
+            Read report
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </span>
+        </div>
+      </a>
+      {% endfor %}
+
+      <!-- Coming Soon: Tech Salary & Compensation Report -->
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-6 opacity-75 cursor-default select-none">
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="w-12 h-12 rounded-2xl bg-slate-300 text-white flex items-center justify-center flex-shrink-0">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+          <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 bg-slate-100 rounded-full px-2.5 py-0.5 flex-shrink-0">Coming Soon</span>
+        </div>
+        <h3 class="text-lg font-bold text-slate-500 mb-2 leading-snug">Tech Salary &amp; Compensation Report</h3>
+        <p class="text-sm text-slate-400 mb-4 leading-relaxed">Median, min, and max salary estimates for AI/ML, Developer, Senior, Data, and Remote roles &mdash; broken down by US, EU, UK, and Switzerland. Includes a printable PDF export.</p>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-400">Report in preparation</span>
+          <span class="text-sm text-slate-400 flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+            Coming Soon
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ── RESOURCE GUIDES ── -->
+  <section class="mb-12">
+    <h2 class="text-xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+      </svg>
+      Guides &amp; Insights
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+      <!-- Salary by region -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-sky-600" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11.2A7 7 0 0012 3a7 7 0 00-7 6.8C5 15.5 12 21 12 21z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.2"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-sky-600">Salary Guide</span>
+            <h3 class="font-bold text-slate-900">Tech Salaries by Region</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">How much should a senior engineer earn in Berlin vs London vs Zurich vs New York? We break down compensation geography so you can negotiate with market data, not guesswork.</p>
+        <div class="space-y-2.5 text-sm">
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
+            <span class="text-slate-700 font-medium">United States</span>
+            <span class="text-brand font-semibold">$120k &ndash; $185k</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
+            <span class="text-slate-700 font-medium">Switzerland (CHF)</span>
+            <span class="text-brand font-semibold">CHF 110k &ndash; CHF 165k</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
+            <span class="text-slate-700 font-medium">United Kingdom (GBP)</span>
+            <span class="text-brand font-semibold">£65k &ndash; £110k</span>
+          </div>
+          <div class="flex justify-between items-center py-1.5">
+            <span class="text-slate-700 font-medium">European Union (EUR)</span>
+            <span class="text-brand font-semibold">€60k &ndash; €100k</span>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3">Figures represent median range for mid-senior Software Engineers. Updated from live listings.</p>
+      </div>
+
+      <!-- AI/ML market -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-violet-600" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-violet-600">Market Research</span>
+            <h3 class="font-bold text-slate-900">The AI/ML Jobs Market</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">AI and ML roles now command the highest median salaries on our platform — 22% above the general developer average. Here's what's driving that premium and which skills are most in demand.</p>
+        <ul class="space-y-2 text-sm text-slate-600">
+          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>LLM / transformer expertise commands a 15&ndash;25% premium over classical ML</span></li>
+          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Python + PyTorch/TensorFlow remain the baseline — RAG and agent frameworks are the differentiator</span></li>
+          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Remote AI/ML roles grew 34% year-on-year in our database</span></li>
+          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>EU hiring for AI roles: Germany and France lead, followed by Netherlands and Spain</span></li>
+        </ul>
+      </div>
+
+      <!-- Negotiate salary -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-amber-600">Strategy Guide</span>
+            <h3 class="font-bold text-slate-900">How to Negotiate Your Tech Salary</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">The average engineer who negotiates receives 10&ndash;20% more than the initial offer. Here's a data-backed framework for doing it without awkwardness.</p>
+        <ol class="space-y-2.5 text-sm text-slate-600">
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">1</span><span><strong class="text-slate-700">Anchor with data.</strong> Reference Catalitium's salary report for your role/region.</span></li>
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">2</span><span><strong class="text-slate-700">Ask for the top of the range.</strong> Employers expect negotiation — the initial offer is rarely the maximum.</span></li>
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">3</span><span><strong class="text-slate-700">Negotiate total comp.</strong> If base is fixed, push on equity, bonus, signing bonus, remote days.</span></li>
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">4</span><span><strong class="text-slate-700">Get competing offers.</strong> The single best negotiation lever — even if you don't want to take it.</span></li>
+        </ol>
+      </div>
+
+      <!-- Ghost jobs -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-slate-600" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Industry Insight</span>
+            <h3 class="font-bold text-slate-900">The Ghost Job Epidemic</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">Research suggests up to <strong>40% of job listings</strong> at any given time are already filled, on hold, or posted purely to collect résumés. Here's how to identify them.</p>
+        <div class="space-y-3 text-sm text-slate-600">
+          <div class="flex gap-2"><span class="text-slate-400 font-mono text-xs mt-0.5 flex-shrink-0">01</span><span>Listings with no hiring manager and vague requirements tend to be placeholders</span></div>
+          <div class="flex gap-2"><span class="text-slate-400 font-mono text-xs mt-0.5 flex-shrink-0">02</span><span>Jobs posted &gt;30 days with identical text are almost certainly ghost jobs</span></div>
+          <div class="flex gap-2"><span class="text-slate-400 font-mono text-xs mt-0.5 flex-shrink-0">03</span><span>Catalitium flags all listings over 30 days old with a "May be filled" badge</span></div>
+          <div class="flex gap-2"><span class="text-slate-400 font-mono text-xs mt-0.5 flex-shrink-0">04</span><span>If you must apply to a ghost job, find the hiring manager on LinkedIn first</span></div>
+        </div>
+      </div>
+
+      <!-- Remote work data -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">Market Data</span>
+            <h3 class="font-bold text-slate-900">State of Remote Tech Work</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">Remote tech roles pay 8&ndash;12% below equivalent on-site roles in absolute terms &mdash; but when adjusted for cost of living in lower-cost regions, effective purchasing power is often 30&ndash;60% higher.</p>
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-2xl font-bold text-slate-900">38%</p>
+            <p class="text-xs text-slate-500 mt-0.5">of tech listings are fully remote or hybrid</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-2xl font-bold text-slate-900">+34%</p>
+            <p class="text-xs text-slate-500 mt-0.5">growth in remote AI/ML roles YoY</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-2xl font-bold text-slate-900">EU</p>
+            <p class="text-xs text-slate-500 mt-0.5">leads in remote-friendly tech adoption</p>
+          </div>
+          <div class="rounded-xl bg-slate-50 p-3">
+            <p class="text-2xl font-bold text-slate-900">$12k</p>
+            <p class="text-xs text-slate-500 mt-0.5">median remote salary premium over EU office roles</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Job search strategy -->
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm transition">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wide text-blue-600">Strategy Guide</span>
+            <h3 class="font-bold text-slate-900">The High-Signal Job Search</h3>
+          </div>
+        </div>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">Most job searches fail not from a lack of applications but from a lack of targeting. A focused search with 20 quality applications typically outperforms 200 spray-and-pray submissions.</p>
+        <ul class="space-y-2 text-sm text-slate-600">
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Use the AI Summary to qualify a role in 10 seconds before spending time on a full read</span></li>
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Filter by salary estimate before reading descriptions — eliminate mismatches early</span></li>
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Watch the market trends — apply in weeks where new postings peak</span></li>
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Ignore ghost job listings unless you can reach the hiring manager directly</span></li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── FREE TOOLS ── -->
+  <section class="mb-12">
+    <h2 class="text-xl font-bold text-slate-900 mb-5">Free Tools</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 opacity-60 cursor-default">
+        <svg class="w-6 h-6 text-slate-400 mb-3" viewBox="0 0 24 24" fill="none"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3 class="font-semibold text-slate-500 mb-1">Tech Salary Report <span class="text-xs font-normal text-slate-400">(Coming Soon)</span></h3>
+        <p class="text-xs text-slate-400">Printable salary benchmarks by role and region, updated from live job data.</p>
+      </div>
+      <a href="{{ url_for('index') }}"
+         class="group rounded-2xl border border-slate-200 bg-white p-5 hover:border-brand hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <svg class="w-6 h-6 text-brand mb-3" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <h3 class="font-semibold text-slate-800 group-hover:text-brand transition mb-1">Job Search</h3>
+        <p class="text-xs text-slate-500">Curated tech listings with salary estimates, AI summaries, and ghost job detection.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── NEWSLETTER CTA ── -->
+  <section class="rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+    <div class="flex-1">
+      <h2 class="text-lg font-bold text-slate-900 mb-1">Get research delivered weekly</h2>
+      <p class="text-sm text-slate-600">New salary data, market shifts, and hiring trends — straight to your inbox. One email per week, no spam.</p>
+    </div>
+    <button type="button" data-open-subscribe
+            class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+      Subscribe free
+    </button>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends",
+  "description": "Free tech career resources, salary guides, and original market research on AI jobs, hiring trends, and the future of work. Built from real job data by Catalitium.",
+  "url": "{{ url_for('market_research_index', _external=True) }}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "inLanguage": "en"
+}
+</script>
+{% endblock %}

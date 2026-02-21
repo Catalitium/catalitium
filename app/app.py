@@ -17,6 +17,7 @@ from flask import (
     g,
     Response,
     send_from_directory,
+    abort,
 )
 from email_validator import validate_email, EmailNotValidError
 from .models.db import (
@@ -345,6 +346,131 @@ def _get_demo_jobs():
             start=1,
         )
     ]
+
+REPORTS = [
+    {
+        "slug": "global-tech-ai-careers-report-2026",
+        "title": "Catalitium Global Tech & AI Careers Report - 2026 Edition",
+        "short_title": "Global Tech & AI Careers Report 2026",
+        "description": (
+            "Data-driven analysis of AI's impact on tech jobs, skills in demand, "
+            "salaries by region (US, Europe, India), and the fastest growing roles for 2025-2026."
+        ),
+        "published": "2025-11-01",
+        "published_display": "November 2025",
+        "pdf_path": "reports/R01- Catalitium Global Tech & AI Careers Report  November 2025 Edition.pdf",
+        "read_time": "12 min read",
+        "keywords": [
+            "global tech and AI jobs report 2026",
+            "AI careers report 2026",
+            "tech skills in demand 2025",
+            "AI job market trends",
+            "2025 tech salaries US Europe India",
+            "remote and hybrid work trends in tech",
+            "fastest growing AI jobs 2025 2026",
+        ],
+    },
+    {
+        "slug": "200k-engineer-ai-reshaping-software-salaries-2026",
+        "title": "The $200K Engineer: How AI Productivity Is Reshaping Software Salaries",
+        "short_title": "The $200K Engineer Report 2026",
+        "description": (
+            "Staff engineers saw 7.52% comp growth while junior hiring collapsed 73%. "
+            "A data-driven investigation into who wins, who loses, and what drives the split "
+            "in software engineering compensation in 2025\u20132026. 69 sources."
+        ),
+        "published": "2026-02-01",
+        "published_display": "February 2026",
+        "pdf_path": "",
+        "read_time": "18 min read",
+        "template": "reports/200k_engineer.html",
+        "keywords": [
+            "software engineer salary 2026",
+            "AI skills salary premium",
+            "staff engineer compensation growth",
+            "junior developer hiring collapse 2025",
+            "AI productivity compensation bifurcation",
+            "Anthropic OpenAI engineer salary",
+            "revenue per employee software companies",
+            "software engineering salary trends 2026",
+        ],
+    },
+    {
+        "slug": "from-saas-to-agents-ai-native-workforce-2026",
+        "title": "From SaaS to Agents: How AI Native Software Is Reshaping the Tech Workforce",
+        "short_title": "From SaaS to Agents Report 2026",
+        "description": (
+            "A data-driven investigation into team economics, revenue per employee, AI-agent adoption, "
+            "and the structural transformation of software work. 74 sources, February 2026."
+        ),
+        "published": "2026-02-01",
+        "published_display": "February 2026",
+        "pdf_path": "",
+        "read_time": "20 min read",
+        "template": "reports/saas_to_agents.html",
+        "keywords": [
+            "AI native software workforce 2026",
+            "revenue per employee AI companies",
+            "SaaS to agents transition",
+            "AI engineer hiring demand 2026",
+            "software developer job market decline",
+            "GitHub Copilot productivity study",
+            "enterprise AI adoption transformation gap",
+            "Klarna AI workforce case study",
+        ],
+    },
+    {
+        "slug": "ai-productivity-paradox-junior-roles-2026",
+        "title": "AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles",
+        "short_title": "AI Productivity Paradox Report 2026",
+        "description": (
+            "Entry-level tech job postings dropped 35% since 2023 while AI engineers earn $206K on average. "
+            "Data-driven analysis of how AI productivity tools are reshaping the tech labor market, "
+            "collapsing junior demand, and creating an unprecedented senior skill premium."
+        ),
+        "published": "2025-12-01",
+        "published_display": "December 2025",
+        "pdf_path": "reports/R02- AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles.pdf",
+        "read_time": "15 min read",
+        "template": "reports/junior_roles.html",
+        "keywords": [
+            "entry level tech jobs 2026",
+            "AI productivity paradox",
+            "junior developer jobs decline",
+            "AI skill salary premium 2025",
+            "tech hiring trends 2026",
+            "github copilot adoption stats",
+            "series A team size decline",
+            "CS degree unemployment 2025",
+        ],
+    },
+    {
+        "slug": "death-of-saas-vibecoding-2026",
+        "title": "The Death of SaaS: How Vibecoding Is Killing a $315 Billion Industry",
+        "short_title": "The Death of SaaS Report 2026",
+        "description": (
+            "A data-driven market report analyzing how AI-assisted development is structurally "
+            "disrupting the $315 billion SaaS industry — with sourced data from a16z, Gartner, "
+            "YC, Retool, Deloitte, and Emergence Capital."
+        ),
+        "published": "2026-02-01",
+        "published_display": "February 2026",
+        "pdf_path": "reports/R03- The Death of SaaS How Vibecoding Is Killing a 315 Billion Industry.pdf",
+        "read_time": "18 min read",
+        "template": "reports/saas_vibecoding.html",
+        "keywords": [
+            "death of saas 2026",
+            "vibecoding saas disruption",
+            "ai coding tools market report",
+            "build vs buy saas 2026",
+            "saas market size 2026",
+            "cursor ai growth",
+            "ai native saas vs traditional saas",
+            "software as labor business model",
+        ],
+    },
+]
+
 
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
@@ -1312,7 +1438,9 @@ def create_app() -> Flask:
         _add(url_for("index", _external=True), priority="1.0")
         _add(url_for("about", _external=True), priority="0.8")
         _add(url_for("resources", _external=True), priority="0.9")
-        _add(url_for("tracker", _external=True), priority="0.6")
+        _add(url_for("market_research_index", _external=True), priority="0.9")
+        for _r in REPORTS:
+            _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85")
         _add(url_for("salary_report", _external=True), priority="0.7")
         _add(url_for("legal", _external=True), priority="0.2")
 
@@ -1476,9 +1604,14 @@ def create_app() -> Flask:
         )
 
     # ------------------------------------------------------------------
-    # Salary report (printable HTML)
+    # Salary Tool (merged salary report + talent arbitrage calculator)
     # ------------------------------------------------------------------
     @app.get("/salary-report")
+    def salary_report_redirect():
+        """Permanent redirect from old URL to the renamed Salary Tool."""
+        return redirect(url_for("salary_report"), 301)
+
+    @app.get("/salary-tool")
     def salary_report():
         """Render a printable salary insights report."""
         categories = [
@@ -1554,20 +1687,28 @@ def create_app() -> Flask:
         return render_template("about.html")
 
     # ------------------------------------------------------------------
-    # Resources hub
+    # Resources hub — 301 redirect to Market Research
     # ------------------------------------------------------------------
     @app.get("/resources")
     def resources():
-        """Render the Resources & research hub."""
-        return render_template("resources.html")
+        """Redirect legacy /resources to the unified Market Research hub."""
+        return redirect(url_for("market_research_index"), 301)
 
     # ------------------------------------------------------------------
-    # Application Tracker page
+    # Market Research hub + individual report pages
     # ------------------------------------------------------------------
-    @app.get("/tracker")
-    def tracker():
-        """Render the application tracker Kanban page."""
-        return render_template("tracker.html")
+    @app.get("/market-research")
+    def market_research_index():
+        """Market Research hub — lists all published reports."""
+        return render_template("market_research_index.html", reports=REPORTS)
+
+    @app.get("/market-research/<slug>")
+    def market_research_report(slug):
+        """Individual report landing page (fully SSR'd for SEO)."""
+        report = next((r for r in REPORTS if r["slug"] == slug), None)
+        if not report:
+            abort(404)
+        return render_template(report.get("template", "reports/report.html"), report=report)
 
     # ------------------------------------------------------------------
     # AI Job Summary API (Claude Haiku, DB-cached)

@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}AI Didn&rsquo;t Kill Jobs &mdash; It Killed Junior Roles | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Entry-level tech job postings dropped 35% since 2023. AI tools now write 46% of all code. CS graduate unemployment hit 6.1%. Catalitium&rsquo;s data report on the AI productivity paradox.">
+<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:title" content="{{ report.title }}">
+<meta property="og:description" content="{{ report.description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta name="keywords" content="{{ report.keywords | join(', ') }}">
+<meta name="author" content="Catalitium">
+<meta property="article:published_time" content="{{ report.published }}">
+{% endblock %}
+
+{% block content %}
+
+<div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center"></div>
+
+<nav class="mb-6 text-sm text-slate-500 flex items-center gap-2" aria-label="Breadcrumb">
+  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Home</a>
+  <span>&rsaquo;</span>
+  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <span>&rsaquo;</span>
+  <span class="text-slate-700 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
+</nav>
+
+<div class="max-w-6xl mx-auto lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 lg:items-start">
+
+  <!-- MAIN ARTICLE -->
+  <article>
+
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
+        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+      </p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-4">
+        AI Didn&rsquo;t Kill Jobs &mdash; It Killed Junior Roles
+      </h1>
+      <p class="text-lg text-slate-600 mb-5 leading-relaxed">{{ report.description }}</p>
+
+      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 border-y border-slate-100 py-4">
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg>
+          Published {{ report.published_display }}
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+          {{ report.read_time }}
+        </span>
+        <span class="text-slate-400">&bull;</span>
+        <span class="text-slate-600 font-medium">Global Scope &bull; 40+ sources</span>
+        <button onclick="window.print()"
+                class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+          Download PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile TOC -->
+    <details class="lg:hidden rounded-xl border border-slate-200 bg-slate-50 p-4 mb-8">
+      <summary class="font-semibold text-slate-700 cursor-pointer select-none">Table of Contents</summary>
+      <ol class="mt-3 space-y-1 text-sm text-brand list-decimal list-inside">
+        <li><a href="#executive-summary" class="hover:underline">Executive Summary</a></li>
+        <li><a href="#aggregates" class="hover:underline">Global Tech Employment: What the Aggregates Hide</a></li>
+        <li><a href="#entry-level-collapse" class="hover:underline">The Entry Level Collapse</a></li>
+        <li><a href="#senior-premium" class="hover:underline">The Senior Premium Effect</a></li>
+        <li><a href="#ai-productivity" class="hover:underline">AI Productivity: What the Numbers Show</a></li>
+        <li><a href="#lean-team" class="hover:underline">Hiring Behavior Shift: The Lean Team Model</a></li>
+        <li><a href="#education" class="hover:underline">Education Pipeline Misalignment</a></li>
+        <li><a href="#expert-signals" class="hover:underline">Expert Signals and Forward Outlook</a></li>
+        <li><a href="#bifurcation" class="hover:underline">Growing vs. Declining Roles Through 2030</a></li>
+        <li><a href="#recommendations" class="hover:underline">Catalitium Recommendations</a></li>
+        <li><a href="#conclusion" class="hover:underline">Conclusion</a></li>
+      </ol>
+    </details>
+
+    <!-- Key Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">35%</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">Drop in entry-level tech job postings since Jan 2023</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">46%</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">Of all code now written by AI tools (GitHub, 2025)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">$206K</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">Average AI engineer salary, 2025 (+$50K YoY)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">56%</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">AI skill salary premium documented by PwC (doubled from 25% in 2023)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">20M</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">GitHub Copilot users by July 2025 &mdash; 90% Fortune 100 adoption</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">22&rarr;13</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">Series A startup team size, 2022 to 2024 (Carta)</div>
+      </div>
+    </div>
+
+    <!-- § Executive Summary -->
+    <section id="executive-summary" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">Executive Summary</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">The global tech workforce is not shrinking &mdash; it is restructuring. Total US tech employment grew 1.2% in 2024 and is up 12.2% since 2021. But this aggregate growth masks a structural collapse at the bottom of the career ladder. Entry-level tech job postings have dropped more than 35% since January 2023. For roles with high AI exposure, the decline exceeds 40%.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">At the same time, demand for senior and AI-skilled talent is accelerating. AI engineers averaged $206,000 in 2025 &mdash; a $50,000 increase in a single year. PwC&rsquo;s AI skill salary premium doubled from 25% to 56% in one year. GitHub Copilot reached 20 million users with 90% Fortune 100 adoption, writing 46% of the average user&rsquo;s code.</p>
+      <div class="rounded-xl bg-amber-50 border-l-4 border-amber-400 p-4 my-6">
+        <p class="text-sm font-semibold text-amber-800 mb-1">Catalitium Interpretation</p>
+        <p class="text-sm text-amber-900 leading-relaxed">This is not a tech job crisis. It is a tech job bifurcation. The market is splitting into two tracks: AI-augmented senior roles commanding record premiums, and entry-level positions being compressed by AI productivity. The on-ramp is narrowing &mdash; not disappearing &mdash; but the timing is brutal for 2025 and 2026 graduates.</p>
+      </div>
+      <p class="text-slate-700 leading-relaxed">CS bachelor&rsquo;s degrees more than doubled over the past decade to 112,720 in 2022&ndash;2023 &mdash; the highest increase of any major &mdash; just as entry-level demand collapsed. CS graduate unemployment reached 6.1% in 2024. Series A startup team sizes dropped from 22 to 15 employees between 2022 and 2024.</p>
+    </section>
+
+    <div id="ad-mid-article" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+    <!-- § 1 Global Tech Employment -->
+    <section id="aggregates" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">1. Global Tech Employment: What the Aggregates Hide</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">US tech occupation employment reached approximately 5.9 million workers in 2024, projected to reach 6.1 million in 2025. Net tech employment stood at 9.6 million &mdash; essentially flat year-over-year. These headline numbers look stable. What they hide is a structural shift in who is being hired.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">High-tech industry tech talent workforce actually shrank by 0.7% in 2024, even as overall tech employment grew. The growth is concentrated in AI-native roles, platform engineering, and senior positions &mdash; not in traditional junior entry points.</p>
+
+      <!-- Data table: US Tech Employment Snapshot -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-700 font-semibold">
+            <tr>
+              <th class="text-left px-4 py-3">Metric</th>
+              <th class="text-left px-4 py-3">Value</th>
+              <th class="text-left px-4 py-3">Source</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3 text-slate-700">Total US tech occupations</td><td class="px-4 py-3 font-medium">5.9M (2024)</td><td class="px-4 py-3 text-slate-500">CompTIA</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3 text-slate-700">Tech employment growth 2024</td><td class="px-4 py-3 font-medium">+1.2% (+72,500 net)</td><td class="px-4 py-3 text-slate-500">CompTIA</td></tr>
+            <tr><td class="px-4 py-3 text-slate-700">High-tech industry tech talent</td><td class="px-4 py-3 font-medium">&minus;0.7% YoY</td><td class="px-4 py-3 text-slate-500">Revelio Labs</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3 text-slate-700">Growth since 2021</td><td class="px-4 py-3 font-medium">+12.2%</td><td class="px-4 py-3 text-slate-500">CompTIA</td></tr>
+            <tr><td class="px-4 py-3 text-slate-700">CS graduate unemployment</td><td class="px-4 py-3 font-medium">6.1% (2024)</td><td class="px-4 py-3 text-slate-500">NACE</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-slate-700 leading-relaxed">Tech unemployment stood at 2.4% in early 2025 &mdash; well below the US national average. But that figure disguises stratification: experienced AI engineers face near-zero unemployment; recent CS graduates face the worst entry-level market since the dot-com correction.</p>
+    </section>
+
+    <!-- § 2 Entry Level Collapse -->
+    <section id="entry-level-collapse" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">2. The Entry Level Collapse</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">Entry-level job postings in the US declined approximately 35% since January 2023 &mdash; over 100,000 fewer new monthly job postings, according to Revelio Labs data from August 2025. The pattern is not random. Roles with high AI exposure saw drops exceeding 40%.</p>
+
+      <!-- CSS bar chart: entry-level decline by role category -->
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 mb-6">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-4">Entry-Level Posting Decline by Category (since Jan 2023)</p>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>High AI-exposure roles</span><span class="font-semibold text-rose-600">&minus;40%+</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-rose-500" style="width:40%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>Overall entry-level tech</span><span class="font-semibold text-rose-600">&minus;35%</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-rose-400" style="width:35%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>P1&ndash;P2 hiring rates (Meta, Google)</span><span class="font-semibold text-rose-600">&minus;73%</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-rose-600" style="width:73%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>Senior &amp; specialized roles</span><span class="font-semibold text-emerald-600">+8&ndash;12%</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-emerald-500" style="width:12%"></div></div>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Source: Revelio Labs (Aug 2025), internal Catalitium analysis</p>
+      </div>
+
+      <p class="text-slate-700 leading-relaxed mb-4">Meta, Google, and Amazon reduced P1 and P2 (junior) hiring rates by 73% relative to their 2021 peak. Simultaneously, these companies grew headcount in Staff+ and Principal engineer categories. The industry is restructuring around fewer, more senior people capable of leveraging AI tooling.</p>
+      <div class="rounded-xl bg-amber-50 border-l-4 border-amber-400 p-4 my-6">
+        <p class="text-sm font-semibold text-amber-800 mb-1">Catalitium Interpretation</p>
+        <p class="text-sm text-amber-900 leading-relaxed">Entry-level roles dropped because junior work &mdash; writing boilerplate, generating tests, scaffolding APIs &mdash; can now be delegated to AI. Companies do not need as many people to do the volume of output that previously required large junior cohorts. This is structural, not cyclical.</p>
+      </div>
+    </section>
+
+    <!-- § 3 Senior Premium -->
+    <section id="senior-premium" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">3. The Senior Premium Effect</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">While junior demand collapses, senior and AI-skilled talent is experiencing the opposite dynamic. AI engineers earned an average of $206,000 in 2025 &mdash; a $50,000 increase from the prior year. Senior AI engineers exceed $300,000 total compensation at large tech companies.</p>
+
+      <!-- AI Skill Premium table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-700 font-semibold">
+            <tr>
+              <th class="text-left px-4 py-3">Source</th>
+              <th class="text-left px-4 py-3">AI Skill Premium</th>
+              <th class="text-left px-4 py-3">Dataset Scale</th>
+              <th class="text-left px-4 py-3">Key Detail</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3">PwC (2024)</td><td class="px-4 py-3 font-semibold text-brand">56%</td><td class="px-4 py-3 text-slate-500">~1B job postings, 6 continents</td><td class="px-4 py-3 text-slate-500">Doubled from 25% in 2023</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3">Lightcast (2025)</td><td class="px-4 py-3 font-semibold text-brand">28%</td><td class="px-4 py-3 text-slate-500">1.3B job postings</td><td class="px-4 py-3 text-slate-500">~$18K per year more</td></tr>
+            <tr><td class="px-4 py-3">Oxford Internet Institute</td><td class="px-4 py-3 font-semibold text-brand">23%</td><td class="px-4 py-3 text-slate-500">10M+ UK vacancies</td><td class="px-4 py-3 text-slate-500">Surpasses master&rsquo;s degree premium (13%)</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3">Foote Partners</td><td class="px-4 py-3 font-semibold text-brand">+14%</td><td class="px-4 py-3 text-slate-500">Certified AI/ML skills</td><td class="px-4 py-3 text-slate-500">Pay premium rose 14% in H1 2025</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-slate-700 leading-relaxed">The AI skill premium now surpasses a master&rsquo;s degree premium in documented salary impact. This is the fastest skill repricing ever measured at scale. The market is rewarding people who can direct AI systems &mdash; not those replacing the work those systems now handle.</p>
+    </section>
+
+    <!-- § 4 AI Productivity -->
+    <section id="ai-productivity" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">4. AI Productivity: What the Numbers Actually Show</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">GitHub Copilot reached 20 million cumulative users as of July 2025 &mdash; adding 5 million users in 3 months between April and July. With 1.3 million paid subscribers, 50,000 organizations, and 90% Fortune 100 adoption, Copilot is now enterprise infrastructure.</p>
+
+      <!-- Productivity table -->
+      <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 text-slate-700 font-semibold">
+            <tr>
+              <th class="text-left px-4 py-3">Metric</th>
+              <th class="text-left px-4 py-3">Impact</th>
+              <th class="text-left px-4 py-3">Source</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-3">Task completion speed</td><td class="px-4 py-3 font-semibold text-brand">55% faster (2h41m &rarr; 1h11m)</td><td class="px-4 py-3 text-slate-500">GitHub &amp; Accenture RCT, 4,800 devs</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3">Pull requests per developer</td><td class="px-4 py-3 font-semibold text-brand">+8.69%</td><td class="px-4 py-3 text-slate-500">Accenture deployment</td></tr>
+            <tr><td class="px-4 py-3">Successful builds</td><td class="px-4 py-3 font-semibold text-brand">+84%</td><td class="px-4 py-3 text-slate-500">Accenture deployment</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3">Code review turnaround</td><td class="px-4 py-3 font-semibold text-brand">67% faster</td><td class="px-4 py-3 text-slate-500">Duolingo (post-AI restructuring)</td></tr>
+            <tr><td class="px-4 py-3">Copilot code share (avg user)</td><td class="px-4 py-3 font-semibold text-brand">46% of code</td><td class="px-4 py-3 text-slate-500">GitHub 2025</td></tr>
+            <tr class="bg-slate-50"><td class="px-4 py-3">McKinsey developer productivity</td><td class="px-4 py-3 font-semibold text-brand">45% uplift</td><td class="px-4 py-3 text-slate-500">McKinsey Global Institute</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rounded-xl bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+        <p class="text-sm font-semibold text-amber-800 mb-1">The METR Contrarian Finding</p>
+        <p class="text-sm text-amber-900 leading-relaxed">A July 2025 METR study found that experienced developers working on familiar, complex codebases took 19% <strong>longer</strong> with AI tools than without. This is consistent with the broader data: AI productivity gains are largest in greenfield work and boilerplate-heavy tasks. In highly contextual, architecturally complex systems, AI adds overhead. Senior engineers on legacy codebases should not expect 55% gains.</p>
+      </div>
+    </section>
+
+    <!-- § 5 Lean Team Model -->
+    <section id="lean-team" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">5. Hiring Behavior Shift: The Lean Team Model</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">The organizational response to AI productivity gains is not to hire more people. It is to need fewer. Average software startup team size at Series A dropped from 22 employees in 2022 to 15 employees in 2024, according to Carta &mdash; a 32% reduction in two years. Investor expectations are now built around this lean model.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">Duolingo cut its contractor workforce by 10% in January 2024, directly citing AI as the replacement. Salesforce announced a hiring pause for software engineers in 2025, with Marc Benioff stating AI agents eliminated the need for additional headcount. These are not isolated events &mdash; they reflect a recalibrated model of how much human labor is needed per unit of software output.</p>
+
+      <!-- Series A team size bar chart -->
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 mb-6">
+        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-4">Series A Software Startup Team Size (avg employees)</p>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>2019</span><span class="font-semibold">18 employees</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-brand" style="width:72%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>2022 (peak hiring)</span><span class="font-semibold">22 employees</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-brand" style="width:88%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>2023</span><span class="font-semibold">18 employees</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-amber-400" style="width:72%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>2024</span><span class="font-semibold">15 employees</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-rose-400" style="width:60%"></div></div>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">Source: Carta (2025). Software startups, Series A. &minus;32% from 2022 peak.</p>
+      </div>
+    </section>
+
+    <!-- § 6 Education Pipeline -->
+    <section id="education" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">6. Education Pipeline Misalignment</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">CS bachelor&rsquo;s degrees more than doubled over the past decade: from 51,696 in 2013&ndash;14 to 112,720 in 2022&ndash;23 &mdash; the highest increase in bachelor&rsquo;s degree earners of any major, at 4.3% year-over-year growth, even as overall bachelor&rsquo;s degrees declined 3.0%. The education system responded to the &ldquo;learn to code&rdquo; moment of the 2010s. The market that awaited those graduates is fundamentally different.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">CS graduate unemployment hit 6.1% in 2024 (NACE) &mdash; up from 3.9% in 2022. Median starting salary for new CS graduates dropped 5% in real terms between 2022 and 2024. The supply-demand scissors are closing precisely when the largest graduating cohort in history is entering the market.</p>
+      <div class="rounded-xl bg-brand/5 border border-brand/20 p-5 mb-6">
+        <h3 class="font-semibold text-slate-800 mb-3 text-sm uppercase tracking-wide">CS Degree Supply vs. Entry-Level Demand (2013&ndash;2024)</h3>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>CS degrees awarded (2013)</span><span>51,696</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-brand/60" style="width:46%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>CS degrees awarded (2023)</span><span>112,720</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-brand" style="width:100%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 mb-1"><span>Entry-level postings (indexed, 2021 = 100)</span><span class="text-rose-600">65</span></div>
+            <div class="h-3 rounded-full bg-slate-200"><div class="h-3 rounded-full bg-rose-400" style="width:65%"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- § 7 Expert Signals -->
+    <section id="expert-signals" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">7. Expert Signals and Forward Outlook</h2>
+
+      <!-- Pull quote: Dario Amodei -->
+      <blockquote class="border-l-4 border-brand pl-5 my-6">
+        <p class="text-slate-700 italic leading-relaxed">&ldquo;AI could eliminate up to 50% of entry-level office jobs within five years. Unemployment could spike to 10&ndash;20%. Most of them are unaware this is about to happen.&rdquo;</p>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Dario Amodei, CEO, Anthropic (May 2025)</cite>
+      </blockquote>
+
+      <!-- Pull quote: Sam Altman -->
+      <blockquote class="border-l-4 border-slate-300 pl-5 my-6">
+        <p class="text-slate-700 italic leading-relaxed">&ldquo;In 2025, we may see the first AI that can do the work of a mid-level software engineer.&rdquo;</p>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Sam Altman, CEO, OpenAI (January 2025)</cite>
+      </blockquote>
+
+      <!-- Pull quote: Satya Nadella -->
+      <blockquote class="border-l-4 border-slate-300 pl-5 my-6">
+        <p class="text-slate-700 italic leading-relaxed">&ldquo;30% of Microsoft&rsquo;s code is now written by AI.&rdquo;</p>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Satya Nadella, CEO, Microsoft (October 2024)</cite>
+      </blockquote>
+
+      <p class="text-slate-700 leading-relaxed mb-4">WEF Future of Jobs Report 2025 projects 92 million jobs displaced and 170 million created by 2030 &mdash; a net gain of 78 million globally. AI and information processing technologies will create 19 million jobs while displacing 9 million. But the 10-million displacement will be concentrated at the junior and entry-level end.</p>
+      <p class="text-slate-700 leading-relaxed">The Bureau of Labor Statistics projects 15% growth for software developers from 2024 to 2034 &mdash; faster than average. But that growth is concentrated at the senior and specialized end of the distribution, not in the entry-level roles that have historically absorbed new graduates.</p>
+    </section>
+
+    <!-- § 8 Growing vs Declining -->
+    <section id="bifurcation" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">8. Growing vs. Declining Roles Through 2030</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+          <h3 class="font-bold text-emerald-800 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7 7 7M12 3v18"/></svg>
+            Growing
+          </h3>
+          <ul class="space-y-2 text-sm text-emerald-900">
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>AI engineers &amp; ML infrastructure roles</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Platform &amp; site reliability engineering</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>AI product management</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Cybersecurity (all levels)</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Data engineering &amp; MLOps</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>&ldquo;AI whisperer&rdquo; roles (prompt + eval)</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Senior full-stack with AI tooling</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>AI-augmented junior roles (rare &mdash; high bar)</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+          <h3 class="font-bold text-rose-800 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7-7-7M12 21V3"/></svg>
+            Declining
+          </h3>
+          <ul class="space-y-2 text-sm text-rose-900">
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Traditional junior SWE roles (P1&ndash;P2)</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Boilerplate-heavy QA &amp; test automation</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>API integration contractors</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Entry-level data analysis</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Non-AI CRUD app development</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>IT support (Tier 1&ndash;2)</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Generic technical writing</li>
+            <li class="flex gap-2"><span class="text-rose-500 flex-shrink-0">&bull;</span>Traditional coding bootcamp graduate track</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- § Recommendations -->
+    <section id="recommendations" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-6">9. Catalitium Recommendations</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-3">For Job Seekers</h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Stop applying to 2021-era junior roles. Reframe around AI-augmented output.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Target the AI skill premium directly. PwC&rsquo;s 56% is real &mdash; 6 months of focused AI tooling beats a second degree.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Show work. Build and deploy with Claude, Cursor, or Copilot. Outcomes over credentials.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Use non-traditional entry points: open source, contract work, building in public.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Be the developer who knows when the AI is wrong &mdash; critical evaluation is a career asset.</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-3">For Recruiters</h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Audit junior role descriptions. If they describe work AI can do in hours, the role won&rsquo;t exist in 18 months.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Build AI fluency assessment into technical screens. Include a task where candidates use AI &mdash; and demonstrate judgment about the output.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Recalibrate salary bands for AI-skilled roles before losing candidates.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Create &ldquo;AI augmented junior&rdquo; tracks that hire for judgment and learning velocity, not task execution.</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center mb-4">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          </div>
+          <h3 class="font-bold text-slate-900 mb-3">For Companies</h3>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Lean team model is locked in. Build hiring plans around AI-augmented productivity from day one.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Invest in upskilling existing mid-level engineers on AI tooling before external hiring.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Create internal AI tooling programs. Your best pipeline is engineers already familiar with your codebase.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Don&rsquo;t eliminate all junior hiring. The pipeline to senior talent dries up in 5 years if you do.</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- § Conclusion -->
+    <section id="conclusion" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">Conclusion: The Ladder Hasn&rsquo;t Disappeared &mdash; Its Bottom Rung Has</h2>
+      <p class="text-slate-700 leading-relaxed mb-4">The data in this report describes a market in the middle of a structural transition, not at the end of one. Total tech employment continues to grow. AI skills are being rewarded at unprecedented rates. Senior and specialized roles are holding up.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">But the entry level &mdash; the on-ramp that every senior engineer once traveled &mdash; is under severe pressure. The CS degree that reliably launched careers for a decade is now producing graduates into the worst entry-level market since the dot-com correction.</p>
+      <p class="text-slate-700 leading-relaxed">The lean team model is being locked in at the Series A stage, with investor expectations built around it. This is not a temporary dip waiting to recover. The ladder hasn&rsquo;t disappeared &mdash; its bottom rung has been replaced by a higher bar. The question for individuals and institutions is whether they adapt faster than the market moves.</p>
+    </section>
+
+    <!-- Subscribe -->
+    <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10 no-print">
+      <h3 class="text-xl font-bold text-slate-900 mb-2">Get the next Catalitium report in your inbox</h3>
+      <p class="text-sm text-slate-600 mb-4">One weekly email with market signal and the best tech jobs. No spam. Unsubscribe anytime.</p>
+      <form action="{{ url_for('subscribe') }}" method="post" class="flex flex-col sm:flex-row gap-3">
+        <input type="hidden" name="search_title" value="market-research-r02">
+        <label for="r02-subscribe-email" class="sr-only">Your email</label>
+        <input id="r02-subscribe-email" name="email" type="email" required autocomplete="email"
+               placeholder="you@company.com"
+               class="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit"
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 whitespace-nowrap">
+          Subscribe
+        </button>
+      </form>
+      <p class="text-[11px] text-slate-500 mt-2">Privacy-friendly. One email per week.</p>
+    </div>
+
+    <!-- Methodology -->
+    <section id="methodology" class="mb-10 scroll-mt-20 border-t border-slate-100 pt-8">
+      <h2 class="text-xl font-bold text-slate-900 mb-3">Research Methodology &amp; Sources</h2>
+      <p class="text-sm text-slate-600 leading-relaxed mb-3">Research window: 2022&ndash;2025. Primary sources: Revelio Labs, CompTIA, NACE, PwC, Lightcast, GitHub/Microsoft, Accenture, Carta, WEF Future of Jobs 2025, Bureau of Labor Statistics, Duolingo, Salesforce, McKinsey Global Institute, METR, Foote Partners, Oxford Internet Institute, Stack Overflow Developer Survey 2025.</p>
+      <p class="text-sm text-slate-600 leading-relaxed">Confidence labels: <strong>[confirmed]</strong> = directly cited; <strong>[estimate]</strong> = credible analyst approximation; <strong>[projected]</strong> = forward-looking forecast. Where estimates diverge, both are reported with context. Catalitium interpretation sections are editorial analysis on sourced data, not original research claims.</p>
+    </section>
+
+    <div id="ad-bottom" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+  </article>
+
+  <!-- STICKY DESKTOP TOC -->
+  <aside class="hidden lg:block sticky top-20 self-start no-print">
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">Contents</p>
+      <ol class="space-y-1.5 text-sm text-slate-600 list-decimal list-inside">
+        <li><a href="#executive-summary" class="hover:text-brand transition-colors">Executive Summary</a></li>
+        <li><a href="#aggregates" class="hover:text-brand transition-colors">What the Aggregates Hide</a></li>
+        <li><a href="#entry-level-collapse" class="hover:text-brand transition-colors">The Entry Level Collapse</a></li>
+        <li><a href="#senior-premium" class="hover:text-brand transition-colors">The Senior Premium Effect</a></li>
+        <li><a href="#ai-productivity" class="hover:text-brand transition-colors">AI Productivity Numbers</a></li>
+        <li><a href="#lean-team" class="hover:text-brand transition-colors">Lean Team Model</a></li>
+        <li><a href="#education" class="hover:text-brand transition-colors">Education Misalignment</a></li>
+        <li><a href="#expert-signals" class="hover:text-brand transition-colors">Expert Signals</a></li>
+        <li><a href="#bifurcation" class="hover:text-brand transition-colors">Growing vs. Declining</a></li>
+        <li><a href="#recommendations" class="hover:text-brand transition-colors">Recommendations</a></li>
+        <li><a href="#conclusion" class="hover:text-brand transition-colors">Conclusion</a></li>
+      </ol>
+      <div class="mt-5 pt-4 border-t border-slate-200">
+        <button onclick="window.print()"
+                class="w-full inline-flex justify-center items-center gap-2 rounded-xl border border-brand text-brand px-3 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+          Download PDF
+        </button>
+      </div>
+    </div>
+  </aside>
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ report.title }}",
+  "description": "{{ report.description }}",
+  "author": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Catalitium",
+    "url": "{{ url_for('index', _external=True) }}"
+  },
+  "datePublished": "{{ report.published }}",
+  "dateModified": "{{ report.published }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ url_for('market_research_report', slug=report.slug, _external=True) }}"
+  },
+  "keywords": "{{ report.keywords | join(', ') }}",
+  "inLanguage": "en",
+  "about": [
+    {"@type": "Thing", "name": "Tech Employment"},
+    {"@type": "Thing", "name": "Artificial Intelligence"},
+    {"@type": "Thing", "name": "Junior Developer Jobs"},
+    {"@type": "Thing", "name": "AI Productivity"},
+    {"@type": "Thing", "name": "Tech Hiring Trends"},
+    {"@type": "Thing", "name": "GitHub Copilot"}
+  ]
+}
+</script>
+{% endblock %}
