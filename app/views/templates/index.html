@@ -43,6 +43,16 @@
       Updated {{ "2025-11-02"|datetime|timeago }}
     </div>
     {% endif %}
+    {% if not title_q %}
+    <div class="mt-4">
+      <a href="#"
+         data-open-subscribe="hero"
+         class="inline-flex items-center gap-1.5 text-sm text-brand font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Get a weekly digest of curated roles + salary data
+      </a>
+    </div>
+    {% endif %}
   </div>
 
   <!-- SEARCH: What / Where -->
@@ -305,28 +315,29 @@
         {% include 'components/job_card.html' %}
         {% if loop.index == 3 %}
           {% set promo_body -%}
-            Get more jobs <a href="#" class="underline" data-open-subscribe="results_promo" data-subscribe-title="{{ title_q or '' }}" data-subscribe-country="{{ country_q or '' }}" data-subscribe-salary="{{ salary_band or '' }}">Receive insights weekly</a>.
+            {% if title_q %}Curated {{ title_q }} roles + salary benchmarks in your inbox.{% else %}10 curated tech roles + salary data every week.{% endif %} <a href="#" class="underline font-semibold" data-open-subscribe="results_promo" data-subscribe-title="{{ title_q or '' }}" data-subscribe-country="{{ country_q or '' }}" data-subscribe-salary="{{ salary_band or '' }}">Subscribe free &rarr;</a>
           {%- endset %}
           {% with %}
             {% set params = {
-              'eyebrow': 'Top Jobs',
+              'eyebrow': 'Weekly Digest',
               'body': promo_body,
-              'subcopy': 'See free insights below.',
-              'background_class': 'bg-blue-50',
-              'border_class': 'border-blue-300/60',
-              'text_class': 'text-blue-800'
+              'subcopy': 'One email/week · Unsubscribe anytime',
+              'background_class': 'bg-brand/5',
+              'border_class': 'border-brand/20',
+              'text_class': 'text-slate-700'
             } %}
             {% include 'components/promo_card.html' with context %}
           {% endwith %}
         {% endif %}
         {% if loop.index == 7 %}
           {% set promo_body -%}
-            Your job here. Reach top talent. <a href="#" class="underline" data-open-subscribe>Contact us</a>.
+            Reach 10,000+ tech professionals actively browsing roles. <a href="#" class="underline font-semibold" data-open-job-posting>Post a job &rarr;</a>
           {%- endset %}
           {% with %}
             {% set params = {
-              'eyebrow': 'Sponsored',
+              'eyebrow': 'Hiring?',
               'body': promo_body,
+              'subcopy': 'From startups to scale-ups',
               'background_class': 'bg-amber-50',
               'border_class': 'border-amber-300/60',
               'text_class': 'text-amber-800'
@@ -349,6 +360,17 @@
             Try a broader keyword (for example "engineer") or remove the region filter to see more roles.
           {% endif %}
         </p>
+        <div class="mt-4 pt-4 border-t border-slate-100">
+          <p class="text-sm font-medium text-slate-700 mb-2">Get notified when these roles arrive.</p>
+          <button type="button"
+                  data-open-subscribe="empty_state"
+                  data-subscribe-title="{{ title_q or '' }}"
+                  data-subscribe-country="{{ country_q or '' }}"
+                  class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-opacity">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+            Get notified
+          </button>
+        </div>
       </div>
     {% endif %}
   </div>

@@ -152,20 +152,21 @@
     <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-700 whitespace-pre-line">{{ job.description }}</div>
   </div>
 
-  <section class="mt-5 rounded-2xl border border-brand/20 bg-brand/5 p-5 sm:p-6">
-    <h2 class="text-base font-semibold text-slate-900">Get a weekly digest of similar roles</h2>
+  <section class="mt-5 rounded-2xl border border-brand/20 bg-brand/10 p-5 sm:p-6">
+    <h2 class="text-base font-semibold text-slate-900">Never miss a role like this one</h2>
     <p class="mt-1 text-sm text-slate-600">
-      Save this search for {{ subscribe_ctx.title }}{% if subscribe_ctx.country %} in {{ subscribe_ctx.country }}{% endif %}{% if subscribe_ctx.salary_band %} around {{ subscribe_ctx.salary_band }}{% endif %} and get the strongest matches every week.
+      Get {{ subscribe_ctx.title }}{% if subscribe_ctx.country %} roles in {{ subscribe_ctx.country }}{% endif %} + salary benchmarks in your inbox every week.
     </p>
     <button type="button"
-            class="mt-3 inline-flex items-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            class="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-90 motion-safe:transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
             data-open-subscribe="job_detail_cta"
             data-subscribe-title="{{ subscribe_ctx.title }}"
             data-subscribe-country="{{ subscribe_ctx.country }}"
             data-subscribe-salary="{{ subscribe_ctx.salary_band }}">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
       Get Weekly Digest
     </button>
-    <p class="mt-2 text-xs text-slate-500">Privacy-first. Unsubscribe anytime.</p>
+    <p class="mt-2 text-xs text-slate-500">Free · No spam · Unsubscribe anytime</p>
   </section>
 
   <!-- Related jobs -->

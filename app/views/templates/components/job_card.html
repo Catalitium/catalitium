@@ -40,12 +40,12 @@
           <span>{{ j.company }}</span>
         </span>
         {% endif %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-1 text-sky-800">
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1 text-slate-600">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.5 7-11.2A7 7 0 0012 3a7 7 0 00-7 6.8C5 15.5 12 21 12 21z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.1"/></svg>
           <span>{{ j.location or 'Remote / Anywhere' }}</span>
         </span>
         {% if j.date_posted %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-1 text-indigo-800">
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1 text-slate-500">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v3M17 4v3M5 9h14M7 6h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           <span>{{ j.date_posted }}</span>
         </span>
@@ -61,14 +61,15 @@
       <p class="mt-1 text-[12px] text-slate-500">
         {{ j.match_reasons|join(" • ") }}
       </p>
-      <a href="#"
-         class="mt-1 inline-flex items-center text-[12px] font-medium text-brand hover:underline"
-         data-open-subscribe="match_card"
-         data-subscribe-title="{{ j.title }}"
-         data-subscribe-country="{{ j.location }}"
-         data-subscribe-salary="{{ j.estimated_salary_range_compact or '' }}">
+      <button type="button"
+              class="mt-1.5 inline-flex items-center gap-1 rounded-full border border-brand/40 bg-brand/5 px-2.5 py-1 text-[12px] font-medium text-brand hover:bg-brand/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+              data-open-subscribe="match_card"
+              data-subscribe-title="{{ j.title }}"
+              data-subscribe-country="{{ j.location }}"
+              data-subscribe-salary="{{ j.estimated_salary_range_compact or '' }}">
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M22 6l-10 7L2 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Get weekly matches like this
-      </a>
+      </button>
       {% endif %}
 
       {% if loop.index == 1 and j.summary %}
@@ -109,22 +110,21 @@
           data-title="{{ (j.title or '')|e }}"
           data-company="{{ (j.company or '')|e }}"
           data-location="{{ (j.location or 'Remote / Anywhere')|e }}"
-          class="inline-flex items-center gap-2 rounded-md bg-gradient-to-b from-blue-600 to-blue-600/95 text-white px-4 py-2 text-sm font-semibold shadow-md hover:from-blue-700 hover:to-blue-700/95 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-          aria-label="Easy apply for {{ j.title }} at {{ j.company }}"
+          class="inline-flex items-center gap-2 rounded-md bg-brand text-white px-4 py-2 text-sm font-semibold shadow-md hover:opacity-90 motion-safe:transition-opacity active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+          aria-label="Apply for {{ j.title }} at {{ j.company }}"
         >
-          <span class="sr-only">Easy Apply</span>
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="ml-1">Easy Apply</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Apply
         </a>
       {% else %}
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-md bg-gradient-to-b from-blue-600 to-blue-600/95 text-white px-4 py-2 text-sm font-semibold shadow-md hover:from-blue-700 hover:to-blue-700/95 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+          class="inline-flex items-center gap-2 rounded-md bg-brand text-white px-4 py-2 text-sm font-semibold shadow-md hover:opacity-90 motion-safe:transition-opacity active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
           onclick="alert('No link available for this job yet')"
           aria-label="No external link available"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="ml-1">Easy Apply</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Apply
         </button>
       {% endif %}
     {% else %}
@@ -145,7 +145,8 @@
     {% endif %}
     <button
       type="button"
-      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+      title="Save job"
+      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-amber-600 hover:border-amber-300 motion-safe:transition-colors w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
       data-bookmark-btn
       data-job-id="{{ j.id }}"
       data-job-title="{{ (j.title or '')|e }}"
@@ -163,7 +164,8 @@
     </button>
     <button
       type="button"
-      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:border-violet-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300/50"
+      title="Track application"
+      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:text-brand hover:border-brand/40 motion-safe:transition-colors w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
       data-track-btn
       data-job-id="{{ j.id }}"
       data-job-title="{{ (j.title or '')|e }}"
@@ -175,7 +177,7 @@
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span class="track-label">Track</span>
+      <span class="track-label">Track app.</span>
     </button>
   </div>
 </article>

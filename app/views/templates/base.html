@@ -238,9 +238,9 @@
     <div class="p-6 sm:p-7 w-[90vw] max-w-md">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="subscribe-title" class="text-lg font-semibold">Weekly high-match job digest</h2>
+        <h2 id="subscribe-title" class="text-lg font-semibold">Your edge in the tech job market</h2>
       </div>
-      <p class="mt-2 text-slate-600 text-sm">One weekly email with your best matches and salary signal. Unsubscribe anytime.</p>
+      <p class="mt-2 text-slate-600 text-sm">Curated roles + salary benchmarks delivered once a week. No noise, no spam.</p>
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
@@ -256,10 +256,23 @@
                placeholder="you@company.com"
                class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         <button type="submit"
-                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90">Get Weekly Digest</button>
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90 motion-safe:transition-opacity">Get My Weekly Digest</button>
       </form>
 
-      <p class="mt-2 text-[11px] text-slate-500">Privacy-friendly. One email per week.</p>
+      <div class="mt-3 flex items-center gap-4 text-[11px] text-slate-500">
+        <span class="inline-flex items-center gap-1">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10zm-1-7l6-6-1.41-1.41L11 12.17 8.41 9.59 7 11l4 4z" fill="currentColor"/></svg>
+          Free
+        </span>
+        <span class="inline-flex items-center gap-1">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          No spam
+        </span>
+        <span class="inline-flex items-center gap-1">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Unsubscribe anytime
+        </span>
+      </div>
     </div>
   </dialog>
 
