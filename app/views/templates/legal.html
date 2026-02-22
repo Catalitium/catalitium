@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Privacy & Terms • Catalitium{% endblock %}
 
+{% block head_extra %}
+<script
+  id="usercentrics-ppg"
+  privacy-policy-id="ec114445-97fa-4ee5-90e6-e97b028cf9a1"
+  data-language="en"
+  src="https://policygenerator.usercentrics.eu/api/privacy-policy"
+></script>
+{% endblock %}
+
 {% block content %}
 <section class="pt-8 sm:pt-12 pb-6">
   <div class="mx-auto max-w-3xl px-3 sm:px-0 text-center">
@@ -172,6 +181,9 @@
           Email <a href="mailto:catalitium@outlook.com" class="text-brand underline">catalitium@outlook.com</a>. You can also lodge a complaint with the AEPD (Spain) or your local authority.
         </p>
       </section>
+
+      <!-- Usercentrics Privacy Policy Generator — renders full policy from policy ID ec114445 -->
+      <div class="uc-privacy-policy"></div>
     </div>
   </article>
 
