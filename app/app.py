@@ -1415,11 +1415,21 @@ def create_app() -> Flask:
 
     @app.get("/robots.txt")
     def robots_txt():
-        """Expose robots.txt with sitemap reference."""
+        """Expose robots.txt with sitemap reference and crawl directives."""
         body = "\n".join(
             [
                 "User-agent: *",
-                "Disallow:",
+                "Allow: /",
+                "Disallow: /api/",
+                "Disallow: /health",
+                "Disallow: /events/",
+                "",
+                "User-agent: AdsBot-Google",
+                "Allow: /",
+                "",
+                "User-agent: Googlebot-Image",
+                "Allow: /static/img/",
+                "",
                 f"Sitemap: {url_for('sitemap', _external=True)}",
             ]
         )
@@ -1431,18 +1441,18 @@ def create_app() -> Flask:
         today = datetime.utcnow().date().isoformat()
         urls = []
 
-        def _add(loc: str, priority: str = "0.5", lastmod: str = today):
+        def _add(loc: str, priority: str = "0.5", lastmod: str = today, changefreq: str = "weekly"):
             if loc:
-                urls.append({"loc": loc, "priority": priority, "lastmod": lastmod})
+                urls.append({"loc": loc, "priority": priority, "lastmod": lastmod, "changefreq": changefreq})
 
-        _add(url_for("index", _external=True), priority="1.0")
-        _add(url_for("about", _external=True), priority="0.8")
-        _add(url_for("resources", _external=True), priority="0.9")
-        _add(url_for("market_research_index", _external=True), priority="0.9")
+        _add(url_for("index", _external=True), priority="1.0", changefreq="daily")
+        _add(url_for("about", _external=True), priority="0.8", changefreq="monthly")
+        _add(url_for("resources", _external=True), priority="0.9", changefreq="weekly")
+        _add(url_for("market_research_index", _external=True), priority="0.9", changefreq="weekly")
         for _r in REPORTS:
-            _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85")
-        _add(url_for("salary_report", _external=True), priority="0.7")
-        _add(url_for("legal", _external=True), priority="0.2")
+            _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85", changefreq="monthly")
+        _add(url_for("salary_report", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
 
         filter_targets = [
             {"title": "ai"},
@@ -1457,7 +1467,7 @@ def create_app() -> Flask:
         ]
         for target in filter_targets:
             loc = url_for("index", title=target.get("title"), country=target.get("country"), _external=True)
-            _add(loc, priority="0.7")
+            _add(loc, priority="0.7", changefreq="daily")
 
         # Add individual job pages (last 60 days, up to 500)
         try:
@@ -1471,7 +1481,7 @@ def create_app() -> Flask:
                 for jid, jdate in cur.fetchall():
                     jloc = url_for("job_detail", job_id=jid, _external=True)
                     jmod = jdate.strftime("%Y-%m-%d") if hasattr(jdate, "strftime") else today
-                    _add(jloc, priority="0.5", lastmod=jmod)
+                    _add(jloc, priority="0.5", lastmod=jmod, changefreq="monthly")
         except Exception as exc:
             logger.debug("sitemap job entries failed: %s", exc)
 
@@ -1483,6 +1493,7 @@ def create_app() -> Flask:
             xml_lines.append("  <url>")
             xml_lines.append(f"    <loc>{url['loc']}</loc>")
             xml_lines.append(f"    <lastmod>{url['lastmod']}</lastmod>")
+            xml_lines.append(f"    <changefreq>{url.get('changefreq', 'weekly')}</changefreq>")
             xml_lines.append(f"    <priority>{url['priority']}</priority>")
             xml_lines.append("  </url>")
         xml_lines.append("</urlset>")

@@ -161,6 +161,9 @@
     </div>
   </section>
 
+  <!-- Auto Ads zone: mid-page about content. Auto Ads script fills this automatically. -->
+  <div class="my-8 min-h-[90px]" aria-label="Advertisement" data-ad-zone="about-mid"></div>
+
   <!-- CTA -->
   <section class="rounded-2xl bg-brand text-white p-8 text-center">
     <h2 class="text-2xl font-bold mb-3">Ready to find your next role?</h2>
@@ -189,6 +192,11 @@
   "description": "Curated tech job board with salary transparency, ghost job detection, AI summaries, and a free application tracker.",
   "url": "{{ url_for('index', _external=True) }}",
   "logo": "{{ url_for('static', filename='img/logo.png', _external=True) }}",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "catalitium@outlook.com",
+    "contactType": "customer support"
+  },
   "sameAs": [],
   "knowsAbout": ["Tech Jobs", "Software Engineering", "Machine Learning", "Salary Data", "Job Search"]
 }

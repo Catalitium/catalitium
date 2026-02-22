@@ -19,22 +19,29 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Catalitium">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <meta name="author" content="Catalitium">
   <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://consent.cookiebot.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
   <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
   <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}" as="style">
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
+  <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
+  <!-- Cookiebot CMP — MUST load first before any tracking or ad scripts -->
+  <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
 
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D"></script>
-  <script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D" data-cookieconsent="statistics"></script>
+  <script data-cookieconsent="statistics">
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -57,13 +64,10 @@
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
-  
-  <!--CPM-->
-  <!-- <script type="text/javascript" data-cmp-ab="1" src="https://cdn.consentmanager.net/delivery/autoblocking/4befa339d2ef7.js" data-cmp-host="c.delivery.consentmanager.net" data-cmp-cdn="cdn.consentmanager.net" data-cmp-codesrc="0"></script>
- -->
-  <!--Adsense-->
+
+  <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
-     crossorigin="anonymous"></script>
+     crossorigin="anonymous" data-cookieconsent="marketing"></script>
   {% block head_extra %}{% endblock %}
   <style>
     @media print {
@@ -87,6 +91,12 @@
   </style>
 </head>
 <body class="min-h-screen bg-white text-slate-800 antialiased">
+  <!-- Skip to main content (accessibility + Core Web Vitals) -->
+  <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-brand focus:text-white focus:rounded-lg focus:shadow-lg">
+    Skip to main content
+  </a>
+  <!-- Page loading progress bar -->
+  <div id="page-progress" class="fixed top-0 left-0 h-0.5 bg-brand z-[100] transition-all duration-300 w-0 pointer-events-none" aria-hidden="true"></div>
   <!-- Compact Header (sticky for mobile) -->
   <header class="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
       <div class="mx-auto max-w-6xl px-3 sm:px-4 h-14 grid grid-cols-[auto,1fr,auto] items-center gap-x-2 sm:gap-x-4">
@@ -182,6 +192,7 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="javascript:void(0)" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</a></li>
       </ul>
     </div>
   </div>
@@ -207,9 +218,12 @@
 
   <!-- Footer -->
   <footer class="mt-16 border-t border-slate-200">
+    <!-- Auto Ads zone: Google inserts ad here automatically when Auto Ads is ON in AdSense dashboard -->
+    <!-- To use a manual unit instead: replace this comment with an <ins> block using a real data-ad-slot ID -->
+    <div class="mx-auto max-w-6xl px-4 pt-2 min-h-[50px]" aria-label="Advertisement" data-ad-zone="footer"></div>
     <div class="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
       <p>&copy; 2026 Catalitium &mdash; Empowering tech talent.</p>
-      <div class="flex items-center gap-4">
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
         <a href="{{ url_for('index') }}" class="hover:text-brand">Jobs</a>
         <a href="{{ url_for('market_research_index') }}" class="hover:text-brand font-semibold">Market Research</a>
         <a href="{{ url_for('salary_report') }}" class="hover:text-brand">Salary Tool</a>
@@ -218,12 +232,7 @@
         <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
         <a href="#" data-open-contact class="hover:text-brand">Contact</a>
         <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
-      </div>
-    </div>
-    <!-- AdSense placeholder -->
-    <div class="mx-auto max-w-6xl px-4 pb-6">
-      <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center text-slate-500 text-sm">
-        Ad placeholder (Google AdSense)
+        <a href="javascript:void(0)" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}" class="hover:text-brand">Cookie Settings</a>
       </div>
     </div>
   </footer>
