@@ -23,6 +23,18 @@ function sendAnalyticsPayload(payload){
   } catch(_){}
 }
 
+/* Page progress bar on form submit */
+(function(){
+  var bar = document.getElementById('page-progress');
+  if (!bar) return;
+  document.addEventListener('submit', function(e){
+    if (!e.target.closest('dialog') && !e.target.id) {
+      bar.style.width = '70%';
+      setTimeout(function(){ bar.style.width = '100%'; bar.style.opacity = '0'; }, 600);
+    }
+  });
+})();
+
 /* Lightweight helpers (no frameworks) */
 (function(){
   // Bottom-sheet Nav: open/close + focus trap + scroll lock

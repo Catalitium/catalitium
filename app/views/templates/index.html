@@ -290,6 +290,10 @@
   </div>
 </section>
 
+<!-- Auto Ads zone: leaderboard above results (desktop). Auto Ads script fills this automatically. -->
+<!-- Manual unit: replace inner comment with a real <ins data-ad-slot="XXXXXXXXXX"> block -->
+<div class="mx-auto max-w-4xl mt-4 px-3 sm:px-0 hidden sm:block min-h-[90px]" aria-label="Advertisement" data-ad-zone="leaderboard-top"></div>
+
 <!-- RESULTS LIST -->
 <section class="mx-auto max-w-4xl mt-6" aria-label="Job results">
   {% if country_q and country_q|lower == 'eu' and results and results|length < 3 %}
@@ -303,6 +307,10 @@
       {% for j in results %}
         {% set card_index = loop.index %}
         {% include 'components/job_card.html' %}
+        {% if loop.index % 8 == 0 %}
+        <!-- Auto Ads in-feed zone every 8 results. Replace with real slot to use a manual in-feed unit. -->
+        <div aria-label="Advertisement" class="my-1 min-h-[100px]" data-ad-zone="infeed"></div>
+        {% endif %}
         {% if loop.index == 3 %}
           {% set promo_body -%}
             Get more jobs <a href="#" class="underline" data-open-subscribe="results_promo" data-subscribe-title="{{ title_q or '' }}" data-subscribe-country="{{ country_q or '' }}" data-subscribe-salary="{{ salary_band or '' }}">Receive insights weekly</a>.
@@ -514,6 +522,28 @@
 
 {% block body_extra %}
 <script defer src="{{ url_for('static', filename='js/ai_summary.js') }}"></script>
+{% if title_q or country_q %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Jobs",
+      "item": "{{ url_for('index', _external=True) }}"
+    }{% if title_q %},
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}",
+      "item": "{{ request.url }}"
+    }{% endif %}
+  ]
+}
+</script>
+{% endif %}
 <!-- Structured Data for Job Search -->
 <script type="application/ld+json">
 {
