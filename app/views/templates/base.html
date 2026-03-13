@@ -11,6 +11,8 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="{{ request.base_url }}" />
   <meta property="og:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
   <meta name="theme-color" content="#1a73e8" />
@@ -21,13 +23,12 @@
   <meta name="apple-mobile-web-app-title" content="Catalitium">
   <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="author" content="Catalitium">
-  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   <link rel="dns-prefetch" href="https://www.googletagmanager.com">
   <link rel="dns-prefetch" href="https://consent.cookiebot.com">
+  <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
   <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
-  <link rel="preload" href="{{ url_for('static', filename='css/styles.css') }}" as="style">
+  <link rel="preload" href="{{ url_for('static', filename='css/tailwind.css') }}" as="style">
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -52,14 +53,8 @@
       }
     };
   </script>
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { colors: { brand: '#1a73e8' } } }
-    }
-  </script>
   <!-- App styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 
   <!-- Favicon -->
@@ -109,7 +104,7 @@
 
       <!-- Center logo -->
       <a href="{{ url_for('index') }}" class="flex items-center gap-2 justify-self-center">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager" fetchpriority="high" width="44" height="44">
         <span class="font-semibold tracking-tight">Catalitium</span>
       </a>
 
@@ -197,7 +192,7 @@
     </div>
   </div>
 
-  <main id="content" class="mx-auto max-w-6xl px-4 py-8">
+  <main id="content" class="mx-auto max-w-6xl px-4 py-8 pb-20 md:pb-8">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="space-y-2 mb-6">
@@ -443,6 +438,35 @@
 
   <!-- Lightweight analytics triggers -->
   
+
+  <!-- Mobile sticky bottom nav (hidden on md+) -->
+  <nav class="fixed bottom-0 inset-x-0 z-20 md:hidden border-t border-slate-200 bg-white/95 backdrop-blur-sm"
+       style="padding-bottom: env(safe-area-inset-bottom);"
+       aria-label="Mobile navigation">
+    <div class="grid grid-cols-4 h-14">
+      <a href="#search"
+         class="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-slate-600 hover:text-brand active:text-brand transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Search
+      </a>
+      <a href="{{ url_for('index') }}"
+         class="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-slate-600 hover:text-brand active:text-brand transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Jobs
+      </a>
+      <button type="button"
+              data-open-subscribe
+              class="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-slate-600 hover:text-brand active:text-brand transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Alerts
+      </button>
+      <a href="{{ url_for('salary_report') }}"
+         class="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-slate-600 hover:text-brand active:text-brand transition-colors">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Salary
+      </a>
+    </div>
+  </nav>
 
   <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block body_extra %}{% endblock %}

@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="{{ job.title }} at {{ job.company }} in {{ job.location }}. {% if job.estimated_salary_range_compact %}Estimated salary {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}. {% endif %}{{ job.description|truncate(120, True) }}">
-<link rel="canonical" href="{{ url_for('job_detail', job_id=job.id, _external=True) }}">
+<link rel="canonical" href="{{ job_url(job, _external=True) }}">
 <meta property="og:title" content="{{ job.title }} at {{ job.company }} | Catalitium">
 <meta property="og:description" content="{{ job.location }}{% if job.estimated_salary_range_compact %} · {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}{% endif %}">
 <meta property="og:type" content="website">
@@ -156,14 +156,14 @@
     <!-- Social share -->
     <div class="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3 flex-wrap">
       <span class="text-xs text-slate-500 font-medium">Share:</span>
-      <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url_for('job_detail', job_id=job.id, _external=True)|urlencode }}"
+      <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ job_url(job, _external=True)|urlencode }}"
          target="_blank" rel="noopener noreferrer"
          class="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-brand border border-slate-200 rounded-full px-3 py-1.5 hover:border-brand transition"
          aria-label="Share on LinkedIn">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5zM3 8.98h3.96V21H3V8.98zm6.32 0H13.2v1.65h.05c.53-1 1.82-2.05 3.74-2.05 4 0 4.73 2.63 4.73 6.05V21h-3.95v-5.6c0-1.34-.02-3.05-1.86-3.05-1.86 0-2.15 1.45-2.15 2.95V21H9.32V8.98z"/></svg>
         LinkedIn
       </a>
-      <a href="https://twitter.com/intent/tweet?url={{ url_for('job_detail', job_id=job.id, _external=True)|urlencode }}&text={{ (job.title ~ ' at ' ~ job.company)|urlencode }}"
+      <a href="https://twitter.com/intent/tweet?url={{ job_url(job, _external=True)|urlencode }}&text={{ (job.title ~ ' at ' ~ job.company)|urlencode }}"
          target="_blank" rel="noopener noreferrer"
          class="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-brand border border-slate-200 rounded-full px-3 py-1.5 hover:border-brand transition"
          aria-label="Share on X / Twitter">
@@ -198,7 +198,7 @@
     <h3 class="text-sm font-semibold text-slate-700 mb-3 px-1">Similar roles</h3>
     <div class="grid grid-cols-1 gap-2">
       {% for r in related %}
-      <a href="{{ url_for('job_detail', job_id=r.id) }}"
+      <a href="{{ job_url(r) }}"
          class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-brand hover:shadow-sm transition group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <div class="min-w-0">
           <p class="font-medium text-slate-800 group-hover:text-brand transition truncate">{{ r.title }}</p>
@@ -213,6 +213,18 @@
 
 </div>
 {% endblock %}
+
+{% if job.link %}
+<!-- Sticky apply button for mobile (hidden on md+) -->
+<div class="fixed bottom-14 inset-x-0 z-30 md:hidden px-3 pb-2 bg-gradient-to-t from-white/95 to-transparent pt-4">
+  <a href="{{ job.link }}"
+     target="_blank" rel="noopener"
+     class="flex items-center justify-center gap-2 rounded-xl bg-brand text-white px-6 py-3 font-semibold text-sm hover:opacity-90 shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 w-full">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Apply now
+  </a>
+</div>
+{% endif %}
 
 {% block body_extra %}
 <script defer src="{{ url_for('static', filename='js/ai_summary.js') }}"></script>
@@ -231,7 +243,7 @@
       "@type": "ListItem",
       "position": 2,
       "name": "{{ job.title|e }} at {{ job.company|e if job.company else 'Company' }}",
-      "item": "{{ url_for('job_detail', job_id=job.id, _external=True) }}"
+      "item": "{{ job_url(job, _external=True) }}"
     }
   ]
 }

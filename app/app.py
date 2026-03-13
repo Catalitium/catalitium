@@ -65,6 +65,20 @@ except Exception:  # pragma: no cover
     Limiter = None  # type: ignore[assignment]
     get_remote_address = None  # type: ignore[assignment]
 
+try:
+    from flask_compress import Compress as _Compress
+except Exception:  # pragma: no cover
+    _Compress = None  # type: ignore[assignment]
+
+
+def _slugify(text: str) -> str:
+    """Convert job title text to a URL-safe slug (max 60 chars)."""
+    text = (text or "").lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")[:60]
+
 
 _CATEGORY_CONTEXTS = {
     "ai": {
@@ -534,6 +548,9 @@ def create_app() -> Flask:
     if trusted_hosts_env:
         app.config["TRUSTED_HOSTS"] = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()]
     app.teardown_appcontext(close_db)
+    if _Compress is not None:
+        app.config.setdefault("COMPRESS_ALGORITHM", ["br", "gzip"])
+        _Compress(app)
     limiter = None
     if Limiter is not None and get_remote_address is not None:
         limiter = Limiter(
@@ -628,8 +645,27 @@ def create_app() -> Flask:
             if path.startswith("/static/"):
                 # 30d cache for versioned static files; adjust if assets aren't fingerprinted
                 response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
+            elif path.startswith("/api/") or path.startswith("/v1/"):
+                # API responses must not be publicly cached
+                response.headers["Cache-Control"] = "no-store"
             else:
                 response.headers.setdefault("Cache-Control", "public, max-age=60")
+        except Exception:
+            pass
+        # ETag support for cacheable HTML responses
+        try:
+            if (
+                response.status_code == 200
+                and response.content_type
+                and "text/html" in response.content_type
+                and response.direct_passthrough is False
+            ):
+                data = response.get_data()
+                etag = f'W/"{hashlib.md5(data).hexdigest()}"'
+                response.headers["ETag"] = etag
+                if request.headers.get("If-None-Match") == etag:
+                    response.status_code = 304
+                    response.set_data(b"")
         except Exception:
             pass
         # Baseline security headers for all responses.
@@ -688,6 +724,20 @@ def create_app() -> Flask:
         except Exception as e:
             logger.warning(f"Search parameter parsing failed: {e}")
             return "", "", None, None
+
+    @app.template_filter("slugify")
+    def _slugify_filter(text: str) -> str:
+        return _slugify(text or "")
+
+    def _job_url(j, _external: bool = False) -> str:
+        """Return canonical slug URL for a job dict used in templates."""
+        jid = j.get("id", "") if isinstance(j, dict) else getattr(j, "id", "")
+        jtitle = (j.get("title") or j.get("job_title") or "") if isinstance(j, dict) else getattr(j, "title", "")
+        slug = _slugify(str(jtitle))
+        canonical_id = f"{jid}-{slug}" if slug else str(jid)
+        return url_for("job_detail", job_id=canonical_id, _external=_external)
+
+    app.jinja_env.globals["job_url"] = _job_url
 
     @app.template_filter("datetime")
     def _jinja_datetime_filter(value):
@@ -904,6 +954,13 @@ def create_app() -> Flask:
 
         cat_ctx = _get_category_context(title_q, display_country) if (title_q or display_country) else None
 
+        remote_count = 0
+        if not title_q and not display_country:
+            try:
+                remote_count = Job.count(None, "remote") or 0
+            except Exception:
+                remote_count = 0
+
         return render_template(
             "index.html",
             results=items,
@@ -913,7 +970,13 @@ def create_app() -> Flask:
             salary_band=salary_band,
             pagination=pagination,
             cat_ctx=cat_ctx,
+            remote_count=remote_count,
         )
+
+    @app.get("/remote")
+    def remote_jobs():
+        """301 redirect to remote jobs filter — preserves SEO equity for /remote URL."""
+        return redirect(url_for("index", country="Remote"), 301)
 
     @app.get("/recruiter-salary-board")
     def recruiter_salary_board():
@@ -1511,13 +1574,16 @@ def create_app() -> Flask:
                 f"Sitemap: {url_for('sitemap', _external=True)}",
             ]
         )
-        return Response(body, mimetype="text/plain")
+        resp = Response(body, mimetype="text/plain")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
     @app.get("/sitemap.xml")
     def sitemap():
         """Generate a lightweight XML sitemap for primary surfaces."""
         today = datetime.utcnow().date().isoformat()
         urls = []
+        most_recent_date: Optional[str] = None
 
         def _add(loc: str, priority: str = "0.5", lastmod: str = today, changefreq: str = "weekly"):
             if loc:
@@ -1552,13 +1618,19 @@ def create_app() -> Flask:
             db = get_db()
             with db.cursor() as cur:
                 cur.execute(
-                    """SELECT id, date FROM jobs
+                    """SELECT id, date, job_title FROM jobs
                        WHERE date >= NOW() - INTERVAL '60 days'
                        ORDER BY date DESC LIMIT 500"""
                 )
-                for jid, jdate in cur.fetchall():
-                    jloc = url_for("job_detail", job_id=jid, _external=True)
+                for row in cur.fetchall():
+                    jid, jdate = row[0], row[1]
+                    jtitle = row[2] if len(row) > 2 else ""
+                    slug = _slugify(jtitle or "")
+                    canonical_id = f"{jid}-{slug}" if slug else str(jid)
+                    jloc = url_for("job_detail", job_id=canonical_id, _external=True)
                     jmod = jdate.strftime("%Y-%m-%d") if hasattr(jdate, "strftime") else today
+                    if most_recent_date is None:
+                        most_recent_date = jmod
                     _add(jloc, priority="0.5", lastmod=jmod, changefreq="monthly")
         except Exception as exc:
             logger.debug("sitemap job entries failed: %s", exc)
@@ -1575,19 +1647,31 @@ def create_app() -> Flask:
             xml_lines.append(f"    <priority>{url['priority']}</priority>")
             xml_lines.append("  </url>")
         xml_lines.append("</urlset>")
-        return Response("\n".join(xml_lines), mimetype="application/xml")
+        resp = Response("\n".join(xml_lines), mimetype="application/xml")
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        if most_recent_date:
+            resp.headers["Last-Modified"] = most_recent_date
+        return resp
 
     # ------------------------------------------------------------------
     # Individual job detail page
     # ------------------------------------------------------------------
-    @app.get("/jobs/<job_id>")
+    @app.get("/jobs/<path:job_id>")
     def job_detail(job_id: str):
         """Render a dedicated page for a single job listing."""
-        row = Job.get_by_id(job_id)
+        # Extract numeric ID prefix (slug may follow after the first hyphen)
+        m = re.match(r"^(\d+)", job_id)
+        numeric_id = m.group(1) if m else job_id
+        row = Job.get_by_id(numeric_id)
         if not row:
             return jsonify({"error": "not found"}), 404
 
         title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
+        # Redirect bare /jobs/<id> to canonical /jobs/<id>-<slug> (301 permanent)
+        slug = _slugify(title)
+        canonical_id = f"{numeric_id}-{slug}" if slug else numeric_id
+        if job_id != canonical_id:
+            return redirect(url_for("job_detail", job_id=canonical_id), 301)
         company = (row.get("company_name") or "").strip()
         loc = row.get("location") or "Remote / Anywhere"
         description = parse_job_description(row.get("job_description") or "")
@@ -1639,7 +1723,7 @@ def create_app() -> Flask:
             first_word = normalize_title((title.split()[0] if title else ""))
             rel_rows = Job.search(first_word or None, None, limit=5, offset=0)
             for r in rel_rows:
-                if str(r.get("id")) != str(job_id) and len(related) < 3:
+                if str(r.get("id")) != str(numeric_id) and len(related) < 3:
                     rd = r.get("date")
                     related.append({
                         "id": r.get("id"),
@@ -1652,7 +1736,7 @@ def create_app() -> Flask:
             pass
 
         job = {
-            "id": job_id,
+            "id": canonical_id,
             "title": title,
             "company": company,
             "location": loc,
@@ -1675,7 +1759,7 @@ def create_app() -> Flask:
             detail_salary_band = str(salary_range).strip()[:48]
         # Fetch cached AI summary for server-side rendering (crawlable by Google)
         try:
-            pk = int(str(job_id).strip())
+            pk = int(str(numeric_id).strip())
             ai_summary = get_job_summary(pk)
         except Exception:
             ai_summary = None

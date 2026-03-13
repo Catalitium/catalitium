@@ -564,7 +564,7 @@ class Job:
     }
     # Use full EU set for filter matching so EU queries return broad results.
     _EU_FILTER_CODES: Set[str] = set(_EU_CODES)
-    _CACHE_TTL = 30  # seconds
+    _CACHE_TTL = 120  # seconds
     _CACHE_MAX = 128
     _cache_count: Dict[Tuple[str, str], Tuple[float, int]] = {}
     _cache_search: Dict[Tuple[str, str, int, int], Tuple[float, List[Dict]]] = {}

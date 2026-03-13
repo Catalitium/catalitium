@@ -4,3 +4,5 @@ psycopg[binary]
 python-dotenv
 flask-limiter
 email-validator
+flask-compress
+brotli

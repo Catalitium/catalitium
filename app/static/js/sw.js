@@ -1,6 +1,7 @@
 /* Catalitium Service Worker — cache-first for static, network-first for pages */
-var CACHE = 'catalitium-v1';
+var CACHE = 'catalitium-v2';
 var STATIC = [
+  '/static/css/tailwind.css',
   '/static/css/styles.css',
   '/static/js/main.js',
   '/static/img/logo.png',
