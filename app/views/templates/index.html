@@ -28,16 +28,32 @@
         {% if title_q %}
           {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
         {% else %}
-          <a href="{{ url_for('recruiter_salary_board') }}" class="text-inherit no-underline hover:text-brand transition-colors">See Jobs and Salary information</a>
+          <a href="{{ url_for('recruiter_salary_board') }}" class="text-inherit no-underline hover:text-brand transition-colors">High-signal tech jobs &amp; salary insights</a>
         {% endif %}
       </h1>
       <p class="mt-3 text-slate-600">
         {% if title_q %}
           Browse {{ count|default(0) }} curated roles with transparent salary cues so you don't have to open ten tabs to compare offers.
         {% else %}
-          We clean noisy job feeds, normalize titles and locations, and add salary ranges so engineers and product people can scan the market in minutes.
+          Built for senior builders, AI talent, and serious recruiters: we clean noisy job feeds, normalize titles and locations, and add salary ranges so you can scan the market in minutes.
         {% endif %}
       </p>
+      {% if not title_q %}
+      <div class="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
+        <a href="#results"
+           class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-5 py-3 text-sm font-semibold shadow-sm hover:opacity-90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          Browse jobs &amp; salary intel
+        </a>
+        <a href="{{ url_for('recruiter_salary_board') }}"
+           class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          Recruiter salary board
+        </a>
+        <a href="{{ url_for('developers') }}"
+           class="inline-flex items-center justify-center text-xs font-medium text-slate-500 hover:text-brand underline decoration-dotted">
+          API for builders
+        </a>
+      </div>
+      {% endif %}
     {% if title_q and count > 0 %}
     <div class="mt-2 text-sm text-slate-500">
       Updated {{ "2025-11-02"|datetime|timeago }}
