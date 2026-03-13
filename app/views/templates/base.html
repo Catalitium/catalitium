@@ -15,6 +15,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
+  {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="mobile-web-app-capable" content="yes">
@@ -115,10 +116,13 @@
           <a href="{{ url_for('market_research_index') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors font-semibold">Market Research</a>
           <a href="{{ url_for('salary_report') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Salary Tool</a>
           <a href="{{ url_for('recruiter_salary_board') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Salary Board</a>
+          <a href="{{ url_for('developers') }}" class="px-3 py-2 rounded-lg text-sm text-slate-700 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">API</a>
           <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Weekly Digest</a>
         </div>
         <a href="#" data-open-job-posting class="ml-auto px-3 py-2 rounded-lg font-semibold text-brand bg-brand/10 hover:bg-brand/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
       </nav>
+      <!-- Spacer to balance hamburger on mobile so logo stays centered -->
+      <div class="md:hidden w-10 h-10" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -182,6 +186,7 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('salary_report') }}">Salary Tool</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
