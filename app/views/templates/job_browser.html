@@ -11,11 +11,25 @@
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-400">Recruitment Board</p>
           <h1 id="job-browser-title" class="mt-2 text-3xl font-semibold leading-tight text-slate-900 sm:text-4xl">
-            Catalitium Recruitment Board
+            Catalitium Salary Board for Recruiters
           </h1>
           <p class="mt-3 max-w-2xl text-base text-slate-600">
-            Browse fresh tech jobs with transparent salary insights. Post jobs to reach qualified candidates.
+            Browse fresh tech roles with transparent salary bands and market context. Post roles to reach high-intent candidates and benchmark your offers against live data from Catalitium.
           </p>
+          <div class="mt-4 grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+            <div class="flex items-start gap-2">
+              <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-brand flex-shrink-0"></span>
+              <p><span class="font-semibold text-slate-800">Salary-first cards</span> so every role carries a clear band or estimate.</p>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span>
+              <p><span class="font-semibold text-slate-800">Live benchmarks</span> from the same feed candidates see.</p>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="mt-0.5 h-1.5 w-1.5 rounded-full bg-slate-500 flex-shrink-0"></span>
+              <p><span class="font-semibold text-slate-800">Frictionless workflow</span> to sanity-check ranges before you brief hiring managers.</p>
+            </div>
+          </div>
           <p class="mt-2 text-sm text-slate-500">
             Prefer the main list view?
             <a href="{{ url_for('index') }}" class="underline text-slate-700 hover:text-brand">
@@ -73,7 +87,7 @@
           <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Salary insight</p>
           <p id="salaryOverview" class="mt-2 text-2xl font-semibold text-slate-900" aria-live="polite">Search to see salary bands</p>
           <p class="text-sm text-slate-500">Median ranges from roles with stated pay.</p>
-          <p class="text-[11px] text-slate-400 mt-1">Estimates only, not offers.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Estimates only, not offers. Use them to pressure-test your compensation ranges.</p>
         </div>
       </div>
     </div>

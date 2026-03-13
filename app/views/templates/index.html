@@ -4,7 +4,7 @@
 {% block meta %}
 <meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
 <meta name="keywords" content="tech jobs, developer jobs, software engineer, remote work, {{ title_q if title_q else 'technology' }}, {{ country_q if country_q else 'remote jobs' }}">
-<link rel="canonical" href="{{ url_for('index', _external=True) }}">
+<link rel="canonical" href="{{ url_for('index', title=title_q or None, country=country_q or None, page=(pagination.page if pagination and pagination.page > 1 else None), _external=True) }}">
 <!-- Open Graph tags -->
 <meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
 <meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
@@ -28,16 +28,45 @@
         {% if title_q %}
           {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
         {% else %}
-          <a href="{{ url_for('recruiter_salary_board') }}" class="text-inherit no-underline hover:text-brand transition-colors">See Jobs and Salary information</a>
+          <a href="{{ url_for('recruiter_salary_board') }}" class="text-inherit no-underline hover:text-brand transition-colors">High-signal tech jobs &amp; salary insights</a>
         {% endif %}
       </h1>
       <p class="mt-3 text-slate-600">
         {% if title_q %}
           Browse {{ count|default(0) }} curated roles with transparent salary cues so you don't have to open ten tabs to compare offers.
         {% else %}
-          We clean noisy job feeds, normalize titles and locations, and add salary ranges so engineers and product people can scan the market in minutes.
+          Built for senior builders, AI talent, and serious recruiters: we clean noisy job feeds, normalize titles and locations, and add salary ranges so you can scan the market in minutes.
         {% endif %}
       </p>
+      {% if not title_q %}
+      {% if remote_count and remote_count > 0 %}
+      <p class="mt-3 text-sm text-slate-500">
+        <a href="{{ url_for('index', country='Remote') }}" class="inline-flex items-center gap-1.5 font-semibold text-sky-700 hover:text-sky-900 hover:underline transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          {{ remote_count }}+ remote roles available now
+        </a>
+      </p>
+      {% endif %}
+      <div class="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center sm:gap-4">
+        <a href="{{ url_for('index', country='Remote') }}"
+           class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-sky-600 text-white px-5 py-3 text-sm font-semibold shadow-sm hover:bg-sky-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Remote jobs
+        </a>
+        <a href="#results"
+           class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-5 py-3 text-sm font-semibold shadow-sm hover:opacity-90 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          Browse jobs &amp; salary intel
+        </a>
+        <a href="{{ url_for('recruiter_salary_board') }}"
+           class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          Recruiter salary board
+        </a>
+        <a href="{{ url_for('developers') }}"
+           class="inline-flex items-center justify-center text-xs font-medium text-slate-500 hover:text-brand underline decoration-dotted">
+          API for builders
+        </a>
+      </div>
+      {% endif %}
     {% if title_q and count > 0 %}
     <div class="mt-2 text-sm text-slate-500">
       Updated {{ "2025-11-02"|datetime|timeago }}
@@ -200,6 +229,11 @@
     <a role="button" aria-pressed="{{ 'true' if '100k' in (t|lower) else 'false' }}" href="{{ url_for('index', title=(t ~ ' 100k').strip(), country=c) }}" data-filter-chip="title" data-filter-value=">100k"
        class="{{ base_chip }} {{ on_chip if '100k' in (t|lower) else off_chip }}">
       >100k
+    </a>
+    <a role="button" aria-pressed="{{ 'true' if c|lower=='remote' else 'false' }}" href="{{ url_for('index', title=t, country='Remote') }}" data-filter-chip="country" data-filter-value="Remote"
+       class="{{ base_chip }} {{ on_chip if c|lower=='remote' else off_chip }}">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Remote
     </a>
     <a role="button" aria-pressed="{{ 'true' if c=='CH' else 'false' }}" href="{{ url_for('index', title=t, country='CH') }}" data-filter-chip="country" data-filter-value="CH"
        class="{{ base_chip }} {{ on_chip if c=='CH' else off_chip }}">
@@ -522,7 +556,6 @@
 
 {% block body_extra %}
 <script defer src="{{ url_for('static', filename='js/ai_summary.js') }}"></script>
-{% if title_q or country_q %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -538,12 +571,11 @@
       "@type": "ListItem",
       "position": 2,
       "name": "{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}",
-      "item": "{{ request.url }}"
+      "item": "{{ url_for('index', title=title_q, country=country_q or None, _external=True) }}"
     }{% endif %}
   ]
 }
 </script>
-{% endif %}
 <!-- Structured Data for Job Search -->
 <script type="application/ld+json">
 {

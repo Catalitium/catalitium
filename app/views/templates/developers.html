@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Developers API — Jobs & Salary Data | Catalitium{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto space-y-8">
+  <header class="space-y-3">
+    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Catalitium Developers</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Jobs &amp; Salary API</h1>
+    <p class="text-sm sm:text-base text-slate-600 max-w-2xl">
+      Simple JSON endpoints for high-signal tech jobs and salary lookup. Built for engineers, analysts,
+      and recruiters who want to use Catalitium data in their own tools without ceremony.
+    </p>
+  </header>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-slate-900">What you get</h2>
+    <ul class="list-disc list-inside text-sm text-slate-700 space-y-1.5">
+      <li><strong>Job search API</strong> &mdash; <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">GET /v1/jobs</code> with filters.</li>
+      <li><strong>Job detail API</strong> &mdash; <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">GET /v1/jobs/&lt;id&gt;</code> with apply URL.</li>
+      <li><strong>Salary lookup API</strong> &mdash; <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">GET /v1/salary</code> by title / country.</li>
+      <li><strong>Free tier</strong> &mdash; 100 requests/month, with clear rate-limit headers on every response.</li>
+    </ul>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-slate-900">Getting an API key</h2>
+    <ol class="list-decimal list-inside text-sm text-slate-700 space-y-1.5">
+      <li>POST your email to <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">/api/keys/register</code>.</li>
+      <li>Click the confirmation link in the email (key activates once).</li>
+      <li>Send the key in <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">X-API-Key</code> for all <code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">/v1/*</code> calls.</li>
+    </ol>
+    <p class="text-xs text-slate-500">
+      We never show your key again after the email. If you lose it, revoke it with
+      <code class="bg-slate-100 px-1.5 py-0.5 rounded">DELETE /api/keys/me</code> and register a new one.
+    </p>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-slate-900">Quick examples</h2>
+
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold text-slate-800">1. Job search API</h3>
+      <p class="text-xs text-slate-600">Fetch senior remote roles in the EU:</p>
+      <pre class="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto"><code>curl -s "https://YOUR_DOMAIN/v1/jobs?title=senior+engineer&amp;country=EU" \
+  -H "X-API-Key: cat_XXXXXXXXXXXXXXXXXXXXXXXX"</code></pre>
+    </div>
+
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold text-slate-800">2. Job detail API</h3>
+      <p class="text-xs text-slate-600">Get a single job with an apply URL:</p>
+      <pre class="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto"><code>curl -s "https://YOUR_DOMAIN/v1/jobs/123" \
+  -H "X-API-Key: cat_XXXXXXXXXXXXXXXXXXXXXXXX"</code></pre>
+    </div>
+
+    <div class="space-y-2">
+      <h3 class="text-sm font-semibold text-slate-800">3. Salary lookup API</h3>
+      <p class="text-xs text-slate-600">Look up a median salary for a role / region:</p>
+      <pre class="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto"><code>curl -s "https://YOUR_DOMAIN/v1/salary?title=Senior+Engineer&amp;country=CH" \
+  -H "X-API-Key: cat_XXXXXXXXXXXXXXXXXXXXXXXX"</code></pre>
+    </div>
+  </section>
+
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-slate-900">Python snippet</h2>
+    <p class="text-xs text-slate-600">Minimal example using <code>requests</code>:</p>
+    <pre class="text-xs bg-slate-900 text-slate-100 rounded-xl p-3 overflow-x-auto"><code>import os
+import requests
+
+BASE = "https://YOUR_DOMAIN"
+API_KEY = os.environ.get("CATALITIUM_API_KEY", "cat_XXXXXXXXXXXXXXXXXXXXXXXX")
+
+resp = requests.get(
+    f"{BASE}/v1/jobs",
+    params={"title": "ai engineer", "country": "US"},
+    headers={"X-API-Key": API_KEY},
+    timeout=10,
+)
+resp.raise_for_status()
+data = resp.json()
+print("Found", data["meta"]["total"], "jobs")</code></pre>
+  </section>
+
+  <section class="space-y-2">
+    <h2 class="text-lg font-semibold text-slate-900">Limits &amp; headers</h2>
+    <p class="text-sm text-slate-700">
+      The free tier grants <strong>100 requests per month</strong>. Each response includes:
+    </p>
+    <ul class="list-disc list-inside text-sm text-slate-700 space-y-1">
+      <li><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code> &mdash; your monthly quota.</li>
+      <li><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Remaining</code> &mdash; requests left this month.</li>
+      <li><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Reset</code> &mdash; ISO date/time for the next reset.</li>
+      <li><code class="bg-slate-100 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Window</code> &mdash; always <code>monthly</code> for now.</li>
+    </ul>
+  </section>
+</section>
+{% endblock %}
+

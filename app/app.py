@@ -18,6 +18,7 @@ from flask import (
     Response,
     send_from_directory,
     abort,
+    after_this_request,
 )
 from email_validator import validate_email, EmailNotValidError
 from .models.db import (
@@ -41,10 +42,20 @@ from .models.db import (
     insert_job_posting,
     get_job_summary,
     save_job_summary,
+    create_api_key,
+    get_api_key_by_email,
+    confirm_api_key_by_token,
+    revoke_api_key,
+    check_and_increment_api_key,
     Job,
 )
 import json as _json
 import urllib.request as _urllib_req
+import hashlib
+import secrets
+import functools
+import smtplib
+from email.mime.text import MIMEText
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
@@ -53,6 +64,20 @@ try:
 except Exception:  # pragma: no cover
     Limiter = None  # type: ignore[assignment]
     get_remote_address = None  # type: ignore[assignment]
+
+try:
+    from flask_compress import Compress as _Compress
+except Exception:  # pragma: no cover
+    _Compress = None  # type: ignore[assignment]
+
+
+def _slugify(text: str) -> str:
+    """Convert job title text to a URL-safe slug (max 60 chars)."""
+    text = (text or "").lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")[:60]
 
 
 _CATEGORY_CONTEXTS = {
@@ -472,6 +497,32 @@ REPORTS = [
 ]
 
 
+def _send_mail(to: str, subject: str, body: str) -> None:
+    """Send a plain-text email via SMTP. Best-effort; logs on failure, never raises."""
+    host = os.getenv("SMTP_HOST", "").strip()
+    port = int(os.getenv("SMTP_PORT", "587"))
+    user = os.getenv("SMTP_USER", "").strip()
+    pw = os.getenv("SMTP_PASS", "").strip()
+    frm = os.getenv("SMTP_FROM", "noreply@catalitium.com").strip()
+    if not host:
+        logger.warning("_send_mail: SMTP_HOST not configured, skipping email to %s", to)
+        return
+    try:
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = subject
+        msg["From"] = frm
+        msg["To"] = to
+        with smtplib.SMTP(host, port, timeout=10) as s:
+            s.ehlo()
+            s.starttls()
+            s.ehlo()
+            if user:
+                s.login(user, pw)
+            s.send_message(msg)
+    except Exception as exc:
+        logger.warning("_send_mail failed (to=%s): %s", to, exc)
+
+
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
     app = Flask(__name__, template_folder="views/templates")
@@ -497,6 +548,9 @@ def create_app() -> Flask:
     if trusted_hosts_env:
         app.config["TRUSTED_HOSTS"] = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()]
     app.teardown_appcontext(close_db)
+    if _Compress is not None:
+        app.config.setdefault("COMPRESS_ALGORITHM", ["br", "gzip"])
+        _Compress(app)
     limiter = None
     if Limiter is not None and get_remote_address is not None:
         limiter = Limiter(
@@ -529,6 +583,47 @@ def create_app() -> Flask:
             return limiter.limit(rule)(fn)
         return _decorator
 
+    def _require_api_key(f):
+        """Decorator: validate X-API-Key header, enforce monthly quota, inject rate-limit headers."""
+        @functools.wraps(f)
+        def decorated(*args, **kwargs):
+            raw_key = (
+                request.headers.get("X-API-Key")
+                or request.args.get("api_key")
+                or ""
+            ).strip()
+            if not raw_key:
+                return jsonify({"error": "invalid_key"}), 401
+            key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+            now = datetime.now(timezone.utc)
+            usage = check_and_increment_api_key(key_hash, now)
+            if usage is None:
+                return jsonify({"error": "invalid_key"}), 401
+            if isinstance(usage, dict) and usage.get("error") == "quota_exceeded":
+                return jsonify({"error": "quota_exceeded"}), 429
+            g.api_key_record = usage
+
+            @after_this_request
+            def _inject_ratelimit_headers(response):
+                rec = g.get("api_key_record", {})
+                limit = rec.get("monthly_limit", 0)
+                used = rec.get("requests_this_month", 0)
+                _now = datetime.now(timezone.utc)
+                if _now.month == 12:
+                    reset_dt = _now.replace(year=_now.year + 1, month=1, day=1,
+                                            hour=0, minute=0, second=0, microsecond=0)
+                else:
+                    reset_dt = _now.replace(month=_now.month + 1, day=1,
+                                            hour=0, minute=0, second=0, microsecond=0)
+                response.headers["X-RateLimit-Limit"] = str(limit)
+                response.headers["X-RateLimit-Remaining"] = str(max(0, limit - used))
+                response.headers["X-RateLimit-Reset"] = reset_dt.isoformat()
+                response.headers["X-RateLimit-Window"] = "monthly"
+                return response
+
+            return f(*args, **kwargs)
+        return decorated
+
     @app.after_request
     def apply_analytics_cookie(response):
         """Ensure the analytics session cookie is propagated when a new ID is issued."""
@@ -550,8 +645,27 @@ def create_app() -> Flask:
             if path.startswith("/static/"):
                 # 30d cache for versioned static files; adjust if assets aren't fingerprinted
                 response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
+            elif path.startswith("/api/") or path.startswith("/v1/"):
+                # API responses must not be publicly cached
+                response.headers["Cache-Control"] = "no-store"
             else:
                 response.headers.setdefault("Cache-Control", "public, max-age=60")
+        except Exception:
+            pass
+        # ETag support for cacheable HTML responses
+        try:
+            if (
+                response.status_code == 200
+                and response.content_type
+                and "text/html" in response.content_type
+                and response.direct_passthrough is False
+            ):
+                data = response.get_data()
+                etag = f'W/"{hashlib.md5(data).hexdigest()}"'
+                response.headers["ETag"] = etag
+                if request.headers.get("If-None-Match") == etag:
+                    response.status_code = 304
+                    response.set_data(b"")
         except Exception:
             pass
         # Baseline security headers for all responses.
@@ -610,6 +724,20 @@ def create_app() -> Flask:
         except Exception as e:
             logger.warning(f"Search parameter parsing failed: {e}")
             return "", "", None, None
+
+    @app.template_filter("slugify")
+    def _slugify_filter(text: str) -> str:
+        return _slugify(text or "")
+
+    def _job_url(j, _external: bool = False) -> str:
+        """Return canonical slug URL for a job dict used in templates."""
+        jid = j.get("id", "") if isinstance(j, dict) else getattr(j, "id", "")
+        jtitle = (j.get("title") or j.get("job_title") or "") if isinstance(j, dict) else getattr(j, "title", "")
+        slug = _slugify(str(jtitle))
+        canonical_id = f"{jid}-{slug}" if slug else str(jid)
+        return url_for("job_detail", job_id=canonical_id, _external=_external)
+
+    app.jinja_env.globals["job_url"] = _job_url
 
     @app.template_filter("datetime")
     def _jinja_datetime_filter(value):
@@ -826,6 +954,13 @@ def create_app() -> Flask:
 
         cat_ctx = _get_category_context(title_q, display_country) if (title_q or display_country) else None
 
+        remote_count = 0
+        if not title_q and not display_country:
+            try:
+                remote_count = Job.count(None, "remote") or 0
+            except Exception:
+                remote_count = 0
+
         return render_template(
             "index.html",
             results=items,
@@ -835,7 +970,13 @@ def create_app() -> Flask:
             salary_band=salary_band,
             pagination=pagination,
             cat_ctx=cat_ctx,
+            remote_count=remote_count,
         )
+
+    @app.get("/remote")
+    def remote_jobs():
+        """301 redirect to remote jobs filter — preserves SEO equity for /remote URL."""
+        return redirect(url_for("index", country="Remote"), 301)
 
     @app.get("/recruiter-salary-board")
     def recruiter_salary_board():
@@ -1433,13 +1574,16 @@ def create_app() -> Flask:
                 f"Sitemap: {url_for('sitemap', _external=True)}",
             ]
         )
-        return Response(body, mimetype="text/plain")
+        resp = Response(body, mimetype="text/plain")
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
     @app.get("/sitemap.xml")
     def sitemap():
         """Generate a lightweight XML sitemap for primary surfaces."""
         today = datetime.utcnow().date().isoformat()
         urls = []
+        most_recent_date: Optional[str] = None
 
         def _add(loc: str, priority: str = "0.5", lastmod: str = today, changefreq: str = "weekly"):
             if loc:
@@ -1474,13 +1618,19 @@ def create_app() -> Flask:
             db = get_db()
             with db.cursor() as cur:
                 cur.execute(
-                    """SELECT id, date FROM jobs
+                    """SELECT id, date, job_title FROM jobs
                        WHERE date >= NOW() - INTERVAL '60 days'
                        ORDER BY date DESC LIMIT 500"""
                 )
-                for jid, jdate in cur.fetchall():
-                    jloc = url_for("job_detail", job_id=jid, _external=True)
+                for row in cur.fetchall():
+                    jid, jdate = row[0], row[1]
+                    jtitle = row[2] if len(row) > 2 else ""
+                    slug = _slugify(jtitle or "")
+                    canonical_id = f"{jid}-{slug}" if slug else str(jid)
+                    jloc = url_for("job_detail", job_id=canonical_id, _external=True)
                     jmod = jdate.strftime("%Y-%m-%d") if hasattr(jdate, "strftime") else today
+                    if most_recent_date is None:
+                        most_recent_date = jmod
                     _add(jloc, priority="0.5", lastmod=jmod, changefreq="monthly")
         except Exception as exc:
             logger.debug("sitemap job entries failed: %s", exc)
@@ -1497,19 +1647,31 @@ def create_app() -> Flask:
             xml_lines.append(f"    <priority>{url['priority']}</priority>")
             xml_lines.append("  </url>")
         xml_lines.append("</urlset>")
-        return Response("\n".join(xml_lines), mimetype="application/xml")
+        resp = Response("\n".join(xml_lines), mimetype="application/xml")
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        if most_recent_date:
+            resp.headers["Last-Modified"] = most_recent_date
+        return resp
 
     # ------------------------------------------------------------------
     # Individual job detail page
     # ------------------------------------------------------------------
-    @app.get("/jobs/<job_id>")
+    @app.get("/jobs/<path:job_id>")
     def job_detail(job_id: str):
         """Render a dedicated page for a single job listing."""
-        row = Job.get_by_id(job_id)
+        # Extract numeric ID prefix (slug may follow after the first hyphen)
+        m = re.match(r"^(\d+)", job_id)
+        numeric_id = m.group(1) if m else job_id
+        row = Job.get_by_id(numeric_id)
         if not row:
             return jsonify({"error": "not found"}), 404
 
         title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
+        # Redirect bare /jobs/<id> to canonical /jobs/<id>-<slug> (301 permanent)
+        slug = _slugify(title)
+        canonical_id = f"{numeric_id}-{slug}" if slug else numeric_id
+        if job_id != canonical_id:
+            return redirect(url_for("job_detail", job_id=canonical_id), 301)
         company = (row.get("company_name") or "").strip()
         loc = row.get("location") or "Remote / Anywhere"
         description = parse_job_description(row.get("job_description") or "")
@@ -1561,7 +1723,7 @@ def create_app() -> Flask:
             first_word = normalize_title((title.split()[0] if title else ""))
             rel_rows = Job.search(first_word or None, None, limit=5, offset=0)
             for r in rel_rows:
-                if str(r.get("id")) != str(job_id) and len(related) < 3:
+                if str(r.get("id")) != str(numeric_id) and len(related) < 3:
                     rd = r.get("date")
                     related.append({
                         "id": r.get("id"),
@@ -1574,7 +1736,7 @@ def create_app() -> Flask:
             pass
 
         job = {
-            "id": job_id,
+            "id": canonical_id,
             "title": title,
             "company": company,
             "location": loc,
@@ -1597,7 +1759,7 @@ def create_app() -> Flask:
             detail_salary_band = str(salary_range).strip()[:48]
         # Fetch cached AI summary for server-side rendering (crawlable by Google)
         try:
-            pk = int(str(job_id).strip())
+            pk = int(str(numeric_id).strip())
             ai_summary = get_job_summary(pk)
         except Exception:
             ai_summary = None
@@ -1713,6 +1875,13 @@ def create_app() -> Flask:
         """Market Research hub — lists all published reports."""
         return render_template("market_research_index.html", reports=REPORTS)
 
+    @app.get("/developers")
+    def developers():
+        """Simple, human-facing overview of the v1 JSON API."""
+        return render_template(
+            "developers.html",
+        )
+
     @app.get("/market-research/<slug>")
     def market_research_report(slug):
         """Individual report landing page (fully SSR'd for SEO)."""
@@ -1720,6 +1889,222 @@ def create_app() -> Flask:
         if not report:
             abort(404)
         return render_template(report.get("template", "reports/report.html"), report=report)
+
+    # ------------------------------------------------------------------
+    # API Key lifecycle — register, confirm, usage, revoke
+    # ------------------------------------------------------------------
+
+    @app.post("/api/keys/register")
+    @_limit("3 per hour")
+    def api_keys_register():
+        """Register a new API key; sends a confirmation email to the provided address."""
+        data = request.get_json(silent=True) or {}
+        raw_email = (data.get("email") or "").strip()
+        if not raw_email:
+            return jsonify({"error": "email_required"}), 400
+        try:
+            valid = validate_email(raw_email, check_deliverability=False)
+            email = valid.normalized
+        except EmailNotValidError as exc:
+            return jsonify({"error": "invalid_email", "detail": str(exc)}), 400
+
+        existing = get_api_key_by_email(email)
+        if existing:
+            if existing.get("is_active"):
+                return jsonify({"message": "A key for this email already exists. Check your inbox for the original activation email."}), 200
+            return jsonify({"message": "A confirmation is already pending. Check your inbox or try again in 24 hours."}), 200
+
+        raw_key = "cat_" + secrets.token_hex(22)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        key_prefix = raw_key[:12]
+        confirm_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        ip = request.remote_addr
+
+        ok = create_api_key(
+            email=email,
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            confirm_token=confirm_token,
+            confirm_token_expires_at=expires_at,
+            created_from_ip=ip,
+        )
+        if not ok:
+            return jsonify({"error": "registration_failed"}), 500
+
+        base_url = request.host_url.rstrip("/")
+        confirm_url = f"{base_url}/api/keys/confirm?token={confirm_token}"
+        body = (
+            f"Hello,\n\n"
+            f"Your Catalitium API key is:\n\n"
+            f"  {raw_key}\n\n"
+            f"To activate it, visit the link below (valid 24 hours):\n\n"
+            f"  {confirm_url}\n\n"
+            f"Once activated, include it in API requests with the header:\n"
+            f"  X-API-Key: {raw_key}\n\n"
+            f"Free tier: 100 requests/month.\n\n"
+            f"-- Catalitium Team"
+        )
+        _send_mail(email, "Activate your Catalitium API key", body)
+        logger.info("API key created prefix=%s ip=%s email=%s", key_prefix, ip, email)
+        return jsonify({"message": "Check your email to activate your key."}), 200
+
+    @app.get("/api/keys/confirm")
+    def api_keys_confirm():
+        """Activate an API key using the token from the confirmation email."""
+        token = (request.args.get("token") or "").strip()
+        if not token:
+            return jsonify({"error": "token_required"}), 400
+        ok = confirm_api_key_by_token(token, datetime.now(timezone.utc))
+        if not ok:
+            return jsonify({"error": "invalid_or_expired_token"}), 400
+        return jsonify({"message": "Key activated. Your API key was included in the confirmation email you received."}), 200
+
+    @app.get("/api/keys/usage")
+    @_require_api_key
+    def api_keys_usage():
+        """Return monthly usage stats for the authenticated API key."""
+        rec = g.get("api_key_record", {})
+        now = datetime.now(timezone.utc)
+        if now.month == 12:
+            reset_dt = now.replace(year=now.year + 1, month=1, day=1,
+                                   hour=0, minute=0, second=0, microsecond=0)
+        else:
+            reset_dt = now.replace(month=now.month + 1, day=1,
+                                   hour=0, minute=0, second=0, microsecond=0)
+        return jsonify({
+            "tier": rec.get("tier"),
+            "monthly_limit": rec.get("monthly_limit"),
+            "requests_used": rec.get("requests_this_month"),
+            "reset_date": reset_dt.date().isoformat(),
+        }), 200
+
+    @app.delete("/api/keys/me")
+    def api_keys_revoke():
+        """Revoke the API key supplied in X-API-Key (does not consume quota)."""
+        raw_key = (
+            request.headers.get("X-API-Key")
+            or request.args.get("api_key")
+            or ""
+        ).strip()
+        if not raw_key:
+            return jsonify({"error": "invalid_key"}), 401
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        ok = revoke_api_key(key_hash)
+        if not ok:
+            return jsonify({"error": "invalid_key"}), 401
+        return jsonify({"message": "Key revoked."}), 200
+
+    # ------------------------------------------------------------------
+    # v1/ — Authenticated data API (protected by _require_api_key)
+    # ------------------------------------------------------------------
+
+    @app.get("/v1/jobs")
+    @_require_api_key
+    def v1_jobs():
+        """Authenticated job search; same parameters as /api/jobs."""
+        raw_title = (request.args.get("title") or "").strip()
+        raw_country = (request.args.get("country") or "").strip()
+        page, per_page = _resolve_pagination()
+        title_q, country_q, _, _ = safe_parse_search_params(raw_title, raw_country)
+        q_title = title_q or None
+        q_country = country_q or None
+        offset = (max(1, page) - 1) * per_page
+
+        try:
+            total = Job.count(q_title, q_country)
+        except Exception:
+            total = None
+        try:
+            rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
+        except Exception:
+            rows = []
+        if total is None:
+            total = len(rows)
+
+        items = []
+        for row in rows:
+            link = row.get("link")
+            if link in BLACKLIST_LINKS:
+                link = None
+            date_raw = row.get("date")
+            date_str = ""
+            if date_raw:
+                dt = _coerce_datetime(date_raw)
+                if dt:
+                    date_str = dt.date().isoformat()
+            items.append({
+                "id": row.get("id"),
+                "title": (row.get("job_title") or "").strip(),
+                "company": (row.get("company_name") or "").strip(),
+                "location": row.get("location") or "",
+                "description": clean_job_description_text(row.get("job_description") or ""),
+                "apply_url": link or "",
+                "salary_range": row.get("job_salary_range") or "",
+                "date_posted": date_str,
+                "is_new": _job_is_new(date_raw, date_raw),
+            })
+
+        pages = max(1, (total + per_page - 1) // per_page) if total else 1
+        return jsonify({
+            "items": items,
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": pages,
+                "title": title_q or "",
+                "country": country_q or "",
+            },
+        }), 200
+
+    @app.get("/v1/jobs/<int:job_id>")
+    @_require_api_key
+    def v1_job_detail(job_id: int):
+        """Return a single job as JSON."""
+        row = Job.get_by_id(str(job_id))
+        if not row:
+            return jsonify({"error": "not_found"}), 404
+        link = row.get("link")
+        if link in BLACKLIST_LINKS:
+            link = None
+        date_raw = row.get("date")
+        date_str = ""
+        if date_raw:
+            dt = _coerce_datetime(date_raw)
+            if dt:
+                date_str = dt.date().isoformat()
+        return jsonify({
+            "id": job_id,
+            "title": re.sub(r"\s+", " ", (row.get("job_title") or "").strip()),
+            "company": (row.get("company_name") or "").strip(),
+            "location": row.get("location") or "",
+            "description": clean_job_description_text(row.get("job_description") or ""),
+            "apply_url": link or "",
+            "salary_range": row.get("job_salary_range") or "",
+            "date_posted": date_str,
+            "is_new": _job_is_new(date_raw, date_raw),
+        }), 200
+
+    @app.get("/v1/salary")
+    @_require_api_key
+    def v1_salary():
+        """Return salary lookup for a title+country combination."""
+        raw_title = (request.args.get("title") or "").strip()
+        raw_country = (request.args.get("country") or "").strip()
+        location = raw_country or raw_title or ""
+        try:
+            rec = get_salary_for_location(location)
+        except Exception:
+            rec = None
+        if not rec:
+            return jsonify({"error": "no_data"}), 404
+        median, currency = rec[0], rec[1]
+        return jsonify({
+            "location": location,
+            "median_salary": median,
+            "currency": currency,
+        }), 200
 
     # ------------------------------------------------------------------
     # AI Job Summary API (Claude Haiku, DB-cached)
