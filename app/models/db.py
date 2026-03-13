@@ -319,7 +319,7 @@ def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> Non
 
 
 def init_db():
-    """Connectivity check + ensure job_summaries cache table exists."""
+    """Connectivity check + ensure job_summaries and api_keys tables exist."""
     try:
         db = get_db()
         with db.cursor() as cur:
@@ -332,6 +332,27 @@ def init_db():
                     skills     JSONB    NOT NULL DEFAULT '[]'::jsonb,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    id                       SERIAL PRIMARY KEY,
+                    email                    TEXT NOT NULL,
+                    key_hash                 TEXT NOT NULL UNIQUE,
+                    key_prefix               TEXT NOT NULL,
+                    tier                     TEXT NOT NULL DEFAULT 'free_pending',
+                    is_active                BOOLEAN NOT NULL DEFAULT FALSE,
+                    monthly_limit            INTEGER NOT NULL DEFAULT 100,
+                    requests_this_month      INTEGER NOT NULL DEFAULT 0,
+                    month_window             TEXT,
+                    confirm_token            TEXT,
+                    confirm_token_expires_at TIMESTAMPTZ,
+                    created_from_ip          TEXT,
+                    created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_api_keys_active_email
+                    ON api_keys (email) WHERE is_active = TRUE
             """)
             db.commit()
     except Exception as exc:
@@ -1418,3 +1439,154 @@ def clean_job_description_text(text: str) -> str:
     # Remove a standalone leading 'Details' line
     t = re.sub(r"^\s*Details\s*\n+", "", t, flags=re.IGNORECASE)
     return t.strip()
+
+
+# ------------------------- API Key Helpers -----------------------------------
+
+def create_api_key(
+    email: str,
+    key_hash: str,
+    key_prefix: str,
+    confirm_token: str,
+    confirm_token_expires_at: datetime,
+    created_from_ip: Optional[str],
+) -> bool:
+    """Insert a new inactive API key record. Returns True on success."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO api_keys (
+                    email, key_hash, key_prefix, tier, is_active,
+                    monthly_limit, requests_this_month,
+                    confirm_token, confirm_token_expires_at, created_from_ip, created_at
+                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 100, 0, %s, %s, %s, NOW())
+                """,
+                (email, key_hash, key_prefix, confirm_token, confirm_token_expires_at, created_from_ip),
+            )
+        return True
+    except Exception as exc:
+        logger.warning("create_api_key failed: %s", exc, exc_info=True)
+        return False
+
+
+def get_api_key_by_email(email: str) -> Optional[Dict]:
+    """Return the most recent key record for this email (active or pending), or None."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, email, key_prefix, tier, is_active, monthly_limit,
+                       requests_this_month, month_window, confirm_token,
+                       confirm_token_expires_at, created_from_ip, created_at
+                FROM api_keys
+                WHERE email = %s
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (email,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            cols = [
+                "id", "email", "key_prefix", "tier", "is_active", "monthly_limit",
+                "requests_this_month", "month_window", "confirm_token",
+                "confirm_token_expires_at", "created_from_ip", "created_at",
+            ]
+            return dict(zip(cols, row))
+    except Exception as exc:
+        logger.warning("get_api_key_by_email failed: %s", exc)
+        return None
+
+
+def confirm_api_key_by_token(token: str, now: datetime) -> bool:
+    """Activate the key matching token if not yet expired. Returns True on success."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE api_keys
+                SET is_active = TRUE,
+                    tier = 'free',
+                    confirm_token = NULL,
+                    confirm_token_expires_at = NULL
+                WHERE confirm_token = %s
+                  AND confirm_token_expires_at > %s
+                  AND is_active = FALSE
+                """,
+                (token, now),
+            )
+            return cur.rowcount > 0
+    except Exception as exc:
+        logger.warning("confirm_api_key_by_token failed: %s", exc)
+        return False
+
+
+def revoke_api_key(key_hash: str) -> bool:
+    """Deactivate the key with this hash. Returns True if a row was updated."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE api_keys SET is_active = FALSE WHERE key_hash = %s AND is_active = TRUE",
+                (key_hash,),
+            )
+            return cur.rowcount > 0
+    except Exception as exc:
+        logger.warning("revoke_api_key failed: %s", exc)
+        return False
+
+
+def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
+    """Validate key, reset monthly counter if in a new month, enforce quota, then increment.
+
+    Returns:
+        dict with monthly_limit/requests_this_month/tier on success,
+        {"error": "quota_exceeded"} when over quota,
+        None when key is not found or inactive.
+    """
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, tier, is_active, monthly_limit, requests_this_month, month_window
+                FROM api_keys
+                WHERE key_hash = %s
+                """,
+                (key_hash,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            rec_id, tier, is_active, monthly_limit, requests_this_month, month_window = row
+            if not is_active:
+                return None
+            current_month = now.strftime("%Y-%m")
+            if month_window != current_month:
+                cur.execute(
+                    "UPDATE api_keys SET requests_this_month = 0, month_window = %s WHERE id = %s",
+                    (current_month, rec_id),
+                )
+                requests_this_month = 0
+            if requests_this_month >= monthly_limit:
+                return {"error": "quota_exceeded"}
+            cur.execute(
+                "UPDATE api_keys SET requests_this_month = requests_this_month + 1 "
+                "WHERE id = %s RETURNING requests_this_month",
+                (rec_id,),
+            )
+            new_row = cur.fetchone()
+            new_count = new_row[0] if new_row else requests_this_month + 1
+            return {
+                "monthly_limit": monthly_limit,
+                "requests_this_month": new_count,
+                "tier": tier,
+            }
+    except Exception as exc:
+        logger.warning("check_and_increment_api_key error: %s", exc)
+        return None
