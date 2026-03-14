@@ -1,6 +1,6 @@
 # Catalitium
 
-> Two brothers from Zurich. No funding. No safety net. Just build.
+> Solutions
 
 ---
 
