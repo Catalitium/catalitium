@@ -35,6 +35,55 @@ function sendAnalyticsPayload(payload){
   });
 })();
 
+/* Desktop navbar state: transparent on top, glass on scroll */
+(function(){
+  var header = document.querySelector('[data-navbar]');
+  if (!header) return;
+
+  var mq = window.matchMedia('(min-width: 1024px)');
+  var ticking = false;
+
+  function applyState(){
+    ticking = false;
+    if (!mq.matches) {
+      header.classList.remove('is-scrolled');
+      return;
+    }
+    if (window.scrollY > 10) {
+      header.classList.add('is-scrolled');
+    } else {
+      header.classList.remove('is-scrolled');
+    }
+  }
+
+  function onScroll(){
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(applyState);
+  }
+
+  if (typeof mq.addEventListener === 'function') {
+    mq.addEventListener('change', applyState);
+  } else if (typeof mq.addListener === 'function') {
+    mq.addListener(applyState);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  applyState();
+})();
+
+/* Keyboard shortcut: "/" focuses global search input */
+(function(){
+  document.addEventListener('keydown', function(e){
+    if (e.defaultPrevented || e.key !== '/') return;
+    var target = e.target;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+    var q = document.getElementById('q') || document.getElementById('navsearch');
+    if (!q) return;
+    e.preventDefault();
+    try { q.focus(); q.select && q.select(); } catch(_){}
+  });
+})();
+
 /* Lightweight helpers (no frameworks) */
 (function(){
   // Bottom-sheet Nav: open/close + focus trap + scroll lock

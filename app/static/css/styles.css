@@ -33,3 +33,27 @@ body { font-family: system-ui, -apple-system, sans-serif; background: white; col
 
 /* Logo sizing helper */
 .brand-logo { height: 44px; width: auto; }
+
+/* Desktop navbar polish */
+[data-navbar] {
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, backdrop-filter 180ms ease;
+}
+
+@media (min-width: 1024px) {
+  [data-navbar] {
+    border-color: transparent;
+    background-color: transparent;
+    backdrop-filter: blur(0);
+  }
+
+  [data-navbar].is-scrolled {
+    border-color: rgb(226 232 240 / 0.85);
+    background-color: rgb(255 255 255 / 0.82);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 30px -24px rgb(15 23 42 / 0.35);
+  }
+
+  [data-navbar].is-scrolled .brand-logo {
+    height: 40px;
+  }
+}
