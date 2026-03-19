@@ -3,7 +3,7 @@
 import os
 import re
 from datetime import datetime, timezone, timedelta
-from typing import Tuple, Optional, Dict
+from typing import Tuple, Optional, Dict, Any, List
 from urllib.parse import urlparse
 
 from flask import (
@@ -57,6 +57,14 @@ import functools
 import smtplib
 from email.mime.text import MIMEText
 from werkzeug.middleware.proxy_fix import ProxyFix
+from .api_utils import (
+    TTLCache,
+    api_fail,
+    api_ok,
+    generate_request_id,
+    parse_int_arg,
+    parse_str_arg,
+)
 
 try:
     from flask_limiter import Limiter
@@ -561,12 +569,48 @@ def create_app() -> Flask:
             strategy="fixed-window",
         )
 
+    summary_cache = TTLCache(ttl_seconds=90, max_size=400)
+    autocomplete_cache = TTLCache(ttl_seconds=120, max_size=400)
+    salary_insights_cache = TTLCache(ttl_seconds=120, max_size=250)
+
+    @app.before_request
+    def assign_request_id():
+        g.request_id = generate_request_id()
+
+    def _api_request() -> bool:
+        path = request.path or ""
+        return path.startswith("/api/") or path.startswith("/v1/") or request.is_json
+
+    def _api_success(data: Dict[str, Any], status: int = 200, code: str = "ok", message: str = "ok"):
+        return jsonify(
+            api_ok(
+                data=data,
+                request_id=getattr(g, "request_id", ""),
+                code=code,
+                message=message,
+            )
+        ), status
+
+    def _api_error(code: str, message: str, status: int = 400, details: Optional[Dict[str, Any]] = None):
+        return jsonify(
+            api_fail(
+                code=code,
+                message=message,
+                request_id=getattr(g, "request_id", ""),
+                details=details or {},
+            )
+        ), status
+
     def _resolve_pagination(default_per_page: int = 12) -> Tuple[int, int]:
         """Return (page, per_page_limit) constrained to safe bounds."""
-        per_page_raw = request.args.get("per_page", default=default_per_page, type=int) or default_per_page
-        per_page = max(1, min(per_page_raw, int(app.config.get("PER_PAGE_MAX", 100))))
-        page_raw = request.args.get("page", default=1, type=int) or 1
-        page = max(1, page_raw)
+        per_page = parse_int_arg(
+            request.args,
+            "per_page",
+            default=default_per_page,
+            minimum=1,
+            maximum=int(app.config.get("PER_PAGE_MAX", 100)),
+        )
+        page = parse_int_arg(request.args, "page", default=1, minimum=1, maximum=10_000)
         return page, per_page
 
     def _display_per_page(per_page: int) -> int:
@@ -696,21 +740,27 @@ def create_app() -> Flask:
 
     @app.errorhandler(404)
     def handle_not_found(_error):
+        if _api_request():
+            return _api_error("not_found", "Resource not found", 404)
         return jsonify({"error": "not found"}), 404
 
     @app.errorhandler(500)
     def handle_server_error(error):
         logger.exception("Unhandled error", exc_info=error)
+        if _api_request():
+            return _api_error("internal_error", "Internal server error", 500)
         return jsonify({"error": "internal error"}), 500
 
     @app.errorhandler(413)
     def handle_payload_too_large(_error):
+        if _api_request():
+            return _api_error("payload_too_large", "Payload too large", 413)
         return jsonify({"error": "payload_too_large"}), 413
 
     @app.errorhandler(429)
     def handle_rate_limited(_error):
-        if (request.path or "").startswith("/api/") or request.is_json:
-            return jsonify({"error": "rate_limited"}), 429
+        if _api_request():
+            return _api_error("rate_limited", "Too many requests", 429)
         flash("Too many requests. Please wait and try again.", "error")
         return redirect(url_for("index"))
 
@@ -987,20 +1037,11 @@ def create_app() -> Flask:
             job_api=job_api_url,
         )
 
-    @app.get("/api/jobs")
-    def api_jobs():
-        """Return jobs as JSON with pagination metadata.
-
-        Uses the same title/country normalization as the main index route
-        so the job browser and the homepage see the same Supabase jobs.
-        """
-        raw_title = (request.args.get("title") or "").strip()
-        raw_country = (request.args.get("country") or "").strip()
-        page, per_page = _resolve_pagination()
+    def _query_jobs_payload(*, raw_title: str, raw_country: str, page: int, per_page: int) -> Dict[str, Any]:
+        """Shared jobs listing payload for /api/jobs and /v1/jobs."""
         per_page_display = _display_per_page(per_page)
 
-        # Reuse the shared search param parsing to keep behavior consistent
-        title_q, country_q, sal_floor, sal_ceiling = safe_parse_search_params(raw_title, raw_country)
+        title_q, country_q, _, _ = safe_parse_search_params(raw_title, raw_country)
         if raw_title and not title_q:
             title_q = normalize_title(raw_title)
         if raw_country and not country_q:
@@ -1010,42 +1051,35 @@ def create_app() -> Flask:
         q_country = country_q or None
 
         total: Optional[int]
-        rows = []
-
-        # First try: normal count+search. If COUNT is too heavy and times out,
-        # fall back to search without relying on COUNT so we still show jobs.
+        rows: List[Dict[str, Any]] = []
         try:
             total = Job.count(q_title, q_country)
         except Exception:
-            logger.exception("Job COUNT failed in api_jobs; falling back to search-only")
+            logger.exception("Job COUNT failed; falling back to search-only")
             total = None
 
         try:
             offset = (max(1, page) - 1) * per_page
             rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
         except Exception:
-            logger.exception("Job SEARCH failed in api_jobs")
+            logger.exception("Job SEARCH failed")
             rows = []
 
-        # If we have a title but no rows, relax the title filter once and try
-        # a greedy country-only search so users still see something.
         if not rows and (q_title or raw_title):
             try:
-                q_title = None
                 offset = (max(1, page) - 1) * per_page
-                rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
+                rows = Job.search(None, q_country, limit=per_page, offset=offset)
                 if total is None:
                     total = len(rows)
             except Exception:
-                logger.exception("Fallback country-only search failed in api_jobs")
+                logger.exception("Fallback country-only search failed")
 
         if total is None:
             total = len(rows)
 
-        items = []
+        items: List[Dict[str, Any]] = []
         for row in rows:
             job_date_raw = row.get("date")
-            job_date_str = str(job_date_raw).strip() if job_date_raw is not None else ""
             link = row.get("link")
             if link in BLACKLIST_LINKS:
                 link = None
@@ -1053,23 +1087,18 @@ def create_app() -> Flask:
             company = (row.get("company_name") or "").strip()
             location = row.get("location") or "Remote / Anywhere"
             description = clean_job_description_text(row.get("job_description") or "")
-            
-            # Format job_date as YYYY-MM-DD
-            job_date_formatted = ""
-            if job_date_raw:
-                dt = _coerce_datetime(job_date_raw)
-                if dt:
-                    job_date_formatted = dt.date().isoformat()
-            
+            dt = _coerce_datetime(job_date_raw) if job_date_raw else None
+            job_date_formatted = dt.date().isoformat() if dt else ""
+
             items.append(
                 {
                     "id": row.get("id"),
                     "title": title,
-                    "job_title": title,  # alias for compatibility
+                    "job_title": title,
                     "job_company_name": company,
-                    "company": company,  # alias
+                    "company": company,
                     "description": description,
-                    "job_description": description,  # alias
+                    "job_description": description,
                     "link": link or "",
                     "location": location,
                     "city": row.get("city") or "",
@@ -1084,20 +1113,36 @@ def create_app() -> Flask:
             )
 
         pages_display = max(1, (total + per_page_display - 1) // per_page_display) if per_page_display else 1
+        return {
+            "items": items,
+            "meta": {
+                "page": max(1, page),
+                "per_page": per_page_display,
+                "total": total,
+                "pages": pages_display,
+                "has_prev": page > 1,
+                "has_next": page < pages_display,
+            },
+        }
 
-        return jsonify(
-            {
-                "items": items,
-                "meta": {
-                    "page": max(1, page),
-                    "per_page": per_page_display,
-                    "total": total,
-                    "pages": pages_display,
-                    "has_prev": page > 1,
-                    "has_next": page < pages_display,
-                },
-            }
-        )
+    @app.get("/api/jobs")
+    def api_jobs():
+        """Return jobs as JSON with pagination metadata."""
+        raw_title = parse_str_arg(request.args, "title", default="", max_len=120)
+        raw_country = parse_str_arg(request.args, "country", default="", max_len=80)
+        page, per_page = _resolve_pagination()
+        payload = _query_jobs_payload(raw_title=raw_title, raw_country=raw_country, page=page, per_page=per_page)
+        return _api_success(payload)
+
+    @app.get("/v1/jobs")
+    @_limit("90 per minute")
+    def v1_jobs():
+        """Versioned jobs endpoint backed by the same listing service."""
+        raw_title = parse_str_arg(request.args, "title", default="", max_len=120)
+        raw_country = parse_str_arg(request.args, "country", default="", max_len=80)
+        page, per_page = _resolve_pagination()
+        payload = _query_jobs_payload(raw_title=raw_title, raw_country=raw_country, page=page, per_page=per_page)
+        return _api_success(payload)
 
     @app.get("/api/jobs/summary")
     def api_jobs_summary():
@@ -1108,8 +1153,12 @@ def create_app() -> Flask:
         - Fallback to parsing job_salary_range strings.
         - Finally, fallback to salary table via get_salary_for_location.
         """
-        raw_title = (request.args.get("title") or "").strip()
-        raw_country = (request.args.get("country") or "").strip()
+        raw_title = parse_str_arg(request.args, "title", default="", max_len=120)
+        raw_country = parse_str_arg(request.args, "country", default="", max_len=80)
+        cache_key = f"summary:{raw_title.lower()}|{raw_country.lower()}"
+        cached = summary_cache.get(cache_key)
+        if cached is not None:
+            return _api_success(cached)
 
         cleaned_title, _, _ = parse_salary_query(raw_title)
         country_q = normalize_country(raw_country)
@@ -1206,16 +1255,16 @@ def create_app() -> Flask:
 
         remote_share = remote_count / len(rows) if rows else 0.0
 
-        return jsonify(
-            {
-                "count": total,
-                "salary": {
-                    "median": int(median_salary) if median_salary is not None else None,
-                    "currency": currency or None,
-                },
-                "remote_share": round(remote_share, 2),
-            }
-        )
+        payload = {
+            "count": total,
+            "salary": {
+                "median": int(median_salary) if median_salary is not None else None,
+                "currency": currency or None,
+            },
+            "remote_share": round(remote_share, 2),
+        }
+        summary_cache.set(cache_key, payload)
+        return _api_success(payload)
 
     @app.post("/subscribe")
     @_limit("20 per minute")
@@ -1491,11 +1540,16 @@ def create_app() -> Flask:
     @app.get("/api/salary-insights")
     def api_salary_insights():
         """Return a lightweight public dataset of jobs for salary insights."""
-        raw_title = (request.args.get("title") or "").strip()
-        raw_country = (request.args.get("country") or "").strip()
+        raw_title = parse_str_arg(request.args, "title", default="", max_len=120)
+        raw_country = parse_str_arg(request.args, "country", default="", max_len=80)
+        limit = parse_int_arg(request.args, "limit", default=100, minimum=1, maximum=300)
+        cache_key = f"salary-insights:{raw_title.lower()}|{raw_country.lower()}|{limit}"
+        cached = salary_insights_cache.get(cache_key)
+        if cached is not None:
+            return _api_success(cached)
         title_q = normalize_title(raw_title)
         country_q = normalize_country(raw_country)
-        rows = Job.search(title_q or None, country_q or None, limit=100, offset=0)
+        rows = Job.search(title_q or None, country_q or None, limit=limit, offset=0)
         items = [
             {
                 "title": _to_lc(row.get("job_title") or ""),
@@ -1506,21 +1560,31 @@ def create_app() -> Flask:
             }
             for row in rows
         ]
-        return jsonify(
-            {
-                "count": len(items),
-                "items": items,
-                "meta": {"title": title_q, "country": country_q},
-            }
-        )
+        payload = {
+            "count": len(items),
+            "items": items,
+            "meta": {"title": title_q, "country": country_q, "limit": limit},
+        }
+        salary_insights_cache.set(cache_key, payload)
+        return _api_success(payload)
+
+    @app.get("/v1/salary")
+    @_limit("90 per minute")
+    def v1_salary():
+        """Versioned salary insights endpoint."""
+        return api_salary_insights()
 
     @app.get("/api/autocomplete")
     @_limit("90 per minute")
     def api_autocomplete():
         """Return distinct job title suggestions for autocomplete."""
-        q = (request.args.get("q") or "").strip().lower()
+        q = parse_str_arg(request.args, "q", default="", max_len=80).lower()
         if len(q) < 2:
-            return jsonify({"suggestions": []})
+            return _api_success({"suggestions": []})
+        cache_key = f"autocomplete:{q}"
+        cached = autocomplete_cache.get(cache_key)
+        if cached is not None:
+            return _api_success(cached)
         try:
             db = get_db()
             with db.cursor() as cur:
@@ -1535,7 +1599,121 @@ def create_app() -> Flask:
         except Exception:
             logger.exception("Autocomplete query failed")
             suggestions = []
-        return jsonify({"suggestions": suggestions})
+        payload = {"suggestions": suggestions}
+        autocomplete_cache.set(cache_key, payload)
+        return _api_success(payload)
+
+    @app.get("/api/share-search")
+    @_limit("90 per minute")
+    def api_share_search():
+        """Return a canonical share payload for the current search filters."""
+        title = parse_str_arg(request.args, "title", default="", max_len=120)
+        country = parse_str_arg(request.args, "country", default="", max_len=80)
+        page = parse_int_arg(request.args, "page", default=1, minimum=1, maximum=10_000)
+        per_page = parse_int_arg(
+            request.args,
+            "per_page",
+            default=12,
+            minimum=1,
+            maximum=int(app.config.get("PER_PAGE_MAX", 100)),
+        )
+
+        canonical_url = url_for(
+            "index",
+            title=title or None,
+            country=country or None,
+            page=page,
+            per_page=per_page,
+            _external=True,
+        )
+        return _api_success(
+            {
+                "canonical_url": canonical_url,
+                "query": {
+                    "title": title,
+                    "country": country,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
+        )
+
+    @app.get("/api/salary/compare")
+    @_limit("90 per minute")
+    def api_salary_compare():
+        """Compare salary baselines between two regions/locations for a role."""
+        role = parse_str_arg(request.args, "role", default="", max_len=120)
+        region_a = parse_str_arg(request.args, "region_a", default="", max_len=120)
+        region_b = parse_str_arg(request.args, "region_b", default="", max_len=120)
+        if not region_a or not region_b:
+            return _api_error(
+                "invalid_params",
+                "region_a and region_b are required",
+                400,
+                details={"required": ["region_a", "region_b"]},
+            )
+
+        sal_a = get_salary_for_location(region_a)
+        sal_b = get_salary_for_location(region_b)
+        median_a = int(sal_a[0]) if sal_a and sal_a[0] else None
+        median_b = int(sal_b[0]) if sal_b and sal_b[0] else None
+        if median_a is None and median_b is None:
+            return _api_error(
+                "no_salary_data",
+                "No salary data found for requested regions",
+                404,
+                details={"region_a": region_a, "region_b": region_b},
+            )
+
+        delta = None
+        delta_pct = None
+        if median_a is not None and median_b is not None:
+            delta = median_a - median_b
+            if median_b != 0:
+                delta_pct = round((delta / median_b) * 100.0, 2)
+
+        return _api_success(
+            {
+                "role": normalize_title(role) if role else "",
+                "region_a": {"name": region_a, "median": median_a, "currency": sal_a[1] if sal_a else None},
+                "region_b": {"name": region_b, "median": median_b, "currency": sal_b[1] if sal_b else None},
+                "delta": delta,
+                "delta_pct": delta_pct,
+            }
+        )
+
+    @app.post("/studio-contact")
+    @_limit("10 per minute")
+    def studio_contact():
+        """Minimal B2B studio intake endpoint reusing contact storage."""
+        payload = request.get_json(silent=True) or request.form or {}
+        email_raw = (payload.get("email") or "").strip()
+        name_raw = (payload.get("name") or payload.get("company") or "").strip()
+        priority = (payload.get("priority") or "").strip()
+        message_raw = (payload.get("message") or "").strip()
+
+        if not email_raw or not name_raw:
+            return _api_error(
+                "invalid_params",
+                "email and name/company are required",
+                400,
+                details={"required": ["email", "name"]},
+            )
+        try:
+            email = validate_email(email_raw, check_deliverability=False).normalized
+        except EmailNotValidError:
+            return _api_error("invalid_email", "Please provide a valid email", 400)
+
+        tagged_message = (
+            "[Studio enquiry]\n"
+            f"Priority: {priority or 'unspecified'}\n"
+            f"Path: {request.path}\n"
+            f"Message: {message_raw or 'N/A'}"
+        )
+        status = insert_contact(email=email, name_company=name_raw, message=tagged_message)
+        if status != "ok":
+            return _api_error("contact_failed", "Unable to submit studio enquiry", 500)
+        return _api_success({"status": "ok"}, 201, code="created", message="Studio enquiry submitted")
 
     @app.get("/health")
     def health():
@@ -1546,8 +1724,8 @@ def create_app() -> Flask:
                 cur.execute("SELECT 1")
                 cur.fetchone()
         except Exception:
-            return jsonify({"status": "error", "db": "failed"}), 503
-        return jsonify({"status": "ok", "db": "connected"}), 200
+            return _api_error("db_unavailable", "Database connection failed", 503)
+        return _api_success({"status": "ok", "db": "connected"})
 
     @app.get("/legal")
     def legal():
@@ -2114,30 +2292,30 @@ def create_app() -> Flask:
         """Return AI-generated bullets + skill tags for a job (cached in DB)."""
         cached = get_job_summary(job_id)
         if cached:
-            return jsonify(cached), 200
+            return _api_success(cached)
 
         row = Job.get_by_id(str(job_id))
         if not row:
-            return jsonify({"error": "not_found"}), 404
+            return _api_error("not_found", "Job not found", 404)
 
         description = (row.get("job_description") or "").strip()
         if len(description) < 50:
-            return jsonify({"error": "no_description"}), 404
+            return _api_error("no_description", "Job description is too short", 404)
 
         api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
         if not api_key:
-            return jsonify({"error": "no_api_key"}), 503
+            return _api_error("no_api_key", "AI summary is unavailable", 503)
 
         bullets, skills = _call_anthropic(description, api_key)
         if bullets is None:
-            return jsonify({"error": "api_failed"}), 503
+            return _api_error("api_failed", "AI provider request failed", 503)
 
         try:
             save_job_summary(job_id, bullets, skills)
         except Exception:
             pass
 
-        return jsonify({"bullets": bullets, "skills": skills}), 200
+        return _api_success({"bullets": bullets, "skills": skills})
 
     return app
 
