@@ -97,6 +97,15 @@ def _setup_connection(conn):
     except Exception:
         pass
     try:
+        # Disable server-side prepared statements so the connection works correctly
+        # through pgbouncer in transaction mode (Supabase pooler on port 6543).
+        # Psycopg3 auto-prepares after prepare_threshold uses, but pgbouncer doesn't
+        # persist named prepared statements across transactions, causing
+        # "prepared statement already exists" errors on the second execute.
+        conn.prepare_threshold = None
+    except Exception:
+        pass
+    try:
         with conn.cursor() as cur:
             # Keep queries snappy and fail fast; units in ms
             cur.execute("SET statement_timeout TO 800")
@@ -1115,31 +1124,27 @@ class Job:
                         subclauses_pg.append("(" + " OR ".join(swiss_like_pg) + ")")
                         subclauses_sqlite.append("(" + " OR ".join(swiss_like_sqlite) + ")")
                 elif upper == "DE":
-                    # Germany: explicit IN + a small set of LIKE patterns to avoid
-                    # the combinatorial param explosion (156+ params) that causes
-                    # a Postgres statement timeout via the generic _country_patterns path.
+                    # Germany: use indexed columns directly to stay under the 800ms
+                    # statement timeout. COALESCE wrapping defeats the btree index on
+                    # lower(country) and the GIN trigram index on lower(location).
                     de_exact = ["de", "germany", "deutschland", "alemania"]
                     de_locations = ["germany", "deutschland", "berlin", "munich",
                                     "münchen", "hamburg", "frankfurt", "cologne",
-                                    "köln", "düsseldorf", "stuttgart", "nuremberg",
-                                    "nürnberg", "dortmund", "essen", "bremen"]
-                    eq_parts_pg: List[str] = []
-                    eq_parts_sqlite: List[str] = []
-                    for val in de_exact:
-                        for col in columns_to_search:
-                            eq_parts_pg.append(f"LOWER(COALESCE({col}, '')) = %s")
-                            eq_parts_sqlite.append(f"LOWER(COALESCE({col}, '')) = ?")
-                            params_pg.append(val)
-                            params_sqlite.append(val)
-                    if eq_parts_pg:
-                        subclauses_pg.append("(" + " OR ".join(eq_parts_pg) + ")")
-                        subclauses_sqlite.append("(" + " OR ".join(eq_parts_sqlite) + ")")
+                                    "köln", "düsseldorf", "stuttgart", "bremen"]
+                    # Exact country match — hits idx_jobs_country_lower (btree)
+                    ph_pg = ", ".join(["%s"] * len(de_exact))
+                    ph_sqlite = ", ".join(["?"] * len(de_exact))
+                    subclauses_pg.append(f"lower(country) IN ({ph_pg})")
+                    subclauses_sqlite.append(f"lower(country) IN ({ph_sqlite})")
+                    params_pg.extend(de_exact)
+                    params_sqlite.extend(de_exact)
+                    # Location LIKE — hits idx_jobs_loc_trgm (GIN trigram)
                     loc_parts_pg: List[str] = []
                     loc_parts_sqlite: List[str] = []
                     for term in de_locations:
                         pattern = f"%{Job._escape_like(term)}%"
-                        loc_parts_pg.append("LOWER(COALESCE(location, '')) LIKE %s ESCAPE '\\'")
-                        loc_parts_sqlite.append("LOWER(COALESCE(location, '')) LIKE ? ESCAPE '\\'")
+                        loc_parts_pg.append("lower(location) LIKE %s ESCAPE '\\'")
+                        loc_parts_sqlite.append("lower(location) LIKE ? ESCAPE '\\'")
                         params_pg.append(pattern)
                         params_sqlite.append(pattern)
                     if loc_parts_pg:
