@@ -557,18 +557,24 @@ def create_app() -> Flask:
             return limiter.limit(rule)(fn)
         return _decorator
 
+    def _extract_key_hash() -> Optional[str]:
+        """Extract and hash the API key from request headers/query. Returns None if absent."""
+        raw_key = (
+            request.headers.get("X-API-Key")
+            or request.args.get("api_key")
+            or ""
+        ).strip()
+        if not raw_key:
+            return None
+        return hashlib.sha256(raw_key.encode()).hexdigest()
+
     def _require_api_key(f):
         """Decorator: validate X-API-Key header, enforce monthly quota, inject rate-limit headers."""
         @functools.wraps(f)
         def decorated(*args, **kwargs):
-            raw_key = (
-                request.headers.get("X-API-Key")
-                or request.args.get("api_key")
-                or ""
-            ).strip()
-            if not raw_key:
+            key_hash = _extract_key_hash()
+            if not key_hash:
                 return jsonify({"error": "invalid_key"}), 401
-            key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
             now = datetime.now(timezone.utc)
             usage = check_and_increment_api_key(key_hash, now)
             if usage is None:
@@ -1948,27 +1954,14 @@ def create_app() -> Flask:
                 key_prefix="",
                 error_detail="No confirmation token was provided.",
             ), 400
-        ok = confirm_api_key_by_token(token, datetime.now(timezone.utc))
-        if not ok:
+        key_prefix = confirm_api_key_by_token(token, datetime.now(timezone.utc))
+        if key_prefix is None:
             return render_template(
                 "api_confirm.html",
                 success=False,
                 key_prefix="",
                 error_detail="This confirmation link is invalid or has expired.",
             ), 400
-        # Fetch key_prefix for display — the token is now NULL so query by recent activation
-        key_prefix = ""
-        try:
-            db = get_db()
-            with db.cursor() as cur:
-                cur.execute(
-                    "SELECT key_prefix FROM api_keys WHERE is_active = TRUE AND confirm_token IS NULL ORDER BY created_at DESC LIMIT 1"
-                )
-                row = cur.fetchone()
-                if row:
-                    key_prefix = row[0] or ""
-        except Exception:
-            pass
         return render_template(
             "api_confirm.html",
             success=True,
@@ -1998,14 +1991,9 @@ def create_app() -> Flask:
     @app.delete("/api/keys/me")
     def api_keys_revoke():
         """Revoke the API key supplied in X-API-Key (does not consume quota)."""
-        raw_key = (
-            request.headers.get("X-API-Key")
-            or request.args.get("api_key")
-            or ""
-        ).strip()
-        if not raw_key:
+        key_hash = _extract_key_hash()
+        if not key_hash:
             return jsonify({"error": "invalid_key"}), 401
-        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         ok = revoke_api_key(key_hash)
         if not ok:
             return jsonify({"error": "invalid_key"}), 401
@@ -2035,7 +2023,7 @@ def create_app() -> Flask:
                 jobs = []
             if not jobs:
                 continue
-            ok = _send_alert_email(sub, jobs)
+            ok = _send_alert_email(sub, jobs, base_url=request.host_url.rstrip("/"))
             if ok:
                 sent += 1
             else:

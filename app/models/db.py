@@ -591,6 +591,7 @@ def normalize_title(q: str) -> str:
 
 _ID_CACHE: Dict[int, Tuple[float, Optional[Dict]]] = {}
 _ID_CACHE_TTL = 300  # seconds
+_ID_CACHE_MAX = 512  # max entries; oldest evicted when exceeded
 
 
 class Job:
@@ -894,6 +895,10 @@ class Job:
                 cols = [d[0] for d in cur.description]
                 row = cur.fetchone()
                 result = dict(zip(cols, row)) if row else None
+                if len(_ID_CACHE) >= _ID_CACHE_MAX:
+                    # Evict the oldest entry to keep the dict bounded.
+                    oldest_key = min(_ID_CACHE, key=lambda k: _ID_CACHE[k][0])
+                    del _ID_CACHE[oldest_key]
                 _ID_CACHE[pk] = (time.time(), result)
                 return result
         except Exception:
@@ -1576,8 +1581,11 @@ def get_api_key_by_email(email: str) -> Optional[Dict]:
         return None
 
 
-def confirm_api_key_by_token(token: str, now: datetime) -> bool:
-    """Activate the key matching token if not yet expired. Returns True on success."""
+def confirm_api_key_by_token(token: str, now: datetime) -> Optional[str]:
+    """Activate the key matching token if not yet expired.
+
+    Returns key_prefix on success, None on failure (invalid token or DB error).
+    """
     try:
         db = get_db()
         with db.cursor() as cur:
@@ -1591,13 +1599,15 @@ def confirm_api_key_by_token(token: str, now: datetime) -> bool:
                 WHERE confirm_token = %s
                   AND confirm_token_expires_at > %s
                   AND is_active = FALSE
+                RETURNING key_prefix
                 """,
                 (token, now),
             )
-            return cur.rowcount > 0
+            row = cur.fetchone()
+            return row[0] if row else None
     except Exception as exc:
         logger.warning("confirm_api_key_by_token failed: %s", exc)
-        return False
+        return None
 
 
 def revoke_api_key(key_hash: str) -> bool:

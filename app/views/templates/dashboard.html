@@ -56,7 +56,11 @@
   const tpl = document.getElementById('usageTableTpl');
 
   function showError(msg) {
-    result.innerHTML = '<p class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">' + msg + '</p>';
+    const p = document.createElement('p');
+    p.className = 'text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3';
+    p.textContent = msg;
+    result.innerHTML = '';
+    result.appendChild(p);
     result.classList.remove('hidden');
   }
 
