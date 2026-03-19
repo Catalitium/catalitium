@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}API Key Confirmation — Catalitium{% endblock %}
+
+{% block content %}
+<section class="max-w-xl mx-auto py-12 space-y-6 text-center">
+  {% if success %}
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 mx-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-900">API key activated</h1>
+    <p class="text-slate-600">
+      Key <code class="bg-slate-100 px-2 py-0.5 rounded text-sm font-mono">{{ key_prefix }}…</code>
+      is now active and ready to use.
+    </p>
+    <p class="text-sm text-slate-500">
+      Your full key was included in the confirmation email you received.
+      Send it in the <code class="bg-slate-100 px-1 py-0.5 rounded">X-API-Key</code> header for all
+      <code class="bg-slate-100 px-1 py-0.5 rounded">/v1/*</code> requests.
+    </p>
+    <a href="{{ url_for('developers') }}"
+       class="inline-block mt-4 px-5 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:opacity-90 transition-opacity">
+      View API docs
+    </a>
+  {% else %}
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-red-100 mx-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-900">Confirmation failed</h1>
+    <p class="text-slate-600">{{ error_detail }}</p>
+    <p class="text-sm text-slate-500">
+      Confirmation links expire after 24 hours. If your link has expired, register again at
+      <a href="{{ url_for('developers') }}" class="text-brand underline">the developers page</a>.
+    </p>
+    <a href="{{ url_for('developers') }}"
+       class="inline-block mt-4 px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-colors">
+      Back to API docs
+    </a>
+  {% endif %}
+</section>
+{% endblock %}

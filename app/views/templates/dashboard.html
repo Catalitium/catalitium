@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}API Key Dashboard — Catalitium{% endblock %}
+
+{% block content %}
+<section class="max-w-xl mx-auto py-10 space-y-8">
+  <header class="space-y-2">
+    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Catalitium API</p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Usage Dashboard</h1>
+    <p class="text-sm text-slate-600">Enter your API key to view current usage and quota.</p>
+  </header>
+
+  <form id="dashboardForm" class="space-y-4" novalidate>
+    <div class="space-y-1">
+      <label for="apiKeyInput" class="block text-sm font-medium text-slate-700">API Key</label>
+      <input
+        id="apiKeyInput"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="cat_…"
+        class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none font-mono"
+      >
+    </div>
+    <button
+      type="submit"
+      class="w-full rounded-xl bg-brand text-white font-semibold py-3 text-sm hover:opacity-90 transition-opacity"
+    >
+      Check usage
+    </button>
+  </form>
+
+  <div id="dashboardResult" class="hidden" aria-live="polite"></div>
+</section>
+
+<template id="usageTableTpl">
+  <div class="rounded-2xl border border-slate-200 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Field</th>
+          <th class="px-4 py-3 text-left font-semibold text-slate-700">Value</th>
+        </tr>
+      </thead>
+      <tbody id="usageTableBody" class="divide-y divide-slate-100"></tbody>
+    </table>
+  </div>
+</template>
+{% endblock %}
+
+{% block head_extra %}
+<script>
+(function () {
+  const form = document.getElementById('dashboardForm');
+  const result = document.getElementById('dashboardResult');
+  const tpl = document.getElementById('usageTableTpl');
+
+  function showError(msg) {
+    result.innerHTML = '<p class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">' + msg + '</p>';
+    result.classList.remove('hidden');
+  }
+
+  function showTable(data) {
+    const clone = tpl.content.cloneNode(true);
+    const tbody = clone.getElementById('usageTableBody');
+    const rows = [
+      ['Tier', data.tier || '-'],
+      ['Monthly limit', (data.monthly_limit || 0).toLocaleString()],
+      ['Requests used', (data.requests_used || 0).toLocaleString()],
+      ['Requests remaining', Math.max(0, (data.monthly_limit || 0) - (data.requests_used || 0)).toLocaleString()],
+      ['Quota resets', data.reset_date || '-'],
+    ];
+    rows.forEach(([label, val]) => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50';
+      tr.innerHTML = '<td class="px-4 py-3 text-slate-600">' + label + '</td>'
+                   + '<td class="px-4 py-3 font-medium text-slate-900">' + val + '</td>';
+      tbody.appendChild(tr);
+    });
+    result.innerHTML = '';
+    result.appendChild(clone);
+    result.classList.remove('hidden');
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!key) {
+      showError('Please enter your API key.');
+      return;
+    }
+    result.innerHTML = '<p class="text-sm text-slate-500">Loading…</p>';
+    result.classList.remove('hidden');
+    try {
+      const resp = await fetch('/api/keys/usage', {
+        headers: { 'X-API-Key': key }
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        showError(data.error === 'quota_exceeded'
+          ? 'Quota exceeded for this month.'
+          : data.error === 'invalid_key'
+            ? 'Invalid or inactive API key.'
+            : 'Request failed: ' + (data.error || resp.status));
+        return;
+      }
+      showTable(data);
+    } catch (err) {
+      showError('Network error. Please try again.');
+    }
+  });
+}());
+</script>
+{% endblock %}

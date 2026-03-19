@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Try the API — Catalitium Developer Docs{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+{% endblock %}
+
+{% block content %}
+<section class="max-w-5xl mx-auto space-y-4">
+  <header class="space-y-2">
+    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand">Interactive API Explorer</p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Try the Catalitium API</h1>
+    <p class="text-sm text-slate-600">
+      Use your API key to make live requests directly from this page.
+      Don't have a key yet?
+      <a href="{{ url_for('developers') }}" class="text-brand underline">Get one here.</a>
+    </p>
+  </header>
+
+  <div id="swagger-ui" class="rounded-2xl border border-slate-200 overflow-hidden"></div>
+</section>
+
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+SwaggerUIBundle({
+  url: '/openapi.json',
+  dom_id: '#swagger-ui',
+  presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+  layout: 'BaseLayout',
+  deepLinking: true,
+  defaultModelsExpandDepth: -1,
+});
+</script>
+{% endblock %}

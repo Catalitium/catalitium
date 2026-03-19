@@ -81,6 +81,20 @@ data = resp.json()
 print("Found", data["meta"]["total"], "jobs")</code></pre>
   </section>
 
+  <section class="space-y-3">
+    <h2 class="text-lg font-semibold text-slate-900">Interactive explorer</h2>
+    <p class="text-sm text-slate-700">
+      Try every endpoint live in your browser using the Swagger UI:
+    </p>
+    <a href="{{ url_for('developers_try') }}"
+       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand text-white text-sm font-semibold hover:opacity-90 transition-opacity">
+      Try it in the API explorer
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+    </a>
+  </section>
+
   <section class="space-y-2">
     <h2 class="text-lg font-semibold text-slate-900">Limits &amp; headers</h2>
     <p class="text-sm text-slate-700">

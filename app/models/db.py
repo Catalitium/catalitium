@@ -179,14 +179,18 @@ def _is_unique_violation(exc: Exception) -> bool:
     return False
 
 
-def insert_subscriber(email: str) -> str:
+def insert_subscriber(
+    email: str,
+    search_title: Optional[str] = None,
+    search_country: Optional[str] = None,
+) -> str:
     """Insert a subscriber record; return 'ok', 'duplicate', or 'error'."""
     db = get_db()
     try:
         with db.cursor() as cur:
             cur.execute(
-                "INSERT INTO subscribers(email, created_at) VALUES(%s, %s)",
-                (email, _now_iso()),
+                "INSERT INTO subscribers(email, search_title, search_country, created_at) VALUES(%s, %s, %s, %s)",
+                (email, search_title or None, search_country or None, _now_iso()),
             )
         return "ok"
     except Exception as exc:
@@ -194,6 +198,25 @@ def insert_subscriber(email: str) -> str:
             return "duplicate"
         logger.warning("insert_subscriber failed: %s", exc, exc_info=True)
         return "error"
+
+def get_subscribers_with_saved_searches() -> List[Dict]:
+    """Return all subscribers that have a saved search title or country."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT email, search_title, search_country
+                FROM subscribers
+                WHERE search_title IS NOT NULL OR search_country IS NOT NULL
+                """
+            )
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+    except Exception as exc:
+        logger.warning("get_subscribers_with_saved_searches failed: %s", exc)
+        return []
+
 
 def insert_contact(email: str, name_company: str, message: str) -> str:
     """Insert a contact form submission; return 'ok' or 'error'."""
@@ -354,6 +377,16 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_api_keys_active_email
                     ON api_keys (email) WHERE is_active = TRUE
             """)
+            # Saved search columns — added in sprint 2; safe to run on existing DBs
+            for col_ddl in [
+                "search_title TEXT",
+                "search_country TEXT",
+            ]:
+                try:
+                    col_name = col_ddl.split()[0]
+                    cur.execute(f"ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS {col_ddl}")
+                except Exception:
+                    pass  # column already exists on older Postgres versions without IF NOT EXISTS
             db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
@@ -555,6 +588,10 @@ def normalize_title(q: str) -> str:
     return s
 
 # ------------------------- Job Model ----------------------------------------
+
+_ID_CACHE: Dict[int, Tuple[float, Optional[Dict]]] = {}
+_ID_CACHE_TTL = 300  # seconds
+
 
 class Job:
     table = "jobs"
@@ -835,11 +872,15 @@ class Job:
 
     @staticmethod
     def get_by_id(job_id: str) -> Optional[Dict]:
-        """Return a single job row by primary key id."""
+        """Return a single job row by primary key id. Results are cached for 300s."""
         try:
             pk = int(str(job_id).strip())
         except (TypeError, ValueError):
             return None
+        # Check in-process cache before hitting the database
+        hit = _ID_CACHE.get(pk)
+        if hit and time.time() - hit[0] < _ID_CACHE_TTL:
+            return hit[1]
         try:
             db = get_db()
             with db.cursor() as cur:
@@ -852,7 +893,9 @@ class Job:
                 )
                 cols = [d[0] for d in cur.description]
                 row = cur.fetchone()
-                return dict(zip(cols, row)) if row else None
+                result = dict(zip(cols, row)) if row else None
+                _ID_CACHE[pk] = (time.time(), result)
+                return result
         except Exception:
             return None
 
@@ -1066,6 +1109,37 @@ class Job:
                     if swiss_like_pg:
                         subclauses_pg.append("(" + " OR ".join(swiss_like_pg) + ")")
                         subclauses_sqlite.append("(" + " OR ".join(swiss_like_sqlite) + ")")
+                elif upper == "DE":
+                    # Germany: explicit IN + a small set of LIKE patterns to avoid
+                    # the combinatorial param explosion (156+ params) that causes
+                    # a Postgres statement timeout via the generic _country_patterns path.
+                    de_exact = ["de", "germany", "deutschland", "alemania"]
+                    de_locations = ["germany", "deutschland", "berlin", "munich",
+                                    "münchen", "hamburg", "frankfurt", "cologne",
+                                    "köln", "düsseldorf", "stuttgart", "nuremberg",
+                                    "nürnberg", "dortmund", "essen", "bremen"]
+                    eq_parts_pg: List[str] = []
+                    eq_parts_sqlite: List[str] = []
+                    for val in de_exact:
+                        for col in columns_to_search:
+                            eq_parts_pg.append(f"LOWER(COALESCE({col}, '')) = %s")
+                            eq_parts_sqlite.append(f"LOWER(COALESCE({col}, '')) = ?")
+                            params_pg.append(val)
+                            params_sqlite.append(val)
+                    if eq_parts_pg:
+                        subclauses_pg.append("(" + " OR ".join(eq_parts_pg) + ")")
+                        subclauses_sqlite.append("(" + " OR ".join(eq_parts_sqlite) + ")")
+                    loc_parts_pg: List[str] = []
+                    loc_parts_sqlite: List[str] = []
+                    for term in de_locations:
+                        pattern = f"%{Job._escape_like(term)}%"
+                        loc_parts_pg.append("LOWER(COALESCE(location, '')) LIKE %s ESCAPE '\\'")
+                        loc_parts_sqlite.append("LOWER(COALESCE(location, '')) LIKE ? ESCAPE '\\'")
+                        params_pg.append(pattern)
+                        params_sqlite.append(pattern)
+                    if loc_parts_pg:
+                        subclauses_pg.append("(" + " OR ".join(loc_parts_pg) + ")")
+                        subclauses_sqlite.append("(" + " OR ".join(loc_parts_sqlite) + ")")
                 elif code:
                     patterns_like, equals_exact = Job._country_patterns({code})
                     if equals_exact:
@@ -1544,49 +1618,60 @@ def revoke_api_key(key_hash: str) -> bool:
 def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
     """Validate key, reset monthly counter if in a new month, enforce quota, then increment.
 
+    Uses a single atomic UPDATE with a WHERE clause to eliminate the
+    SELECT → check → UPDATE race condition under concurrent requests.
+
     Returns:
         dict with monthly_limit/requests_this_month/tier on success,
         {"error": "quota_exceeded"} when over quota,
         None when key is not found or inactive.
     """
     try:
+        current_month = now.strftime("%Y-%m")
         db = get_db()
         with db.cursor() as cur:
+            # Atomic update: only succeeds when key is active AND quota not exceeded.
+            # CASE resets the counter when the month has rolled over.
             cur.execute(
                 """
-                SELECT id, tier, is_active, monthly_limit, requests_this_month, month_window
-                FROM api_keys
+                UPDATE api_keys
+                SET
+                  requests_this_month = CASE
+                    WHEN month_window = %s THEN requests_this_month + 1
+                    ELSE 1
+                  END,
+                  month_window = %s
                 WHERE key_hash = %s
+                  AND is_active = TRUE
+                  AND (
+                    month_window != %s
+                    OR requests_this_month < monthly_limit
+                  )
+                RETURNING tier, monthly_limit, requests_this_month
                 """,
+                (current_month, current_month, key_hash, current_month),
+            )
+            updated = cur.fetchone()
+            if updated:
+                tier, monthly_limit, new_count = updated
+                return {
+                    "monthly_limit": monthly_limit,
+                    "requests_this_month": new_count,
+                    "tier": tier,
+                }
+            # UPDATE matched 0 rows — distinguish "not found/inactive" from "quota exceeded"
+            cur.execute(
+                "SELECT is_active, requests_this_month, monthly_limit FROM api_keys WHERE key_hash = %s",
                 (key_hash,),
             )
             row = cur.fetchone()
             if not row:
                 return None
-            rec_id, tier, is_active, monthly_limit, requests_this_month, month_window = row
+            is_active, requests_this_month, monthly_limit = row
             if not is_active:
                 return None
-            current_month = now.strftime("%Y-%m")
-            if month_window != current_month:
-                cur.execute(
-                    "UPDATE api_keys SET requests_this_month = 0, month_window = %s WHERE id = %s",
-                    (current_month, rec_id),
-                )
-                requests_this_month = 0
-            if requests_this_month >= monthly_limit:
-                return {"error": "quota_exceeded"}
-            cur.execute(
-                "UPDATE api_keys SET requests_this_month = requests_this_month + 1 "
-                "WHERE id = %s RETURNING requests_this_month",
-                (rec_id,),
-            )
-            new_row = cur.fetchone()
-            new_count = new_row[0] if new_row else requests_this_month + 1
-            return {
-                "monthly_limit": monthly_limit,
-                "requests_this_month": new_count,
-                "tier": tier,
-            }
+            # Row exists and is active — must be quota exceeded
+            return {"error": "quota_exceeded"}
     except Exception as exc:
         logger.warning("check_and_increment_api_key error: %s", exc)
         return None

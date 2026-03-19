@@ -1,0 +1,267 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Catalitium API",
+    "description": "High-signal tech jobs and salary data. Free tier: 100 requests/month.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Catalitium",
+      "url": "https://catalitium.com/developers"
+    }
+  },
+  "servers": [
+    { "url": "https://catalitium.com", "description": "Production" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key obtained from /api/keys/register"
+      }
+    },
+    "schemas": {
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "company": { "type": "string" },
+          "location": { "type": "string" },
+          "description": { "type": "string" },
+          "apply_url": { "type": "string", "format": "uri" },
+          "salary_range": { "type": "string" },
+          "date_posted": { "type": "string", "format": "date" },
+          "is_new": { "type": "boolean" }
+        }
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer" },
+          "per_page": { "type": "integer" },
+          "total": { "type": "integer" },
+          "pages": { "type": "integer" },
+          "title": { "type": "string" },
+          "country": { "type": "string" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "security": [
+    { "ApiKeyAuth": [] }
+  ],
+  "paths": {
+    "/v1/jobs": {
+      "get": {
+        "summary": "Search jobs",
+        "description": "Search and paginate tech job listings. Supports title synonyms and country normalization.",
+        "operationId": "v1ListJobs",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "description": "Job title or keyword (e.g. 'senior engineer', 'python')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Country code or name (e.g. 'US', 'DE', 'remote')",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "schema": { "type": "integer", "default": 1, "minimum": 1 }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Results per page (max 100)",
+            "schema": { "type": "integer", "default": 12, "minimum": 1, "maximum": 100 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated job list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Job" } },
+                    "meta": { "$ref": "#/components/schemas/Meta" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Monthly quota exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/jobs/{id}": {
+      "get": {
+        "summary": "Get a single job",
+        "operationId": "v1GetJob",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Job ID",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job detail",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Job not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Monthly quota exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/v1/salary": {
+      "get": {
+        "summary": "Salary lookup",
+        "description": "Return median salary data for a given title or country.",
+        "operationId": "v1Salary",
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "description": "Job title (used as location hint if country is omitted)",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "description": "Country code or name (e.g. 'US', 'CH', 'Germany')",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Salary data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "location": { "type": "string" },
+                    "median_salary": { "type": "number" },
+                    "currency": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "No salary data found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Monthly quota exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/api/keys/register": {
+      "post": {
+        "summary": "Register an API key",
+        "description": "Submit an email address to receive an API key confirmation link. No authentication required.",
+        "operationId": "registerApiKey",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmation email sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "message": { "type": "string" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid or missing email", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/api/keys/confirm": {
+      "get": {
+        "summary": "Confirm an API key",
+        "description": "Activate the key using the token from the confirmation email. Returns an HTML page.",
+        "operationId": "confirmApiKey",
+        "security": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "description": "Confirmation token from the email",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Key activated — HTML confirmation page" },
+          "400": { "description": "Invalid or expired token — HTML error page" }
+        }
+      }
+    },
+    "/api/keys/usage": {
+      "get": {
+        "summary": "Get API key usage",
+        "description": "Return current monthly usage stats for the authenticated key.",
+        "operationId": "apiKeyUsage",
+        "responses": {
+          "200": {
+            "description": "Usage stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tier": { "type": "string" },
+                    "monthly_limit": { "type": "integer" },
+                    "requests_used": { "type": "integer" },
+                    "reset_date": { "type": "string", "format": "date" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Missing or invalid API key", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "429": { "description": "Monthly quota exceeded", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    }
+  }
+}

@@ -38,6 +38,7 @@ from .models.db import (
     format_job_date_string,
     clean_job_description_text,
     insert_subscriber,
+    get_subscribers_with_saved_searches,
     insert_contact,
     insert_job_posting,
     get_job_summary,
@@ -54,9 +55,8 @@ import urllib.request as _urllib_req
 import hashlib
 import secrets
 import functools
-import smtplib
-from email.mime.text import MIMEText
 from werkzeug.middleware.proxy_fix import ProxyFix
+from .mail import send_mail as _send_mail, _send_alert_email
 
 try:
     from flask_limiter import Limiter
@@ -497,32 +497,6 @@ REPORTS = [
 ]
 
 
-def _send_mail(to: str, subject: str, body: str) -> None:
-    """Send a plain-text email via SMTP. Best-effort; logs on failure, never raises."""
-    host = os.getenv("SMTP_HOST", "").strip()
-    port = int(os.getenv("SMTP_PORT", "587"))
-    user = os.getenv("SMTP_USER", "").strip()
-    pw = os.getenv("SMTP_PASS", "").strip()
-    frm = os.getenv("SMTP_FROM", "noreply@catalitium.com").strip()
-    if not host:
-        logger.warning("_send_mail: SMTP_HOST not configured, skipping email to %s", to)
-        return
-    try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = frm
-        msg["To"] = to
-        with smtplib.SMTP(host, port, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.ehlo()
-            if user:
-                s.login(user, pw)
-            s.send_message(msg)
-    except Exception as exc:
-        logger.warning("_send_mail failed (to=%s): %s", to, exc)
-
-
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
     app = Flask(__name__, template_folder="views/templates")
@@ -684,9 +658,11 @@ def create_app() -> Flask:
             )
         return response
 
-    if not SECRET_KEY or SECRET_KEY == "dev-insecure-change-me":
-        logger.error("SECRET_KEY must be set via environment. Aborting.")
-        raise SystemExit(1)
+    _WEAK_KEYS = {"dev-insecure-change-me", "dev-secret-change-me", "changeme", "secret"}
+    if env != "development":
+        if not SECRET_KEY or SECRET_KEY in _WEAK_KEYS or len(SECRET_KEY) < 32:
+            logger.error("SECRET_KEY is weak or missing. Set a strong random key in .env. Aborting.")
+            raise SystemExit(1)
 
     try:
         with app.app_context():
@@ -973,11 +949,6 @@ def create_app() -> Flask:
             remote_count=remote_count,
         )
 
-    @app.get("/remote")
-    def remote_jobs():
-        """301 redirect to remote jobs filter — preserves SEO equity for /remote URL."""
-        return redirect(url_for("index", country="Remote"), 301)
-
     @app.get("/recruiter-salary-board")
     def recruiter_salary_board():
         """Surface the dedicated job browser experience."""
@@ -1243,7 +1214,7 @@ def create_app() -> Flask:
         next_url = (payload.get("next") or "").strip()
         if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
-        status = insert_subscriber(email)
+        status = insert_subscriber(email, search_title=search_title or None, search_country=search_country or None)
 
         if job_link:
             if status == "error":
@@ -1500,7 +1471,7 @@ def create_app() -> Flask:
             {
                 "title": _to_lc(row.get("job_title") or ""),
                 "location": row.get("location"),
-                "job_date": format_job_date_string((row.get("date") or "").strip()),
+                "job_date": format_job_date_string(str(row.get("date") or "").strip()),
                 "link": row.get("link"),
                 "is_new": _job_is_new(row.get("date"), row.get("date")),
             }
@@ -1882,6 +1853,21 @@ def create_app() -> Flask:
             "developers.html",
         )
 
+    @app.get("/dashboard")
+    def dashboard():
+        """API key usage dashboard — user enters their key, JS fetches /api/keys/usage."""
+        return render_template("dashboard.html")
+
+    @app.get("/developers/try")
+    def developers_try():
+        """Interactive Swagger UI for the Catalitium API."""
+        return render_template("swagger_ui.html")
+
+    @app.get("/openapi.json")
+    def openapi_spec():
+        """Serve the OpenAPI 3.0 spec."""
+        return send_from_directory("static", "openapi.json")
+
     @app.get("/market-research/<slug>")
     def market_research_report(slug):
         """Individual report landing page (fully SSR'd for SEO)."""
@@ -1945,7 +1931,9 @@ def create_app() -> Flask:
             f"Free tier: 100 requests/month.\n\n"
             f"-- Catalitium Team"
         )
-        _send_mail(email, "Activate your Catalitium API key", body)
+        mail_ok = _send_mail(email, "Activate your Catalitium API key", body)
+        if not mail_ok:
+            logger.error("Failed to send API key confirmation email to=%s confirm_url=%s key_prefix=%s", email, confirm_url, key_prefix)
         logger.info("API key created prefix=%s ip=%s email=%s", key_prefix, ip, email)
         return jsonify({"message": "Check your email to activate your key."}), 200
 
@@ -1954,11 +1942,39 @@ def create_app() -> Flask:
         """Activate an API key using the token from the confirmation email."""
         token = (request.args.get("token") or "").strip()
         if not token:
-            return jsonify({"error": "token_required"}), 400
+            return render_template(
+                "api_confirm.html",
+                success=False,
+                key_prefix="",
+                error_detail="No confirmation token was provided.",
+            ), 400
         ok = confirm_api_key_by_token(token, datetime.now(timezone.utc))
         if not ok:
-            return jsonify({"error": "invalid_or_expired_token"}), 400
-        return jsonify({"message": "Key activated. Your API key was included in the confirmation email you received."}), 200
+            return render_template(
+                "api_confirm.html",
+                success=False,
+                key_prefix="",
+                error_detail="This confirmation link is invalid or has expired.",
+            ), 400
+        # Fetch key_prefix for display — the token is now NULL so query by recent activation
+        key_prefix = ""
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT key_prefix FROM api_keys WHERE is_active = TRUE AND confirm_token IS NULL ORDER BY created_at DESC LIMIT 1"
+                )
+                row = cur.fetchone()
+                if row:
+                    key_prefix = row[0] or ""
+        except Exception:
+            pass
+        return render_template(
+            "api_confirm.html",
+            success=True,
+            key_prefix=key_prefix,
+            error_detail="",
+        ), 200
 
     @app.get("/api/keys/usage")
     @_require_api_key
@@ -1994,6 +2010,38 @@ def create_app() -> Flask:
         if not ok:
             return jsonify({"error": "invalid_key"}), 401
         return jsonify({"message": "Key revoked."}), 200
+
+    # ------------------------------------------------------------------
+    # Internal cron endpoint — job alert digest
+    # ------------------------------------------------------------------
+
+    @app.get("/api/internal/send-alerts")
+    def send_alerts():
+        """Send saved-search job alert digests. Protected by CRON_SECRET query param."""
+        secret = (request.args.get("secret") or "").strip()
+        cron_secret = (os.getenv("CRON_SECRET") or "").strip()
+        if not cron_secret or secret != cron_secret:
+            return jsonify({"error": "forbidden"}), 403
+
+        subscribers = get_subscribers_with_saved_searches()
+        sent = 0
+        failed = 0
+        for sub in subscribers:
+            q_title = normalize_title(sub.get("search_title") or "")
+            q_country = normalize_country(sub.get("search_country") or "")
+            try:
+                jobs = Job.search(q_title or None, q_country or None, limit=10, offset=0)
+            except Exception:
+                jobs = []
+            if not jobs:
+                continue
+            ok = _send_alert_email(sub, jobs)
+            if ok:
+                sent += 1
+            else:
+                failed += 1
+
+        return jsonify({"sent": sent, "failed": failed, "total_subscribers": len(subscribers)}), 200
 
     # ------------------------------------------------------------------
     # v1/ — Authenticated data API (protected by _require_api_key)
@@ -2110,6 +2158,7 @@ def create_app() -> Flask:
     # AI Job Summary API (Claude Haiku, DB-cached)
     # ------------------------------------------------------------------
     @app.get("/api/summary/<int:job_id>")
+    @_require_api_key
     def api_summary(job_id: int):
         """Return AI-generated bullets + skill tags for a job (cached in DB)."""
         cached = get_job_summary(job_id)
