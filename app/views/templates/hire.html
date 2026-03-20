@@ -5,52 +5,52 @@
   <div class="flex items-start justify-between gap-4 mb-8">
     <div>
       <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Hire</p>
-      <h1 class="mt-1 text-2xl font-semibold text-slate-900">Hiring dashboard</h1>
-      <p class="mt-1 text-sm text-slate-500">{{ hire.company_name or user.email }}</p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">Hiring dashboard</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ hire.company_name or user.email }}</p>
     </div>
     <a href="{{ url_for('hire_onboarding') }}"
-       class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-colors">
+       class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors">
       Edit company details
     </a>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2">
-    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Account type</p>
-      <p class="mt-2 text-base font-medium text-slate-800">{{ hire.account_type|capitalize }}</p>
+      <p class="mt-2 text-base font-medium text-slate-800 dark:text-slate-200">{{ hire.account_type|capitalize }}</p>
     </div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Company size</p>
-      <p class="mt-2 text-base font-medium text-slate-800">{{ hire.company_size or 'Not set yet' }}</p>
+      <p class="mt-2 text-base font-medium text-slate-800 dark:text-slate-200">{{ hire.company_size or 'Not set yet' }}</p>
     </div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Hiring regions</p>
-      <p class="mt-2 text-base font-medium text-slate-800">{{ hire.hiring_regions or 'Not set yet' }}</p>
+      <p class="mt-2 text-base font-medium text-slate-800 dark:text-slate-200">{{ hire.hiring_regions or 'Not set yet' }}</p>
     </div>
-    <div class="rounded-2xl border border-slate-200 bg-white p-5">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Website</p>
       {% if hire.company_website %}
         <a href="{{ hire.company_website }}" target="_blank" rel="noopener"
            class="mt-2 inline-flex text-base font-medium text-brand hover:underline">{{ hire.company_website }}</a>
       {% else %}
-        <p class="mt-2 text-base font-medium text-slate-800">Not set yet</p>
+        <p class="mt-2 text-base font-medium text-slate-800 dark:text-slate-200">Not set yet</p>
       {% endif %}
     </div>
   </div>
 
-  <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-    <p class="text-base font-medium text-slate-700">Account actions</p>
-    <p class="mt-2 text-sm text-slate-500">Manage access quickly.</p>
+  <div class="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+    <p class="text-base font-medium text-slate-700 dark:text-slate-200">Account actions</p>
+    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage access quickly.</p>
     <div class="mt-4 flex flex-wrap items-center gap-3">
       <form method="post" action="{{ url_for('logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
-                class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:text-slate-900 transition-colors">
+                class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors">
           Sign out
         </button>
       </form>
       <a href="{{ url_for('profile') }}"
-         class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 transition-colors">
+         class="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-2 text-sm font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950 transition-colors">
         Manage account
       </a>
     </div>
