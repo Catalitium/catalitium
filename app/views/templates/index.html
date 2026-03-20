@@ -518,21 +518,43 @@
 {% set has_search_ctx = (title_q or country_q or salary_band) %}
 <section id="saved-search-sticky"
          class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur px-3 py-2 shadow-[0_-6px_20px_rgba(15,23,42,0.08)] {% if not has_search_ctx %}hidden{% endif %}">
-  <div class="mx-auto max-w-4xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-    <p class="text-sm text-slate-700">
+  <div class="mx-auto max-w-4xl flex items-center gap-2">
+    <p class="text-sm text-slate-700 flex-1">
       Save this search and get a weekly digest of top matches{% if salary_band %} around {{ salary_band }}{% endif %}.
       <span class="text-xs text-slate-500">Includes salary signal. No spam.</span>
     </p>
     <button type="button"
-            class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90"
+            class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90 shrink-0"
             data-open-subscribe="sticky_save_search"
             data-subscribe-title="{{ title_q or '' }}"
             data-subscribe-country="{{ country_q or '' }}"
             data-subscribe-salary="{{ salary_band or '' }}">
       Save Search + Digest
     </button>
+    <button type="button"
+            id="dismiss-sticky-save"
+            aria-label="Dismiss"
+            class="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
   </div>
 </section>
+<script>
+  (function() {
+    var key = 'hide_save_sticky_{{ (title_q or "") ~ "_" ~ (country_q or "") }}';
+    if (localStorage.getItem(key)) {
+      var el = document.getElementById('saved-search-sticky');
+      if (el) el.classList.add('hidden');
+    }
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('#dismiss-sticky-save')) {
+        var el = document.getElementById('saved-search-sticky');
+        if (el) el.classList.add('hidden');
+        localStorage.setItem(key, '1');
+      }
+    });
+  })();
+</script>
 {% if has_search_ctx %}
 <div class="h-20" aria-hidden="true"></div>
 {% endif %}
@@ -542,12 +564,12 @@
 <nav class="mx-auto max-w-4xl mt-4 flex items-center justify-between text-sm"
      role="navigation" aria-label="Pagination">
   <a rel="prev" aria-disabled="{{ 'false' if pagination.has_prev else 'true' }}" tabindex="{{ '0' if pagination.has_prev else '-1' }}" class="px-3 py-2 rounded-lg border border-slate-200 hover:border-brand {{ '' if pagination.has_prev else 'pointer-events-none opacity-50' }}"
-     href="{{ pagination.prev_url or '#' }}">? Prev</a>
+     href="{{ pagination.prev_url or '#' }}" aria-label="Previous page">← Prev</a>
   <span class="text-slate-500">
-    Page {{ pagination.page }} of {{ pagination.pages }}  {{ pagination.total }} total
+    Page {{ pagination.page }} of {{ pagination.pages }} &mdash; {{ pagination.total }} total
   </span>
   <a rel="next" aria-disabled="{{ 'false' if pagination.has_next else 'true' }}" tabindex="{{ '0' if pagination.has_next else '-1' }}" class="px-3 py-2 rounded-lg border border-slate-200 hover:border-brand {{ '' if pagination.has_next else 'pointer-events-none opacity-50' }}"
-     href="{{ pagination.next_url or '#' }}">Next</a>
+     href="{{ pagination.next_url or '#' }}" aria-label="Next page">Next →</a>
 </nav>
 {% endif %}
 

@@ -1,23 +1,23 @@
-## Phase 1 - Talent Intelligence UX
+# Catalitium — Task Plan
 
-- [x] Add normalized API response envelopes for `/api/*` and `/v1/*` JSON routes.
-- [x] Add shared query parsing and validation helpers.
-- [x] Add request correlation ids (`request_id`) in API responses.
-- [x] Add lightweight TTL caches for summary/autocomplete/salary-insights endpoints.
+## Plan
 
-## Phase 1 - Studio Surface
+- [x] Task 1: Fix DB query timeout — raised statement_timeout 800ms → 8000ms
+- [x] Task 2: Fix blank SECRET_KEY — generated 64-char hex key, loaded OK
+- [x] Task 3: Verify subscribe POST → Supabase — POST returned `{"status":"ok"}` HTTP 200, no errors
 
-- [x] Add minimal studio intake endpoint (`POST /studio-contact`) reusing existing contact storage.
-- [ ] Add `/studio` page route + template wiring for B2B package surface.
+## Progress
 
-## Hooks for Automation & AI
+- [x] Task 1 — `GET /` returns HTTP 200 in 2s, zero QueryCanceled errors
+- [x] Task 2 — `SECRET_KEY` is 64 chars, loads cleanly from .env
+- [x] Task 3 — `POST /subscribe.json` → `{"status":"ok"}` HTTP 200, row written to Supabase `subscribers` table
 
-- [x] Add `GET /api/share-search` to create canonical share links.
-- [x] Add `GET /api/salary/compare` to compare salary baselines across two regions.
-- [ ] Add optional prefilled “ask about this salary” UI hook in salary templates.
+## Review
 
-## API Reliability and Dev Experience
+All 3 tasks green. App boots cleanly, DB writes work, SECRET_KEY secured.
 
-- [x] Consolidate duplicated jobs listing logic into one shared service path.
-- [x] Add versioned endpoint wrappers: `/v1/jobs`, `/v1/salary`.
-- [ ] Add live integration smoke tests in CI once pytest is available in environment.
+**Open questions for next session:**
+- [x] `subscribers` has `UNIQUE INDEX` on email — duplicate detection works
+- [x] `search_title` + `search_country` now saved on every subscription
+- [x] SMTP configured — Gmail smtp.gmail.com:587, app password set, 8/8 smoke test passed
+- [ ] `jobs` table has 85,316 rows confirmed in Supabase

@@ -531,6 +531,23 @@ def _send_mail(to: str, subject: str, body: str) -> None:
         logger.warning("_send_mail failed (to=%s): %s", to, exc)
 
 
+def _send_subscribe_confirmation(email: str, focus: str = "") -> None:
+    """Send a welcome confirmation email to a new subscriber."""
+    focus_line = f"\nYour focus: {focus}\n" if focus else ""
+    body = f"""Welcome to Catalitium.
+
+You're now on the weekly high-match digest.{focus_line}
+Every week we send you the highest-signal tech jobs with real salary data — no noise, no spam.
+
+Browse jobs now: {os.getenv("BASE_URL", "https://catalitium.com")}
+
+--
+Catalitium | info@catalitium.com
+Unsubscribe: reply with 'unsubscribe'
+"""
+    _send_mail(email, "You're on the Catalitium weekly digest", body)
+
+
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
     app = Flask(__name__, template_folder="views/templates")
@@ -1134,16 +1151,6 @@ def create_app() -> Flask:
         payload = _query_jobs_payload(raw_title=raw_title, raw_country=raw_country, page=page, per_page=per_page)
         return _api_success(payload)
 
-    @app.get("/v1/jobs")
-    @_limit("90 per minute")
-    def v1_jobs():
-        """Versioned jobs endpoint backed by the same listing service."""
-        raw_title = parse_str_arg(request.args, "title", default="", max_len=120)
-        raw_country = parse_str_arg(request.args, "country", default="", max_len=80)
-        page, per_page = _resolve_pagination()
-        payload = _query_jobs_payload(raw_title=raw_title, raw_country=raw_country, page=page, per_page=per_page)
-        return _api_success(payload)
-
     @app.get("/api/jobs/summary")
     def api_jobs_summary():
         """Return summary statistics for jobs matching filters: count, median salary, remote share.
@@ -1292,7 +1299,7 @@ def create_app() -> Flask:
         next_url = (payload.get("next") or "").strip()
         if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
-        status = insert_subscriber(email)
+        status = insert_subscriber(email, search_title=search_title, search_country=search_country)
 
         if job_link:
             if status == "error":
@@ -1312,6 +1319,7 @@ def create_app() -> Flask:
             return redirect(job_link)
 
         if status == "ok":
+            _send_subscribe_confirmation(email, digest_label)
             message = "You're subscribed to the weekly high-match digest."
             if digest_label:
                 message = f"{message} Focus: {digest_label}."
@@ -1568,12 +1576,6 @@ def create_app() -> Flask:
         salary_insights_cache.set(cache_key, payload)
         return _api_success(payload)
 
-    @app.get("/v1/salary")
-    @_limit("90 per minute")
-    def v1_salary():
-        """Versioned salary insights endpoint."""
-        return api_salary_insights()
-
     @app.get("/api/autocomplete")
     @_limit("90 per minute")
     def api_autocomplete():
@@ -1773,7 +1775,7 @@ def create_app() -> Flask:
         _add(url_for("market_research_index", _external=True), priority="0.9", changefreq="weekly")
         for _r in REPORTS:
             _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85", changefreq="monthly")
-        _add(url_for("salary_report", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("recruiter_salary_board", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
 
         filter_targets = [
@@ -1954,65 +1956,11 @@ def create_app() -> Flask:
             },
         )
 
-    # ------------------------------------------------------------------
-    # Salary Tool (merged salary report + talent arbitrage calculator)
-    # ------------------------------------------------------------------
-    @app.get("/salary-report")
-    def salary_report_redirect():
-        """Permanent redirect from old URL to the renamed Salary Tool."""
-        return redirect(url_for("salary_report"), 301)
-
+    # Salary tool removed — redirect old URLs to salary board
     @app.get("/salary-tool")
+    @app.get("/salary-report")
     def salary_report():
-        """Render a printable salary insights report."""
-        categories = [
-            ("AI / ML", "ai"),
-            ("Developer", "developer"),
-            ("Senior", "senior"),
-            ("Remote", "remote"),
-            ("Data", "data"),
-        ]
-        regions = ["US", "EU", "UK", "CH"]
-        data = {}
-        for label, keyword in categories:
-            rows = Job.search(normalize_title(keyword), None, limit=200, offset=0)
-            salaries = []
-            for r in rows:
-                sal_str = r.get("job_salary_range") or ""
-                if sal_str:
-                    parsed = parse_salary_range_string(sal_str)
-                    if parsed:
-                        salaries.append(parsed)
-                else:
-                    rec = get_salary_for_location(r.get("location") or "")
-                    if rec and rec[0]:
-                        salaries.append(rec[0])
-            if salaries:
-                salaries.sort()
-                n = len(salaries)
-                med = salaries[n // 2] if n % 2 != 0 else (salaries[n // 2 - 1] + salaries[n // 2]) / 2
-                data[label] = {"count": len(rows), "median": int(med), "min": int(salaries[0]), "max": int(salaries[-1])}
-            else:
-                data[label] = {"count": len(rows), "median": None, "min": None, "max": None}
-
-        region_data = {}
-        for region in regions:
-            rows = Job.search(None, normalize_country(region), limit=200, offset=0)
-            salaries = []
-            for r in rows:
-                rec = get_salary_for_location(r.get("location") or "")
-                if rec and rec[0]:
-                    salaries.append(rec[0])
-            if salaries:
-                salaries.sort()
-                n = len(salaries)
-                med = salaries[n // 2] if n % 2 != 0 else (salaries[n // 2 - 1] + salaries[n // 2]) / 2
-                region_data[region] = {"count": len(rows), "median": int(med)}
-            else:
-                region_data[region] = {"count": len(rows), "median": None}
-
-        generated = datetime.now(timezone.utc).strftime("%B %Y")
-        return render_template("salary_report.html", data=data, region_data=region_data, generated=generated)
+        return redirect(url_for("recruiter_salary_board"), 301)
 
     # ------------------------------------------------------------------
     # Service worker (must be served from root scope)

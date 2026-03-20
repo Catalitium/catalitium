@@ -99,7 +99,7 @@ def _setup_connection(conn):
     try:
         with conn.cursor() as cur:
             # Keep queries snappy and fail fast; units in ms
-            cur.execute("SET statement_timeout TO 800")
+            cur.execute("SET statement_timeout TO 8000")
             cur.execute("SET idle_in_transaction_session_timeout TO 5000")
             cur.execute("SET application_name TO 'catalitium'")
     except Exception:
@@ -179,14 +179,21 @@ def _is_unique_violation(exc: Exception) -> bool:
     return False
 
 
-def insert_subscriber(email: str) -> str:
+def insert_subscriber(
+    email: str,
+    search_title: str = "",
+    search_country: str = "",
+) -> str:
     """Insert a subscriber record; return 'ok', 'duplicate', or 'error'."""
     db = get_db()
     try:
         with db.cursor() as cur:
             cur.execute(
-                "INSERT INTO subscribers(email, created_at) VALUES(%s, %s)",
-                (email, _now_iso()),
+                """
+                INSERT INTO subscribers(email, created_at, search_title, search_country)
+                VALUES(%s, %s, %s, %s)
+                """,
+                (email, _now_iso(), search_title or None, search_country or None),
             )
         return "ok"
     except Exception as exc:

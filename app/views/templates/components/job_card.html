@@ -115,22 +115,21 @@
           data-title="{{ (j.title or '')|e }}"
           data-company="{{ (j.company or '')|e }}"
           data-location="{{ (j.location or 'Remote / Anywhere')|e }}"
-          class="inline-flex items-center gap-2 rounded-md bg-gradient-to-b from-blue-600 to-blue-600/95 text-white px-4 py-2 text-sm font-semibold shadow-md hover:from-blue-700 hover:to-blue-700/95 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-          aria-label="Easy apply for {{ j.title }} at {{ j.company }}"
+          class="inline-flex items-center gap-2 rounded-md bg-brand text-white px-4 py-2 text-sm font-semibold shadow-sm hover:bg-brand/90 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50"
+          aria-label="Apply for {{ j.title }} at {{ j.company }}"
         >
-          <span class="sr-only">Easy Apply</span>
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="ml-1">Easy Apply</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="ml-1">Apply</span>
         </a>
       {% else %}
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-md bg-gradient-to-b from-blue-600 to-blue-600/95 text-white px-4 py-2 text-sm font-semibold shadow-md hover:from-blue-700 hover:to-blue-700/95 transition-transform active:translate-y-px w-full sm:w-auto justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-          onclick="alert('No link available for this job yet')"
-          aria-label="No external link available"
+          disabled
+          class="inline-flex items-center gap-2 rounded-md bg-slate-100 text-slate-400 px-4 py-2 text-sm font-semibold w-full sm:w-auto justify-center cursor-not-allowed"
+          aria-label="No application link available"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="ml-1">Easy Apply</span>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span class="ml-1">Link unavailable</span>
         </button>
       {% endif %}
     {% else %}
