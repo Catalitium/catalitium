@@ -548,6 +548,9 @@ Unsubscribe: reply with 'unsubscribe'
     _send_mail(email, "You're on the Catalitium weekly digest", body)
 
 
+_sitemap_cache: dict = {"data": None, "ts": 0.0}
+
+
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
     app = Flask(__name__, template_folder="views/templates")
@@ -585,6 +588,8 @@ def create_app() -> Flask:
             storage_uri=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
             strategy="fixed-window",
         )
+    else:
+        logger.warning("flask-limiter not installed or failed to import; rate limiting is disabled")
 
     summary_cache = TTLCache(ttl_seconds=90, max_size=400)
     autocomplete_cache = TTLCache(ttl_seconds=120, max_size=400)
@@ -1761,6 +1766,9 @@ def create_app() -> Flask:
     @app.get("/sitemap.xml")
     def sitemap():
         """Generate a lightweight XML sitemap for primary surfaces."""
+        import time as _time
+        if _sitemap_cache["data"] and _time.time() - _sitemap_cache["ts"] < 3600:
+            return _sitemap_cache["data"]
         today = datetime.utcnow().date().isoformat()
         urls = []
         most_recent_date: Optional[str] = None
@@ -1831,6 +1839,8 @@ def create_app() -> Flask:
         resp.headers["Cache-Control"] = "public, max-age=3600"
         if most_recent_date:
             resp.headers["Last-Modified"] = most_recent_date
+        _sitemap_cache["data"] = resp
+        _sitemap_cache["ts"] = _time.time()
         return resp
 
     # ------------------------------------------------------------------

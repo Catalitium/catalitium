@@ -196,7 +196,7 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="javascript:void(0)" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</a></li>
+        <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
       </ul>
     </div>
   </div>
@@ -236,7 +236,7 @@
         <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
         <a href="#" data-open-contact class="hover:text-brand">Contact</a>
         <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
-        <a href="javascript:void(0)" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}" class="hover:text-brand">Cookie Settings</a>
+        <button type="button" class="hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
       </div>
     </div>
   </footer>
