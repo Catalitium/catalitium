@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Top Tech Companies | Catalitium{% endblock %}
+
+{% block content %}
+<section class="pt-8 sm:pt-12 pb-8 max-w-5xl mx-auto px-4">
+  <div class="text-center max-w-3xl mx-auto">
+    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      Discover engineering cultures
+    </h1>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-400">
+      Go behind the scenes of the world's best tech teams. We vet the tech stack, work-life balance, and engineering practices before featuring them.
+    </p>
+  </div>
+
+  <!-- Search & Filters -->
+  <div class="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div class="relative w-full sm:w-96">
+        <input type="text" placeholder="Search companies..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand/50 outline-none text-slate-900 dark:text-white">
+        <svg class="absolute right-3 top-2.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      </div>
+      <div class="flex gap-2">
+          <span class="rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-1.5 text-sm font-medium cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition">AI Natives</span>
+          <span class="rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-1.5 text-sm font-medium cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition">Remote-First</span>
+      </div>
+  </div>
+
+  <!-- Company Grid -->
+  <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Mock Card 1 -->
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:shadow-lg transition-shadow group flex flex-col">
+      <div class="h-32 bg-gradient-to-tr from-sky-400 to-indigo-500 relative">
+        <div class="absolute -bottom-6 left-6">
+          <div class="w-16 h-16 rounded-xl bg-white p-2 shadow-sm border border-slate-100">
+             <div class="w-full h-full bg-slate-200 rounded flex items-center justify-center font-bold text-slate-400 text-xs">LOGO</div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-8 px-6 pb-6 flex-1 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">NeuralShift AI</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 flex-1">Building foundational models for code generation and infrastructure automation.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-[11px] font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/30 px-2 py-1 rounded">Remote (US/EU)</span>
+            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">11 Open Roles</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mock Card 2 -->
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:shadow-lg transition-shadow group flex flex-col">
+      <div class="h-32 bg-gradient-to-tr from-emerald-400 to-teal-500 relative">
+        <div class="absolute -bottom-6 left-6">
+          <div class="w-16 h-16 rounded-xl bg-white p-2 shadow-sm border border-slate-100">
+             <div class="w-full h-full bg-slate-200 rounded flex items-center justify-center font-bold text-slate-400 text-xs">LOGO</div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-8 px-6 pb-6 flex-1 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">FinStack Systems</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 flex-1">Modern core banking infrastructure in Rust and Go.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-[11px] font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/30 px-2 py-1 rounded">London, UK</span>
+            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">5 Open Roles</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mock Card 3 -->
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden hover:shadow-lg transition-shadow group flex flex-col">
+      <div class="h-32 bg-gradient-to-tr from-orange-400 to-rose-500 relative">
+        <div class="absolute -bottom-6 left-6">
+          <div class="w-16 h-16 rounded-xl bg-white p-2 shadow-sm border border-slate-100">
+             <div class="w-full h-full bg-slate-200 rounded flex items-center justify-center font-bold text-slate-400 text-xs">LOGO</div>
+          </div>
+        </div>
+      </div>
+      <div class="pt-8 px-6 pb-6 flex-1 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">CloudScale Labs</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 flex-1">Kubernetes observability and tracing at petabyte scale.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+            <span class="text-[11px] font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/30 px-2 py-1 rounded">Remote (Global)</span>
+            <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">21 Open Roles</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

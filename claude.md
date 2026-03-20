@@ -1,23 +1,36 @@
 # Catalitium: Project Context for Claude
 
-## Mission Statement
+## The Company
 
-**Catalitium exists to equip tech talent with the tools, insights, and clarity they need to navigate and shape the future of work in AI, automation, and software.**
+Catalitium is a software company. It builds and deploys AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.
+
+It operates across four areas:
+
+1. **Job Platform.** A solution providing job listings, salary insights, and market data for tech professionals. Companies can post jobs directly through the platform on a single charge or monthly subscription basis.
+2. **Market Intelligence.** Deep research reports on AI adoption, salary dynamics, and the structural shifts reshaping software and hiring. Data the tech industry actually needs, sourced and published independently.
+3. **Software Development.** Custom AI and automation solutions built for companies that want results without the overhead of traditional development. Fast, lean, and built to last.
+4. **AI Agents as a Service (AaaS).** Catalitium builds and deploys AI agents and bots that run business tasks autonomously, replacing manual processes end to end. Subscription-based. Oriented around outcomes, not seats.
+
+**Automation over complexity.**
 
 ---
 
-## Project Overview
+## Catalitium: Soul, Mission and Values
 
-Catalitium is a **high-signal job board** that prioritizes search-first UX and high-quality job alerts for tech professionals. We solve the noise problem in job search by providing:
+### Soul
+- Move fast. Stay lean. Let AI do the heavy lifting.
+- Automation over complexity, outcomes over effort, and intelligence over headcount.
+- Direct. Honest. Efficient.
 
-- **Smart, contextual job discovery** tailored to individual career goals
-- **High-quality alerts** that respect users' time and attention
-- **Salary transparency** and market insights for informed career decisions
-- **Future-proofing resources** for navigating AI and automation in tech careers
+### Mission
+- Equip all companies with elite AI. Pros gain market value clarity and upskilling. Tech lifts heavy loads for human purpose.
+- We build agents and tools that connect businesses. Faster. Smarter.
+- We remove the noise so people can focus on what matters.
 
-### Core Value Proposition
-
-Tech talent spends hours filtering irrelevant job postings. Catalitium eliminates noise through intelligent search, relevant filtering, and thoughtful alerts—allowing professionals to focus on opportunities that truly matter for their growth.
+### Vision
+- AI and tech handles the heavy lifting so humans do the meaningful work.
+- Every company gets the tools they need, regardless of size or budget.
+- Every professional should know their market value and ways to improve.
 
 ---
 
@@ -92,11 +105,11 @@ catalitium/
 
 ### Guiding Principles
 
-1. **Respect the Mission**: Every change should serve tech talent—not clutter, not complexity
-2. **Simplicity First**: Prefer Flask templates over JavaScript frameworks; CSV over complex databases
-3. **Quality Over Features**: One polished feature beats five half-baked ones
-4. **Data Privacy**: Minimal collection; be transparent about tracking
-5. **Search-First Mindset**: UX decisions center on finding jobs, not scrolling
+1. **Respect the Mission**: Every change should equip companies with elite AI and empower tech talent. Automation over complexity.
+2. **Simplicity First**: Serve outcomes over effort. Prefer lean, fast tech over bloated architecture.
+3. **Quality Over Features**: One polished, outcomes-driven feature beats five half-baked ones.
+4. **Data Privacy**: Minimal collection; be direct, honest, and efficient.
+5. **Outcome-First Mindset**: UX and engineering decisions center on delivering actionable results (jobs, insights, automation), not engagement loops.
 
 ### Common Tasks
 

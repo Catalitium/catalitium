@@ -84,7 +84,9 @@ try:
 except ImportError:
     _sb_create_client = None
 
-_supabase_client = None
+_supabase_client = None        # used for sign_in / sign_up
+_supabase_admin_client = None  # used only for admin.* calls — never stores a user session
+
 _PROFILE_FIELDS = ("full_name", "headline", "location", "bio", "website")
 _ACCOUNT_TYPES = {"candidate", "recruiter", "company"}
 _HIRE_ACCOUNT_TYPES = {"recruiter", "company"}
@@ -108,6 +110,7 @@ def _derive_supabase_project_url() -> str:
 
 
 def _get_supabase():
+    """Return the shared auth client (sign_in, sign_up)."""
     global _supabase_client
     if _supabase_client is None and _sb_create_client:
         project_url = _derive_supabase_project_url()
@@ -123,6 +126,24 @@ def _get_supabase():
     return _supabase_client
 
 
+def _get_supabase_admin():
+    """Return a dedicated admin client that is never used for sign_in/sign_up,
+    so its internal session is never overwritten and admin.* calls always work."""
+    global _supabase_admin_client
+    if _supabase_admin_client is None and _sb_create_client:
+        project_url = _derive_supabase_project_url()
+        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+        if not project_url or not key:
+            logger.warning("Supabase admin client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
+            return None
+        try:
+            _supabase_admin_client = _sb_create_client(project_url, key)
+        except Exception as exc:
+            logger.warning("Supabase admin client init failed: %s", exc)
+            return None
+    return _supabase_admin_client
+
+
 def _clean_profile_data(raw: Dict[str, Any]) -> Dict[str, str]:
     cleaned: Dict[str, str] = {}
     for field in _PROFILE_FIELDS:
@@ -136,7 +157,7 @@ def _clean_profile_data(raw: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _get_user_profile_metadata(user_id: str) -> tuple[Dict[str, str], Optional[str]]:
-    sb = _get_supabase()
+    sb = _get_supabase_admin()
     if not sb:
         return _clean_profile_data({}), "Auth service unavailable."
     try:
@@ -150,7 +171,7 @@ def _get_user_profile_metadata(user_id: str) -> tuple[Dict[str, str], Optional[s
 
 
 def _save_user_profile_metadata(user_id: str, profile: Dict[str, Any]) -> Optional[str]:
-    sb = _get_supabase()
+    sb = _get_supabase_admin()
     if not sb:
         return "Auth service unavailable."
     try:
@@ -189,7 +210,7 @@ def _clean_hire_data(raw: Dict[str, Any]) -> Dict[str, str]:
 
 
 def _get_auth_user_metadata(user_id: str) -> tuple[Dict[str, Any], Optional[str]]:
-    sb = _get_supabase()
+    sb = _get_supabase_admin()
     if not sb:
         return {}, "Auth service unavailable."
     try:
@@ -203,7 +224,7 @@ def _get_auth_user_metadata(user_id: str) -> tuple[Dict[str, Any], Optional[str]
 
 
 def _update_auth_user_metadata(user_id: str, updates: Dict[str, Any]) -> Optional[str]:
-    sb = _get_supabase()
+    sb = _get_supabase_admin()
     if not sb:
         return "Auth service unavailable."
     try:
@@ -2430,6 +2451,16 @@ def create_app() -> Flask:
     def about():
         """Render the About Catalitium page."""
         return render_template("about.html")
+
+    @app.get("/pricing")
+    def pricing():
+        """Render the AaaS Pricing page."""
+        return render_template("pricing.html")
+
+    @app.get("/companies")
+    def companies():
+        """Render the Companies spotlight page."""
+        return render_template("companies.html")
 
     # ------------------------------------------------------------------
     # Resources hub — 301 redirect to Market Research

@@ -15,7 +15,6 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
-  <meta name="csrf-token" content="{{ csrf_token() }}" />
   {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -30,9 +29,16 @@
   <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
   <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark')
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
-  <link rel="preload" href="{{ url_for('static', filename='js/main.js', v=asset_version) }}" as="script">
+  <script>tailwind.config={darkMode: 'class',theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
+  <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -40,16 +46,12 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
-  {% if is_production_env %}
   <!-- Cookiebot CMP — MUST load first before any tracking or ad scripts -->
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
-  {% endif %}
 
   <!-- Google tag (gtag.js) -->
-  {% if is_production_env %}
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D" data-cookieconsent="statistics"></script>
-  {% endif %}
-  <script {% if is_production_env %}data-cookieconsent="statistics"{% endif %}>
+  <script data-cookieconsent="statistics">
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -61,25 +63,16 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
 
   <!-- Google AdSense -->
-  {% if is_production_env %}
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
      crossorigin="anonymous" data-cookieconsent="marketing"></script>
-  {% endif %}
   {% block head_extra %}{% endblock %}
   <style>
-    {% if not is_production_env %}
-    /* Local dev safety: avoid full-page dim if browser/extensions leave a dialog open. */
-    dialog::backdrop {
-      background: transparent !important;
-      backdrop-filter: none !important;
-    }
-    {% endif %}
     @media print {
       header, footer, nav, #ad-top, #ad-mid-article, #ad-bottom, .no-print, aside {
         display: none !important;
@@ -100,7 +93,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen bg-white text-slate-800 antialiased">
+<body class="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
   <!-- Skip to main content (accessibility + Core Web Vitals) -->
   <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-brand focus:text-white focus:rounded-lg focus:shadow-lg">
     Skip to main content
@@ -108,63 +101,52 @@
   <!-- Page loading progress bar -->
   <div id="page-progress" class="fixed top-0 left-0 h-0.5 bg-brand z-[100] transition-all duration-300 w-0 pointer-events-none" aria-hidden="true"></div>
   <!-- Compact Header (sticky) -->
-  <header class="sticky top-0 z-50 border-b border-slate-200 shadow-sm bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+  <header class="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70">
     <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
 
-      <!-- Hamburger (mobile only, hidden on md+) -->
+      <!-- Hamburger (mobile/tablet only, hidden on xl+) -->
       <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
-              class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
+              class="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 dark:border-slate-600 dark:text-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
 
       <!-- Logo -->
-      <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0 mr-4">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager" fetchpriority="high" width="32" height="32">
-        <span class="font-semibold tracking-tight text-slate-900">Catalitium</span>
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0 mr-3">
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" decoding="async" loading="eager" fetchpriority="high" width="28" height="28" class="w-7 h-7 rounded">
+        <span class="font-semibold tracking-tight text-slate-900 dark:text-white hidden xl:inline">Catalitium</span>
       </a>
 
-      <!-- Desktop nav (md+) -->
-      <nav class="hidden md:flex items-center gap-1 text-sm flex-1">
-        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 font-medium{% endif %}">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 font-medium{% endif %}">Research</a>
-<a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 font-medium{% endif %}">Salary Board</a>
-        <a href="{{ url_for('developers') }}" {% if request.endpoint == 'developers' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'developers' %}text-brand bg-slate-50 font-medium{% endif %}">API</a>
-        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Digest</a>
+      <!-- Desktop nav (xl+) -->
+      <nav class="hidden xl:flex items-center gap-0.5 text-sm flex-1 min-w-0">
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
+        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
+        <a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
 
-        <div class="ml-auto flex items-center gap-2">
-          <div class="border-l border-slate-200 h-5"></div>
+        <div class="ml-auto flex items-center gap-3 shrink-0">
+          <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
           {% if session.get("user") %}
-            <a href="{{ url_for('hire') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          <a href="{{ url_for('hire') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
           {% else %}
-            <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          <a href="#" data-open-job-posting class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
           {% endif %}
-          <div class="border-l border-slate-200 h-5"></div>
           {% if session.get("user") %}
-            <a href="{{ url_for('studio') }}"
-               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
-              My Account
-            </a>
-            <form method="post" action="{{ url_for('logout') }}" class="inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit"
-                      class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
-                Sign out
-              </button>
-            </form>
+          <a href="{{ url_for('studio') }}" class="whitespace-nowrap text-sm font-medium text-brand hover:underline transition-colors">Account</a>
+          <form method="post" action="{{ url_for('logout') }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Sign out</button>
+          </form>
           {% else %}
-            <a href="{{ url_for('register') }}"
-               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
-              Sign in
-            </a>
+          <a href="{{ url_for('register') }}" class="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Sign in</a>
+          <a href="{{ url_for('register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Get started</a>
           {% endif %}
         </div>
       </nav>
 
       <!-- Mobile: spacer to keep logo centered -->
-      <div class="md:hidden flex-1" aria-hidden="true"></div>
-      <div class="md:hidden w-10 shrink-0" aria-hidden="true"></div>
+      <div class="xl:hidden flex-1" aria-hidden="true"></div>
+      <div class="xl:hidden w-9 shrink-0" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -176,47 +158,40 @@
     <div id="navscrim" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm opacity-0 motion-safe:transition-opacity motion-safe:duration-200" data-dismiss></div>
     <!-- Sheet panel -->
     <div id="navpanel"
-         class="fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl bg-white shadow-xl p-3 sm:max-w-md sm:mx-auto overflow-y-auto md:inset-y-0 md:right-0 md:bottom-0 md:top-0 md:mx-0 md:w-96 md:max-h-none md:h-full md:rounded-none md:rounded-l-2xl md:p-4 will-change-transform motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out translate-y-full md:translate-x-full"
+         class="fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl bg-white dark:bg-slate-900 shadow-xl p-3 sm:max-w-md sm:mx-auto overflow-y-auto md:inset-y-0 md:right-0 md:bottom-0 md:top-0 md:mx-0 md:w-96 md:max-h-none md:h-full md:rounded-none md:rounded-l-2xl md:p-4 will-change-transform motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out translate-y-full md:translate-x-full"
          style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
       <div class="flex items-center justify-between px-1 py-1">
-        <h2 id="navtitle" class="text-sm font-semibold text-slate-600">Menu</h2>
-        <button class="p-2 rounded-md hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50" aria-label="Close menu" data-dismiss>
+        <h2 id="navtitle" class="text-sm font-semibold text-slate-600 dark:text-slate-300">Menu</h2>
+        <button class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 text-slate-600 dark:text-slate-300" aria-label="Close menu" data-dismiss>
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
       <!-- Quick actions -->
       <div class="mt-1 px-1 grid grid-cols-3 gap-2">
-        <a href="#search" data-nav-action="search" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="#search" data-nav-action="search" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5" stroke-linecap="round"/></svg>
           <span>Search</span>
         </a>
-        <a href="{{ url_for('index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 4 4L21 4l0 0"/></svg>
           <span>Jobs</span>
         </a>
-        <a href="#" data-open-subscribe class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="#" data-open-subscribe class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" class="w-5 h-5 rounded" loading="lazy" decoding="async">
           <span>Subscribe</span>
         </a>
-        <a href="{{ url_for('recruiter_salary_board') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-          <span class="font-semibold text-brand">Salary Board</span>
+        <a href="{{ url_for('recruiter_salary_board') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <span class="font-semibold text-brand">Salaries</span>
         </a>
-        <a href="{{ url_for('market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span>Research</span>
         </a>
-        {% if session.get("user") %}
-          <a href="{{ url_for('hire') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
-            <span class="font-semibold text-brand">Employer / Post a job</span>
-          </a>
-        {% else %}
-          <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
-            <span class="font-semibold text-brand">Employer / Post a job</span>
-          </a>
-        {% endif %}
+        <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+          <span class="font-semibold text-brand">Post Job</span>
+        </a>
       </div>
 
       <!-- Inline quick search -->
@@ -224,39 +199,38 @@
         <label for="navsearch" class="sr-only">Quick search</label>
         <div class="flex items-center gap-2">
           <input id="navsearch" name="title" type="search" inputmode="search" autocapitalize="none" spellcheck="false" autocomplete="off" placeholder="Search jobs..."
-                 class="flex-1 rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none min-h-[44px]">
+                 class="flex-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none min-h-[44px]">
           <button type="submit" class="rounded-xl bg-brand text-white px-4 py-3 hover:opacity-90 min-h-[44px]">Go</button>
         </div>
       </form>
 
       <!-- Primary nav links -->
-      <ul class="mt-3 space-y-1 text-base">
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
+      <ul class="mt-3 space-y-1 text-base text-slate-700 dark:text-slate-200">
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salaries</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         {% if session.get("user") %}
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('hire') }}">Employer / Post a job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('hire') }}">Post a Job</a></li>
         {% else %}
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Employer / Post a job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Post a Job</a></li>
         {% endif %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
-        <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
+        <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
         {% if session.get("user") %}
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('hire') }}">Hire</a></li>
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('profile') }}">My Profile</a></li>
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('studio') }}">My Account</a></li>
-          <li>
-            <form method="post" action="{{ url_for('logout') }}">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand">Sign out</button>
-            </form>
-          </li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('profile') }}">My Profile</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('studio') }}">My Account</a></li>
+        <li>
+          <form method="post" action="{{ url_for('logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand">Sign out</button>
+          </form>
+        </li>
         {% else %}
-          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Sign in</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Sign in / Sign up</a></li>
         {% endif %}
       </ul>
     </div>
@@ -280,45 +254,99 @@
 
     {% block content %}{% endblock %}
   </main>
-
   <!-- Footer -->
-  <footer class="mt-16 border-t border-slate-200">
-    <!-- Auto Ads zone: Google inserts ad here automatically when Auto Ads is ON in AdSense dashboard -->
-    <!-- To use a manual unit instead: replace this comment with an <ins> block using a real data-ad-slot ID -->
-    <div class="mx-auto max-w-6xl px-4 pt-2 min-h-[50px]" aria-label="Advertisement" data-ad-zone="footer"></div>
-    <div class="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <p>&copy; 2026 Catalitium &mdash; Empowering tech talent.</p>
-      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-        <a href="{{ url_for('index') }}" class="hover:text-brand">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" class="hover:text-brand font-semibold">Market Research</a>
-        <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand">Salary Board</a>
-        <a href="{{ url_for('about') }}" class="hover:text-brand">About</a>
-        <a href="#" data-open-subscribe class="hover:text-brand">Weekly Digest</a>
-        {% if session.get("user") %}
-          <a href="{{ url_for('hire') }}" class="hover:text-brand">Employer / Post a job</a>
-        {% else %}
-          <a href="#" data-open-job-posting class="hover:text-brand">Employer / Post a job</a>
-        {% endif %}
-        <a href="#" data-open-contact class="hover:text-brand">Contact</a>
-        <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
-        <button type="button" class="hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
+  <footer class="mt-16 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+    <div class="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-500 transition-colors duration-300">
+      <div class="grid grid-cols-2 sm:grid-cols-[1fr_auto_auto_auto] gap-8">
+
+        <!-- Brand -->
+        <div class="col-span-2 sm:col-span-1 flex flex-col gap-2.5">
+          <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24">
+            <span class="font-semibold tracking-tight text-slate-800 dark:text-slate-200">Catalitium</span>
+          </a>
+          <p class="text-xs">&copy; 2026 Catalitium &mdash; High-signal tech talent.</p>
+          <div class="flex items-center gap-2 mt-1 opacity-75">
+            <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">SOC 2 Type II</span>
+            <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">GDPR Ready</span>
+          </div>
+        </div>
+
+        <!-- Explore -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Explore</p>
+          <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
+          <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+          <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand transition-colors">Salaries</a>
+          <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
+          <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
+          <a href="{{ url_for('pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
+          <a href="{{ url_for('companies') }}" class="hover:text-brand transition-colors">Companies</a>
+        </div>
+
+        <!-- Company -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Company</p>
+          <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About Us</a>
+          {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          {% else %}
+          <a href="#" data-open-job-posting class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          {% endif %}
+          <a href="#" data-open-contact class="hover:text-brand transition-colors">Contact Us</a>
+          <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
+          <button type="button" class="text-left hover:text-brand transition-colors" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
+        </div>
+
+        <!-- Account + Theme -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Account</p>
+          {% if session.get("user") %}
+          <a href="{{ url_for('profile') }}" class="hover:text-brand transition-colors">My Profile</a>
+          <a href="{{ url_for('studio') }}" class="hover:text-brand transition-colors">My Account</a>
+          <form method="post" action="{{ url_for('logout') }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-left hover:text-brand transition-colors">Sign out</button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors">Sign in</a>
+          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Get started</a>
+          {% endif %}
+
+          <!-- Theme toggle -->
+          <div class="mt-3">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2">Theme</p>
+            <div class="flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 gap-0.5 w-fit" title="Switch theme">
+              <button id="theme-btn-light" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Light Mode">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+              </button>
+              <button id="theme-btn-dark" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Dark Mode">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+              </button>
+              <button id="theme-btn-system" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="System Mode">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </footer>
 
   <!-- Global Subscribe dialog -->
-  <dialog id="subscribeDialog" class="rounded-2xl p-0 backdrop:bg-slate-900/40"
+  <dialog id="subscribeDialog" class="rounded-2xl p-0 bg-white dark:bg-slate-900 backdrop:bg-slate-900/40"
           aria-labelledby="subscribe-title">
     <form method="dialog" class="absolute right-3 top-3">
       <button aria-label="Close dialog"
-              class="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:text-slate-900 hover:border-slate-300">X</button>
+              class="rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300">✕</button>
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-md">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="subscribe-title" class="text-lg font-semibold">Weekly high-match job digest</h2>
+        <h2 id="subscribe-title" class="text-lg font-semibold dark:text-slate-100">Weekly high-match job digest</h2>
       </div>
-      <p class="mt-2 text-slate-600 text-sm">One email per week with your best-matching roles and salary signals. No spam, unsubscribe anytime.</p>
+      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">One email per week with your best-matching roles and salary signals. No spam, unsubscribe anytime.</p>
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
@@ -333,47 +361,47 @@
                required
                autocomplete="email"
                placeholder="you@company.com"
-               class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+               class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         <button type="submit"
                 class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90">Get Weekly Digest</button>
       </form>
 
-      <p class="mt-2 text-[11px] text-slate-500">Privacy-friendly. One curated email per week.</p>
+      <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Privacy-friendly. One curated email per week.</p>
     </div>
   </dialog>
 
   <!-- Global Contact dialog -->
-  <dialog id="contactDialog" class="rounded-2xl p-0 backdrop:bg-slate-900/40"
+  <dialog id="contactDialog" class="rounded-2xl p-0 bg-white dark:bg-slate-900 backdrop:bg-slate-900/40"
           aria-labelledby="contact-title">
     <form method="dialog" class="absolute right-3 top-3">
       <button aria-label="Close dialog"
-              class="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:text-slate-900 hover:border-slate-300">X</button>
+              class="rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300">✕</button>
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-lg">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="contact-title" class="text-lg font-semibold">Contact us</h2>
+        <h2 id="contact-title" class="text-lg font-semibold dark:text-slate-100">Contact us</h2>
       </div>
-      <p class="mt-2 text-slate-600 text-sm">Questions, partnerships, or feedback? Drop a note and we'll reply.</p>
+      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">Questions, partnerships, or feedback? Drop a note and we'll reply.</p>
 
-      <div id="contactSuccess" class="hidden mt-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm px-3 py-2">
+      <div id="contactSuccess" class="hidden mt-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm px-3 py-2">
         Thanks for reaching out. We received your message.
       </div>
 
       <form id="contactForm" method="post" action="{{ url_for('contact') }}" class="mt-5 space-y-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="contact-email">Email</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="contact-email">Email</label>
           <input id="contact-email"
                  name="email"
                  type="email"
                  required
                  autocomplete="email"
                  placeholder="you@company.com"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="contact-name">Name / Company</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="contact-name">Name / Company</label>
           <input id="contact-name"
                  name="name"
                  type="text"
@@ -381,104 +409,104 @@
                  autocomplete="organization"
                  maxlength="120"
                  placeholder="Your name or company"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="contact-message">Message</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="contact-message">Message</label>
           <textarea id="contact-message"
                     name="message"
                     required
                     rows="4"
                     maxlength="1200"
                     placeholder="Tell us how we can help"
-                    class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none"></textarea>
+                    class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none"></textarea>
         </div>
-        <div id="contactError" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2" aria-live="assertive"></div>
+        <div id="contactError" class="hidden rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-sm px-3 py-2" aria-live="assertive"></div>
         <div class="flex gap-2 pt-1">
           <button type="submit" id="contactSubmit"
                   class="rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90 min-w-[140px]">Send message</button>
           <button type="button" data-close-contact
-                  class="rounded-xl border border-slate-300 px-5 py-3 text-slate-700 hover:bg-slate-100">Cancel</button>
+                  class="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
         </div>
       </form>
     </div>
   </dialog>
 
   <!-- Global Job Posting dialog -->
-  <dialog id="jobPostDialog" class="rounded-2xl p-0 backdrop:bg-slate-900/40"
+  <dialog id="jobPostDialog" class="rounded-2xl p-0 bg-white dark:bg-slate-900 backdrop:bg-slate-900/40"
           aria-labelledby="jobpost-title">
     <form method="dialog" class="absolute right-3 top-3">
       <button aria-label="Close dialog"
-              class="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:text-slate-900 hover:border-slate-300">X</button>
+              class="rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300">✕</button>
     </form>
     <div class="p-6 sm:p-7 w-[90vw] max-w-xl">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="jobpost-title" class="text-lg font-semibold">Submit a job</h2>
+        <h2 id="jobpost-title" class="text-lg font-semibold dark:text-slate-100">Submit a job</h2>
       </div>
-      <p class="mt-2 text-slate-600 text-sm">Share a role; we'll reach out via your email. Anonymous otherwise.</p>
+      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">Share a role; we'll reach out via your email. Anonymous otherwise.</p>
 
-      <div id="jobPostSuccess" class="hidden mt-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-sm px-3 py-2">
+      <div id="jobPostSuccess" class="hidden mt-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm px-3 py-2">
         Thanks! We received your job submission.
       </div>
 
       <form id="jobPostForm" method="post" action="{{ url_for('job_posting') }}" class="mt-5 space-y-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="jobpost-email">Contact email</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-email">Contact email</label>
           <input id="jobpost-email"
                  name="contact_email"
                  type="email"
                  required
                  autocomplete="email"
                  placeholder="you@company.com"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="jobpost-title-input">Job title</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-title-input">Job title</label>
           <input id="jobpost-title-input"
                  name="job_title"
                  type="text"
                  required
                  placeholder="Role title"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="jobpost-company">Company</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-company">Company</label>
           <input id="jobpost-company"
                  name="company"
                  type="text"
                  required
                  autocomplete="organization"
                  placeholder="Company name"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="jobpost-salary">Salary range (optional)</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-salary">Salary range (optional)</label>
           <input id="jobpost-salary"
                  name="salary_range"
                  type="text"
                  autocomplete="off"
                  placeholder="e.g. 120k-150k CHF / year"
-                 class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
-          <p class="text-[11px] text-slate-500">Optional. Share range in any format; leave blank if unsure.</p>
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Optional. Share range in any format; leave blank if unsure.</p>
         </div>
         <div class="space-y-1">
-          <label class="block text-sm text-slate-700" for="jobpost-description">Description</label>
+          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-description">Description</label>
           <textarea id="jobpost-description"
                     name="description"
                     rows="6"
                     required
                     placeholder="Brief role summary, requirements, location..."
-                    class="w-full rounded-xl border border-slate-300 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none"></textarea>
-          <p id="jobpost-count" class="text-[11px] text-slate-500">0 / ~5000 words max</p>
+                    class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none"></textarea>
+          <p id="jobpost-count" class="text-[11px] text-slate-500 dark:text-slate-400">0 / ~5000 words max</p>
         </div>
-        <div id="jobPostError" class="hidden rounded-xl border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2" aria-live="assertive"></div>
+        <div id="jobPostError" class="hidden rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-sm px-3 py-2" aria-live="assertive"></div>
         <div class="flex gap-2 pt-1">
           <button type="submit" id="jobPostSubmit"
                   class="rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90 min-w-[140px]">Submit job</button>
           <button type="button" data-close-job-posting
-                  class="rounded-xl border border-slate-300 px-5 py-3 text-slate-700 hover:bg-slate-100">Cancel</button>
+                  class="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
         </div>
       </form>
     </div>
@@ -488,6 +516,7 @@
   <div id="jobModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40">
     <dialog id="jobDialog" class="rounded-2xl p-0 bg-white shadow-xl w-[90vw] max-w-md">
       <form id="jobModalForm" class="p-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <h2 class="text-lg font-semibold mb-2">
           Apply for <span id="jobModalTitle"></span>
         </h2>
@@ -569,6 +598,59 @@
         navigator.serviceWorker.register('/sw.js').catch(function(){});
       });
     }
+
+    var btnLight = document.getElementById('theme-btn-light');
+    var btnDark = document.getElementById('theme-btn-dark');
+    var btnSystem = document.getElementById('theme-btn-system');
+
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+      } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+      } else {
+        // System: follow OS, clear stored preference
+        localStorage.removeItem('color-theme');
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      updateThemeUI();
+    }
+
+    function updateThemeUI() {
+      var stored = localStorage.getItem('color-theme');
+      [btnLight, btnDark, btnSystem].forEach(function(b) {
+        if (b) b.classList.remove('text-brand', '!text-brand', 'dark:text-white');
+      });
+      if (stored === 'dark' && btnDark) {
+        btnDark.classList.add('dark:text-white', 'text-brand');
+      } else if (stored === 'light' && btnLight) {
+        btnLight.classList.add('text-brand');
+      } else if (btnSystem) {
+        btnSystem.classList.add('text-brand', 'dark:text-white');
+      }
+    }
+    updateThemeUI();
+
+    if (btnLight) btnLight.addEventListener('click', function() { applyTheme('light'); });
+    if (btnDark)  btnDark.addEventListener('click',  function() { applyTheme('dark');  });
+    if (btnSystem) btnSystem.addEventListener('click', function() { applyTheme('system'); });
+
+    // Keep in sync if the user changes their OS preference while on the page
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+      if (!localStorage.getItem('color-theme')) {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
+    });
   </script>
 </body>
 </html>
