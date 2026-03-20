@@ -129,8 +129,12 @@ def _acquire_connection():
         _init_pg_pool()
     if _PG_POOL is not None:
         try:
-            conn = _PG_POOL.connection()
+            conn = _PG_POOL.getconn(timeout=5)
             _setup_connection(conn)
+            try:
+                setattr(conn, "_from_pg_pool", True)
+            except Exception:
+                pass
             return conn
         except Exception as exc:
             logger.warning("Pool connection failed, retrying direct connect: %s", exc)
@@ -139,6 +143,10 @@ def _acquire_connection():
     import psycopg
     conn = psycopg.connect(SUPABASE_URL, autocommit=True)
     _setup_connection(conn)
+    try:
+        setattr(conn, "_from_pg_pool", False)
+    except Exception:
+        pass
     return conn
 
 
@@ -165,7 +173,16 @@ def close_db(_e=None):
     from flask import g
     db = g.pop("db", None)
     if db:
-        db.close()
+        try:
+            if getattr(db, "_from_pg_pool", False) and _PG_POOL is not None:
+                _PG_POOL.putconn(db)
+            else:
+                db.close()
+        except Exception:
+            try:
+                db.close()
+            except Exception:
+                pass
 
 # ------------------------- Subscriber & Analytics Helpers --------------------
 

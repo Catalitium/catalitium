@@ -23,6 +23,58 @@ function sendAnalyticsPayload(payload){
   } catch(_){}
 }
 
+function getCsrfToken(){
+  try {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return String(meta.content).trim();
+  } catch(_){}
+  try {
+    var input = document.querySelector('input[name="csrf_token"]');
+    if (input && input.value) return String(input.value).trim();
+  } catch(_){}
+  return '';
+}
+
+function closeUiOverlays(opts){
+  opts = opts || {};
+  var keepDialogId = opts.keepDialogId || '';
+  try {
+    var navsheet = document.getElementById('navsheet');
+    if (navsheet) navsheet.classList.add('hidden');
+  } catch(_){}
+  try {
+    var navpanel = document.getElementById('navpanel');
+    if (navpanel) {
+      navpanel.classList.add('translate-y-full');
+      navpanel.classList.add('md:translate-x-full');
+    }
+  } catch(_){}
+  try {
+    var navscrim = document.getElementById('navscrim');
+    if (navscrim) navscrim.classList.add('opacity-0');
+  } catch(_){}
+  try {
+    var jobModal = document.getElementById('jobModal');
+    if (jobModal) jobModal.classList.add('hidden');
+  } catch(_){}
+  try {
+    document.querySelectorAll('dialog[open]').forEach(function(d){
+      if (keepDialogId && d.id === keepDialogId) return;
+      try { d.close(); } catch(_) { d.removeAttribute('open'); }
+    });
+  } catch(_){}
+  try { document.body.classList.remove('overflow-hidden'); } catch(_){}
+}
+
+try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
+
+/* Safety reset: clear stale overlays/scrims on page restore/load */
+(function(){
+  function clearStaleOverlays(){ closeUiOverlays({}); }
+  window.addEventListener('load', clearStaleOverlays);
+  window.addEventListener('pageshow', clearStaleOverlays);
+})();
+
 /* Page progress bar on form submit */
 (function(){
   var bar = document.getElementById('page-progress');
@@ -44,12 +96,24 @@ function sendAnalyticsPayload(payload){
   var scrim = document.getElementById('navscrim');
   if (btn && sheet && panel){
     var lastActive = null;
+    function finalizeClosedState(){
+      try {
+        if (scrim) scrim.classList.add('opacity-0');
+        panel.classList.add('translate-y-full');
+        panel.classList.add('md:translate-x-full');
+      } catch(_){ }
+      sheet.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+      btn.setAttribute('aria-expanded','false');
+      document.removeEventListener('keydown', trap, true);
+    }
     function getFocusables(root){
       return Array.prototype.slice.call(root.querySelectorAll(
         'a[href], button:not([disabled]), input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])'
       ));
     }
     function open(){
+      closeUiOverlays({});
       lastActive = document.activeElement;
       sheet.classList.remove('hidden');
       document.body.classList.add('overflow-hidden');
@@ -66,19 +130,8 @@ function sendAnalyticsPayload(payload){
       document.addEventListener('keydown', trap, true);
     }
     function close(){
-      // Animate out: add transforms + fade scrim, then hide after transition
-      try {
-        if (scrim) scrim.classList.add('opacity-0');
-        panel.classList.add('translate-y-full');
-        panel.classList.add('md:translate-x-full');
-      } catch(_){ }
-      setTimeout(function(){
-        sheet.classList.add('hidden');
-        document.body.classList.remove('overflow-hidden');
-        btn.setAttribute('aria-expanded','false');
-        document.removeEventListener('keydown', trap, true);
-        try { if(lastActive) lastActive.focus(); } catch(_){ }
-      }, 180);
+      finalizeClosedState();
+      try { if(lastActive) lastActive.focus(); } catch(_){ }
     }
     function trap(e){
       if (e.key === 'Escape') { e.preventDefault(); close(); return; }
@@ -142,6 +195,7 @@ function sendAnalyticsPayload(payload){
     function open(src){
       if (!dialog) return;
       source = src || 'cta';
+      closeUiOverlays({ keepDialogId: dialog.id || '' });
       reset();
       onOpen(source);
       try { dialog.showModal(); } catch(_) { dialog.open = true; }
@@ -228,6 +282,7 @@ function sendAnalyticsPayload(payload){
     document.addEventListener('click', function(e){
       var trg = e.target.closest('[data-open-subscribe]');
       if(!trg) return;
+      closeUiOverlays({ keepDialogId: subscribeDialog.id || '' });
       applySubscribeContext(readSubscribeContext(trg));
       trackEvent('modal_open', { modal: 'subscribe', source: trg.getAttribute('data-open-subscribe') || 'cta' });
       sendAnalyticsPayload({
@@ -290,7 +345,10 @@ function sendAnalyticsPayload(payload){
       }
       return fetch('/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken()
+        },
         credentials: 'same-origin',
         body: JSON.stringify({ email: email, name: name, message: message })
       })
@@ -409,7 +467,10 @@ function sendAnalyticsPayload(payload){
 
       return fetch('/job-posting', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken()
+        },
         credentials: 'same-origin',
         body: JSON.stringify({
           contact_email: email,
@@ -673,6 +734,7 @@ function sendAnalyticsPayload(payload){
   }
 
   function showModal() {
+    closeUiOverlays({ keepDialogId: dialog.id || '' });
     wrap.classList.remove('hidden');
     try { dialog.showModal(); } catch(_) { dialog.setAttribute('open', 'true'); }
     setError('');
@@ -748,7 +810,10 @@ function sendAnalyticsPayload(payload){
     }
     fetch('/subscribe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': getCsrfToken()
+      },
       credentials: 'same-origin',
       body: JSON.stringify(payload)
     })
@@ -816,6 +881,7 @@ function sendAnalyticsPayload(payload){
     if(loc) loc.value = countryVal;
   }); }
   if(toggle && subDlg){ toggle.addEventListener('change', function(){ if(toggle.checked){
+    closeUiOverlays({ keepDialogId: subDlg.id || '' });
     try{
       var ctxParams = new URLSearchParams(window.location.search);
       window.dispatchEvent(new CustomEvent('catalitium:subscribe-context', { detail: {

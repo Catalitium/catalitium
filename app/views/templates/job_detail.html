@@ -227,7 +227,9 @@
 {% endif %}
 
 {% block body_extra %}
-<script defer src="{{ url_for('static', filename='js/ai_summary.js') }}"></script>
+{% if is_production_env %}
+<script defer src="{{ url_for('static', filename='js/ai_summary.js', v=asset_version) }}"></script>
+{% endif %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

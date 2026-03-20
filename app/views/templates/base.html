@@ -15,6 +15,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -38,7 +39,7 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode: 'class',theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
-  <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
+  <link rel="preload" href="{{ url_for('static', filename='js/main.js', v=asset_version) }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -46,12 +47,16 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
+  {% if is_production_env %}
   <!-- Cookiebot CMP — MUST load first before any tracking or ad scripts -->
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
+  {% endif %}
 
   <!-- Google tag (gtag.js) -->
+  {% if is_production_env %}
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D" data-cookieconsent="statistics"></script>
-  <script data-cookieconsent="statistics">
+  {% endif %}
+  <script {% if is_production_env %}data-cookieconsent="statistics"{% endif %}>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -63,16 +68,25 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
 
   <!-- Google AdSense -->
+  {% if is_production_env %}
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
      crossorigin="anonymous" data-cookieconsent="marketing"></script>
+  {% endif %}
   {% block head_extra %}{% endblock %}
   <style>
+    {% if not is_production_env %}
+    /* Local dev safety: avoid full-page dim if browser/extensions leave a dialog open. */
+    dialog::backdrop {
+      background: transparent !important;
+      backdrop-filter: none !important;
+    }
+    {% endif %}
     @media print {
       header, footer, nav, #ad-top, #ad-mid-article, #ad-bottom, .no-print, aside {
         display: none !important;
@@ -104,9 +118,9 @@
   <header class="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70">
     <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
 
-      <!-- Hamburger (mobile only, hidden on lg+) -->
+      <!-- Hamburger (mobile only, hidden on md+) -->
       <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
-              class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
+              class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
@@ -145,13 +159,70 @@
           </div>
           <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
           <a href="{{ url_for('pricing') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Try Agent</a>
-          <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-md hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Post Job</a>
+          {% if session.get("user") %}
+            <a href="{{ url_for('hire') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-md hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Post Job</a>
+          {% else %}
+            <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-md hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Post Job</a>
+          {% endif %}
+          <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
+          {% if session.get("user") %}
+            <a href="{{ url_for('studio') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              My Account
+            </a>
+            <form method="post" action="{{ url_for('logout') }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                Sign out
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('register') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              Sign in
+            </a>
+          {% endif %}
+      <!-- Desktop nav (md+) -->
+      <nav class="hidden md:flex items-center gap-1 text-sm flex-1">
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 font-medium{% endif %}">Jobs</a>
+        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 font-medium{% endif %}">Research</a>
+<a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 font-medium{% endif %}">Salary Board</a>
+        <a href="{{ url_for('developers') }}" {% if request.endpoint == 'developers' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'developers' %}text-brand bg-slate-50 font-medium{% endif %}">API</a>
+        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Digest</a>
+
+        <div class="ml-auto flex items-center gap-2">
+          <div class="border-l border-slate-200 h-5"></div>
+          {% if session.get("user") %}
+            <a href="{{ url_for('hire') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          {% else %}
+            <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          {% endif %}
+          <div class="border-l border-slate-200 h-5"></div>
+          {% if session.get("user") %}
+            <a href="{{ url_for('studio') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              My Account
+            </a>
+            <form method="post" action="{{ url_for('logout') }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                Sign out
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('register') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              Sign in
+            </a>
+          {% endif %}
         </div>
       </nav>
 
       <!-- Mobile: spacer to keep logo centered -->
-      <div class="lg:hidden flex-1" aria-hidden="true"></div>
-      <div class="lg:hidden w-10 shrink-0" aria-hidden="true"></div>
+      <div class="md:hidden flex-1" aria-hidden="true"></div>
+      <div class="md:hidden w-10 shrink-0" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -193,10 +264,17 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span>Research</span>
         </a>
-        <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
-          <span class="font-semibold text-brand">Submit job</span>
-        </a>
+        {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+            <span class="font-semibold text-brand">Employer / Post a job</span>
+          </a>
+        {% else %}
+          <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+            <span class="font-semibold text-brand">Employer / Post a job</span>
+          </a>
+        {% endif %}
       </div>
 
       <!-- Inline quick search -->
@@ -217,10 +295,27 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
+        {% if session.get("user") %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('hire') }}">Employer / Post a job</a></li>
+        {% else %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Employer / Post a job</a></li>
+        {% endif %}
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
         <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
+        {% if session.get("user") %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('hire') }}">Hire</a></li>
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('profile') }}">My Profile</a></li>
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('studio') }}">My Account</a></li>
+          <li>
+            <form method="post" action="{{ url_for('logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand">Sign out</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Sign in</a></li>
+        {% endif %}
       </ul>
     </div>
   </div>
@@ -260,11 +355,20 @@
       </div>
       <div class="flex flex-wrap items-center gap-3 sm:gap-4">
         <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
+        <a href="{{ url_for('market_research_index') }}" class="hover:text-brand font-semibold transition-colors">Market Research</a>
+        <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand transition-colors">Salary Board</a>
         <a href="{{ url_for('pricing') }}" class="hover:text-brand font-semibold transition-colors">Pricing</a>
         <a href="{{ url_for('companies') }}" class="hover:text-brand transition-colors">Companies</a>
         <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About</a>
-        <a href="#" data-open-job-posting class="hover:text-brand transition-colors text-brand font-semibold">Post a Job</a>
+        <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
+        {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+        {% else %}
+          <a href="#" data-open-job-posting class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+        {% endif %}
+        <a href="#" data-open-contact class="hover:text-brand transition-colors">Contact</a>
         <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
+        <button type="button" class="hover:text-brand transition-colors" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
       </div>
     </div>
   </footer>
@@ -285,6 +389,7 @@
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="search_title" id="subscribe-search-title" value="">
         <input type="hidden" name="search_country" id="subscribe-search-country" value="">
         <input type="hidden" name="search_salary_band" id="subscribe-search-salary-band" value="">
@@ -322,7 +427,8 @@
         Thanks for reaching out. We received your message.
       </div>
 
-      <form id="contactForm" class="mt-5 space-y-3">
+      <form id="contactForm" method="post" action="{{ url_for('contact') }}" class="mt-5 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
           <label class="block text-sm text-slate-700" for="contact-email">Email</label>
           <input id="contact-email"
@@ -383,7 +489,8 @@
         Thanks! We received your job submission.
       </div>
 
-      <form id="jobPostForm" class="mt-5 space-y-3">
+      <form id="jobPostForm" method="post" action="{{ url_for('job_posting') }}" class="mt-5 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
           <label class="block text-sm text-slate-700" for="jobpost-email">Contact email</label>
           <input id="jobpost-email"
@@ -505,11 +612,27 @@
     </div>
   </nav>
 
-  <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/main.js', v=asset_version) }}"></script>
   {% block body_extra %}{% endblock %}
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
+        var isLocal =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(reg) { reg.unregister(); });
+          });
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(key) {
+                if (key.indexOf('catalitium-') === 0) caches.delete(key);
+              });
+            });
+          }
+          return;
+        }
         navigator.serviceWorker.register('/sw.js').catch(function(){});
       });
     }
