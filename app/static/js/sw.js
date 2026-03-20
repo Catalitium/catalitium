@@ -1,7 +1,6 @@
-/* Catalitium Service Worker — cache-first for static, network-first for pages */
-var CACHE = 'catalitium-v2';
+/* Catalitium Service Worker — resilient static caching */
+var CACHE = 'catalitium-v4';
 var STATIC = [
-  '/static/css/tailwind.css',
   '/static/css/styles.css',
   '/static/js/main.js',
   '/static/img/logo.png',
@@ -28,33 +27,38 @@ self.addEventListener('activate', function(e){
 
 self.addEventListener('fetch', function(e){
   var url = new URL(e.request.url);
-  /* Cache-first for static assets */
-  if(url.pathname.startsWith('/static/')){
+  if (e.request.method !== 'GET') return;
+  /* Static assets only. Keep HTML/API network-driven. */
+  if (!url.pathname.startsWith('/static/')) return;
+  var networkFirst = (
+    url.pathname.endsWith('/css/styles.css') ||
+    url.pathname.endsWith('/js/main.js') ||
+    url.pathname.endsWith('/js/ai_summary.js')
+  );
+  if (networkFirst) {
     e.respondWith(
-      caches.match(e.request).then(function(cached){
-        if(cached) return cached;
-        return fetch(e.request).then(function(res){
-          if(res && res.status === 200){
-            var clone = res.clone();
-            caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
-          }
-          return res;
-        });
+      fetch(e.request).then(function(res){
+        if(res && res.status === 200){
+          var clone = res.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
+        }
+        return res;
+      }).catch(function(){
+        return caches.match(e.request);
       })
     );
     return;
   }
-  /* Network-first for API and pages — fall back to cache on failure */
-  if(e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(function(res){
-      if(res && res.status === 200 && url.origin === self.location.origin){
-        var clone = res.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
-      }
-      return res;
-    }).catch(function(){
-      return caches.match(e.request);
+    caches.match(e.request).then(function(cached){
+      if(cached) return cached;
+      return fetch(e.request).then(function(res){
+        if(res && res.status === 200){
+          var clone = res.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, clone); });
+        }
+        return res;
+      });
     })
   );
 });

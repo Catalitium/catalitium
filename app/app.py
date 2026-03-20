@@ -728,13 +728,17 @@ def create_app() -> Flask:
         logger.error("SUPABASE_URL (or DATABASE_URL) must be configured before starting the app.")
         raise SystemExit(1)
 
+    asset_version = (os.getenv("ASSET_VERSION") or "20260320-stability1").strip() or "20260320-stability1"
     app.config.update(
         SECRET_KEY=SECRET_KEY,
         TEMPLATES_AUTO_RELOAD=(env != "production"),
         PER_PAGE_MAX=PER_PAGE_MAX,
         SUPABASE_URL=SUPABASE_URL,
+        ASSET_VERSION=asset_version,
         MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", "1048576")),  # 1MB default
-        SESSION_COOKIE_SECURE=True,
+        # Keep secure cookies in production, but allow local HTTP dev
+        # (127.0.0.1/localhost) so session + CSRF flows work on /register.
+        SESSION_COOKIE_SECURE=(env == "production"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
     )
@@ -774,7 +778,14 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_csrf_token():
-        return {"csrf_token": _csrf_token}
+        host = (request.host or "").split(":", 1)[0].lower()
+        is_local_host = host in {"127.0.0.1", "localhost", "0.0.0.0"}
+        return {
+            "csrf_token": _csrf_token,
+            "asset_version": app.config.get("ASSET_VERSION", "dev"),
+            # Treat localhost as non-production even when ENV defaults to production.
+            "is_production_env": (env == "production" and not is_local_host),
+        }
 
     def _csrf_valid() -> bool:
         expected = str(session.get("_csrf_token") or "")
@@ -896,12 +907,25 @@ def create_app() -> Flask:
         # Lightweight caching headers: long-cache static assets, short-cache everything else
         try:
             path = request.path or ""
+            content_type = (response.content_type or "").lower()
+            html_response = "text/html" in content_type
+            auth_ui_paths = {
+                "/register",
+                "/studio",
+                "/profile",
+                "/hire",
+                "/hire/onboarding",
+            }
             if path.startswith("/static/"):
                 # 30d cache for versioned static files; adjust if assets aren't fingerprinted
                 response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
             elif path.startswith("/api/") or path.startswith("/v1/"):
                 # API responses must not be publicly cached
                 response.headers["Cache-Control"] = "no-store"
+            elif html_response and (path in auth_ui_paths or bool(session.get("user"))):
+                # Session-driven pages should never be publicly cached.
+                response.headers["Cache-Control"] = "private, no-store, max-age=0, must-revalidate"
+                response.headers["Pragma"] = "no-cache"
             else:
                 response.headers.setdefault("Cache-Control", "public, max-age=60")
         except Exception:
@@ -913,6 +937,7 @@ def create_app() -> Flask:
                 and response.content_type
                 and "text/html" in response.content_type
                 and response.direct_passthrough is False
+                and "no-store" not in (response.headers.get("Cache-Control", "").lower())
             ):
                 data = response.get_data()
                 etag = f'W/"{hashlib.md5(data).hexdigest()}"'
@@ -947,6 +972,15 @@ def create_app() -> Flask:
             init_db()
     except Exception as exc:
         logger.warning("init_db failed: %s", exc)
+        require_db = env == "production" or os.getenv("REQUIRE_DB_ON_STARTUP", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if require_db:
+            logger.error("Database init is required; aborting startup.")
+            raise SystemExit(1)
 
     @app.errorhandler(404)
     def handle_not_found(_error):
@@ -1472,6 +1506,11 @@ def create_app() -> Flask:
         """Handle newsletter subscriptions from form or JSON payloads."""
         is_json = request.is_json
         payload = request.get_json(silent=True) or {} if is_json else request.form
+        if not _csrf_valid():
+            if is_json:
+                return jsonify({"error": "invalid_csrf"}), 400
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("index"))
         email = (payload.get("email") or "").strip()
         job_id_raw = (payload.get("job_id") or "").strip()
         search_title = (payload.get("search_title") or "").strip()
@@ -1568,7 +1607,7 @@ def create_app() -> Flask:
         if session.get("user"):
             return redirect(url_for("studio"))
         if request.method == "GET":
-            return render_template("register.html", tab="login", account_type="candidate")
+            return render_template("register.html", tab="signup", account_type="candidate")
 
         action = request.form.get("action", "signup")
         if action not in {"signup", "login"}:
@@ -1617,7 +1656,19 @@ def create_app() -> Flask:
             return redirect(url_for("studio"))
         except Exception as exc:
             logger.warning("auth error (%s): %s", action, exc)
-            flash("Authentication failed. Please try again.", "error")
+            msg = str(exc).lower()
+            if action == "login":
+                if "invalid login credentials" in msg:
+                    flash("Invalid email or password. New here? Use Create account first.", "error")
+                elif "email not confirmed" in msg:
+                    flash("Please confirm your email before signing in.", "error")
+                else:
+                    flash("Sign in failed. Please try again.", "error")
+            else:
+                if "already registered" in msg or "user already registered" in msg:
+                    flash("This email already has an account. Please sign in instead.", "error")
+                else:
+                    flash("Create account failed. Please try again.", "error")
             return render_template("register.html", tab=action, account_type=account_type), 400
 
     @app.route("/logout", methods=["GET", "POST"])
@@ -2076,6 +2127,8 @@ def create_app() -> Flask:
     @_limit("10 per minute")
     def studio_contact():
         """Minimal B2B studio intake endpoint reusing contact storage."""
+        if not _csrf_valid():
+            return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
         payload = request.get_json(silent=True) or request.form or {}
         email_raw = (payload.get("email") or "").strip()
         name_raw = (payload.get("name") or payload.get("company") or "").strip()
@@ -2631,6 +2684,7 @@ def create_app() -> Flask:
     @app.get("/api/summary/<int:job_id>")
     def api_summary(job_id: int):
         """Return AI-generated bullets + skill tags for a job (cached in DB)."""
+        empty_summary = {"bullets": [], "skills": []}
         cached = get_job_summary(job_id)
         if cached:
             return _api_success(cached)
@@ -2641,15 +2695,15 @@ def create_app() -> Flask:
 
         description = (row.get("job_description") or "").strip()
         if len(description) < 50:
-            return _api_error("no_description", "Job description is too short", 404)
+            return _api_success(empty_summary, code="summary_unavailable", message="description_too_short")
 
         api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
         if not api_key:
-            return _api_error("no_api_key", "AI summary is unavailable", 503)
+            return _api_success(empty_summary, code="summary_unavailable", message="provider_not_configured")
 
         bullets, skills = _call_anthropic(description, api_key)
         if bullets is None:
-            return _api_error("api_failed", "AI provider request failed", 503)
+            return _api_success(empty_summary, code="summary_unavailable", message="provider_request_failed")
 
         try:
             save_job_summary(job_id, bullets, skills)

@@ -23,6 +23,10 @@
   function renderSummary(container, data){
     var bullets = (data.bullets || []).slice(0, 3);
     var skills  = (data.skills  || []).slice(0, 8);
+    if (!bullets.length && !skills.length) {
+      if (container) container.classList.add('hidden');
+      return;
+    }
 
     var bulletsHtml = bullets.map(function(b, i){
       return '<div class="flex gap-2.5 items-start mb-2.5">'

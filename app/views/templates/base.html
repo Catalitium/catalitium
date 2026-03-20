@@ -15,6 +15,7 @@
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -31,7 +32,7 @@
   <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
-  <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
+  <link rel="preload" href="{{ url_for('static', filename='js/main.js', v=asset_version) }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -39,12 +40,16 @@
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
   <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
+  {% if is_production_env %}
   <!-- Cookiebot CMP — MUST load first before any tracking or ad scripts -->
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
+  {% endif %}
 
   <!-- Google tag (gtag.js) -->
+  {% if is_production_env %}
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-N8G6ZYS32D" data-cookieconsent="statistics"></script>
-  <script data-cookieconsent="statistics">
+  {% endif %}
+  <script {% if is_production_env %}data-cookieconsent="statistics"{% endif %}>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
@@ -56,16 +61,25 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
 
   <!-- Favicon -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
 
   <!-- Google AdSense -->
+  {% if is_production_env %}
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
      crossorigin="anonymous" data-cookieconsent="marketing"></script>
+  {% endif %}
   {% block head_extra %}{% endblock %}
   <style>
+    {% if not is_production_env %}
+    /* Local dev safety: avoid full-page dim if browser/extensions leave a dialog open. */
+    dialog::backdrop {
+      background: transparent !important;
+      backdrop-filter: none !important;
+    }
+    {% endif %}
     @media print {
       header, footer, nav, #ad-top, #ad-mid-article, #ad-bottom, .no-print, aside {
         display: none !important;
@@ -97,9 +111,9 @@
   <header class="sticky top-0 z-50 border-b border-slate-200 shadow-sm bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
     <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
 
-      <!-- Hamburger (mobile only, hidden on lg+) -->
+      <!-- Hamburger (mobile only, hidden on md+) -->
       <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
-              class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
+              class="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
@@ -111,8 +125,8 @@
         <span class="font-semibold tracking-tight text-slate-900">Catalitium</span>
       </a>
 
-      <!-- Desktop nav (lg+) -->
-      <nav class="hidden lg:flex items-center gap-1 text-sm flex-1">
+      <!-- Desktop nav (md+) -->
+      <nav class="hidden md:flex items-center gap-1 text-sm flex-1">
         <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 font-medium{% endif %}">Jobs</a>
         <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 font-medium{% endif %}">Research</a>
 <a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 font-medium{% endif %}">Salary Board</a>
@@ -128,14 +142,6 @@
           {% endif %}
           <div class="border-l border-slate-200 h-5"></div>
           {% if session.get("user") %}
-            <a href="{{ url_for('hire') }}"
-               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
-              Hire
-            </a>
-            <a href="{{ url_for('profile') }}"
-               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
-              My Profile
-            </a>
             <a href="{{ url_for('studio') }}"
                class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
               My Account
@@ -157,8 +163,8 @@
       </nav>
 
       <!-- Mobile: spacer to keep logo centered -->
-      <div class="lg:hidden flex-1" aria-hidden="true"></div>
-      <div class="lg:hidden w-10 shrink-0" aria-hidden="true"></div>
+      <div class="md:hidden flex-1" aria-hidden="true"></div>
+      <div class="md:hidden w-10 shrink-0" aria-hidden="true"></div>
     </div>
   </header>
 
@@ -316,6 +322,7 @@
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="search_title" id="subscribe-search-title" value="">
         <input type="hidden" name="search_country" id="subscribe-search-country" value="">
         <input type="hidden" name="search_salary_band" id="subscribe-search-salary-band" value="">
@@ -538,11 +545,27 @@
     </div>
   </nav>
 
-  <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/main.js', v=asset_version) }}"></script>
   {% block body_extra %}{% endblock %}
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
+        var isLocal =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1';
+        if (isLocal) {
+          navigator.serviceWorker.getRegistrations().then(function(regs) {
+            regs.forEach(function(reg) { reg.unregister(); });
+          });
+          if ('caches' in window) {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(key) {
+                if (key.indexOf('catalitium-') === 0) caches.delete(key);
+              });
+            });
+          }
+          return;
+        }
         navigator.serviceWorker.register('/sw.js').catch(function(){});
       });
     }
