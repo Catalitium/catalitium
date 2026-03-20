@@ -68,10 +68,6 @@ def _truthy(value: str | None) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_DEFAULT_SQLITE_PATH = str(PROJECT_ROOT / "data" / "catalitium.db")
-
-def _sqlite_path() -> str:
-    return os.getenv("DB_PATH") or _DEFAULT_SQLITE_PATH
 
 # Prefer DATABASE_URL for Postgres; fallback to SUPABASE_URL for backwards-compat
 _SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
@@ -183,6 +179,7 @@ def insert_subscriber(
     email: str,
     search_title: str = "",
     search_country: str = "",
+    search_salary_band: str = "",
 ) -> str:
     """Insert a subscriber record; return 'ok', 'duplicate', or 'error'."""
     db = get_db()
@@ -190,10 +187,10 @@ def insert_subscriber(
         with db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO subscribers(email, created_at, search_title, search_country)
-                VALUES(%s, %s, %s, %s)
+                INSERT INTO subscribers(email, created_at, search_title, search_country, search_salary_band)
+                VALUES(%s, %s, %s, %s, %s)
                 """,
-                (email, _now_iso(), search_title or None, search_country or None),
+                (email, _now_iso(), search_title or None, search_country or None, search_salary_band or None),
             )
         return "ok"
     except Exception as exc:
@@ -302,20 +299,6 @@ def parse_job_description(text: str) -> str:
     t = clean_job_description_text(text or "")
     return summarize_two_sentences(t)
 
-def _ensure_sqlite_columns(db, table: str, definitions: Dict[str, str]) -> None:
-    try:
-        rows = db.execute(f"PRAGMA table_info('{table}')").fetchall()
-    except Exception as exc:
-        logger.debug("Unable to inspect %s columns: %s", table, exc)
-        return
-    existing = {row[1] for row in rows}
-    for column, ddl in definitions.items():
-        if column not in existing:
-            try:
-                db.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
-            except Exception as exc:
-                logger.debug("Unable to add %s to %s: %s", column, table, exc)
-
 def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> None:
     try:
         with db.cursor() as cur:
@@ -361,6 +344,20 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_api_keys_active_email
                     ON api_keys (email) WHERE is_active = TRUE
             """)
+            # Ensure subscribers has salary_band column
+            cur.execute(
+                "ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS search_salary_band TEXT"
+            )
+            # Jobs search indexes (safe on existing table)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_jobs_title_norm ON jobs(job_title_norm)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_jobs_date ON jobs(date DESC)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_jobs_location ON jobs(LOWER(location))"
+            )
             db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
@@ -681,10 +678,10 @@ class Job:
         cached = Job._cache_get_count(key)
         if cached is not None:
             return cached
-        where_sql, _params_sqlite, params_pg = Job._where(title, country)
+        where_sql, params_pg = Job._where(title, country)
         db = get_db()
         with db.cursor() as cur:
-            cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql['pg']}", params_pg)
+            cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql}", params_pg)
             row = cur.fetchone()
             value = int(row[0] if row else 0)
             Job._cache_set_count(key, value)
@@ -707,9 +704,9 @@ class Job:
         cached = Job._cache_get_search(key)
         if cached is not None:
             return cached
-        where_sql, _params_sqlite, params_pg = Job._where(title, country)
+        where_sql, params_pg = Job._where(title, country)
         db = get_db()
-        where_clause = where_sql["pg"]
+        where_clause = where_sql
         params = list(params_pg)
         # Use the existing textual salary column and expose it to callers
         # as job_salary_range for compatibility with API consumers.
@@ -898,11 +895,9 @@ class Job:
         return link.strip() if isinstance(link, str) else None
 
     @staticmethod
-    def _where(title: Optional[str], country: Optional[str]) -> Tuple[Dict[str, str], Tuple[str, ...], Tuple[str, ...]]:
+    def _where(title: Optional[str], country: Optional[str]) -> Tuple[str, Tuple[str, ...]]:
         clauses_pg: List[str] = []
-        clauses_sqlite: List[str] = []
         params_pg: List[str] = []
-        params_sqlite: List[str] = []
 
         if title:
             t_norm = Job._normalize_title(title)
@@ -919,22 +914,16 @@ class Job:
                 if core_query:
                     like = f"%{Job._escape_like(core_query)}%"
                     clause_pg = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\')"
-                    clause_sqlite = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\')"
                     clauses_pg.append(clause_pg)
-                    clauses_sqlite.append(clause_sqlite)
                     params_pg.extend([like, like])
-                    params_sqlite.extend([like, like])
 
                 # Remote flag: look for 'remote' in title or location, but
                 # avoid scanning job_description.
                 if remote_flag:
                     remote_like = f"%{Job._escape_like('remote')}%"
                     clause_pg_remote = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\' OR LOWER(location) LIKE %s ESCAPE '\\')"
-                    clause_sqlite_remote = "(job_title_norm LIKE ? ESCAPE '\\' OR LOWER(job_title) LIKE ? ESCAPE '\\' OR LOWER(location) LIKE ? ESCAPE '\\')"
                     clauses_pg.append(clause_pg_remote)
-                    clauses_sqlite.append(clause_sqlite_remote)
                     params_pg.extend([remote_like, remote_like, remote_like])
-                    params_sqlite.extend([remote_like, remote_like, remote_like])
 
                 # Developer-style queries: bias towards software/dev titles,
                 # but again restrict to title fields only.
@@ -942,7 +931,6 @@ class Job:
                     dev_terms = ["developer", "programmer", "coder", "software developer", "software engineer"]
                     patterns = [f"%{Job._escape_like(term)}%" for term in dev_terms]
                     clause_pg_terms: List[str] = []
-                    clause_sqlite_terms: List[str] = []
                     for _ in dev_terms:
                         clause_pg_terms.extend(
                             [
@@ -950,19 +938,10 @@ class Job:
                                 "LOWER(job_title) LIKE %s ESCAPE '\\'",
                             ]
                         )
-                        clause_sqlite_terms.extend(
-                            [
-                                "job_title_norm LIKE ? ESCAPE '\\'",
-                                "LOWER(job_title) LIKE ? ESCAPE '\\'",
-                            ]
-                        )
                     clause_pg_dev = "(" + " OR ".join(clause_pg_terms) + ")"
-                    clause_sqlite_dev = "(" + " OR ".join(clause_sqlite_terms) + ")"
                     clauses_pg.append(clause_pg_dev)
-                    clauses_sqlite.append(clause_sqlite_dev)
                     for pattern in patterns:
                         params_pg.extend([pattern, pattern])
-                        params_sqlite.extend([pattern, pattern])
 
         if country:
             c_raw = (country or "").strip().lower()
@@ -989,23 +968,18 @@ class Job:
                 ]
 
                 subclauses_pg: List[str] = []
-                subclauses_sqlite: List[str] = []
                 columns_to_search = ("location", "city", "region", "country")
 
                 if upper == "UK":
                     stop_terms = ("tukums", "latvia")
                     block_pg: List[str] = []
-                    block_sqlite: List[str] = []
                     for term in stop_terms:
                         pattern = f"%{Job._escape_like(term)}%"
                         for column in ("location", "city", "region"):
                             block_pg.append(f"LOWER(COALESCE({column}, '')) NOT LIKE %s ESCAPE '\\'")
-                            block_sqlite.append(f"LOWER(COALESCE({column}, '')) NOT LIKE ? ESCAPE '\\'")
                             params_pg.append(pattern)
-                            params_sqlite.append(pattern)
                     if block_pg:
                         clauses_pg.append("(" + " AND ".join(block_pg) + ")")
-                        clauses_sqlite.append("(" + " AND ".join(block_sqlite) + ")")
 
                 if upper == "HIGH_PAY":
                     high_pay_cities = [
@@ -1018,110 +992,73 @@ class Job:
                         "london",
                     ]
                     placeholders_pg = ", ".join(["%s"] * len(high_pay_cities))
-                    placeholders_sqlite = ", ".join(["?"] * len(high_pay_cities))
                     city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({placeholders_pg})"
-                    city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({placeholders_sqlite})"
                     params_pg.extend([c.lower() for c in high_pay_cities])
-                    params_sqlite.extend([c.lower() for c in high_pay_cities])
                     subclauses_pg.append(city_clause_pg)
-                    subclauses_sqlite.append(city_clause_sqlite)
                 elif upper == "EU":
                     # Exact country codes + key hubs; avoid wide LIKE scans.
                     eu_codes = sorted(Job._EU_FILTER_CODES)
                     placeholders_pg = ", ".join(["%s"] * len(eu_codes))
-                    placeholders_sqlite = ", ".join(["?"] * len(eu_codes))
                     country_clause_pg = f"LOWER(COALESCE(country, '')) IN ({placeholders_pg})"
-                    country_clause_sqlite = f"LOWER(COALESCE(country, '')) IN ({placeholders_sqlite})"
                     params_pg.extend([c.lower() for c in eu_codes])
-                    params_sqlite.extend([c.lower() for c in eu_codes])
                     subclauses_pg.append(country_clause_pg)
-                    subclauses_sqlite.append(country_clause_sqlite)
 
                     if eu_hubs:
                         hub_placeholders_pg = ", ".join(["%s"] * len(eu_hubs))
-                        hub_placeholders_sqlite = ", ".join(["?"] * len(eu_hubs))
                         city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
-                        city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_sqlite})"
                         params_pg.extend([h.lower() for h in eu_hubs])
-                        params_sqlite.extend([h.lower() for h in eu_hubs])
                         subclauses_pg.append(city_clause_pg)
-                        subclauses_sqlite.append(city_clause_sqlite)
                 elif code == "IN":
                     # Strict match on country plus key Indian cities.
                     subclauses_pg.append("LOWER(COALESCE(country, '')) = %s")
-                    subclauses_sqlite.append("LOWER(COALESCE(country, '')) = ?")
                     params_pg.append("in")
-                    params_sqlite.append("in")
 
                     hub_placeholders_pg = ", ".join(["%s"] * len(india_hubs))
-                    hub_placeholders_sqlite = ", ".join(["?"] * len(india_hubs))
                     city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
-                    city_clause_sqlite = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_sqlite})"
                     params_pg.extend([h.lower() for h in india_hubs])
-                    params_sqlite.extend([h.lower() for h in india_hubs])
                     subclauses_pg.append(city_clause_pg)
-                    subclauses_sqlite.append(city_clause_sqlite)
                 elif upper == "CH":
                     swiss_like_pg: List[str] = []
-                    swiss_like_sqlite: List[str] = []
                     for term in SWISS_LOCATION_TERMS:
                         pattern = f"%{Job._escape_like(term)}%"
                         swiss_like_pg.append("LOWER(COALESCE(location, '')) LIKE %s ESCAPE '\\'")
-                        swiss_like_sqlite.append("LOWER(COALESCE(location, '')) LIKE ? ESCAPE '\\'")
                         params_pg.append(pattern)
-                        params_sqlite.append(pattern)
                     if swiss_like_pg:
                         subclauses_pg.append("(" + " OR ".join(swiss_like_pg) + ")")
-                        subclauses_sqlite.append("(" + " OR ".join(swiss_like_sqlite) + ")")
                 elif code:
                     patterns_like, equals_exact = Job._country_patterns({code})
                     if equals_exact:
                         eq_pg = []
-                        eq_sqlite = []
                         for value in equals_exact:
                             value_lower = value.lower()
                             for column in columns_to_search:
                                 eq_pg.append(f"LOWER(COALESCE({column}, '')) = %s")
-                                eq_sqlite.append(f"LOWER(COALESCE({column}, '')) = ?")
                                 params_pg.append(value_lower)
-                                params_sqlite.append(value_lower)
                         if eq_pg:
                             subclauses_pg.append("(" + " OR ".join(eq_pg) + ")")
-                            subclauses_sqlite.append("(" + " OR ".join(eq_sqlite) + ")")
                     if patterns_like:
                         like_pg = []
-                        like_sqlite = []
                         for pattern in patterns_like:
                             for column in columns_to_search:
                                 like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
-                                like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
                                 params_pg.append(pattern)
-                                params_sqlite.append(pattern)
                         if like_pg:
                             subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
-                            subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
                 else:
                     pattern = f"%{Job._escape_like(c_raw)}%"
                     like_pg = []
-                    like_sqlite = []
                     for column in columns_to_search:
                         like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
-                        like_sqlite.append(f"LOWER(COALESCE({column}, '')) LIKE ? ESCAPE '\\'")
                         params_pg.append(pattern)
-                        params_sqlite.append(pattern)
                     if like_pg:
                         subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
-                        subclauses_sqlite.append("(" + " OR ".join(like_sqlite) + ")")
 
                 if subclauses_pg:
                     clause_pg = "(" + " OR ".join(subclauses_pg) + ")"
-                    clause_sqlite = "(" + " OR ".join(subclauses_sqlite) + ")"
                     clauses_pg.append(clause_pg)
-                    clauses_sqlite.append(clause_sqlite)
 
         where_pg = f"WHERE {' AND '.join(clauses_pg)}" if clauses_pg else ""
-        where_sqlite = f"WHERE {' AND '.join(clauses_sqlite)}" if clauses_sqlite else ""
-        return {"pg": where_pg, "sqlite": where_sqlite}, tuple(params_sqlite), tuple(params_pg)
+        return where_pg, tuple(params_pg)
 
     @staticmethod
     def _order_by(country: Optional[str]) -> str:

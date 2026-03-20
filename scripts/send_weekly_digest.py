@@ -78,6 +78,7 @@ def build_email(subscriber: dict, jobs: list) -> str:
     email         = subscriber["email"]
     search_title  = (subscriber.get("search_title") or "").strip()
     search_country= (subscriber.get("search_country") or "").strip()
+    salary_band   = (subscriber.get("search_salary_band") or "").strip()
 
     if search_title and search_country:
         context_line = f"Top {search_title} jobs in {search_country} this week"
@@ -87,6 +88,8 @@ def build_email(subscriber: dict, jobs: list) -> str:
         context_line = f"Top tech jobs in {search_country} this week"
     else:
         context_line = "Top tech jobs this week"
+    if salary_band:
+        context_line += f" ({salary_band})"
 
     week = datetime.now(timezone.utc).strftime("%B %d, %Y")
     jobs_text = "\n".join(job_block(j) for j in jobs)
@@ -108,11 +111,11 @@ Reply 'unsubscribe' to be removed.
 def fetch_subscribers(conn) -> list:
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT email, search_title, search_country
+            SELECT email, search_title, search_country, search_salary_band
             FROM subscribers
             ORDER BY created_at
         """)
-        cols = ["email", "search_title", "search_country"]
+        cols = ["email", "search_title", "search_country", "search_salary_band"]
         return [dict(zip(cols, row)) for row in cur.fetchall()]
 
 

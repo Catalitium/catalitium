@@ -1304,7 +1304,7 @@ def create_app() -> Flask:
         next_url = (payload.get("next") or "").strip()
         if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
-        status = insert_subscriber(email, search_title=search_title, search_country=search_country)
+        status = insert_subscriber(email, search_title=search_title, search_country=search_country, search_salary_band=search_salary_band)
 
         if job_link:
             if status == "error":
