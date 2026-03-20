@@ -79,14 +79,16 @@
      crossorigin="anonymous" data-cookieconsent="marketing"></script>
   {% endif %}
   {% block head_extra %}{% endblock %}
+  {% if not is_production_env %}
   <style>
-    {% if not is_production_env %}
     /* Local dev safety: avoid full-page dim if browser/extensions leave a dialog open. */
     dialog::backdrop {
       background: transparent !important;
       backdrop-filter: none !important;
     }
-    {% endif %}
+  </style>
+  {% endif %}
+  <style>
     @media print {
       header, footer, nav, #ad-top, #ad-mid-article, #ad-bottom, .no-print, aside {
         display: none !important;
