@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}My Studio | Catalitium{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl px-4 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Your dashboard</p>
+      <h1 class="mt-1 text-2xl font-semibold text-slate-900">Welcome back</h1>
+      <p class="mt-1 text-sm text-slate-500">{{ user.email }}</p>
+    </div>
+    <form method="post" action="{{ url_for('logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit"
+              class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-colors">
+        Sign out
+      </button>
+    </form>
+  </div>
+
+  <div class="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-8 text-center">
+    <p class="text-base font-medium text-slate-700">Saved searches</p>
+    <p class="mt-2 text-sm text-slate-400">No saved searches yet. Search for jobs and save your filters.</p>
+    <a href="{{ url_for('index') }}"
+       class="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      Browse jobs
+    </a>
+  </div>
+
+  <div class="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-6">
+    <p class="text-base font-medium text-slate-700">My profile</p>
+    <p class="mt-2 text-sm text-slate-500">Add your basics so Catalitium can personalize your experience.</p>
+    <a href="{{ url_for('profile') }}"
+       class="mt-4 inline-flex items-center gap-2 rounded-xl border border-brand/30 bg-brand/5 px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/10 transition-colors">
+      Edit profile
+    </a>
+  </div>
+
+  {% if user.get("account_type") in ['recruiter', 'company'] %}
+  <div class="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-6">
+    <p class="text-base font-medium text-slate-700">Hire</p>
+    <p class="mt-2 text-sm text-slate-500">Access your recruiter workspace and keep company details updated.</p>
+    <a href="{{ url_for('hire') }}"
+       class="mt-4 inline-flex items-center gap-2 rounded-xl border border-brand/30 bg-brand/5 px-4 py-2 text-sm font-semibold text-brand hover:bg-brand/10 transition-colors">
+      Open Hire
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-6">
+    <p class="text-base font-medium text-slate-700">Account actions</p>
+    <p class="mt-2 text-sm text-slate-500">Need to leave quickly or close your account?</p>
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit"
+                class="inline-flex items-center rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:text-slate-900 transition-colors">
+          Sign out
+        </button>
+      </form>
+      <a href="{{ url_for('profile') }}"
+         class="inline-flex items-center rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-100 transition-colors">
+        Manage account
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
