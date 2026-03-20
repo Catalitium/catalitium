@@ -255,45 +255,82 @@
 
     {% block content %}{% endblock %}
   </main>
-
   <!-- Footer -->
   <footer class="mt-16 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-    <div class="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-6 transition-colors duration-300">
-      <div class="flex flex-col gap-2.5">
-        <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0">
-          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24">
-          <span class="font-semibold tracking-tight text-slate-800 dark:text-slate-200">Catalitium</span>
-        </a>
-        <p class="text-xs">&copy; 2026 Catalitium &mdash; High-signal tech talent.</p>
-        <div class="flex items-center gap-2 mt-1 opacity-75">
+    <div class="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-500 transition-colors duration-300">
+      <div class="grid grid-cols-2 sm:grid-cols-[1fr_auto_auto_auto] gap-8">
+
+        <!-- Brand -->
+        <div class="col-span-2 sm:col-span-1 flex flex-col gap-2.5">
+          <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24">
+            <span class="font-semibold tracking-tight text-slate-800 dark:text-slate-200">Catalitium</span>
+          </a>
+          <p class="text-xs">&copy; 2026 Catalitium &mdash; High-signal tech talent.</p>
+          <div class="flex items-center gap-2 mt-1 opacity-75">
             <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">SOC 2 Type II</span>
             <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">GDPR Ready</span>
+          </div>
         </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-        <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
-        <a href="{{ url_for('pricing') }}" class="hover:text-brand font-semibold transition-colors">Pricing</a>
-        <a href="{{ url_for('companies') }}" class="hover:text-brand transition-colors">Companies</a>
-        <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About</a>
-        {% if session.get("user") %}
-        <a href="{{ url_for('hire') }}" class="hover:text-brand transition-colors text-brand font-semibold">Post a Job</a>
-        {% else %}
-        <a href="#" data-open-job-posting class="hover:text-brand transition-colors text-brand font-semibold">Post a Job</a>
-        {% endif %}
-        <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
-        <span class="text-slate-300 dark:text-slate-700">·</span>
-        <!-- Footer theme toggle -->
-        <div class="flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 gap-0.5" title="Switch theme">
-          <button id="theme-btn-light" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Light Mode">
-            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
-          </button>
-          <button id="theme-btn-dark" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Dark Mode">
-            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-          </button>
-          <button id="theme-btn-system" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="System Mode">
-            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-          </button>
+
+        <!-- Explore -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Explore</p>
+          <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
+          <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+          <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand transition-colors">Salaries</a>
+          <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
+          <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
+          <a href="{{ url_for('pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
+          <a href="{{ url_for('companies') }}" class="hover:text-brand transition-colors">Companies</a>
         </div>
+
+        <!-- Company -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Company</p>
+          <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About Us</a>
+          {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          {% else %}
+          <a href="#" data-open-job-posting class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          {% endif %}
+          <a href="#" data-open-contact class="hover:text-brand transition-colors">Contact Us</a>
+          <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
+          <button type="button" class="text-left hover:text-brand transition-colors" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
+        </div>
+
+        <!-- Account + Theme -->
+        <div class="flex flex-col gap-2">
+          <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Account</p>
+          {% if session.get("user") %}
+          <a href="{{ url_for('profile') }}" class="hover:text-brand transition-colors">My Profile</a>
+          <a href="{{ url_for('studio') }}" class="hover:text-brand transition-colors">My Account</a>
+          <form method="post" action="{{ url_for('logout') }}" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="text-left hover:text-brand transition-colors">Sign out</button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors">Sign in</a>
+          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Get started</a>
+          {% endif %}
+
+          <!-- Theme toggle -->
+          <div class="mt-3">
+            <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2">Theme</p>
+            <div class="flex items-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-0.5 gap-0.5 w-fit" title="Switch theme">
+              <button id="theme-btn-light" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Light Mode">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+              </button>
+              <button id="theme-btn-dark" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="Dark Mode">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+              </button>
+              <button id="theme-btn-system" type="button" class="p-1.5 rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors focus:outline-none" aria-label="System Mode">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </footer>
