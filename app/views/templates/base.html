@@ -29,8 +29,15 @@
   <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
   <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
+  <script>
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark')
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>tailwind.config={theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
+  <script>tailwind.config={darkMode: 'class',theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -86,7 +93,7 @@
     }
   </style>
 </head>
-<body class="min-h-screen bg-white text-slate-800 antialiased">
+<body class="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased transition-colors duration-300">
   <!-- Skip to main content (accessibility + Core Web Vitals) -->
   <a href="#content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-brand focus:text-white focus:rounded-lg focus:shadow-lg">
     Skip to main content
@@ -94,7 +101,7 @@
   <!-- Page loading progress bar -->
   <div id="page-progress" class="fixed top-0 left-0 h-0.5 bg-brand z-[100] transition-all duration-300 w-0 pointer-events-none" aria-hidden="true"></div>
   <!-- Compact Header (sticky) -->
-  <header class="sticky top-0 z-50 border-b border-slate-200 shadow-sm bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+  <header class="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70">
     <div class="mx-auto max-w-6xl px-4 h-14 flex items-center gap-3">
 
       <!-- Hamburger (mobile only, hidden on lg+) -->
@@ -108,20 +115,37 @@
       <!-- Logo -->
       <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0 mr-4">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo" decoding="async" loading="eager" fetchpriority="high" width="32" height="32">
-        <span class="font-semibold tracking-tight text-slate-900">Catalitium</span>
+        <span class="font-semibold tracking-tight text-slate-900 dark:text-white">Catalitium</span>
       </a>
 
       <!-- Desktop nav (lg+) -->
       <nav class="hidden lg:flex items-center gap-1 text-sm flex-1">
-        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 font-medium{% endif %}">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 font-medium{% endif %}">Research</a>
-<a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 font-medium{% endif %}">Salary Board</a>
-        <a href="{{ url_for('developers') }}" {% if request.endpoint == 'developers' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'developers' %}text-brand bg-slate-50 font-medium{% endif %}">API</a>
-        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg text-slate-600 hover:text-brand hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Digest</a>
+        <a href="{{ url_for('about') }}" {% if request.endpoint == 'about' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'about' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">About</a>
+        <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
+        <a href="{{ url_for('market_research_index') }}"
+           class="transition-colors hover:text-brand px-3 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50
+                  {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium aria-current="page"{% else %}text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+          Market Research
+        </a>
+        <a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salary Board</a>
+        <a href="{{ url_for('developers') }}" {% if request.endpoint == 'developers' %}aria-current="page"{% endif %} class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors {% if request.endpoint == 'developers' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">API</a>
+        <a href="#" data-open-subscribe class="px-3 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Digest</a>
 
         <div class="ml-auto flex items-center gap-2">
-          <div class="border-l border-slate-200 h-5"></div>
-          <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
+          <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-sm" title="Theme">
+            <button id="theme-btn-light" type="button" class="p-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none" aria-label="Light Mode">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><title>Light Mode</title><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+            </button>
+            <button id="theme-btn-dark" type="button" class="p-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none" aria-label="Dark Mode">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><title>Dark Mode</title><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+            </button>
+            <button id="theme-btn-system" type="button" class="p-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none" aria-label="System Mode">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><title>System Mode</title><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            </button>
+          </div>
+          <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
+          <a href="{{ url_for('pricing') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Try Agent</a>
+          <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-md hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Post Job</a>
         </div>
       </nav>
 
@@ -187,11 +211,11 @@
 
       <!-- Primary nav links -->
       <ul class="mt-3 space-y-1 text-base">
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('index') }}">Jobs</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salary Board</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
@@ -221,22 +245,26 @@
   </main>
 
   <!-- Footer -->
-  <footer class="mt-16 border-t border-slate-200">
-    <!-- Auto Ads zone: Google inserts ad here automatically when Auto Ads is ON in AdSense dashboard -->
-    <!-- To use a manual unit instead: replace this comment with an <ins> block using a real data-ad-slot ID -->
-    <div class="mx-auto max-w-6xl px-4 pt-2 min-h-[50px]" aria-label="Advertisement" data-ad-zone="footer"></div>
-    <div class="mx-auto max-w-6xl px-4 py-6 text-xs sm:text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <p>&copy; 2026 Catalitium &mdash; Empowering tech talent.</p>
+  <footer class="mt-16 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+    <div class="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-6 transition-colors duration-300">
+      <div class="flex flex-col gap-2.5">
+        <a href="{{ url_for('index') }}" class="flex items-center gap-2 shrink-0">
+          <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24">
+          <span class="font-semibold tracking-tight text-slate-800 dark:text-slate-200">Catalitium</span>
+        </a>
+        <p class="text-xs">&copy; 2026 Catalitium &mdash; High-signal tech talent.</p>
+        <div class="flex items-center gap-2 mt-1 opacity-75">
+            <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">SOC 2 Type II</span>
+            <span class="inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-2.5 py-1 rounded text-[11px] font-semibold text-slate-600 dark:text-slate-400">GDPR Ready</span>
+        </div>
+      </div>
       <div class="flex flex-wrap items-center gap-3 sm:gap-4">
-        <a href="{{ url_for('index') }}" class="hover:text-brand">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" class="hover:text-brand font-semibold">Market Research</a>
-        <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand">Salary Board</a>
-        <a href="{{ url_for('about') }}" class="hover:text-brand">About</a>
-        <a href="#" data-open-subscribe class="hover:text-brand">Weekly Digest</a>
-        <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
-        <a href="#" data-open-contact class="hover:text-brand">Contact</a>
-        <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
-        <button type="button" class="hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
+        <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Jobs</a>
+        <a href="{{ url_for('pricing') }}" class="hover:text-brand font-semibold transition-colors">Pricing</a>
+        <a href="{{ url_for('companies') }}" class="hover:text-brand transition-colors">Companies</a>
+        <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About</a>
+        <a href="#" data-open-job-posting class="hover:text-brand transition-colors text-brand font-semibold">Post a Job</a>
+        <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
       </div>
     </div>
   </footer>
@@ -485,6 +513,44 @@
         navigator.serviceWorker.register('/sw.js').catch(function(){});
       });
     }
+    var btnLight = document.getElementById('theme-btn-light');
+    var btnDark = document.getElementById('theme-btn-dark');
+    var btnSystem = document.getElementById('theme-btn-system');
+
+    function updateThemeUI() {
+      btnLight.classList.remove('text-brand', 'border-brand', 'dark:text-white', 'dark:border-white');
+      btnDark.classList.remove('text-brand', 'border-brand', 'dark:text-white', 'dark:border-white');
+      btnSystem.classList.remove('text-brand', 'border-brand', 'dark:text-white', 'dark:border-white');
+
+      if (localStorage.getItem('color-theme') === 'dark') {
+          btnDark.classList.add('dark:text-white', 'dark:border-white');
+      } else if (localStorage.getItem('color-theme') === 'light') {
+          btnLight.classList.add('text-brand', 'border-brand');
+      } else {
+          btnSystem.classList.add('text-brand', 'border-brand', 'dark:text-white', 'dark:border-white');
+      }
+    }
+    updateThemeUI();
+
+    btnLight.addEventListener('click', function() {
+        localStorage.setItem('color-theme', 'light');
+        document.documentElement.classList.remove('dark');
+        updateThemeUI();
+    });
+    btnDark.addEventListener('click', function() {
+        localStorage.setItem('color-theme', 'dark');
+        document.documentElement.classList.add('dark');
+        updateThemeUI();
+    });
+    btnSystem.addEventListener('click', function() {
+        localStorage.removeItem('color-theme');
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        updateThemeUI();
+    });
   </script>
 </body>
 </html>

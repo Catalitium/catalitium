@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Pricing | Catalitium AI Agent{% endblock %}
+
+{% block content %}
+<section class="pt-8 sm:pt-16 pb-12 max-w-5xl mx-auto px-4">
+  <div class="text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      Scale your job search with <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">AaaS</span>
+    </h1>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+      Start for free with high-signal job discovery. Upgrade to our Agent as a Service (AaaS) for auto-applications, custom deal sourcing, and personalized market intel.
+    </p>
+  </div>
+
+  <div class="mt-16 grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
+    <!-- Free Tier -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm flex flex-col">
+      <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Basic Search</h3>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Access our curated database with verified salary ranges.</p>
+      <div class="mt-6 flex items-baseline gap-1">
+        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
+        <span class="text-sm font-semibold text-slate-500">/ forever</span>
+      </div>
+      <ul class="mt-8 space-y-4 flex-1">
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Search 10,000+ curated tech roles
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Transparent salary insights
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Basic saved jobs tracking
+        </li>
+      </ul>
+      <a href="{{ url_for('index') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-center font-semibold hover:border-brand dark:hover:border-brand transition-colors">Start Searching</a>
+    </div>
+
+    <!-- Pro / AaaS Tier -->
+    <div class="rounded-3xl border-2 border-brand bg-slate-50 dark:bg-slate-900/50 p-8 shadow-xl relative flex flex-col transform md:-translate-y-4">
+      <div class="absolute top-0 right-8 transform -translate-y-1/2">
+        <span class="bg-brand text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Most Popular</span>
+      </div>
+      <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Pro Agent (AaaS)</h3>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Put your job search on autopilot with AI-driven applications.</p>
+      <div class="mt-6 flex items-baseline gap-1">
+        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$29</span>
+        <span class="text-sm font-semibold text-slate-500">/ month</span>
+      </div>
+      <ul class="mt-8 space-y-4 flex-1">
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span class="font-medium text-slate-900 dark:text-white">Everything in Basic, plus:</span>
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Auto-apply to matched jobs (Sonara style)
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Resume optimization agent
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          Weekly 1-on-1 interview practice AI
+        </li>
+      </ul>
+      <a href="#" class="mt-8 block w-full py-3 px-4 rounded-xl bg-brand text-white text-center font-semibold hover:bg-brand/90 transition-colors shadow-lg shadow-brand/20">Try Pro Agent Free</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

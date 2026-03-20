@@ -1995,6 +1995,16 @@ def create_app() -> Flask:
         """Render the About Catalitium page."""
         return render_template("about.html")
 
+    @app.get("/pricing")
+    def pricing():
+        """Render the AaaS Pricing page."""
+        return render_template("pricing.html")
+
+    @app.get("/companies")
+    def companies():
+        """Render the Companies spotlight page."""
+        return render_template("companies.html")
+
     # ------------------------------------------------------------------
     # Resources hub — 301 redirect to Market Research
     # ------------------------------------------------------------------
