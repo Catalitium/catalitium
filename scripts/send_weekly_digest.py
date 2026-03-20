@@ -104,7 +104,7 @@ Browse all jobs: {BASE_URL}
 
 {'=' * 50}
 You're receiving this because you subscribed at catalitium.com.
-Reply 'unsubscribe' to be removed.
+Unsubscribe: {BASE_URL}/unsubscribe
 """
 
 

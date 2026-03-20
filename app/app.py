@@ -543,7 +543,7 @@ Browse jobs now: {os.getenv("BASE_URL", "https://catalitium.com")}
 
 --
 Catalitium | info@catalitium.com
-Unsubscribe: reply with 'unsubscribe'
+Unsubscribe: {os.getenv("BASE_URL", "https://catalitium.com")}/unsubscribe
 """
     _send_mail(email, "You're on the Catalitium weekly digest", body)
 
