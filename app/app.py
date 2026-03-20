@@ -1136,13 +1136,13 @@ def create_app() -> Flask:
             rows = []
             total = 0
 
-        GUEST_JOB_LIMIT = 50
-        guest_limit_hit = False
-        if not session.get("user") and total > GUEST_JOB_LIMIT:
-            total = GUEST_JOB_LIMIT
-            offset_used = (max(1, page) - 1) * per_page
-            rows = rows[:max(0, GUEST_JOB_LIMIT - offset_used)]
-            guest_limit_hit = True
+        # Freemium gate: anonymous users see first page only; subscribers/accounts unlock all
+        subscribe_gate = False
+        is_unlocked = bool(session.get("user") or session.get("subscribed"))
+        if not is_unlocked and (q_title or q_country):
+            subscribe_gate = True
+            rows = rows[:12]
+            total = min(total, 12)
 
         items = []
         salary_cache = {}
@@ -1293,7 +1293,7 @@ def create_app() -> Flask:
             pagination=pagination,
             cat_ctx=cat_ctx,
             remote_count=remote_count,
-            guest_limit_hit=guest_limit_hit,
+            subscribe_gate=subscribe_gate,
         )
 
     @app.get("/remote")
@@ -1350,12 +1350,11 @@ def create_app() -> Flask:
         if total is None:
             total = len(rows)
 
-        # Cap results for unauthenticated requests
-        _GUEST_API_LIMIT = 50
-        if not session.get("user") and total > _GUEST_API_LIMIT:
-            total = _GUEST_API_LIMIT
-            _api_offset = (max(1, page) - 1) * per_page
-            rows = rows[:max(0, _GUEST_API_LIMIT - _api_offset)]
+        # Freemium gate for API: subscribers/accounts get full results
+        _is_unlocked = bool(session.get("user") or session.get("subscribed"))
+        if not _is_unlocked:
+            rows = rows[:12]
+            total = min(total if total is not None else 0, 12)
 
         items: List[Dict[str, Any]] = []
         for row in rows:
@@ -1568,6 +1567,11 @@ def create_app() -> Flask:
         if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
         status = insert_subscriber(email, search_title=search_title, search_country=search_country, search_salary_band=search_salary_band)
+
+        # Unlock freemium access for this session on successful subscribe or duplicate
+        if status in ("ok", "duplicate"):
+            session["subscribed"] = True
+            session.modified = True
 
         if job_link:
             if status == "error":
