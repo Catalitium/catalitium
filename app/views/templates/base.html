@@ -29,7 +29,8 @@
   <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com">
   <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
   <link rel="preconnect" href="https://consent.cookiebot.com" crossorigin>
-  <link rel="preload" href="{{ url_for('static', filename='css/tailwind.css') }}" as="style">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
@@ -55,7 +56,6 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
 
   <!-- Favicon -->
