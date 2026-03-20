@@ -19,6 +19,7 @@ from flask import (
     send_from_directory,
     abort,
     after_this_request,
+    session,
 )
 from email_validator import validate_email, EmailNotValidError
 from .models.db import (
@@ -77,6 +78,171 @@ try:
     from flask_compress import Compress as _Compress
 except Exception:  # pragma: no cover
     _Compress = None  # type: ignore[assignment]
+
+try:
+    from supabase import create_client as _sb_create_client
+except ImportError:
+    _sb_create_client = None
+
+_supabase_client = None
+_PROFILE_FIELDS = ("full_name", "headline", "location", "bio", "website")
+_ACCOUNT_TYPES = {"candidate", "recruiter", "company"}
+_HIRE_ACCOUNT_TYPES = {"recruiter", "company"}
+_HIRE_FIELDS = ("company_name", "company_website", "company_size", "hiring_regions")
+
+
+def _derive_supabase_project_url() -> str:
+    project_url = os.getenv("SUPABASE_PROJECT_URL", "").strip()
+    if project_url:
+        return project_url
+    db_url = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
+    if not db_url:
+        return ""
+    parsed = urlparse(db_url)
+    username = (parsed.username or "").strip()
+    if username.startswith("postgres."):
+        ref = username.split(".", 1)[1]
+        if ref:
+            return f"https://{ref}.supabase.co"
+    return ""
+
+
+def _get_supabase():
+    global _supabase_client
+    if _supabase_client is None and _sb_create_client:
+        project_url = _derive_supabase_project_url()
+        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+        if not project_url or not key:
+            logger.warning("Supabase auth client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
+            return None
+        try:
+            _supabase_client = _sb_create_client(project_url, key)
+        except Exception as exc:
+            logger.warning("Supabase auth client init failed: %s", exc)
+            return None
+    return _supabase_client
+
+
+def _clean_profile_data(raw: Dict[str, Any]) -> Dict[str, str]:
+    cleaned: Dict[str, str] = {}
+    for field in _PROFILE_FIELDS:
+        val = str(raw.get(field) or "").strip()
+        if field == "website" and val and not val.startswith(("http://", "https://")):
+            val = f"https://{val}"
+        if field == "bio":
+            val = val[:500]
+        cleaned[field] = val
+    return cleaned
+
+
+def _get_user_profile_metadata(user_id: str) -> tuple[Dict[str, str], Optional[str]]:
+    sb = _get_supabase()
+    if not sb:
+        return _clean_profile_data({}), "Auth service unavailable."
+    try:
+        res = sb.auth.admin.get_user_by_id(user_id)
+        sb_user = getattr(res, "user", None)
+        metadata = getattr(sb_user, "user_metadata", None) or {}
+        return _clean_profile_data(metadata), None
+    except Exception as exc:
+        logger.warning("profile read error (user_id=%s): %s", user_id, exc)
+        return _clean_profile_data({}), "Could not load your profile right now."
+
+
+def _save_user_profile_metadata(user_id: str, profile: Dict[str, Any]) -> Optional[str]:
+    sb = _get_supabase()
+    if not sb:
+        return "Auth service unavailable."
+    try:
+        # Always merge against the full auth metadata payload to avoid
+        # dropping unrelated keys like account_type/hire_access.
+        current, err = _get_auth_user_metadata(user_id)
+        if err and err != "Auth service unavailable.":
+            current = {}
+        merged = {**current, **_clean_profile_data(profile)}
+        sb.auth.admin.update_user_by_id(user_id, {"user_metadata": merged})
+        return None
+    except Exception as exc:
+        logger.warning("profile update error (user_id=%s): %s", user_id, exc)
+        return "Could not save your profile. Please try again."
+
+
+def _normalize_account_type(value: str) -> str:
+    account_type = (value or "").strip().lower()
+    return account_type if account_type in _ACCOUNT_TYPES else "candidate"
+
+
+def _is_hire_eligible(account_type: str, hire_access: bool) -> bool:
+    return account_type in _HIRE_ACCOUNT_TYPES and bool(hire_access)
+
+
+def _clean_hire_data(raw: Dict[str, Any]) -> Dict[str, str]:
+    cleaned = {
+        "company_name": str(raw.get("company_name") or "").strip()[:140],
+        "company_website": str(raw.get("company_website") or "").strip()[:250],
+        "company_size": str(raw.get("company_size") or "").strip()[:80],
+        "hiring_regions": str(raw.get("hiring_regions") or "").strip()[:200],
+    }
+    if cleaned["company_website"] and not cleaned["company_website"].startswith(("http://", "https://")):
+        cleaned["company_website"] = f"https://{cleaned['company_website']}"
+    return cleaned
+
+
+def _get_auth_user_metadata(user_id: str) -> tuple[Dict[str, Any], Optional[str]]:
+    sb = _get_supabase()
+    if not sb:
+        return {}, "Auth service unavailable."
+    try:
+        res = sb.auth.admin.get_user_by_id(user_id)
+        sb_user = getattr(res, "user", None)
+        metadata = getattr(sb_user, "user_metadata", None) or {}
+        return metadata, None
+    except Exception as exc:
+        logger.warning("auth metadata read error (user_id=%s): %s", user_id, exc)
+        return {}, "Could not load account data right now."
+
+
+def _update_auth_user_metadata(user_id: str, updates: Dict[str, Any]) -> Optional[str]:
+    sb = _get_supabase()
+    if not sb:
+        return "Auth service unavailable."
+    try:
+        current, err = _get_auth_user_metadata(user_id)
+        if err and err != "Auth service unavailable.":
+            current = {}
+        merged = {**current, **updates}
+        sb.auth.admin.update_user_by_id(user_id, {"user_metadata": merged})
+        return None
+    except Exception as exc:
+        logger.warning("auth metadata update error (user_id=%s): %s", user_id, exc)
+        return "Could not save account data right now."
+
+
+def _get_hire_metadata(user_id: str) -> tuple[Dict[str, str], Optional[str]]:
+    metadata, err = _get_auth_user_metadata(user_id)
+    hire_data = _clean_hire_data(metadata)
+    hire_data["account_type"] = _normalize_account_type(str(metadata.get("account_type") or "candidate"))
+    hire_data["hire_access"] = bool(metadata.get("hire_access"))
+    return hire_data, err
+
+
+def _delete_auth_user(user_id: str) -> Optional[str]:
+    sb = _get_supabase()
+    if not sb:
+        return "Auth service unavailable."
+    try:
+        sb.auth.admin.delete_user(user_id)
+        return None
+    except TypeError:
+        try:
+            sb.auth.admin.delete_user(user_id, should_soft_delete=False)
+            return None
+        except Exception as exc:
+            logger.warning("auth user delete error (user_id=%s): %s", user_id, exc)
+            return "Could not delete your account right now."
+    except Exception as exc:
+        logger.warning("auth user delete error (user_id=%s): %s", user_id, exc)
+        return "Could not delete your account right now."
 
 
 def _slugify(text: str) -> str:
@@ -598,6 +764,28 @@ def create_app() -> Flask:
     @app.before_request
     def assign_request_id():
         g.request_id = generate_request_id()
+
+    def _csrf_token() -> str:
+        token = session.get("_csrf_token")
+        if not token:
+            token = secrets.token_urlsafe(32)
+            session["_csrf_token"] = token
+        return str(token)
+
+    @app.context_processor
+    def inject_csrf_token():
+        return {"csrf_token": _csrf_token}
+
+    def _csrf_valid() -> bool:
+        expected = str(session.get("_csrf_token") or "")
+        provided = (
+            request.form.get("csrf_token")
+            or request.headers.get("X-CSRF-Token")
+            or ""
+        ).strip()
+        if not expected or not provided:
+            return False
+        return secrets.compare_digest(expected, provided)
 
     def _api_request() -> bool:
         path = request.path or ""
@@ -1374,12 +1562,202 @@ def create_app() -> Flask:
         """Alias JSON endpoint for compatibility."""
         return subscribe()
 
+    @app.route("/register", methods=["GET", "POST"])
+    @_limit("10 per minute")
+    def register():
+        if session.get("user"):
+            return redirect(url_for("studio"))
+        if request.method == "GET":
+            return render_template("register.html", tab="login", account_type="candidate")
+
+        action = request.form.get("action", "signup")
+        if action not in {"signup", "login"}:
+            action = "login"
+        email = (request.form.get("email") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        account_type = _normalize_account_type(request.form.get("account_type", "candidate"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return render_template("register.html", tab=action, account_type=account_type), 400
+        try:
+            email = validate_email(email, check_deliverability=False).normalized
+        except Exception:
+            flash("Please enter a valid email.", "error")
+            return render_template("register.html", tab=action, account_type=account_type), 400
+
+        sb = _get_supabase()
+        if not sb:
+            flash("Auth service unavailable.", "error")
+            return render_template("register.html", tab=action, account_type=account_type), 503
+        try:
+            if action == "signup":
+                res = sb.auth.sign_up({"email": email, "password": password})
+            else:
+                res = sb.auth.sign_in_with_password({"email": email, "password": password})
+            user = res.user
+            if not user:
+                flash("Invalid credentials. Please try again.", "error")
+                return render_template("register.html", tab=action, account_type=account_type), 401
+            user_id = str(user.id)
+            user_metadata = getattr(user, "user_metadata", None) or {}
+            existing_type = _normalize_account_type(str(user_metadata.get("account_type") or "candidate"))
+            target_type = account_type if action == "signup" else existing_type
+            existing_hire_access = bool(user_metadata.get("hire_access"))
+            if target_type != existing_type:
+                metadata_err = _update_auth_user_metadata(user_id, {"account_type": target_type, "hire_access": False})
+                if metadata_err and action == "signup":
+                    flash(metadata_err, "error")
+                    return render_template("register.html", tab=action, account_type=account_type), 503
+            session["user"] = {
+                "id": user_id,
+                "email": user.email,
+                "account_type": target_type,
+                "hire_access": existing_hire_access if action == "login" else False,
+            }
+            return redirect(url_for("studio"))
+        except Exception as exc:
+            logger.warning("auth error (%s): %s", action, exc)
+            flash("Authentication failed. Please try again.", "error")
+            return render_template("register.html", tab=action, account_type=account_type), 400
+
+    @app.route("/logout", methods=["GET", "POST"])
+    def logout():
+        if request.method == "GET":
+            return redirect(url_for("index"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("index"))
+        session.pop("user", None)
+        return redirect(url_for("index"))
+
+    @app.post("/account/delete")
+    @_limit("5 per hour")
+    def account_delete():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("profile"))
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            session.pop("user", None)
+            flash("Please sign in again.", "error")
+            return redirect(url_for("register"))
+        delete_confirmation = (request.form.get("confirm_delete") or "").strip()
+        if delete_confirmation != "DELETE":
+            flash("Type DELETE to confirm account deletion.", "error")
+            return redirect(url_for("profile"))
+        err = _delete_auth_user(user_id)
+        if err:
+            flash(err, "error")
+            return redirect(url_for("profile"))
+        session.pop("user", None)
+        flash("Your account has been deleted.", "success")
+        return redirect(url_for("index"))
+
+    @app.get("/studio")
+    def studio():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        return render_template("studio.html", user=user)
+
+    @app.route("/profile", methods=["GET", "POST"])
+    @_limit("10 per minute")
+    def profile():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            session.pop("user", None)
+            flash("Please sign in again.", "error")
+            return redirect(url_for("register"))
+        if request.method == "GET":
+            profile_data, err = _get_user_profile_metadata(user_id)
+            if err and err != "Auth service unavailable.":
+                flash(err, "error")
+            return render_template("profile.html", user=user, profile=profile_data)
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("profile"))
+        payload = {field: (request.form.get(field) or "").strip() for field in _PROFILE_FIELDS}
+        err = _save_user_profile_metadata(user_id, payload)
+        if err:
+            flash(err, "error")
+            return render_template("profile.html", user=user, profile=_clean_profile_data(payload)), 503 if "unavailable" in err.lower() else 400
+        flash("Profile updated.", "success")
+        return redirect(url_for("profile"))
+
+    @app.get("/hire")
+    def hire():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            session.pop("user", None)
+            return redirect(url_for("register"))
+        hire_data, err = _get_hire_metadata(user_id)
+        if err and err != "Auth service unavailable.":
+            flash(err, "error")
+        account_type = hire_data.get("account_type", "candidate")
+        hire_access = bool(hire_data.get("hire_access"))
+        session["user"]["account_type"] = account_type
+        session["user"]["hire_access"] = hire_access
+        if not _is_hire_eligible(account_type, hire_access):
+            flash("Complete your company setup to access Hire.", "error")
+            return redirect(url_for("hire_onboarding"))
+        return render_template("hire.html", user=user, hire=hire_data)
+
+    @app.route("/hire/onboarding", methods=["GET", "POST"])
+    @_limit("10 per minute")
+    def hire_onboarding():
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            session.pop("user", None)
+            return redirect(url_for("register"))
+        if request.method == "GET":
+            hire_data, err = _get_hire_metadata(user_id)
+            if err and err != "Auth service unavailable.":
+                flash(err, "error")
+            return render_template("hire_onboarding.html", user=user, hire=hire_data)
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("hire_onboarding"))
+        account_type = _normalize_account_type(request.form.get("account_type", "company"))
+        payload = {field: request.form.get(field) or "" for field in _HIRE_FIELDS}
+        cleaned = _clean_hire_data(payload)
+        if account_type not in _HIRE_ACCOUNT_TYPES:
+            flash("Select recruiter or company account type.", "error")
+            return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
+        if len(cleaned["company_name"]) < 2:
+            flash("Please enter a valid company name.", "error")
+            return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
+        err = _update_auth_user_metadata(user_id, {**cleaned, "account_type": account_type, "hire_access": True})
+        if err:
+            flash(err, "error")
+            return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 503 if "unavailable" in err.lower() else 400
+        session["user"]["account_type"] = account_type
+        session["user"]["hire_access"] = True
+        flash("Company profile saved. Welcome to Hire.", "success")
+        return redirect(url_for("hire"))
+
     @app.post("/contact")
     @_limit("12 per minute")
     def contact():
         """Handle contact form submissions (JSON or form)."""
         is_json = request.is_json
         payload = request.get_json(silent=True) or {} if is_json else request.form
+        if not _csrf_valid():
+            if is_json:
+                return jsonify({"error": "invalid_csrf"}), 400
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("index"))
         email_raw = (payload.get("email") or "").strip()
         name_raw = (payload.get("name") or payload.get("name_company") or payload.get("company") or "").strip()
         message_raw = (payload.get("message") or "").strip()
@@ -1429,6 +1807,11 @@ def create_app() -> Flask:
         """Handle anonymous job posting submissions (JSON or form)."""
         is_json = request.is_json
         payload = request.get_json(silent=True) or {} if is_json else request.form
+        if not _csrf_valid():
+            if is_json:
+                return jsonify({"error": "invalid_csrf"}), 400
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("index"))
 
         contact_email_raw = (payload.get("contact_email") or payload.get("email") or "").strip()
         job_title_raw = (payload.get("job_title") or "").strip()

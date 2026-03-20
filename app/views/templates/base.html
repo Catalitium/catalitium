@@ -121,7 +121,38 @@
 
         <div class="ml-auto flex items-center gap-2">
           <div class="border-l border-slate-200 h-5"></div>
-          <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Submit job</a>
+          {% if session.get("user") %}
+            <a href="{{ url_for('hire') }}" class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          {% else %}
+            <a href="#" data-open-job-posting class="px-4 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 motion-safe:transition-colors">Employer / Post a job</a>
+          {% endif %}
+          <div class="border-l border-slate-200 h-5"></div>
+          {% if session.get("user") %}
+            <a href="{{ url_for('hire') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              Hire
+            </a>
+            <a href="{{ url_for('profile') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              My Profile
+            </a>
+            <a href="{{ url_for('studio') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              My Account
+            </a>
+            <form method="post" action="{{ url_for('logout') }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+                Sign out
+              </button>
+            </form>
+          {% else %}
+            <a href="{{ url_for('register') }}"
+               class="px-3 py-2 rounded-lg text-sm font-medium text-brand hover:bg-brand/5 transition-colors">
+              Sign in
+            </a>
+          {% endif %}
         </div>
       </nav>
 
@@ -169,10 +200,17 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span>Research</span>
         </a>
-        <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
-          <span class="font-semibold text-brand">Submit job</span>
-        </a>
+        {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+            <span class="font-semibold text-brand">Employer / Post a job</span>
+          </a>
+        {% else %}
+          <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors motion-safe:transition-transform hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+            <span class="font-semibold text-brand">Employer / Post a job</span>
+          </a>
+        {% endif %}
       </div>
 
       <!-- Inline quick search -->
@@ -193,10 +231,27 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Submit job</a></li>
+        {% if session.get("user") %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('hire') }}">Employer / Post a job</a></li>
+        {% else %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Employer / Post a job</a></li>
+        {% endif %}
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
         <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
+        {% if session.get("user") %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('hire') }}">Hire</a></li>
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('profile') }}">My Profile</a></li>
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand" href="{{ url_for('studio') }}">My Account</a></li>
+          <li>
+            <form method="post" action="{{ url_for('logout') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand">Sign out</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Sign in</a></li>
+        {% endif %}
       </ul>
     </div>
   </div>
@@ -233,7 +288,11 @@
         <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand">Salary Board</a>
         <a href="{{ url_for('about') }}" class="hover:text-brand">About</a>
         <a href="#" data-open-subscribe class="hover:text-brand">Weekly Digest</a>
-        <a href="#" data-open-job-posting class="hover:text-brand">Submit job</a>
+        {% if session.get("user") %}
+          <a href="{{ url_for('hire') }}" class="hover:text-brand">Employer / Post a job</a>
+        {% else %}
+          <a href="#" data-open-job-posting class="hover:text-brand">Employer / Post a job</a>
+        {% endif %}
         <a href="#" data-open-contact class="hover:text-brand">Contact</a>
         <a href="{{ url_for('legal') }}" class="hover:text-brand">Privacy &amp; Terms</a>
         <button type="button" class="hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button>
@@ -294,7 +353,8 @@
         Thanks for reaching out. We received your message.
       </div>
 
-      <form id="contactForm" class="mt-5 space-y-3">
+      <form id="contactForm" method="post" action="{{ url_for('contact') }}" class="mt-5 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
           <label class="block text-sm text-slate-700" for="contact-email">Email</label>
           <input id="contact-email"
@@ -355,7 +415,8 @@
         Thanks! We received your job submission.
       </div>
 
-      <form id="jobPostForm" class="mt-5 space-y-3">
+      <form id="jobPostForm" method="post" action="{{ url_for('job_posting') }}" class="mt-5 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="space-y-1">
           <label class="block text-sm text-slate-700" for="jobpost-email">Contact email</label>
           <input id="jobpost-email"
