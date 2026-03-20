@@ -13,8 +13,8 @@ except ImportError:  # pragma: no cover - dotenv is optional
 
 if load_dotenv:
     # Production path first; fall back to a local .env in the project root for dev
-    load_dotenv(dotenv_path="/opt/catalitium/.env", override=False)
-    load_dotenv(override=False)  # loads .env in cwd if not already set
+    load_dotenv(dotenv_path="/opt/catalitium/.env", override=True)
+    load_dotenv(override=True)  # loads .env in cwd if not already set
 
 
 def _current_env() -> str:
