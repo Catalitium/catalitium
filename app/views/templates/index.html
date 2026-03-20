@@ -530,6 +530,18 @@
 </nav>
 {% endif %}
 
+{% if guest_limit_hit %}
+<div class="mx-auto max-w-6xl mt-8 rounded-2xl bg-gradient-to-r from-brand/10 to-sky-500/10 border border-brand/20 p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+  <div class="flex-1">
+    <p class="font-semibold text-slate-900 dark:text-white text-base">You're seeing 50 of 85,000+ jobs</p>
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Create a free account to unlock the full database &mdash; no credit card needed.</p>
+  </div>
+  <a href="{{ url_for('register') }}" class="shrink-0 inline-block px-5 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand/90 transition-colors shadow shadow-brand/20">
+    Sign up free &rarr;
+  </a>
+</div>
+{% endif %}
+
 <!-- Subscribe dialog is defined globally in base.html -->
 {% endblock %}
 

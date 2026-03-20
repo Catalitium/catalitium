@@ -1136,6 +1136,13 @@ def create_app() -> Flask:
             rows = []
             total = 0
 
+        GUEST_JOB_LIMIT = 50
+        guest_limit_hit = False
+        if not session.get("user") and total > GUEST_JOB_LIMIT:
+            total = GUEST_JOB_LIMIT
+            offset_used = (max(1, page) - 1) * per_page
+            rows = rows[:max(0, GUEST_JOB_LIMIT - offset_used)]
+            guest_limit_hit = True
 
         items = []
         salary_cache = {}
@@ -1286,6 +1293,7 @@ def create_app() -> Flask:
             pagination=pagination,
             cat_ctx=cat_ctx,
             remote_count=remote_count,
+            guest_limit_hit=guest_limit_hit,
         )
 
     @app.get("/remote")
@@ -1341,6 +1349,13 @@ def create_app() -> Flask:
 
         if total is None:
             total = len(rows)
+
+        # Cap results for unauthenticated requests
+        _GUEST_API_LIMIT = 50
+        if not session.get("user") and total > _GUEST_API_LIMIT:
+            total = _GUEST_API_LIMIT
+            _api_offset = (max(1, page) - 1) * per_page
+            rows = rows[:max(0, _GUEST_API_LIMIT - _api_offset)]
 
         items: List[Dict[str, Any]] = []
         for row in rows:
@@ -1876,9 +1891,39 @@ def create_app() -> Flask:
     @app.post("/job-posting")
     @_limit("10 per minute")
     def job_posting():
-        """Handle anonymous job posting submissions (JSON or form)."""
+        """Handle recruiter job posting submissions (JSON or form).
+
+        Restricted to recruiter and company account types only.
+        """
         is_json = request.is_json
         payload = request.get_json(silent=True) or {} if is_json else request.form
+
+        # --- Auth: recruiter/company accounts only ---
+        user = session.get("user")
+        if not user:
+            if is_json:
+                return jsonify({"error": "auth_required"}), 401
+            flash("Sign in to post a job.", "error")
+            return redirect(url_for("register"))
+
+        account_type = (user.get("account_type") or "").lower()
+        if account_type not in ("recruiter", "company"):
+            if is_json:
+                return jsonify({"error": "recruiter_account_required"}), 403
+            flash("Job posting is available for recruiter and company accounts only.", "error")
+            return redirect(url_for("hire_onboarding"))
+
+        # --- Plan check (Elite/Premium gate — integration pending) ---
+        # Uncomment when payment tiers are live:
+        # user_plan = (user.get("plan") or "free").lower()
+        # if user_plan not in ("elite", "premium"):
+        #     if is_json:
+        #         return jsonify({"error": "plan_upgrade_required"}), 403
+        #     flash("Upgrade to Elite or Premium to post jobs.", "error")
+        #     return redirect(url_for("pricing"))
+
+        user_id = str(user.get("id") or "").strip() or None
+
         if not _csrf_valid():
             if is_json:
                 return jsonify({"error": "invalid_csrf"}), 400
@@ -1934,6 +1979,7 @@ def create_app() -> Flask:
             company=company_raw,
             description=description_raw,
             salary_range=salary_range_raw,
+            user_id=user_id,
         )
 
         if status != "ok":

@@ -34,9 +34,6 @@ def _normalize_pg_url(url: str) -> str:
     parsed = urlparse(url)
     hostname = parsed.hostname or ""
     port = parsed.port
-    # Supabase pooled hosts use pgbouncer on 6543; the UI sometimes shows 5432.
-    if hostname.endswith(".pooler.supabase.com") and (port is None or port == 5432):
-        port = 6543
     # Keep existing params and add safe defaults.
     query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)]
     # Drop params psycopg/libpq will reject (Supabase adds pgbouncer=true for pooled URLs).
@@ -236,6 +233,8 @@ def insert_contact(email: str, name_company: str, message: str) -> str:
         logger.warning("insert_contact failed: %s", exc, exc_info=True)
         return "error"
 
+JOB_POSTING_ACTIVE_DAYS = 10  # listings expire after this many days
+
 def insert_job_posting(
     *,
     contact_email: str,
@@ -243,15 +242,25 @@ def insert_job_posting(
     company: str,
     description: str,
     salary_range: Optional[str] = None,
+    user_id: Optional[str] = None,
 ) -> str:
-    """Insert an anonymous job posting submission; return 'ok' or 'error'."""
+    """Insert a recruiter job posting; return 'ok' or 'error'.
+
+    Listings are active for JOB_POSTING_ACTIVE_DAYS days from creation.
+    """
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=JOB_POSTING_ACTIVE_DAYS)
     db = get_db()
     try:
         with db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO job_posting(contact_email, job_title, company, description, salary_range, created_at)
-                VALUES(%s, %s, %s, %s, %s, %s)
+                INSERT INTO job_posting(
+                    contact_email, job_title, company, description,
+                    salary_range, user_id, expires_at, created_at
+                )
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     (contact_email or "").strip(),
@@ -259,7 +268,9 @@ def insert_job_posting(
                     (company or "").strip(),
                     (description or "").strip(),
                     (salary_range or "").strip() or None,
-                    _now_iso(),
+                    user_id or None,
+                    expires_at,
+                    now,
                 ),
             )
         return "ok"
@@ -364,6 +375,13 @@ def init_db():
             # Ensure subscribers has salary_band column
             cur.execute(
                 "ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS search_salary_band TEXT"
+            )
+            # Ensure job_posting has recruiter tracking columns
+            cur.execute(
+                "ALTER TABLE job_posting ADD COLUMN IF NOT EXISTS user_id TEXT"
+            )
+            cur.execute(
+                "ALTER TABLE job_posting ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ"
             )
             # Jobs search indexes (safe on existing table)
             cur.execute(

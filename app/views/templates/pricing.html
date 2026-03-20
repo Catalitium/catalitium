@@ -1,74 +1,160 @@
 {% extends "base.html" %}
-{% block title %}Pricing | Catalitium AI Agent{% endblock %}
+{% block title %}Pricing | Catalitium{% endblock %}
 
 {% block content %}
-<section class="pt-8 sm:pt-16 pb-12 max-w-5xl mx-auto px-4">
+<section class="pt-8 sm:pt-16 pb-16 max-w-5xl mx-auto px-4">
+
+  <!-- Header -->
   <div class="text-center">
     <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-      Scale your job search with <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">AaaS</span>
+      Simple, transparent <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">pricing</span>
     </h1>
     <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-      Start for free with high-signal job discovery. Upgrade to our Agent as a Service (AaaS) for auto-applications, custom deal sourcing, and personalized market intel.
+      Start free. Upgrade when your search gets serious.
     </p>
   </div>
 
-  <div class="mt-16 grid lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-    <!-- Free Tier -->
+  <!-- 3-Tier Grid -->
+  <div class="mt-14 grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+
+    <!-- Tier 1: Guest / Free Browse -->
     <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm flex flex-col">
-      <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Basic Search</h3>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Access our curated database with verified salary ranges.</p>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Free Browse</h3>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">No sign-up needed. Just search.</p>
       <div class="mt-6 flex items-baseline gap-1">
         <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
         <span class="text-sm font-semibold text-slate-500">/ forever</span>
       </div>
-      <ul class="mt-8 space-y-4 flex-1">
+      <ul class="mt-8 space-y-3 flex-1">
         <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Search 10,000+ curated tech roles
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Browse up to 50 jobs per search
         </li>
         <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Transparent salary insights
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Salary insights on every role
         </li>
         <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Basic saved jobs tracking
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          No account required
         </li>
       </ul>
-      <a href="{{ url_for('index') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-center font-semibold hover:border-brand dark:hover:border-brand transition-colors">Start Searching</a>
+      <a href="{{ url_for('index') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-center font-semibold hover:border-brand dark:hover:border-brand transition-colors">
+        Start Searching
+      </a>
     </div>
 
-    <!-- Pro / AaaS Tier -->
-    <div class="rounded-3xl border-2 border-brand bg-slate-50 dark:bg-slate-900/50 p-8 shadow-xl relative flex flex-col transform md:-translate-y-4">
-      <div class="absolute top-0 right-8 transform -translate-y-1/2">
+    <!-- Tier 2: Free Account (most popular) -->
+    <div class="rounded-3xl border-2 border-brand bg-slate-50 dark:bg-slate-900/50 p-8 shadow-xl relative flex flex-col lg:-translate-y-4">
+      <div class="absolute top-0 right-8 -translate-y-1/2">
         <span class="bg-brand text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Most Popular</span>
       </div>
-      <h3 class="text-xl font-semibold text-slate-900 dark:text-white">Pro Agent (AaaS)</h3>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Put your job search on autopilot with AI-driven applications.</p>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Free Account</h3>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Sign up once. Search the full database forever.</p>
+      <div class="mt-6 flex items-baseline gap-1">
+        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
+        <span class="text-sm font-semibold text-slate-500">/ forever</span>
+      </div>
+      <ul class="mt-8 space-y-3 flex-1">
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span class="font-medium text-slate-900 dark:text-white">Everything in Free Browse, plus:</span>
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Access 50,000+ curated tech roles
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Weekly high-signal job alerts
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Save jobs &amp; track applications
+        </li>
+        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Salary &amp; market benchmarks
+        </li>
+      </ul>
+      <a href="{{ url_for('register') }}" class="mt-8 block w-full py-3 px-4 rounded-xl bg-brand text-white text-center font-semibold hover:bg-brand/90 transition-colors shadow-lg shadow-brand/20">
+        Create Free Account
+      </a>
+    </div>
+
+    <!-- Tier 3: Pro (Coming Soon) -->
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm flex flex-col relative">
+      <div class="absolute top-0 right-8 -translate-y-1/2">
+        <span class="bg-slate-700 text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Coming Soon</span>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Pro Agent</h3>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Put your job search on autopilot with AI.</p>
       <div class="mt-6 flex items-baseline gap-1">
         <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$29</span>
         <span class="text-sm font-semibold text-slate-500">/ month</span>
       </div>
-      <ul class="mt-8 space-y-4 flex-1">
+      <ul class="mt-8 space-y-3 flex-1">
         <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          <span class="font-medium text-slate-900 dark:text-white">Everything in Basic, plus:</span>
+          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <span class="font-medium text-slate-900 dark:text-white">Everything in Free Account, plus:</span>
         </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Auto-apply to matched jobs (Sonara style)
+        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
+          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Auto-apply to matched jobs
         </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Resume optimization agent
+        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
+          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          AI resume optimization
         </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-          Weekly 1-on-1 interview practice AI
+        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
+          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Weekly interview practice AI
         </li>
       </ul>
-      <a href="#" class="mt-8 block w-full py-3 px-4 rounded-xl bg-brand text-white text-center font-semibold hover:bg-brand/90 transition-colors shadow-lg shadow-brand/20">Try Pro Agent Free</a>
+      <a href="{{ url_for('register') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-center font-semibold cursor-not-allowed opacity-70">
+        Join Waitlist
+      </a>
+    </div>
+
+  </div>
+
+  <!-- B2B Pay-per-Post -->
+  <div class="mt-14 max-w-3xl mx-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-6">
+      <div class="flex-1">
+        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand bg-brand/10 px-3 py-1 rounded-full mb-3">For Companies &amp; Recruiters</div>
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Post Jobs. Pay per Post.</h3>
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-lg">
+          Reach thousands of active tech candidates. Post up to <strong>25 active listings</strong> per company account.
+          Transparent pricing, no monthly subscription required.
+        </p>
+        <ul class="mt-4 grid sm:grid-cols-2 gap-2">
+          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Up to 25 active job listings
+          </li>
+          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Verified salary ranges shown
+          </li>
+          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Appear in curated search results
+          </li>
+          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            No subscription, pay per post
+          </li>
+        </ul>
+      </div>
+      <div class="shrink-0 text-center">
+        <a href="{{ url_for('hire') }}" class="inline-block px-6 py-3 rounded-xl bg-brand text-white font-semibold hover:bg-brand/90 transition-colors shadow shadow-brand/20 text-sm">
+          Post a Job &rarr;
+        </a>
+        <p class="mt-2 text-xs text-slate-400">Create a recruiter account to get started</p>
+      </div>
     </div>
   </div>
+
 </section>
 {% endblock %}
