@@ -7,3 +7,4 @@ email-validator==2.3.0
 flask-compress==1.23
 brotli==1.2.0
 supabase==2.10.0
+stripe==11.4.1

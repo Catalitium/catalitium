@@ -49,7 +49,16 @@ from .models.db import (
     revoke_api_key,
     check_and_increment_api_key,
     Job,
+    insert_stripe_order,
+    mark_stripe_order_paid,
+    mark_stripe_order_job_submitted,
+    get_stripe_order,
 )
+
+try:
+    import stripe as _stripe
+except ImportError:
+    _stripe = None  # type: ignore[assignment]
 import json as _json
 import urllib.request as _urllib_req
 import hashlib
@@ -2224,6 +2233,294 @@ def create_app() -> Flask:
         if status != "ok":
             return _api_error("contact_failed", "Unable to submit studio enquiry", 500)
         return _api_success({"status": "ok"}, 201, code="created", message="Studio enquiry submitted")
+
+    # ------------------------------------------------------------------
+    # Stripe B2B job posting payments
+    # ------------------------------------------------------------------
+    _STRIPE_PRODUCTS = {
+        "core_post": {
+            "price_id": os.getenv("STRIPE_PRICE_CORE_POST", "price_1TDCQw51Ord3K6CEfC1cpZxl"),
+            "name": "Core Post",
+            "tagline": "Single job listing, active for 100 days.",
+            "price_display": "$109",
+            "mode": "payment",
+            "slots": 1,
+            "badge": None,
+            "features": [
+                "1 job listing",
+                "Active for 100 days",
+                "Standard placement",
+                "Email confirmation",
+            ],
+        },
+        "premium_post": {
+            "price_id": os.getenv("STRIPE_PRICE_PREMIUM_POST", "price_1TDCRZ51Ord3K6CEKkMuzfhi"),
+            "name": "Premium Post",
+            "tagline": "Top placement for 100 days.",
+            "price_display": "$219",
+            "mode": "payment",
+            "slots": 1,
+            "badge": "Most Popular",
+            "features": [
+                "1 job listing",
+                "Active for 100 days",
+                "Top placement in search",
+                "Featured badge on listing",
+                "Email confirmation",
+            ],
+        },
+        "elite_plan": {
+            "price_id": os.getenv("STRIPE_PRICE_ELITE_PLAN", "price_1TDCSC51Ord3K6CERYTUJFiT"),
+            "name": "Elite Plan",
+            "tagline": "3 featured posts per month. Cancel anytime.",
+            "price_display": "$379",
+            "mode": "subscription",
+            "slots": 3,
+            "badge": "Best Value",
+            "features": [
+                "3 featured job posts/month",
+                "Priority placement",
+                "Cancel anytime",
+                "Dedicated account support",
+                "Email confirmation",
+            ],
+        },
+    }
+
+    @app.get("/post-a-job")
+    def post_a_job():
+        """B2B pricing page for companies to post jobs."""
+        user = session.get("user")
+        return render_template(
+            "post_job_pricing.html",
+            user=user,
+            products=_STRIPE_PRODUCTS,
+            stripe_key=os.getenv("STRIPE_PUBLISHABLE_KEY", ""),
+        )
+
+    @app.post("/stripe/checkout")
+    @_limit("10 per minute")
+    def stripe_checkout():
+        """Create a Stripe Checkout Session and redirect the user."""
+        user = session.get("user")
+        if not user:
+            flash("Please sign in to purchase a job posting.", "error")
+            return redirect(url_for("register"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("post_a_job"))
+        if not _stripe:
+            flash("Payment service unavailable. Please try again later.", "error")
+            return redirect(url_for("post_a_job"))
+
+        plan_key = (request.form.get("plan_key") or "").strip()
+        product = _STRIPE_PRODUCTS.get(plan_key)
+        if not product:
+            flash("Invalid plan selected.", "error")
+            return redirect(url_for("post_a_job"))
+
+        _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+        base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
+        user_email = user.get("email", "")
+        user_id = user.get("id", "")
+
+        try:
+            params: Dict[str, Any] = {
+                "mode": product["mode"],
+                "line_items": [{"price": product["price_id"], "quantity": 1}],
+                "customer_email": user_email,
+                "success_url": f"{base_url}/stripe/success?session_id={{CHECKOUT_SESSION_ID}}",
+                "cancel_url": f"{base_url}/stripe/cancel",
+                "metadata": {
+                    "user_id": user_id,
+                    "user_email": user_email,
+                    "plan_key": plan_key,
+                    "plan_name": product["name"],
+                },
+            }
+            if product["mode"] == "subscription":
+                params["subscription_data"] = {"metadata": {"user_id": user_id, "plan_key": plan_key}}
+
+            checkout_session = _stripe.checkout.Session.create(**params)
+        except Exception as exc:
+            logger.warning("stripe_checkout error: %s", exc)
+            flash("Could not initiate payment. Please try again.", "error")
+            return redirect(url_for("post_a_job"))
+
+        insert_stripe_order(
+            stripe_session_id=checkout_session.id,
+            user_id=user_id,
+            user_email=user_email,
+            price_id=product["price_id"],
+            plan_key=plan_key,
+            plan_name=product["name"],
+        )
+        return redirect(checkout_session.url, 303)
+
+    @app.get("/stripe/success")
+    def stripe_success():
+        """Landing page after successful Stripe Checkout."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+
+        session_id = (request.args.get("session_id") or "").strip()
+        if not session_id:
+            flash("No payment session found.", "error")
+            return redirect(url_for("post_a_job"))
+
+        order = get_stripe_order(session_id)
+        if not order or order.get("user_id") != user.get("id"):
+            flash("Payment not found or does not belong to your account.", "error")
+            return redirect(url_for("post_a_job"))
+
+        product = _STRIPE_PRODUCTS.get(order.get("plan_key", ""))
+        return render_template(
+            "post_job_submit.html",
+            user=user,
+            order=order,
+            product=product,
+        )
+
+    @app.post("/stripe/submit-job")
+    @_limit("10 per minute")
+    def stripe_submit_job():
+        """Handle job details submission after a successful payment."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("post_a_job"))
+
+        session_id = (request.form.get("stripe_session_id") or "").strip()
+        order = get_stripe_order(session_id) if session_id else None
+        if not order or order.get("user_id") != user.get("id"):
+            flash("Invalid or unauthorised payment session.", "error")
+            return redirect(url_for("post_a_job"))
+
+        if order.get("job_submitted_at"):
+            flash("A job has already been submitted for this order.", "error")
+            return redirect(url_for("hire"))
+
+        job_title = (request.form.get("job_title") or "").strip()
+        company = (request.form.get("company") or "").strip()
+        location = (request.form.get("location") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        salary_range = (request.form.get("salary_range") or "").strip()
+        apply_url = (request.form.get("apply_url") or "").strip()
+
+        if len(job_title) < 2:
+            flash("Please enter a job title.", "error")
+            return redirect(url_for("stripe_success", session_id=session_id))
+        if len(company) < 2:
+            flash("Please enter a company name.", "error")
+            return redirect(url_for("stripe_success", session_id=session_id))
+        if len(description) < 20:
+            flash("Please add a job description (at least 20 characters).", "error")
+            return redirect(url_for("stripe_success", session_id=session_id))
+
+        description_full = description
+        if apply_url:
+            description_full += f"\n\nApply here: {apply_url}"
+        if location:
+            description_full = f"Location: {location}\n\n{description_full}"
+
+        status = insert_job_posting(
+            contact_email=order["user_email"],
+            job_title=job_title,
+            company=company,
+            description=description_full,
+            salary_range=salary_range or None,
+        )
+        if status != "ok":
+            flash("Could not save your job. Please contact support.", "error")
+            return redirect(url_for("stripe_success", session_id=session_id))
+
+        mark_stripe_order_job_submitted(stripe_session_id=session_id)
+
+        admin_email = os.getenv("ADMIN_EMAIL", "").strip()
+        if admin_email:
+            _send_mail(
+                admin_email,
+                f"[New Job Posting] {job_title} at {company} ({order['plan_name']})",
+                (
+                    f"Plan: {order['plan_name']}\n"
+                    f"Paid by: {order['user_email']}\n"
+                    f"Session: {session_id}\n\n"
+                    f"Title: {job_title}\n"
+                    f"Company: {company}\n"
+                    f"Location: {location or 'Not specified'}\n"
+                    f"Salary: {salary_range or 'Not specified'}\n"
+                    f"Apply URL: {apply_url or 'Not specified'}\n\n"
+                    f"Description:\n{description}"
+                ),
+            )
+        _send_mail(
+            order["user_email"],
+            f"Job posting confirmed: {job_title} at {company}",
+            (
+                f"Hi,\n\nYour job posting has been received and will go live shortly.\n\n"
+                f"Plan: {order['plan_name']}\n"
+                f"Job title: {job_title}\n"
+                f"Company: {company}\n\n"
+                f"We'll review and publish it within 24 hours.\n\n"
+                f"Thanks,\nThe Catalitium Team\nhttps://catalitium.com"
+            ),
+        )
+
+        flash("Job submitted! It will go live within 24 hours. Check your email for confirmation.", "success")
+        return redirect(url_for("hire"))
+
+    @app.get("/stripe/cancel")
+    def stripe_cancel():
+        """Landing page when a user cancels Stripe Checkout."""
+        user = session.get("user")
+        return render_template("stripe_cancel.html", user=user)
+
+    @app.post("/stripe/webhook")
+    def stripe_webhook():
+        """Handle incoming Stripe webhook events."""
+        if not _stripe:
+            return jsonify({"error": "stripe_unavailable"}), 503
+
+        _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+        webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+        payload = request.get_data()
+        sig_header = request.headers.get("Stripe-Signature", "")
+
+        try:
+            event = _stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except _stripe.error.SignatureVerificationError:
+            logger.warning("stripe_webhook: invalid signature")
+            return jsonify({"error": "invalid_signature"}), 400
+        except Exception as exc:
+            logger.warning("stripe_webhook parse error: %s", exc)
+            return jsonify({"error": "bad_payload"}), 400
+
+        event_type = event.get("type", "")
+        data_obj = event["data"]["object"]
+
+        if event_type == "checkout.session.completed":
+            cs_id = data_obj.get("id", "")
+            customer_id = data_obj.get("customer") or None
+            subscription_id = data_obj.get("subscription") or None
+            mark_stripe_order_paid(
+                stripe_session_id=cs_id,
+                stripe_customer_id=customer_id,
+                stripe_subscription_id=subscription_id,
+            )
+            logger.info("stripe_webhook: order paid session=%s", cs_id)
+
+        elif event_type == "customer.subscription.deleted":
+            sub_id = data_obj.get("id", "")
+            logger.info("stripe_webhook: subscription cancelled sub=%s", sub_id)
+
+        elif event_type == "invoice.payment_failed":
+            customer_id = data_obj.get("customer", "")
+            logger.warning("stripe_webhook: payment failed customer=%s", customer_id)
+
+        return jsonify({"status": "ok"}), 200
 
     @app.get("/health")
     def health():

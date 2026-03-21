@@ -279,6 +279,109 @@ def insert_job_posting(
         return "error"
 
 
+# ------------------------- Stripe Orders ------------------------------------
+
+def insert_stripe_order(
+    *,
+    stripe_session_id: str,
+    user_id: str,
+    user_email: str,
+    price_id: str,
+    plan_key: str,
+    plan_name: str,
+) -> str:
+    """Insert a pending stripe order; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO stripe_orders
+                    (stripe_session_id, user_id, user_email, price_id, plan_key, plan_name, status, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, 'pending', NOW())
+                ON CONFLICT (stripe_session_id) DO NOTHING
+                """,
+                (stripe_session_id, user_id, user_email, price_id, plan_key, plan_name),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_stripe_order failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def mark_stripe_order_paid(
+    *,
+    stripe_session_id: str,
+    stripe_customer_id: Optional[str] = None,
+    stripe_subscription_id: Optional[str] = None,
+) -> str:
+    """Mark a stripe order as paid; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE stripe_orders
+                SET status = 'paid',
+                    stripe_customer_id = COALESCE(%s, stripe_customer_id),
+                    stripe_subscription_id = COALESCE(%s, stripe_subscription_id),
+                    paid_at = NOW()
+                WHERE stripe_session_id = %s
+                """,
+                (stripe_customer_id, stripe_subscription_id, stripe_session_id),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("mark_stripe_order_paid failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def mark_stripe_order_job_submitted(*, stripe_session_id: str) -> str:
+    """Mark a stripe order as having a job submitted; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE stripe_orders SET job_submitted_at = NOW() WHERE stripe_session_id = %s",
+                (stripe_session_id,),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("mark_stripe_order_job_submitted failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def get_stripe_order(stripe_session_id: str) -> Optional[Dict]:
+    """Return stripe order dict or None."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT stripe_session_id, user_id, user_email, price_id,
+                       plan_key, plan_name, status, paid_at, job_submitted_at
+                FROM stripe_orders WHERE stripe_session_id = %s
+                """,
+                (stripe_session_id,),
+            )
+            row = cur.fetchone()
+            if row:
+                return {
+                    "stripe_session_id": row[0],
+                    "user_id": row[1],
+                    "user_email": row[2],
+                    "price_id": row[3],
+                    "plan_key": row[4],
+                    "plan_name": row[5],
+                    "status": row[6],
+                    "paid_at": row[7],
+                    "job_submitted_at": row[8],
+                }
+    except Exception as exc:
+        logger.warning("get_stripe_order failed: %s", exc, exc_info=True)
+    return None
+
+
 # ------------------------- Description Parsing ------------------------------
 
 # Small multilingual stopword set to keep summarizer lightweight
@@ -393,6 +496,23 @@ def init_db():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_location ON jobs(LOWER(location))"
             )
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS stripe_orders (
+                    id                    SERIAL PRIMARY KEY,
+                    stripe_session_id     TEXT UNIQUE NOT NULL,
+                    stripe_customer_id    TEXT,
+                    stripe_subscription_id TEXT,
+                    user_id               TEXT NOT NULL,
+                    user_email            TEXT NOT NULL,
+                    price_id              TEXT NOT NULL,
+                    plan_key              TEXT NOT NULL,
+                    plan_name             TEXT NOT NULL,
+                    status                TEXT NOT NULL DEFAULT 'pending',
+                    created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    paid_at               TIMESTAMPTZ,
+                    job_submitted_at      TIMESTAMPTZ
+                )
+            """)
             db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
