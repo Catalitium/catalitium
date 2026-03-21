@@ -1,4 +1,4 @@
-﻿# Environment and secrets
+# Environment and secrets
 .env
 .env.*
 *.env
@@ -52,7 +52,9 @@ Thumbs.db
 
 # Project specific
 data/archive/
-docs/
+# Track code-review roadmap; ignore other generated docs under docs/
+docs/*
+!docs/CODE_REV_ROADMAP.md
 app/**/__pycache__/
 app/models/__pycache__/
 app/controllers/__pycache__/
@@ -88,4 +90,6 @@ node_modules/
 # Local agent/skill dirs
 .agent/
 .agents/
-tasks/
+# Track tasks/todo.md; ignore other task exports
+tasks/*
+!tasks/todo.md
