@@ -73,13 +73,19 @@ htmlcov/
 .tox/.env
 tests/
 
-.claude
-.claude/claude.md
+.claude/
 app/ads.txt
 deploy.txt
 .env
+Catalitium_Soul_File.md
+
 # Generated Tailwind CSS build
 app/static/css/tailwind.css
 
 # Node / Tailwind build
 node_modules/
+
+# Local agent/skill dirs
+.agent/
+.agents/
+tasks/
