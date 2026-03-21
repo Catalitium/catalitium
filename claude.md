@@ -13,7 +13,6 @@ It operates across four areas:
 
 **Automation over complexity.**
 
----
 
 ## Catalitium: Soul, Mission and Values
 

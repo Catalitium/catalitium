@@ -604,6 +604,19 @@ def init_db():
             cur.execute(
                 "ALTER TABLE job_posting ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ"
             )
+            # Developer API: daily quota columns (migrate existing rows safely)
+            cur.execute(
+                "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS daily_limit INT DEFAULT 50"
+            )
+            cur.execute(
+                "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS requests_today INT DEFAULT 0"
+            )
+            cur.execute(
+                "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS day_window TEXT DEFAULT ''"
+            )
+            cur.execute(
+                "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT"
+            )
             # Jobs search indexes (safe on existing table)
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_title_norm ON jobs(job_title_norm)"
@@ -1693,6 +1706,7 @@ def create_api_key(
     confirm_token: str,
     confirm_token_expires_at: datetime,
     created_from_ip: Optional[str],
+    user_id: Optional[str] = None,
 ) -> bool:
     """Insert a new inactive API key record. Returns True on success."""
     try:
@@ -1703,10 +1717,11 @@ def create_api_key(
                 INSERT INTO api_keys (
                     email, key_hash, key_prefix, tier, is_active,
                     monthly_limit, requests_this_month,
-                    confirm_token, confirm_token_expires_at, created_from_ip, created_at
-                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 500, 0, %s, %s, %s, NOW())
+                    daily_limit, requests_today, day_window,
+                    user_id, confirm_token, confirm_token_expires_at, created_from_ip, created_at
+                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 500, 0, 50, 0, '', %s, %s, %s, %s, NOW())
                 """,
-                (email, key_hash, key_prefix, confirm_token, confirm_token_expires_at, created_from_ip),
+                (email, key_hash, key_prefix, user_id, confirm_token, confirm_token_expires_at, created_from_ip),
             )
         return True
     except Exception as exc:
@@ -1722,8 +1737,9 @@ def get_api_key_by_email(email: str) -> Optional[Dict]:
             cur.execute(
                 """
                 SELECT id, email, key_prefix, tier, is_active, monthly_limit,
-                       requests_this_month, month_window, confirm_token,
-                       confirm_token_expires_at, created_from_ip, created_at
+                       requests_this_month, month_window,
+                       daily_limit, requests_today, day_window, user_id,
+                       confirm_token, confirm_token_expires_at, created_from_ip, created_at
                 FROM api_keys
                 WHERE email = %s
                 ORDER BY created_at DESC
@@ -1736,8 +1752,9 @@ def get_api_key_by_email(email: str) -> Optional[Dict]:
                 return None
             cols = [
                 "id", "email", "key_prefix", "tier", "is_active", "monthly_limit",
-                "requests_this_month", "month_window", "confirm_token",
-                "confirm_token_expires_at", "created_from_ip", "created_at",
+                "requests_this_month", "month_window",
+                "daily_limit", "requests_today", "day_window", "user_id",
+                "confirm_token", "confirm_token_expires_at", "created_from_ip", "created_at",
             ]
             return dict(zip(cols, row))
     except Exception as exc:
@@ -1785,11 +1802,11 @@ def revoke_api_key(key_hash: str) -> bool:
 
 
 def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
-    """Validate key, reset monthly counter if in a new month, enforce quota, then increment.
+    """Validate key, reset daily counter if it's a new day, enforce quota, then increment.
 
     Returns:
-        dict with monthly_limit/requests_this_month/tier on success,
-        {"error": "quota_exceeded"} when over quota,
+        dict with daily_limit/requests_today/tier on success,
+        {"error": "quota_exceeded"} when over daily quota,
         None when key is not found or inactive.
     """
     try:
@@ -1797,7 +1814,7 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
         with db.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, tier, is_active, monthly_limit, requests_this_month, month_window
+                SELECT id, tier, is_active, daily_limit, requests_today, day_window
                 FROM api_keys
                 WHERE key_hash = %s
                 """,
@@ -1806,28 +1823,31 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
             row = cur.fetchone()
             if not row:
                 return None
-            rec_id, tier, is_active, monthly_limit, requests_this_month, month_window = row
+            rec_id, tier, is_active, daily_limit, requests_today, day_window = row
             if not is_active:
                 return None
-            current_month = now.strftime("%Y-%m")
-            if month_window != current_month:
+            # Fall back to 50 if the column is NULL (pre-migration rows)
+            if daily_limit is None:
+                daily_limit = 50
+            today = now.strftime("%Y-%m-%d")
+            if day_window != today:
                 cur.execute(
-                    "UPDATE api_keys SET requests_this_month = 0, month_window = %s WHERE id = %s",
-                    (current_month, rec_id),
+                    "UPDATE api_keys SET requests_today = 0, day_window = %s WHERE id = %s",
+                    (today, rec_id),
                 )
-                requests_this_month = 0
-            if requests_this_month >= monthly_limit:
+                requests_today = 0
+            if requests_today >= daily_limit:
                 return {"error": "quota_exceeded"}
             cur.execute(
-                "UPDATE api_keys SET requests_this_month = requests_this_month + 1 "
-                "WHERE id = %s RETURNING requests_this_month",
+                "UPDATE api_keys SET requests_today = requests_today + 1 "
+                "WHERE id = %s RETURNING requests_today",
                 (rec_id,),
             )
             new_row = cur.fetchone()
-            new_count = new_row[0] if new_row else requests_this_month + 1
+            new_count = new_row[0] if new_row else requests_today + 1
             return {
-                "monthly_limit": monthly_limit,
-                "requests_this_month": new_count,
+                "daily_limit": daily_limit,
+                "requests_today": new_count,
                 "tier": tier,
             }
     except Exception as exc:

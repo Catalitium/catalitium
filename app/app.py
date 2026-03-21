@@ -764,6 +764,31 @@ Unsubscribe: {os.getenv("BASE_URL", "https://catalitium.com")}/unsubscribe
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
+# ---------------------------------------------------------------------------
+# Guest daily job view limit
+# ---------------------------------------------------------------------------
+GUEST_DAILY_LIMIT = 5_000
+
+
+def _guest_daily_remaining() -> int:
+    """Return remaining guest job views for today. -1 means unlimited (signed in or subscribed)."""
+    if session.get("user") or session.get("subscribed"):
+        return -1
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if session.get("_guest_date") != today:
+        session["_guest_date"] = today
+        session["_guest_seen"] = 0
+        session.modified = True
+    return max(0, GUEST_DAILY_LIMIT - int(session.get("_guest_seen") or 0))
+
+
+def _guest_daily_consume(count: int) -> None:
+    """Record that `count` jobs were shown to a guest today."""
+    if session.get("user") or session.get("subscribed"):
+        return
+    session["_guest_seen"] = int(session.get("_guest_seen") or 0) + count
+    session.modified = True
+
 
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
@@ -897,7 +922,7 @@ def create_app() -> Flask:
         return _decorator
 
     def _require_api_key(f):
-        """Decorator: validate X-API-Key header, enforce monthly quota, inject rate-limit headers."""
+        """Decorator: validate X-API-Key header, enforce daily quota, inject rate-limit headers."""
         @functools.wraps(f)
         def decorated(*args, **kwargs):
             raw_key = (
@@ -919,19 +944,16 @@ def create_app() -> Flask:
             @after_this_request
             def _inject_ratelimit_headers(response):
                 rec = g.get("api_key_record", {})
-                limit = rec.get("monthly_limit", 0)
-                used = rec.get("requests_this_month", 0)
+                limit = rec.get("daily_limit", 50)
+                used = rec.get("requests_today", 0)
                 _now = datetime.now(timezone.utc)
-                if _now.month == 12:
-                    reset_dt = _now.replace(year=_now.year + 1, month=1, day=1,
-                                            hour=0, minute=0, second=0, microsecond=0)
-                else:
-                    reset_dt = _now.replace(month=_now.month + 1, day=1,
-                                            hour=0, minute=0, second=0, microsecond=0)
+                reset_dt = (_now + timedelta(days=1)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
                 response.headers["X-RateLimit-Limit"] = str(limit)
                 response.headers["X-RateLimit-Remaining"] = str(max(0, limit - used))
                 response.headers["X-RateLimit-Reset"] = reset_dt.isoformat()
-                response.headers["X-RateLimit-Window"] = "monthly"
+                response.headers["X-RateLimit-Window"] = "daily"
                 return response
 
             return f(*args, **kwargs)
@@ -1029,6 +1051,9 @@ def create_app() -> Flask:
         if require_db:
             logger.error("Database init is required; aborting startup.")
             raise SystemExit(1)
+
+    if not os.getenv("STRIPE_SECRET_KEY"):
+        logger.warning("STRIPE_SECRET_KEY not set — payment routes will fail")
 
     @app.errorhandler(404)
     def handle_not_found(_error):
@@ -1163,13 +1188,20 @@ def create_app() -> Flask:
             rows = []
             total = 0
 
-        GUEST_JOB_LIMIT = 50
-        guest_limit_hit = False
-        if not session.get("user") and total > GUEST_JOB_LIMIT:
-            total = GUEST_JOB_LIMIT
-            offset_used = (max(1, page) - 1) * per_page
-            rows = rows[:max(0, GUEST_JOB_LIMIT - offset_used)]
-            guest_limit_hit = True
+        # Freemium gate: anonymous users get up to 5K jobs per day across all searches
+        subscribe_gate = False
+        _remaining = _guest_daily_remaining()
+        if _remaining != -1 and (q_title or q_country):
+            if _remaining <= 0:
+                subscribe_gate = True
+                rows = []
+                total = 0
+            else:
+                rows = rows[:_remaining]
+                total = min(total, _remaining)
+                _guest_daily_consume(len(rows))
+                if _remaining < 20:          # near limit: show soft warning
+                    subscribe_gate = True
 
         items = []
         salary_cache = {}
@@ -1320,7 +1352,7 @@ def create_app() -> Flask:
             pagination=pagination,
             cat_ctx=cat_ctx,
             remote_count=remote_count,
-            guest_limit_hit=guest_limit_hit,
+            subscribe_gate=subscribe_gate,
         )
 
     @app.get("/remote")
@@ -1377,12 +1409,16 @@ def create_app() -> Flask:
         if total is None:
             total = len(rows)
 
-        # Cap results for unauthenticated requests
-        _GUEST_API_LIMIT = 50
-        if not session.get("user") and total > _GUEST_API_LIMIT:
-            total = _GUEST_API_LIMIT
-            _api_offset = (max(1, page) - 1) * per_page
-            rows = rows[:max(0, _GUEST_API_LIMIT - _api_offset)]
+        # Freemium gate for API: anonymous users get up to 5K jobs per day
+        _remaining = _guest_daily_remaining()
+        if _remaining != -1:
+            if _remaining <= 0:
+                rows = []
+                total = 0
+            else:
+                rows = rows[:_remaining]
+                total = min(total if total is not None else 0, _remaining)
+                _guest_daily_consume(len(rows))
 
         items: List[Dict[str, Any]] = []
         for row in rows:
@@ -1595,6 +1631,11 @@ def create_app() -> Flask:
         if not job_link and next_url and _is_safe_redirect_target(next_url):
             job_link = next_url
         status = insert_subscriber(email, search_title=search_title, search_country=search_country, search_salary_band=search_salary_band)
+
+        # Unlock freemium access for this session on successful subscribe or duplicate
+        if status in ("ok", "duplicate"):
+            session["subscribed"] = True
+            session.modified = True
 
         if job_link:
             if status == "error":
@@ -2739,6 +2780,7 @@ def create_app() -> Flask:
         return render_template("stripe_cancel.html", user=user)
 
     @app.post("/stripe/webhook")
+    @_limit("120 per minute")
     def stripe_webhook():
         """Handle incoming Stripe webhook events."""
         if not _stripe:
@@ -3143,21 +3185,20 @@ def create_app() -> Flask:
     @app.post("/api/keys/register")
     @_limit("3 per hour")
     def api_keys_register():
-        """Register a new API key; sends a confirmation email to the provided address."""
-        data = request.get_json(silent=True) or {}
-        raw_email = (data.get("email") or "").strip()
-        if not raw_email:
-            return jsonify({"error": "email_required"}), 400
-        try:
-            valid = validate_email(raw_email, check_deliverability=False)
-            email = valid.normalized
-        except EmailNotValidError as exc:
-            return jsonify({"error": "invalid_email", "detail": str(exc)}), 400
+        """Register a new API key. Requires an active Catalitium account (session login)."""
+        user = session.get("user")
+        if not user:
+            return jsonify({"error": "login_required", "detail": "Sign in to your Catalitium account first."}), 401
+
+        email = (user.get("email") or "").strip()
+        user_id = str(user.get("id") or "")
+        if not email:
+            return jsonify({"error": "account_email_missing"}), 400
 
         existing = get_api_key_by_email(email)
         if existing:
             if existing.get("is_active"):
-                return jsonify({"message": "A key for this email already exists. Check your inbox for the original activation email."}), 200
+                return jsonify({"message": "A key for this account already exists. Check your inbox for the original activation email."}), 200
             return jsonify({"message": "A confirmation is already pending. Check your inbox or try again in 24 hours."}), 200
 
         raw_key = "cat_" + secrets.token_hex(22)
@@ -3174,6 +3215,7 @@ def create_app() -> Flask:
             confirm_token=confirm_token,
             confirm_token_expires_at=expires_at,
             created_from_ip=ip,
+            user_id=user_id,
         )
         if not ok:
             return jsonify({"error": "registration_failed"}), 500
@@ -3188,11 +3230,11 @@ def create_app() -> Flask:
             f"  {confirm_url}\n\n"
             f"Once activated, include it in API requests with the header:\n"
             f"  X-API-Key: {raw_key}\n\n"
-            f"Free tier: 100 requests/month.\n\n"
+            f"Free tier: 50 requests/day.\n\n"
             f"-- Catalitium Team"
         )
         _send_mail(email, "Activate your Catalitium API key", body)
-        logger.info("API key created prefix=%s ip=%s email=%s", key_prefix, ip, email)
+        logger.info("API key created prefix=%s ip=%s email=%s user_id=%s", key_prefix, ip, email, user_id)
         return jsonify({"message": "Check your email to activate your key."}), 200
 
     @app.get("/api/keys/confirm")
@@ -3209,20 +3251,17 @@ def create_app() -> Flask:
     @app.get("/api/keys/usage")
     @_require_api_key
     def api_keys_usage():
-        """Return monthly usage stats for the authenticated API key."""
+        """Return daily usage stats for the authenticated API key."""
         rec = g.get("api_key_record", {})
         now = datetime.now(timezone.utc)
-        if now.month == 12:
-            reset_dt = now.replace(year=now.year + 1, month=1, day=1,
-                                   hour=0, minute=0, second=0, microsecond=0)
-        else:
-            reset_dt = now.replace(month=now.month + 1, day=1,
-                                   hour=0, minute=0, second=0, microsecond=0)
+        reset_dt = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         return jsonify({
             "tier": rec.get("tier"),
-            "monthly_limit": rec.get("monthly_limit"),
-            "requests_used": rec.get("requests_this_month"),
-            "reset_date": reset_dt.date().isoformat(),
+            "daily_limit": rec.get("daily_limit", 50),
+            "requests_today": rec.get("requests_today", 0),
+            "reset_date": reset_dt.isoformat(),
         }), 200
 
     @app.delete("/api/keys/me")
