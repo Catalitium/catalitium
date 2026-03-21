@@ -51,11 +51,13 @@
         </span>
         <span class="text-slate-400">&bull;</span>
         <span class="text-slate-600 font-medium">Global Scope &bull; 74 sources</span>
+        {% if not (report.get('gated') and mi_tier == 'free') %}
         <button onclick="window.print()"
                 class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
           Download PDF
         </button>
+        {% endif %}
       </div>
     </header>
 
@@ -124,6 +126,9 @@
       </div>
     </section>
 
+{% if report.get('gated') and mi_tier == 'free' %}
+    {% include 'reports/_paywall.html' %}
+{% else %}
     <!-- § Executive Summary -->
     <section id="executive-summary" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">Executive Summary</h2>
@@ -660,6 +665,7 @@
 
     <div id="ad-bottom" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
 
+{% endif %}
   </article>
 
   <!-- STICKY DESKTOP TOC -->

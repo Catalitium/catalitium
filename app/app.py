@@ -56,6 +56,7 @@ from .models.db import (
     upsert_user_subscription,
     get_user_subscriptions,
     get_subscription_by_stripe_id,
+    update_api_key_limit_by_email,
 )
 
 try:
@@ -207,6 +208,17 @@ def _normalize_account_type(value: str) -> str:
 
 def _is_hire_eligible(account_type: str, hire_access: bool) -> bool:
     return account_type in _HIRE_ACCOUNT_TYPES and bool(hire_access)
+
+
+def _get_mi_tier(user: Optional[Dict]) -> str:
+    """Return the user's active Market Intelligence tier: 'pro', 'premium', or 'free'."""
+    if not user:
+        return "free"
+    subs = get_user_subscriptions(user.get("id", ""))
+    mi = subs.get("market_intelligence")
+    if mi and mi.get("status") == "active" and mi.get("tier") in ("premium", "pro"):
+        return mi["tier"]
+    return "free"
 
 
 def _clean_hire_data(raw: Dict[str, Any]) -> Dict[str, str]:
@@ -615,6 +627,7 @@ REPORTS = [
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "18 min read",
+        "gated": True,
         "template": "reports/200k_engineer.html",
         "keywords": [
             "software engineer salary 2026",
@@ -639,6 +652,7 @@ REPORTS = [
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "20 min read",
+        "gated": True,
         "template": "reports/saas_to_agents.html",
         "keywords": [
             "AI native software workforce 2026",
@@ -689,6 +703,7 @@ REPORTS = [
         "published_display": "February 2026",
         "pdf_path": "reports/R03- The Death of SaaS How Vibecoding Is Killing a 315 Billion Industry.pdf",
         "read_time": "18 min read",
+        "gated": True,
         "template": "reports/saas_vibecoding.html",
         "keywords": [
             "death of saas 2026",
@@ -2333,6 +2348,11 @@ def create_app() -> Flask:
             cancel_at_period_end=bool(sub_obj.get("cancel_at_period_end")),
         )
 
+        # Keep API key quota in sync with api_access subscription tier
+        if product_line == "api_access" and user_email:
+            new_limit = 10_000 if status == "active" else 500
+            update_api_key_limit_by_email(user_email, new_limit)
+
     @app.get("/pricing")
     def pricing():
         """B2C pricing page for Market Intelligence and API Access."""
@@ -3090,7 +3110,9 @@ def create_app() -> Flask:
     @app.get("/market-research")
     def market_research_index():
         """Market Research hub — lists all published reports."""
-        return render_template("market_research_index.html", reports=REPORTS)
+        user = session.get("user")
+        mi_tier = _get_mi_tier(user)
+        return render_template("market_research_index.html", reports=REPORTS, mi_tier=mi_tier)
 
     @app.get("/developers")
     def developers():
@@ -3105,7 +3127,14 @@ def create_app() -> Flask:
         report = next((r for r in REPORTS if r["slug"] == slug), None)
         if not report:
             abort(404)
-        return render_template(report.get("template", "reports/report.html"), report=report)
+        user = session.get("user")
+        mi_tier = _get_mi_tier(user)
+        return render_template(
+            report.get("template", "reports/report.html"),
+            report=report,
+            mi_tier=mi_tier,
+            user=user,
+        )
 
     # ------------------------------------------------------------------
     # API Key lifecycle — register, confirm, usage, revoke

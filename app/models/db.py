@@ -652,6 +652,11 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subs_user_product
                 ON user_subscriptions(user_id, product_line)
             """)
+            # Align free API key quotas with pricing page (500, not 100)
+            cur.execute(
+                "UPDATE api_keys SET monthly_limit = 500 "
+                "WHERE monthly_limit = 100 AND tier IN ('free_pending', 'free')"
+            )
             db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
@@ -1699,7 +1704,7 @@ def create_api_key(
                     email, key_hash, key_prefix, tier, is_active,
                     monthly_limit, requests_this_month,
                     confirm_token, confirm_token_expires_at, created_from_ip, created_at
-                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 100, 0, %s, %s, %s, NOW())
+                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 500, 0, %s, %s, %s, NOW())
                 """,
                 (email, key_hash, key_prefix, confirm_token, confirm_token_expires_at, created_from_ip),
             )
@@ -1828,3 +1833,23 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
     except Exception as exc:
         logger.warning("check_and_increment_api_key error: %s", exc)
         return None
+
+
+def update_api_key_limit_by_email(email: str, new_limit: int) -> bool:
+    """Update monthly_limit for the active API key belonging to this email.
+
+    Called when user subscribes to / cancels the api_access product so their
+    quota reflects the current tier (500 free, 10 000 paid).
+    """
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE api_keys SET monthly_limit = %s WHERE email = %s AND is_active = TRUE",
+                (new_limit, email),
+            )
+            db.commit()
+        return True
+    except Exception as exc:
+        logger.warning("update_api_key_limit_by_email error: %s", exc)
+        return False

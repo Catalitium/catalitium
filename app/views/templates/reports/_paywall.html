@@ -1,0 +1,41 @@
+{# _paywall.html — include in gated report templates after the free preview section.
+   Requires: `user` and `report` in template context (both passed by market_research_report route). #}
+<div class="relative">
+  {# Fade mask that dissolves the last bit of preview content into the paywall card #}
+  <div class="absolute -top-28 inset-x-0 h-28 bg-gradient-to-b from-transparent to-white dark:to-slate-950 pointer-events-none" aria-hidden="true"></div>
+
+  {# Paywall card #}
+  <div class="relative rounded-3xl border border-brand/30 bg-brand/5 dark:bg-brand/10 px-8 py-10 text-center max-w-xl mx-auto my-10 shadow-xl">
+
+    <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand/15 dark:bg-brand/20 mb-5">
+      <svg class="w-6 h-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+    </div>
+
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-2">Premium Report</p>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Continue reading with Market Intelligence</h2>
+    <p class="text-sm text-slate-600 dark:text-slate-400 mb-7 max-w-sm mx-auto leading-relaxed">
+      Full access to all gated reports, complete salary benchmarks, and hiring trend data —
+      starting at <span class="font-semibold text-slate-800 dark:text-slate-200">$9&thinsp;/&thinsp;month</span>.
+    </p>
+
+    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+      <a href="{{ url_for('pricing') }}"
+         class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand/90 transition-colors shadow-md shadow-brand/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        View plans
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+      {% if not user %}
+      <a href="{{ url_for('register') }}"
+         class="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-sm hover:border-brand dark:hover:border-brand transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        Sign in
+      </a>
+      {% endif %}
+    </div>
+
+    <p class="mt-5 text-xs text-slate-400 dark:text-slate-500">Cancel any time. No lock-in.</p>
+  </div>
+</div>
