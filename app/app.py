@@ -2499,7 +2499,7 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------
     _STRIPE_PRODUCTS = {
         "core_post": {
-            "price_id": os.getenv("STRIPE_PRICE_CORE_POST", "price_1TDCQw51Ord3K6CEfC1cpZxl"),
+            "price_id": os.getenv("STRIPE_PRICE_CORE_POST", ""),
             "name": "Core Post",
             "tagline": "Single job listing, active for 100 days.",
             "price_display": "$109",
@@ -2514,7 +2514,7 @@ def create_app() -> Flask:
             ],
         },
         "premium_post": {
-            "price_id": os.getenv("STRIPE_PRICE_PREMIUM_POST", "price_1TDCRZ51Ord3K6CEKkMuzfhi"),
+            "price_id": os.getenv("STRIPE_PRICE_PREMIUM_POST", ""),
             "name": "Premium Post",
             "tagline": "Top placement for 100 days.",
             "price_display": "$219",
@@ -2530,7 +2530,7 @@ def create_app() -> Flask:
             ],
         },
         "elite_plan": {
-            "price_id": os.getenv("STRIPE_PRICE_ELITE_PLAN", "price_1TDCSC51Ord3K6CERYTUJFiT"),
+            "price_id": os.getenv("STRIPE_PRICE_ELITE_PLAN", ""),
             "name": "Elite Plan",
             "tagline": "3 featured posts per month. Cancel anytime.",
             "price_display": "$379",
@@ -2575,7 +2575,7 @@ def create_app() -> Flask:
 
         plan_key = (request.form.get("plan_key") or "").strip()
         product = _STRIPE_PRODUCTS.get(plan_key)
-        if not product:
+        if not product or not product["price_id"]:
             flash("Invalid plan selected.", "error")
             return redirect(url_for("post_a_job"))
 
