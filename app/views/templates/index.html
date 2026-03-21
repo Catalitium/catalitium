@@ -530,15 +530,23 @@
 </nav>
 {% endif %}
 
-{% if guest_limit_hit %}
+{% if subscribe_gate %}
 <div class="mx-auto max-w-6xl mt-8 rounded-2xl bg-gradient-to-r from-brand/10 to-sky-500/10 border border-brand/20 p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
   <div class="flex-1">
-    <p class="font-semibold text-slate-900 dark:text-white text-base">You're seeing 50 of 85,000+ jobs</p>
-    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Create a free account to unlock the full database &mdash; no credit card needed.</p>
+    <p class="font-semibold text-slate-900 dark:text-white text-base">You've seen 5,000 jobs today</p>
+    <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Subscribe free for unlimited access &mdash; no account, no credit card needed.</p>
   </div>
-  <a href="{{ url_for('register') }}" class="shrink-0 inline-block px-5 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand/90 transition-colors shadow shadow-brand/20">
-    Sign up free &rarr;
-  </a>
+  <form action="{{ url_for('subscribe') }}" method="POST" class="shrink-0 flex flex-col sm:flex-row items-center gap-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ request.url }}">
+    <input type="email" name="email" placeholder="your@email.com" required
+           class="px-3 py-2.5 rounded-xl border border-brand/30 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40 w-44">
+    <button type="submit"
+            class="px-4 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm hover:bg-brand/90 transition-colors shadow shadow-brand/20 whitespace-nowrap">
+      Unlock free &rarr;
+    </button>
+  </form>
+  <p class="text-xs text-slate-400">or <a href="{{ url_for('register') }}" class="text-brand hover:underline">sign in</a></p>
 </div>
 {% endif %}
 
