@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Catalitium{% endblock %}</title>
   <meta name="description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
@@ -17,7 +18,7 @@
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
   {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
-  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v=asset_version) }}">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -40,12 +41,10 @@
   <script>tailwind.config={darkMode: 'class',theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/logo.png') }}">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
+  {% if is_production_env %}
   <!-- Cookiebot CMP — MUST load first before any tracking or ad scripts -->
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
 
@@ -62,15 +61,19 @@
       }
     };
   </script>
-  <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  {% else %}
+  <script>
+    window.catalitiumTrack = function(){};
+  </script>
+  {% endif %}
+  <!-- App styles (v= aligns with deploy ASSET_VERSION for long browser cache) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
 
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2244%22 fill=%22%231a73e8%22/><text x=%2250%22 y=%2258%22 text-anchor=%22middle%22 font-size=%2250%22 fill=%22white%22 font-family=%22Arial,Helvetica,sans-serif%22>C</text></svg>">
-
+  {% if is_production_env %}
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5590142941805222"
      crossorigin="anonymous" data-cookieconsent="marketing"></script>
+  {% endif %}
   {% block head_extra %}{% endblock %}
   <style>
     @media print {
@@ -263,7 +266,7 @@
         <!-- Brand -->
         <div class="col-span-2 sm:col-span-1 flex flex-col gap-2.5">
           <a href="{{ url_for('landing') }}" class="flex items-center gap-2 shrink-0">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="brand-logo opacity-80" width="24" height="24" loading="lazy" decoding="async">
             <span class="font-semibold tracking-tight text-slate-800 dark:text-slate-200">Catalitium</span>
           </a>
           <p class="text-xs">&copy; 2026 Catalitium &mdash; High-signal tech talent.</p>
@@ -347,7 +350,7 @@
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
         <h2 id="subscribe-title" class="text-lg font-semibold dark:text-slate-100">Weekly high-match job digest</h2>
       </div>
-      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">One email per week with your best-matching roles and salary signals. No spam, unsubscribe anytime.</p>
+      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">One email per week with your best-matching roles and salary signals. Unsubscribe anytime. How we use data: <a class="text-brand underline hover:opacity-90" href="{{ url_for('legal') }}">Privacy &amp; terms</a>.</p>
 
       <form action="{{ url_for('subscribe') }}" method="post"
             class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
@@ -522,6 +525,7 @@
           Apply for <span id="jobModalTitle"></span>
         </h2>
         <p id="jobModalSummary" class="text-sm text-slate-600 mb-3 hidden"></p>
+        <div id="jobModalSuccess" class="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-3 hidden" role="status"></div>
         <div id="jobModalError" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3 hidden"></div>
         <input type="hidden" name="job_id" id="jobModalJobId">
         <div class="mb-3">

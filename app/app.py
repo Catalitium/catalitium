@@ -123,7 +123,11 @@ def _derive_supabase_project_url() -> str:
 
 
 def _get_supabase():
-    """Return the shared auth client (sign_in, sign_up)."""
+    """Return the shared Supabase client for **end-user auth** (sign_in, sign_up).
+
+    Kept separate from `_get_supabase_admin` so user-facing auth never shares the
+    same client instance as `auth.admin.*` calls — mixing them can overwrite
+    internal session state and break admin metadata updates."""
     global _supabase_client
     if _supabase_client is None and _sb_create_client:
         project_url = _derive_supabase_project_url()
@@ -140,8 +144,10 @@ def _get_supabase():
 
 
 def _get_supabase_admin():
-    """Return a dedicated admin client that is never used for sign_in/sign_up,
-    so its internal session is never overwritten and admin.* calls always work."""
+    """Return a dedicated client for **auth.admin** only (profiles, metadata).
+
+    Never use this for sign_in/sign_up — use `_get_supabase()` so admin JWT
+    handling does not clobber the user session used for login flows."""
     global _supabase_admin_client
     if _supabase_admin_client is None and _sb_create_client:
         project_url = _derive_supabase_project_url()
@@ -821,6 +827,8 @@ def create_app() -> Flask:
     app.teardown_appcontext(close_db)
     if _Compress is not None:
         app.config.setdefault("COMPRESS_ALGORITHM", ["br", "gzip"])
+        # Skip compressing tiny responses (library default 500; slightly higher = less CPU on small HTML/JSON)
+        app.config.setdefault("COMPRESS_MIN_SIZE", 1024)
         _Compress(app)
     limiter = None
     if Limiter is not None and get_remote_address is not None:
@@ -833,6 +841,12 @@ def create_app() -> Flask:
         )
     else:
         logger.warning("flask-limiter not installed or failed to import; rate limiting is disabled")
+
+    def _exempt_public_jobs(fn):
+        """Do not apply default rate limits to public GET /jobs (SEO + search UX)."""
+        if limiter is None:
+            return fn
+        return limiter.exempt(fn)
 
     summary_cache = TTLCache(ttl_seconds=90, max_size=400)
     autocomplete_cache = TTLCache(ttl_seconds=120, max_size=400)
@@ -959,6 +973,28 @@ def create_app() -> Flask:
             return f(*args, **kwargs)
         return decorated
 
+    def _apply_cache_control_headers(response: Response) -> None:
+        """Set Cache-Control by response type: static (long), API (no-store), auth HTML (private), else short public."""
+        path = request.path or ""
+        content_type = (response.content_type or "").lower()
+        html_response = "text/html" in content_type
+        auth_ui_paths = {
+            "/register",
+            "/studio",
+            "/profile",
+            "/hire",
+            "/hire/onboarding",
+        }
+        if path.startswith("/static/"):
+            response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
+        elif path.startswith("/api/") or path.startswith("/v1/"):
+            response.headers["Cache-Control"] = "no-store"
+        elif html_response and (path in auth_ui_paths or bool(session.get("user"))):
+            response.headers["Cache-Control"] = "private, no-store, max-age=0, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+        else:
+            response.headers.setdefault("Cache-Control", "public, max-age=60")
+
     @app.after_request
     def apply_analytics_cookie(response):
         """Ensure the analytics session cookie is propagated when a new ID is issued."""
@@ -974,33 +1010,11 @@ def create_app() -> Flask:
                 samesite="Lax",
                 secure=secure_cookie,
             )
-        # Lightweight caching headers: long-cache static assets, short-cache everything else
         try:
-            path = request.path or ""
-            content_type = (response.content_type or "").lower()
-            html_response = "text/html" in content_type
-            auth_ui_paths = {
-                "/register",
-                "/studio",
-                "/profile",
-                "/hire",
-                "/hire/onboarding",
-            }
-            if path.startswith("/static/"):
-                # 30d cache for versioned static files; adjust if assets aren't fingerprinted
-                response.headers.setdefault("Cache-Control", "public, max-age=2592000, immutable")
-            elif path.startswith("/api/") or path.startswith("/v1/"):
-                # API responses must not be publicly cached
-                response.headers["Cache-Control"] = "no-store"
-            elif html_response and (path in auth_ui_paths or bool(session.get("user"))):
-                # Session-driven pages should never be publicly cached.
-                response.headers["Cache-Control"] = "private, no-store, max-age=0, must-revalidate"
-                response.headers["Pragma"] = "no-cache"
-            else:
-                response.headers.setdefault("Cache-Control", "public, max-age=60")
+            _apply_cache_control_headers(response)
         except Exception:
             pass
-        # ETag support for cacheable HTML responses
+        # ETag for small HTML only — hashing large pages on every request burns CPU (slow TTFB).
         try:
             if (
                 response.status_code == 200
@@ -1010,11 +1024,12 @@ def create_app() -> Flask:
                 and "no-store" not in (response.headers.get("Cache-Control", "").lower())
             ):
                 data = response.get_data()
-                etag = f'W/"{hashlib.md5(data).hexdigest()}"'
-                response.headers["ETag"] = etag
-                if request.headers.get("If-None-Match") == etag:
-                    response.status_code = 304
-                    response.set_data(b"")
+                if len(data) <= 65536:
+                    etag = f'W/"{hashlib.md5(data).hexdigest()}"'
+                    response.headers["ETag"] = etag
+                    if request.headers.get("If-None-Match") == etag:
+                        response.status_code = 304
+                        response.set_data(b"")
         except Exception:
             pass
         # Baseline security headers for all responses.
@@ -1077,9 +1092,15 @@ def create_app() -> Flask:
     @app.errorhandler(429)
     def handle_rate_limited(_error):
         if _api_request():
-            return _api_error("rate_limited", "Too many requests", 429)
-        flash("Too many requests. Please wait and try again.", "error")
-        return redirect(url_for("jobs"))
+            out, status = _api_error(
+                "rate_limited",
+                "Too many requests. Please wait about a minute, then try again.",
+                429,
+            )
+            out.headers.setdefault("Retry-After", "60")
+            return out, status
+        flash("Too many requests. Please wait about a minute, then try again.", "error")
+        return redirect(request.referrer or url_for("jobs"))
 
     def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
         """Safely parse and normalize search parameters."""
@@ -1182,6 +1203,7 @@ def create_app() -> Flask:
         )
 
     @app.get("/jobs")
+    @_exempt_public_jobs
     def jobs():
         """Render the main job search page with optional filters."""
         raw_title = (request.args.get("title") or "").strip()
@@ -1297,6 +1319,17 @@ def create_app() -> Flask:
                 except Exception:
                     range_compact = None
 
+            salary_delta_pct = None
+            if median is not None and range_compact and len(range_compact) >= 2:
+                try:
+                    lo, hi = float(range_compact[0]), float(range_compact[1])
+                    mid_est = (lo + hi) / 2.0
+                    med = float(median)
+                    if med > 0:
+                        salary_delta_pct = int(round((mid_est - med) / med * 100))
+                except Exception:
+                    salary_delta_pct = None
+
             item_payload = {
                 "id": row.get("id"),
                 "title": title,
@@ -1314,6 +1347,7 @@ def create_app() -> Flask:
                 "estimated_salary_range_compact": estimated_display,
                 "estimated_salary_range_numeric": range_compact,
                 "salary_uplift_factor": uplift_factor if uplift_factor and uplift_factor > 1.0 else None,
+                "salary_delta_pct": salary_delta_pct,
             }
 
             match_score, match_reasons = _compute_match_score(
@@ -1763,7 +1797,10 @@ def create_app() -> Flask:
 
         sb = _get_supabase()
         if not sb:
-            flash("Auth service unavailable.", "error")
+            flash(
+                "Sign-in is temporarily unavailable. Refresh the page in a moment or try again shortly.",
+                "error",
+            )
             return render_template("register.html", tab=action, account_type=account_type), 503
         try:
             if action == "signup":
@@ -2441,6 +2478,8 @@ def create_app() -> Flask:
             subs=subs,
         )
 
+    # --- Stripe: B2C checkout, job posting checkout, webhooks (keep grouped for navigation) ---
+
     @app.post("/stripe/subscribe")
     @_limit("10 per hour")
     def stripe_subscribe():
@@ -2896,14 +2935,24 @@ def create_app() -> Flask:
     @app.get("/health")
     def health():
         """Expose a readiness probe indicating the database is reachable."""
+        rid = getattr(g, "request_id", "")
+        deep = (request.args.get("deep") or "").strip().lower() in {"1", "true", "yes", "on"}
         try:
             db = get_db()
             with db.cursor() as cur:
                 cur.execute("SELECT 1")
                 cur.fetchone()
+                if deep:
+                    cur.execute("SELECT current_database()")
+                    cur.fetchone()
         except Exception:
+            logger.warning("health check failed request_id=%s deep=%s", rid, deep)
             return _api_error("db_unavailable", "Database connection failed", 503)
-        return _api_success({"status": "ok", "db": "connected"})
+        payload: Dict[str, Any] = {"status": "ok", "db": "connected"}
+        if deep:
+            payload["deep"] = True
+        logger.info("health ok request_id=%s deep=%s", rid, deep)
+        return _api_success(payload)
 
     @app.get("/legal")
     def legal():

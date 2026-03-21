@@ -70,6 +70,25 @@ Visit `http://localhost:5000`
 
 ---
 
+## Environment variables (canonical)
+
+| Variable | Purpose |
+|----------|---------|
+| `SECRET_KEY` | Flask session signing (**required** in production) |
+| `DATABASE_URL` or `SUPABASE_URL` | Postgres connection string (pooler URL OK; `pgbouncer=true` is stripped in code) |
+| `SUPABASE_PROJECT_URL` | `https://<ref>.supabase.co` for Auth API (derived from DB URL if omitted) |
+| `SUPABASE_SECRET_KEY` | Supabase **secret** key for server-side Auth + admin user metadata |
+| `DB_POOL_MAX` | Max connections in optional pool (default `4`) |
+| `ASSET_VERSION` | Cache-bust string for `main.js` query param |
+| `RATE_LIMIT_DEFAULT` / `RATELIMIT_STORAGE_URI` | Flask-Limiter defaults |
+| `STRIPE_SECRET_KEY` | Payments (optional for read-only job search) |
+
+Third-party scripts (Cookiebot, gtag, AdSense) load only when `is_production_env` is true (not on local dev hosts).
+
+**Performance:** See [`PERF_QUICK_WINS.md`](PERF_QUICK_WINS.md) for low-effort speed checklists (and what we already optimized in code).
+
+---
+
 ## Project Structure
 
 ```
