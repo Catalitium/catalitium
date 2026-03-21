@@ -51,11 +51,13 @@
         </span>
         <span class="text-slate-400">&bull;</span>
         <span class="text-slate-600 font-medium">Global Scope &bull; 40+ sources</span>
+        {% if not (report.get('gated') and mi_tier == 'free') %}
         <button onclick="window.print()"
                 class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
           Download PDF
         </button>
+        {% endif %}
       </div>
     </header>
 
@@ -117,6 +119,9 @@
       <p class="text-slate-700 leading-relaxed">CS bachelor&rsquo;s degrees more than doubled over the past decade to 112,720 in 2022&ndash;2023 &mdash; the highest increase of any major &mdash; just as entry-level demand collapsed. CS graduate unemployment reached 6.1% in 2024. Series A startup team sizes dropped from 22 to 15 employees between 2022 and 2024.</p>
     </section>
 
+{% if report.get('gated') and mi_tier == 'free' %}
+    {% include 'reports/_paywall.html' %}
+{% else %}
     <div id="ad-mid-article" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
 
     <!-- § 1 Global Tech Employment -->
@@ -445,6 +450,7 @@
 
     <div id="ad-bottom" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
 
+{% endif %}
   </article>
 
   <!-- STICKY DESKTOP TOC -->
@@ -465,11 +471,13 @@
         <li><a href="#conclusion" class="hover:text-brand transition-colors">Conclusion</a></li>
       </ol>
       <div class="mt-5 pt-4 border-t border-slate-200">
+        {% if not (report.get('gated') and mi_tier == 'free') %}
         <button onclick="window.print()"
                 class="w-full inline-flex justify-center items-center gap-2 rounded-xl border border-brand text-brand px-3 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
           Download PDF
         </button>
+        {% endif %}
       </div>
     </div>
   </aside>

@@ -57,9 +57,14 @@
         </span>
         {% endif %}
         {% if j.estimated_salary_range_compact %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-1 text-amber-800 font-semibold" title="Estimated salary range (experimental)">
+        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-1 text-amber-800 font-semibold" title="Estimated salary range (blend of employer data + market median for this location)">
           <span class="text-amber-700">Est.</span>
           <span>{{ (CUR.get(j.median_salary_currency) or '') }} {{ j.estimated_salary_range_compact }}</span>
+        </span>
+        {% endif %}
+        {% if j.salary_delta_pct is not none %}
+        <span class="inline-flex items-center gap-1 rounded-full {% if j.salary_delta_pct >= 0 %}bg-emerald-50 border border-emerald-200 text-emerald-900{% else %}bg-slate-100 border border-slate-200 text-slate-700{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">
+          {% if j.salary_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ j.salary_delta_pct | abs }}% vs median
         </span>
         {% endif %}
       </div>

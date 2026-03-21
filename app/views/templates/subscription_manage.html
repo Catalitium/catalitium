@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block title %}My Subscriptions | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Manage your Catalitium subscriptions: Market Intelligence, job tools, and billing in one place.">
+<link rel="canonical" href="{{ url_for('subscription_manage', _external=True) }}">
+<meta property="og:title" content="My Subscriptions | Catalitium">
+<meta property="og:description" content="View and manage your Catalitium plans and subscriptions.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('subscription_manage', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="My Subscriptions | Catalitium">
+<meta name="twitter:description" content="Subscription management for Catalitium.">
+{% endblock %}
+
+{% block robots %}
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-2xl px-4 py-10">
 

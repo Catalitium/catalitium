@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Post a Job | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Post tech jobs on Catalitium: featured listings, recruiter plans, and transparent pricing for employers.">
+<link rel="canonical" href="{{ url_for('post_a_job', _external=True) }}">
+<meta property="og:title" content="Post a Job | Catalitium">
+<meta property="og:description" content="Reach high-intent tech talent with Catalitium job postings and featured placement.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('post_a_job', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Post a Job | Catalitium">
+<meta name="twitter:description" content="Employer job posting plans on Catalitium.">
+{% endblock %}
+
 {% block content %}
 <section class="pt-8 sm:pt-16 pb-16 max-w-5xl mx-auto px-4">
 

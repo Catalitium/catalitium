@@ -1,4 +1,4 @@
-﻿# Environment and secrets
+# Environment and secrets
 .env
 .env.*
 *.env
@@ -58,9 +58,9 @@ app/models/__pycache__/
 app/controllers/__pycache__/
 app/views/__pycache__/
 
-app/__pycache__/app.cpython-310.pyc
-app/models/db.cpython-310.pyc
-app/controllers/auth.cpython-310.pyc
+# Local scratch at repo root (tracked tasks live under tasks/)
+/todo.md
+commit_msg.txt
 
 # Logs
 *.log
@@ -88,4 +88,6 @@ node_modules/
 # Local agent/skill dirs
 .agent/
 .agents/
-tasks/
+# Track tasks/todo.md; ignore other task exports
+tasks/*
+!tasks/todo.md

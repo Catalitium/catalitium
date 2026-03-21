@@ -24,7 +24,7 @@
     var bullets = (data.bullets || []).slice(0, 3);
     var skills  = (data.skills  || []).slice(0, 8);
     if (!bullets.length && !skills.length) {
-      if (container) container.classList.add('hidden');
+      showUnavailable(container);
       return;
     }
 
@@ -56,13 +56,27 @@
     }
   }
 
+  function showUnavailable(container){
+    if (!container) return;
+    var skel = container.querySelector('.ai-skeleton');
+    var contentEl = container.querySelector('.ai-content');
+    if (skel) skel.classList.add('hidden');
+    if (contentEl) {
+      contentEl.innerHTML = '<p class="text-xs text-slate-500">AI summary unavailable right now.</p>';
+      contentEl.classList.remove('hidden');
+    }
+  }
+
   function fetchSummary(jobId, container){
     fetch('/api/summary/' + jobId, { credentials: 'same-origin' })
       .then(function(r){ if(!r.ok) throw new Error('no_summary'); return r.json(); })
-      .then(function(data){ renderSummary(container, data); })
+      .then(function(payload){
+        var data = payload && Object.prototype.hasOwnProperty.call(payload, 'data') ? payload.data : payload;
+        if (payload && payload.ok === false) throw new Error('no_summary');
+        renderSummary(container, data || {});
+      })
       .catch(function(){
-        /* Graceful degradation: silently hide the section */
-        if(container) container.classList.add('hidden');
+        showUnavailable(container);
       });
   }
 

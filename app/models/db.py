@@ -29,6 +29,13 @@ except ImportError:
 # ------------------------- Config --------------------------------------------
 
 def _normalize_pg_url(url: str) -> str:
+    """Normalize Postgres URLs for psycopg3.
+
+    Supabase pooler URLs often include ``pgbouncer=true``; libpq/psycopg reject that
+    param for direct connections, so we strip it and add ``sslmode=require`` plus a
+    short ``connect_timeout`` when missing. Regression test: paste a typical
+    ``postgresql://postgres.<ref>:...@aws-0-...pooler.supabase.com:6543/postgres?pgbouncer=true`` string.
+    """
     if not url or not url.startswith(("postgres://", "postgresql://")):
         return url
     parsed = urlparse(url)
@@ -71,7 +78,7 @@ _SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").s
 SUPABASE_URL = _normalize_pg_url(_SUPABASE_RAW)
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
 PER_PAGE_MAX = 100  # safety cap
-DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "4"))
+DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "4"))  # tune vs Gunicorn workers × expected concurrency
 
 # ------------------------- Logging -------------------------------------------
 logging.basicConfig(

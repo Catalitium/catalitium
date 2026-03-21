@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Hire | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Catalitium hiring dashboard for recruiters and companies: manage postings, candidates, and employer tools.">
+<link rel="canonical" href="{{ url_for('hire', _external=True) }}">
+<meta property="og:title" content="Hire | Catalitium">
+<meta property="og:description" content="Employer and recruiter workspace on Catalitium.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('hire', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Hire | Catalitium">
+<meta name="twitter:description" content="Recruiter and hiring dashboard on Catalitium.">
+{% endblock %}
+
+{% block robots %}
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-5xl px-4 py-10">
   <div class="flex items-start justify-between gap-4 mb-8">

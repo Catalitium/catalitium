@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Payment Cancelled | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Payment was cancelled. You can return to Catalitium pricing to try again anytime.">
+<link rel="canonical" href="{{ url_for('stripe_cancel', _external=True) }}">
+<meta property="og:title" content="Payment Cancelled | Catalitium">
+<meta property="og:description" content="Stripe checkout was cancelled on Catalitium.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('stripe_cancel', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Payment Cancelled | Catalitium">
+<meta name="twitter:description" content="Payment cancelled — return to Catalitium when ready.">
+{% endblock %}
+
+{% block robots %}
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-lg px-4 py-20 text-center">
   <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 mb-6">
