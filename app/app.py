@@ -737,6 +737,31 @@ Unsubscribe: {os.getenv("BASE_URL", "https://catalitium.com")}/unsubscribe
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
+# ---------------------------------------------------------------------------
+# Guest daily job view limit
+# ---------------------------------------------------------------------------
+GUEST_DAILY_LIMIT = 5_000
+
+
+def _guest_daily_remaining() -> int:
+    """Return remaining guest job views for today. -1 means unlimited (signed in or subscribed)."""
+    if session.get("user") or session.get("subscribed"):
+        return -1
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if session.get("_guest_date") != today:
+        session["_guest_date"] = today
+        session["_guest_seen"] = 0
+        session.modified = True
+    return max(0, GUEST_DAILY_LIMIT - int(session.get("_guest_seen") or 0))
+
+
+def _guest_daily_consume(count: int) -> None:
+    """Record that `count` jobs were shown to a guest today."""
+    if session.get("user") or session.get("subscribed"):
+        return
+    session["_guest_seen"] = int(session.get("_guest_seen") or 0) + count
+    session.modified = True
+
 
 def create_app() -> Flask:
     """Instantiate and configure the Flask application."""
@@ -1136,13 +1161,20 @@ def create_app() -> Flask:
             rows = []
             total = 0
 
-        # Freemium gate: anonymous users see first page only; subscribers/accounts unlock all
+        # Freemium gate: anonymous users get up to 5K jobs per day across all searches
         subscribe_gate = False
-        is_unlocked = bool(session.get("user") or session.get("subscribed"))
-        if not is_unlocked and (q_title or q_country):
-            subscribe_gate = True
-            rows = rows[:12]
-            total = min(total, 12)
+        _remaining = _guest_daily_remaining()
+        if _remaining != -1 and (q_title or q_country):
+            if _remaining <= 0:
+                subscribe_gate = True
+                rows = []
+                total = 0
+            else:
+                rows = rows[:_remaining]
+                total = min(total, _remaining)
+                _guest_daily_consume(len(rows))
+                if _remaining < 20:          # near limit: show soft warning
+                    subscribe_gate = True
 
         items = []
         salary_cache = {}
@@ -1350,11 +1382,16 @@ def create_app() -> Flask:
         if total is None:
             total = len(rows)
 
-        # Freemium gate for API: subscribers/accounts get full results
-        _is_unlocked = bool(session.get("user") or session.get("subscribed"))
-        if not _is_unlocked:
-            rows = rows[:12]
-            total = min(total if total is not None else 0, 12)
+        # Freemium gate for API: anonymous users get up to 5K jobs per day
+        _remaining = _guest_daily_remaining()
+        if _remaining != -1:
+            if _remaining <= 0:
+                rows = []
+                total = 0
+            else:
+                rows = rows[:_remaining]
+                total = min(total if total is not None else 0, _remaining)
+                _guest_daily_consume(len(rows))
 
         items: List[Dict[str, Any]] = []
         for row in rows:
