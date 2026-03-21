@@ -53,6 +53,9 @@ from .models.db import (
     mark_stripe_order_paid,
     mark_stripe_order_job_submitted,
     get_stripe_order,
+    upsert_user_subscription,
+    get_user_subscriptions,
+    get_subscription_by_stripe_id,
 )
 
 try:
@@ -2235,6 +2238,243 @@ def create_app() -> Flask:
         return _api_success({"status": "ok"}, 201, code="created", message="Studio enquiry submitted")
 
     # ------------------------------------------------------------------
+    # Stripe B2C subscriptions (Market Intelligence + API Access)
+    # ------------------------------------------------------------------
+    _STRIPE_B2C_PRODUCTS = {
+        "mi_premium": {
+            "price_id": os.getenv("STRIPE_PRICE_MI_PREMIUM", ""),
+            "product_line": "market_intelligence",
+            "tier": "premium",
+            "name": "Market Intelligence Premium",
+            "price_display": "$9",
+            "tagline": "Full reports, complete salary benchmarks, hiring trends.",
+            "features": [
+                "Unlimited report access",
+                "Full job board access",
+                "Complete salary benchmarks",
+                "Hiring trend data",
+            ],
+            "badge": None,
+        },
+        "mi_pro": {
+            "price_id": os.getenv("STRIPE_PRICE_MI_PRO", ""),
+            "product_line": "market_intelligence",
+            "tier": "pro",
+            "name": "Market Intelligence Pro",
+            "price_display": "$99",
+            "tagline": "Everything in Premium plus personalised reports and exports.",
+            "features": [
+                "Everything in Premium",
+                "Personalised market intelligence reports",
+                "Data exports (CSV / JSON)",
+                "Priority support",
+            ],
+            "badge": "Best Value",
+        },
+        "api_access": {
+            "price_id": os.getenv("STRIPE_PRICE_API_ACCESS", ""),
+            "product_line": "api_access",
+            "tier": "api",
+            "name": "API Access",
+            "price_display": "$4.99",
+            "tagline": "10 000 calls/month across all endpoints.",
+            "features": [
+                "10 000 API calls/month",
+                "All endpoints (jobs, salary, trends)",
+                "Salary and trend data",
+                "Standard support",
+            ],
+            "badge": None,
+        },
+    }
+
+    # Price-ID → product key lookup (used in webhook)
+    _B2C_PRICE_TO_KEY: Dict[str, str] = {
+        p["price_id"]: k for k, p in _STRIPE_B2C_PRODUCTS.items() if p["price_id"]
+    }
+
+    def _handle_b2c_subscription_event(sub_obj: Dict) -> None:
+        """Sync a Stripe subscription object to user_subscriptions."""
+        sub_id = sub_obj.get("id", "")
+        metadata = sub_obj.get("metadata") or {}
+        user_id = metadata.get("user_id", "")
+        user_email = metadata.get("user_email", "")
+        product_line = metadata.get("product_line", "")
+        tier = metadata.get("tier", "")
+
+        if not user_id or not product_line:
+            logger.warning("_handle_b2c_subscription_event: missing metadata sub=%s", sub_id)
+            return
+
+        # Resolve tier from live price (handles plan changes mid-subscription)
+        items = (sub_obj.get("items") or {}).get("data") or []
+        price_id = items[0]["price"]["id"] if items else None
+        if price_id and price_id in _B2C_PRICE_TO_KEY:
+            matched = _STRIPE_B2C_PRODUCTS[_B2C_PRICE_TO_KEY[price_id]]
+            tier = matched["tier"]
+            product_line = matched["product_line"]
+
+        _STATUS_MAP = {
+            "active": "active", "trialing": "active",
+            "past_due": "past_due", "unpaid": "past_due",
+            "incomplete": "past_due", "canceled": "cancelled",
+        }
+        status = _STATUS_MAP.get(sub_obj.get("status", ""), "past_due")
+        upsert_user_subscription(
+            user_id=user_id,
+            user_email=user_email,
+            product_line=product_line,
+            tier=tier,
+            stripe_customer_id=sub_obj.get("customer"),
+            stripe_subscription_id=sub_id,
+            stripe_price_id=price_id,
+            status=status,
+            current_period_end=sub_obj.get("current_period_end"),
+            cancel_at_period_end=bool(sub_obj.get("cancel_at_period_end")),
+        )
+
+    @app.get("/pricing")
+    def pricing():
+        """B2C pricing page for Market Intelligence and API Access."""
+        user = session.get("user")
+        subs: Dict = {}
+        if user:
+            subs = get_user_subscriptions(user.get("id", ""))
+        return render_template(
+            "pricing.html",
+            user=user,
+            products=_STRIPE_B2C_PRODUCTS,
+            subs=subs,
+        )
+
+    @app.post("/stripe/subscribe")
+    @_limit("10 per hour")
+    def stripe_subscribe():
+        """Start a Stripe Checkout Session for a B2C subscription."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("pricing"))
+
+        plan_key = (request.form.get("plan_key") or "").strip()
+        product = _STRIPE_B2C_PRODUCTS.get(plan_key)
+        if not product or not product["price_id"]:
+            flash("Invalid plan selected.", "error")
+            return redirect(url_for("pricing"))
+
+        user_id = user.get("id", "")
+        user_email = user.get("email", "")
+        _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+        base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
+
+        # If already subscribed to this product line — upgrade/downgrade in place
+        subs = get_user_subscriptions(user_id)
+        existing = subs.get(product["product_line"])
+        if existing and existing.get("status") == "active" and existing.get("stripe_subscription_id"):
+            try:
+                sub = _stripe.Subscription.retrieve(existing["stripe_subscription_id"])
+                item_id = sub["items"]["data"][0]["id"]
+                _stripe.Subscription.modify(
+                    existing["stripe_subscription_id"],
+                    items=[{"id": item_id, "price": product["price_id"]}],
+                    proration_behavior="create_prorations",
+                )
+                flash(f"Switched to {product['name']}. Changes apply immediately.", "success")
+                return redirect(url_for("subscription_manage"))
+            except Exception as exc:
+                logger.error("stripe_subscribe: plan change failed %s", exc)
+                flash("Could not change plan. Please contact support.", "error")
+                return redirect(url_for("pricing"))
+
+        try:
+            checkout_session = _stripe.checkout.Session.create(
+                mode="subscription",
+                line_items=[{"price": product["price_id"], "quantity": 1}],
+                customer_email=user_email,
+                success_url=f"{base_url}/stripe/subscription/success?plan_key={plan_key}",
+                cancel_url=f"{base_url}/pricing",
+                metadata={
+                    "user_id": user_id,
+                    "user_email": user_email,
+                    "plan_key": plan_key,
+                    "product_line": product["product_line"],
+                    "tier": product["tier"],
+                    "checkout_type": "b2c_subscription",
+                },
+                subscription_data={
+                    "metadata": {
+                        "user_id": user_id,
+                        "user_email": user_email,
+                        "plan_key": plan_key,
+                        "product_line": product["product_line"],
+                        "tier": product["tier"],
+                    }
+                },
+            )
+            return redirect(checkout_session.url, 303)
+        except Exception as exc:
+            logger.error("stripe_subscribe: checkout creation failed %s", exc)
+            flash("Could not start checkout. Please try again.", "error")
+            return redirect(url_for("pricing"))
+
+    @app.get("/stripe/subscription/success")
+    def subscription_success():
+        """Landing page after a successful B2C subscription checkout."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        plan_key = request.args.get("plan_key", "")
+        product = _STRIPE_B2C_PRODUCTS.get(plan_key)
+        return render_template("subscription_success.html", user=user, product=product)
+
+    @app.get("/account/subscription")
+    def subscription_manage():
+        """Manage active B2C subscriptions."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        subs = get_user_subscriptions(user.get("id", ""))
+        return render_template(
+            "subscription_manage.html",
+            user=user,
+            subs=subs,
+            products=_STRIPE_B2C_PRODUCTS,
+        )
+
+    @app.post("/account/subscription/cancel")
+    @_limit("10 per hour")
+    def subscription_cancel():
+        """Cancel a B2C subscription at period end."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("subscription_manage"))
+
+        product_line = (request.form.get("product_line") or "").strip()
+        subs = get_user_subscriptions(user.get("id", ""))
+        sub = subs.get(product_line)
+        if not sub or not sub.get("stripe_subscription_id"):
+            flash("No active subscription found.", "error")
+            return redirect(url_for("subscription_manage"))
+
+        try:
+            _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+            _stripe.Subscription.modify(
+                sub["stripe_subscription_id"],
+                cancel_at_period_end=True,
+            )
+            flash("Subscription cancelled. You'll keep access until the end of the billing period.", "success")
+        except Exception as exc:
+            logger.error("subscription_cancel: failed %s", exc)
+            flash("Could not cancel subscription. Please contact support.", "error")
+
+        return redirect(url_for("subscription_manage"))
+
+    # ------------------------------------------------------------------
     # Stripe B2B job posting payments
     # ------------------------------------------------------------------
     _STRIPE_PRODUCTS = {
@@ -2512,13 +2752,49 @@ def create_app() -> Flask:
             )
             logger.info("stripe_webhook: order paid session=%s", cs_id)
 
+        elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
+            _handle_b2c_subscription_event(data_obj)
+            logger.info("stripe_webhook: subscription synced sub=%s type=%s", data_obj.get("id"), event_type)
+
         elif event_type == "customer.subscription.deleted":
             sub_id = data_obj.get("id", "")
+            existing = get_subscription_by_stripe_id(sub_id)
+            if existing:
+                upsert_user_subscription(
+                    user_id=existing["user_id"],
+                    user_email=existing["user_email"],
+                    product_line=existing["product_line"],
+                    tier=existing["tier"],
+                    stripe_subscription_id=sub_id,
+                    status="cancelled",
+                )
             logger.info("stripe_webhook: subscription cancelled sub=%s", sub_id)
 
+        elif event_type == "invoice.payment_succeeded":
+            sub_id = data_obj.get("subscription")
+            if sub_id:
+                try:
+                    _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+                    sub_obj = _stripe.Subscription.retrieve(sub_id)
+                    _handle_b2c_subscription_event(sub_obj)
+                except Exception as exc:
+                    logger.warning("stripe_webhook: invoice.payment_succeeded retrieve failed %s", exc)
+
         elif event_type == "invoice.payment_failed":
+            sub_id = data_obj.get("subscription")
             customer_id = data_obj.get("customer", "")
-            logger.warning("stripe_webhook: payment failed customer=%s", customer_id)
+            if sub_id:
+                existing = get_subscription_by_stripe_id(sub_id)
+                if existing:
+                    upsert_user_subscription(
+                        user_id=existing["user_id"],
+                        user_email=existing["user_email"],
+                        product_line=existing["product_line"],
+                        tier=existing["tier"],
+                        stripe_subscription_id=sub_id,
+                        status="past_due",
+                    )
+            logger.warning("stripe_webhook: payment failed customer=%s sub=%s", customer_id, sub_id)
 
         return jsonify({"status": "ok"}), 200
 
@@ -2794,11 +3070,6 @@ def create_app() -> Flask:
     def about():
         """Render the About Catalitium page."""
         return render_template("about.html")
-
-    @app.get("/pricing")
-    def pricing():
-        """Render the AaaS Pricing page."""
-        return render_template("pricing.html")
 
     @app.get("/companies")
     def companies():
