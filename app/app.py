@@ -1034,6 +1034,9 @@ def create_app() -> Flask:
             logger.error("Database init is required; aborting startup.")
             raise SystemExit(1)
 
+    if not os.getenv("STRIPE_SECRET_KEY"):
+        logger.warning("STRIPE_SECRET_KEY not set — payment routes will fail")
+
     @app.errorhandler(404)
     def handle_not_found(_error):
         if _api_request():
@@ -2517,6 +2520,7 @@ def create_app() -> Flask:
         return render_template("stripe_cancel.html", user=user)
 
     @app.post("/stripe/webhook")
+    @_limit("120 per minute")
     def stripe_webhook():
         """Handle incoming Stripe webhook events."""
         if not _stripe:
