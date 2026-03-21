@@ -904,7 +904,7 @@ def create_app() -> Flask:
         return _decorator
 
     def _require_api_key(f):
-        """Decorator: validate X-API-Key header, enforce monthly quota, inject rate-limit headers."""
+        """Decorator: validate X-API-Key header, enforce daily quota, inject rate-limit headers."""
         @functools.wraps(f)
         def decorated(*args, **kwargs):
             raw_key = (
@@ -926,19 +926,16 @@ def create_app() -> Flask:
             @after_this_request
             def _inject_ratelimit_headers(response):
                 rec = g.get("api_key_record", {})
-                limit = rec.get("monthly_limit", 0)
-                used = rec.get("requests_this_month", 0)
+                limit = rec.get("daily_limit", 50)
+                used = rec.get("requests_today", 0)
                 _now = datetime.now(timezone.utc)
-                if _now.month == 12:
-                    reset_dt = _now.replace(year=_now.year + 1, month=1, day=1,
-                                            hour=0, minute=0, second=0, microsecond=0)
-                else:
-                    reset_dt = _now.replace(month=_now.month + 1, day=1,
-                                            hour=0, minute=0, second=0, microsecond=0)
+                reset_dt = (_now + timedelta(days=1)).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
                 response.headers["X-RateLimit-Limit"] = str(limit)
                 response.headers["X-RateLimit-Remaining"] = str(max(0, limit - used))
                 response.headers["X-RateLimit-Reset"] = reset_dt.isoformat()
-                response.headers["X-RateLimit-Window"] = "monthly"
+                response.headers["X-RateLimit-Window"] = "daily"
                 return response
 
             return f(*args, **kwargs)
@@ -2884,21 +2881,20 @@ def create_app() -> Flask:
     @app.post("/api/keys/register")
     @_limit("3 per hour")
     def api_keys_register():
-        """Register a new API key; sends a confirmation email to the provided address."""
-        data = request.get_json(silent=True) or {}
-        raw_email = (data.get("email") or "").strip()
-        if not raw_email:
-            return jsonify({"error": "email_required"}), 400
-        try:
-            valid = validate_email(raw_email, check_deliverability=False)
-            email = valid.normalized
-        except EmailNotValidError as exc:
-            return jsonify({"error": "invalid_email", "detail": str(exc)}), 400
+        """Register a new API key. Requires an active Catalitium account (session login)."""
+        user = session.get("user")
+        if not user:
+            return jsonify({"error": "login_required", "detail": "Sign in to your Catalitium account first."}), 401
+
+        email = (user.get("email") or "").strip()
+        user_id = str(user.get("id") or "")
+        if not email:
+            return jsonify({"error": "account_email_missing"}), 400
 
         existing = get_api_key_by_email(email)
         if existing:
             if existing.get("is_active"):
-                return jsonify({"message": "A key for this email already exists. Check your inbox for the original activation email."}), 200
+                return jsonify({"message": "A key for this account already exists. Check your inbox for the original activation email."}), 200
             return jsonify({"message": "A confirmation is already pending. Check your inbox or try again in 24 hours."}), 200
 
         raw_key = "cat_" + secrets.token_hex(22)
@@ -2915,6 +2911,7 @@ def create_app() -> Flask:
             confirm_token=confirm_token,
             confirm_token_expires_at=expires_at,
             created_from_ip=ip,
+            user_id=user_id,
         )
         if not ok:
             return jsonify({"error": "registration_failed"}), 500
@@ -2929,11 +2926,11 @@ def create_app() -> Flask:
             f"  {confirm_url}\n\n"
             f"Once activated, include it in API requests with the header:\n"
             f"  X-API-Key: {raw_key}\n\n"
-            f"Free tier: 100 requests/month.\n\n"
+            f"Free tier: 50 requests/day.\n\n"
             f"-- Catalitium Team"
         )
         _send_mail(email, "Activate your Catalitium API key", body)
-        logger.info("API key created prefix=%s ip=%s email=%s", key_prefix, ip, email)
+        logger.info("API key created prefix=%s ip=%s email=%s user_id=%s", key_prefix, ip, email, user_id)
         return jsonify({"message": "Check your email to activate your key."}), 200
 
     @app.get("/api/keys/confirm")
@@ -2950,20 +2947,17 @@ def create_app() -> Flask:
     @app.get("/api/keys/usage")
     @_require_api_key
     def api_keys_usage():
-        """Return monthly usage stats for the authenticated API key."""
+        """Return daily usage stats for the authenticated API key."""
         rec = g.get("api_key_record", {})
         now = datetime.now(timezone.utc)
-        if now.month == 12:
-            reset_dt = now.replace(year=now.year + 1, month=1, day=1,
-                                   hour=0, minute=0, second=0, microsecond=0)
-        else:
-            reset_dt = now.replace(month=now.month + 1, day=1,
-                                   hour=0, minute=0, second=0, microsecond=0)
+        reset_dt = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         return jsonify({
             "tier": rec.get("tier"),
-            "monthly_limit": rec.get("monthly_limit"),
-            "requests_used": rec.get("requests_this_month"),
-            "reset_date": reset_dt.date().isoformat(),
+            "daily_limit": rec.get("daily_limit", 50),
+            "requests_today": rec.get("requests_today", 0),
+            "reset_date": reset_dt.isoformat(),
         }), 200
 
     @app.delete("/api/keys/me")
