@@ -2,159 +2,206 @@
 {% block title %}Pricing | Catalitium{% endblock %}
 
 {% block content %}
-<section class="pt-8 sm:pt-16 pb-16 max-w-5xl mx-auto px-4">
+<section class="pt-8 sm:pt-16 pb-20 max-w-5xl mx-auto px-4">
 
-  <!-- Header -->
-  <div class="text-center">
+  <div class="text-center mb-14">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-2">Plans & Pricing</p>
     <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-      Simple, transparent <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">pricing</span>
+      Intelligence. Access. Automation.
     </h1>
     <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-      Start free. Upgrade when your search gets serious.
+      Choose the plan that fits your needs. Upgrade, downgrade, or cancel any time.
     </p>
   </div>
 
-  <!-- 3-Tier Grid -->
-  <div class="mt-14 grid lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="mb-6 rounded-xl px-4 py-3 text-sm font-medium
+        {% if category == 'error' %}bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800
+        {% else %}bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
 
-    <!-- Tier 1: Guest / Free Browse -->
-    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm flex flex-col">
-      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Free Browse</h3>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">No sign-up needed. Just search.</p>
-      <div class="mt-6 flex items-baseline gap-1">
-        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
-        <span class="text-sm font-semibold text-slate-500">/ forever</span>
-      </div>
-      <ul class="mt-8 space-y-3 flex-1">
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Browse up to 50 jobs per search
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Salary insights on every role
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          No account required
-        </li>
-      </ul>
-      <a href="{{ url_for('index') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-center font-semibold hover:border-brand dark:hover:border-brand transition-colors">
-        Start Searching
-      </a>
-    </div>
-
-    <!-- Tier 2: Free Account (most popular) -->
-    <div class="rounded-3xl border-2 border-brand bg-slate-50 dark:bg-slate-900/50 p-8 shadow-xl relative flex flex-col lg:-translate-y-4">
-      <div class="absolute top-0 right-8 -translate-y-1/2">
-        <span class="bg-brand text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Most Popular</span>
-      </div>
-      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Free Account</h3>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Sign up once. Search the full database forever.</p>
-      <div class="mt-6 flex items-baseline gap-1">
-        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
-        <span class="text-sm font-semibold text-slate-500">/ forever</span>
-      </div>
-      <ul class="mt-8 space-y-3 flex-1">
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span class="font-medium text-slate-900 dark:text-white">Everything in Free Browse, plus:</span>
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Access 50,000+ curated tech roles
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Weekly high-signal job alerts
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Save jobs &amp; track applications
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Salary &amp; market benchmarks
-        </li>
-      </ul>
-      <a href="{{ url_for('register') }}" class="mt-8 block w-full py-3 px-4 rounded-xl bg-brand text-white text-center font-semibold hover:bg-brand/90 transition-colors shadow-lg shadow-brand/20">
-        Create Free Account
-      </a>
-    </div>
-
-    <!-- Tier 3: Pro (Coming Soon) -->
-    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm flex flex-col relative">
-      <div class="absolute top-0 right-8 -translate-y-1/2">
-        <span class="bg-slate-700 text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full">Coming Soon</span>
-      </div>
-      <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Pro Agent</h3>
-      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 min-h-[40px]">Put your job search on autopilot with AI.</p>
-      <div class="mt-6 flex items-baseline gap-1">
-        <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$29</span>
-        <span class="text-sm font-semibold text-slate-500">/ month</span>
-      </div>
-      <ul class="mt-8 space-y-3 flex-1">
-        <li class="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
-          <svg class="h-5 w-5 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          <span class="font-medium text-slate-900 dark:text-white">Everything in Free Account, plus:</span>
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
-          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Auto-apply to matched jobs
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
-          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          AI resume optimization
-        </li>
-        <li class="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-500">
-          <svg class="h-5 w-5 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-          Weekly interview practice AI
-        </li>
-      </ul>
-      <a href="{{ url_for('register') }}" class="mt-8 block w-full py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-center font-semibold cursor-not-allowed opacity-70">
-        Join Waitlist
-      </a>
-    </div>
-
+  {% if not user %}
+  <div class="mb-10 rounded-2xl border border-brand/30 bg-brand/5 dark:bg-brand/10 px-6 py-4 text-sm text-slate-700 dark:text-slate-300 flex items-center gap-3">
+    <svg class="h-5 w-5 text-brand shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <span><a href="{{ url_for('register') }}" class="font-semibold text-brand hover:underline">Sign in or create an account</a> to subscribe.</span>
   </div>
+  {% endif %}
 
-  <!-- B2B Pay-per-Post -->
-  <div class="mt-14 max-w-3xl mx-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
-    <div class="flex flex-col sm:flex-row sm:items-center gap-6">
-      <div class="flex-1">
-        <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-brand bg-brand/10 px-3 py-1 rounded-full mb-3">For Companies &amp; Recruiters</div>
-        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Post Jobs. Pay per Post.</h3>
-        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-lg">
-          Reach thousands of active tech candidates. Post up to <strong>25 active listings</strong> per company account.
-          Transparent pricing, no monthly subscription required.
-        </p>
-        <ul class="mt-4 grid sm:grid-cols-2 gap-2">
-          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Up to 25 active job listings
+  {# ── Market Intelligence ───────────────────────────────────────────── #}
+  <div class="mb-14">
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">Market Intelligence</h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">Deep research reports, salary benchmarks, and hiring trend data.</p>
+
+    <div class="grid md:grid-cols-3 gap-6">
+
+      {# Free tier #}
+      {% set mi_sub = subs.get('market_intelligence') %}
+      <div class="relative rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-7 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Free</h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 min-h-[36px]">Limited previews and public data.</p>
+        <div class="mt-5 flex items-baseline gap-1">
+          <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
+          <span class="text-sm font-semibold text-slate-500">/ month</span>
+        </div>
+        <ul class="mt-6 space-y-3 flex-1">
+          {% for feat in ["Limited report previews", "Basic job board access", "Public salary snapshots"] %}
+          <li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 text-brand mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            {{ feat }}
           </li>
-          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Verified salary ranges shown
-          </li>
-          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Appear in curated search results
-          </li>
-          <li class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-            <svg class="h-4 w-4 shrink-0 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            No subscription, pay per post
-          </li>
+          {% endfor %}
         </ul>
+        <div class="mt-7">
+          <span class="block w-full py-3 px-4 rounded-xl text-center text-sm font-semibold text-slate-400 dark:text-slate-500 border-2 border-slate-200 dark:border-slate-700">
+            {% if not mi_sub or mi_sub.tier == 'free' %}Current plan{% else %}Free{% endif %}
+          </span>
+        </div>
       </div>
-      <div class="shrink-0 text-center">
-        <a href="{{ url_for('hire') }}" class="inline-block px-6 py-3 rounded-xl bg-brand text-white font-semibold hover:bg-brand/90 transition-colors shadow shadow-brand/20 text-sm">
-          Post a Job &rarr;
-        </a>
-        <p class="mt-2 text-xs text-slate-400">Create a recruiter account to get started</p>
+
+      {# Premium & Pro #}
+      {% for key in ['mi_premium', 'mi_pro'] %}
+      {% set p = products[key] %}
+      {% set is_current = mi_sub and mi_sub.tier == p.tier and mi_sub.status == 'active' %}
+      <div class="relative rounded-3xl border {% if p.badge %}border-brand bg-white dark:bg-slate-900 shadow-xl{% else %}border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm{% endif %} p-7 flex flex-col">
+
+        {% if p.badge %}
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <span class="bg-brand text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full whitespace-nowrap">{{ p.badge }}</span>
+        </div>
+        {% endif %}
+
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ p.name }}</h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 min-h-[36px]">{{ p.tagline }}</p>
+
+        <div class="mt-5 flex items-baseline gap-1">
+          <span class="text-4xl font-extrabold text-slate-900 dark:text-white">{{ p.price_display }}</span>
+          <span class="text-sm font-semibold text-slate-500">/ month</span>
+        </div>
+
+        <ul class="mt-6 space-y-3 flex-1">
+          {% for feature in p.features %}
+          <li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 text-brand mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            {{ feature }}
+          </li>
+          {% endfor %}
+        </ul>
+
+        <div class="mt-7">
+          {% if is_current %}
+          <span class="block w-full py-3 px-4 rounded-xl text-center text-sm font-semibold bg-brand/10 text-brand border-2 border-brand/30">
+            {% if mi_sub.cancel_at_period_end %}Cancels at period end{% else %}Current plan{% endif %}
+          </span>
+          {% elif user %}
+          <form method="post" action="{{ url_for('stripe_subscribe') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan_key" value="{{ key }}">
+            <button type="submit"
+              class="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors
+                {% if p.badge %}bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/20
+                {% else %}border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand{% endif %}">
+              {% if mi_sub and mi_sub.status == 'active' %}Switch to {{ p.name }}{% else %}Subscribe — {{ p.price_display }}/mo{% endif %}
+            </button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('register') }}"
+            class="block w-full py-3 px-4 rounded-xl font-semibold text-sm text-center transition-colors
+              {% if p.badge %}bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/20
+              {% else %}border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand{% endif %}">
+            Subscribe — {{ p.price_display }}/mo
+          </a>
+          {% endif %}
+        </div>
+
       </div>
+      {% endfor %}
+
     </div>
   </div>
+
+  {# ── API Access ────────────────────────────────────────────────────── #}
+  <div>
+    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">API Access</h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-7">Programmatic access to jobs, salary, and trend data.</p>
+
+    <div class="grid md:grid-cols-2 gap-6 max-w-2xl">
+
+      {# Free tier #}
+      {% set api_sub = subs.get('api_access') %}
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-7 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Free</h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 min-h-[36px]">Try the API with basic access.</p>
+        <div class="mt-5 flex items-baseline gap-1">
+          <span class="text-4xl font-extrabold text-slate-900 dark:text-white">$0</span>
+          <span class="text-sm font-semibold text-slate-500">/ month</span>
+        </div>
+        <ul class="mt-6 space-y-3 flex-1">
+          {% for feat in ["500 calls/month", "Job listings endpoint", "Basic salary data"] %}
+          <li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 text-brand mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            {{ feat }}
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="mt-7">
+          <span class="block w-full py-3 px-4 rounded-xl text-center text-sm font-semibold text-slate-400 dark:text-slate-500 border-2 border-slate-200 dark:border-slate-700">
+            {% if not api_sub %}Current plan{% else %}Free{% endif %}
+          </span>
+        </div>
+      </div>
+
+      {# Paid API tier #}
+      {% set p = products['api_access'] %}
+      {% set is_current = api_sub and api_sub.tier == p.tier and api_sub.status == 'active' %}
+      <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm p-7 flex flex-col">
+        <h3 class="text-xl font-bold text-slate-900 dark:text-white">{{ p.name }}</h3>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 min-h-[36px]">{{ p.tagline }}</p>
+        <div class="mt-5 flex items-baseline gap-1">
+          <span class="text-4xl font-extrabold text-slate-900 dark:text-white">{{ p.price_display }}</span>
+          <span class="text-sm font-semibold text-slate-500">/ month</span>
+        </div>
+        <ul class="mt-6 space-y-3 flex-1">
+          {% for feature in p.features %}
+          <li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+            <svg class="h-4 w-4 text-brand mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            {{ feature }}
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="mt-7">
+          {% if is_current %}
+          <span class="block w-full py-3 px-4 rounded-xl text-center text-sm font-semibold bg-brand/10 text-brand border-2 border-brand/30">
+            {% if api_sub.cancel_at_period_end %}Cancels at period end{% else %}Current plan{% endif %}
+          </span>
+          {% elif user %}
+          <form method="post" action="{{ url_for('stripe_subscribe') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="plan_key" value="api_access">
+            <button type="submit"
+              class="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand">
+              Subscribe — {{ p.price_display }}/mo
+            </button>
+          </form>
+          {% else %}
+          <a href="{{ url_for('register') }}"
+            class="block w-full py-3 px-4 rounded-xl font-semibold text-sm text-center border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand">
+            Subscribe — {{ p.price_display }}/mo
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="mt-12 text-center text-sm text-slate-400 dark:text-slate-500">
+    Payments processed securely by Stripe. Cancel any time. Questions?
+    <a href="mailto:hello@catalitium.com" class="text-brand hover:underline">hello@catalitium.com</a>
+  </p>
 
 </section>
 {% endblock %}
