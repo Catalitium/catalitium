@@ -19,7 +19,7 @@
 <div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center"></div>
 
 <nav class="mb-6 text-sm text-slate-500 flex items-center gap-2" aria-label="Breadcrumb">
-  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Home</a>
+  <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Home</a>
   <span>&rsaquo;</span>
   <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
   <span>&rsaquo;</span>
@@ -487,12 +487,12 @@
   "author": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('index', _external=True) }}"
+    "url": "{{ url_for('jobs', _external=True) }}"
   },
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('index', _external=True) }}"
+    "url": "{{ url_for('jobs', _external=True) }}"
   },
   "datePublished": "{{ report.published }}",
   "dateModified": "{{ report.published }}",

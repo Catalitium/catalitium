@@ -33,3 +33,42 @@ body { font-family: system-ui, -apple-system, sans-serif; background: white; col
 
 /* Logo sizing helper */
 .brand-logo { height: 44px; width: auto; }
+
+/* ── Landing page ──────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+.landing-gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: landing-float 20s ease-in-out infinite;
+  will-change: transform;
+}
+.landing-gradient-orb--blue {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #1a73e840, transparent 70%);
+  top: -10%; left: -10%;
+}
+.landing-gradient-orb--cyan {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #06b6d430, transparent 70%);
+  top: 30%; right: -5%;
+  animation-delay: -7s;
+}
+.landing-gradient-orb--violet {
+  width: 550px; height: 550px;
+  background: radial-gradient(circle, #8b5cf635, transparent 70%);
+  bottom: -15%; left: 30%;
+  animation-delay: -14s;
+}
+
+@keyframes landing-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.05); }
+  66%      { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-gradient-orb { animation: none; }
+  html { scroll-behavior: auto; }
+}

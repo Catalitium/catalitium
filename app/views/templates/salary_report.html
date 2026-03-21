@@ -124,15 +124,15 @@
       <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-2">One-tap presets</p>
         <div class="flex flex-wrap gap-2 text-xs">
-          <a href="{{ url_for('index', title='senior engineer') }}"
+          <a href="{{ url_for('jobs', title='senior engineer') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             Senior Engineer &rarr;
           </a>
-          <a href="{{ url_for('index', title='ai', country='EU') }}"
+          <a href="{{ url_for('jobs', title='ai', country='EU') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             AI in Europe &rarr;
           </a>
-          <a href="{{ url_for('index', title='staff engineer', country='US') }}"
+          <a href="{{ url_for('jobs', title='staff engineer', country='US') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             Staff / Principal US &rarr;
           </a>
@@ -240,7 +240,7 @@
          Outliers are excluded from median calculations.</p>
       <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>.
          All figures are estimates &mdash; verify compensation directly with employers.</p>
-      <p class="mt-2"><a href="{{ url_for('index') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
+      <p class="mt-2"><a href="{{ url_for('jobs') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
     </section>
 
   </div><!-- /panel-salary -->

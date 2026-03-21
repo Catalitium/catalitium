@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% block title %}Catalitium — AI-Powered Tools, Job Intelligence & Automation{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Catalitium builds and deploys AI-powered tools and agents. Job platform with salary insights, market intelligence reports, custom software development, and AI agents as a service.">
+<link rel="canonical" href="{{ url_for('landing', _external=True) }}">
+<meta property="og:title" content="Catalitium — Automation over complexity.">
+<meta property="og:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('landing', _external=True) }}">
+<meta name="twitter:title" content="Catalitium — Automation over complexity.">
+<meta name="twitter:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 1 — HERO
+     ═══════════════════════════════════════════════════════ -->
+<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-slate-950">
+  <!-- Animated gradient orbs -->
+  <div class="absolute inset-0 opacity-30" aria-hidden="true">
+    <div class="landing-gradient-orb landing-gradient-orb--blue"></div>
+    <div class="landing-gradient-orb landing-gradient-orb--cyan"></div>
+    <div class="landing-gradient-orb landing-gradient-orb--violet"></div>
+  </div>
+  <!-- Subtle dot grid overlay -->
+  <div class="absolute inset-0 opacity-[0.04]" style="background-image:radial-gradient(circle,#fff 1px,transparent 1px);background-size:32px 32px" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-5xl mx-auto px-4 text-center">
+    <!-- Status pill -->
+    <div class="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/80 px-4 py-1.5 text-sm text-slate-300 mb-8 backdrop-blur-sm">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      AI-powered tools for companies that move fast
+    </div>
+
+    <h1 class="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight text-white leading-[1.05]">
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-violet-400">Automation</span>
+      <br class="hidden sm:block">
+      over complexity.
+    </h1>
+
+    <p class="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+      We build and deploy AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.
+    </p>
+
+    <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="{{ url_for('jobs') }}"
+         class="group inline-flex items-center gap-2 rounded-xl bg-white text-slate-900 px-7 py-4 text-base font-semibold shadow-lg shadow-white/10 hover:shadow-xl hover:shadow-white/20 hover:-translate-y-0.5 transition-all duration-300">
+        Explore jobs
+        <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#services"
+         class="inline-flex items-center gap-2 rounded-xl border border-slate-600 text-slate-300 px-7 py-4 text-base font-semibold hover:border-slate-400 hover:text-white hover:-translate-y-0.5 transition-all duration-300">
+        See what we build
+      </a>
+    </div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-slate-500 animate-bounce">
+    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7"/></svg>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 2 — SOCIAL PROOF / STATS BAR
+     ═══════════════════════════════════════════════════════ -->
+<section class="relative border-y border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+      <div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">{{ "{:,}".format(total_jobs) if total_jobs else "15,000" }}+</div>
+        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Active jobs</div>
+      </div>
+      <div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">40+</div>
+        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Countries</div>
+      </div>
+      <div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">10K+</div>
+        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Salary data points</div>
+      </div>
+      <div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">Real-time</div>
+        <div class="mt-1 text-sm text-slate-500 dark:text-slate-400">Market intelligence</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 3 — SERVICES GRID
+     ═══════════════════════════════════════════════════════ -->
+<section id="services" class="py-24 bg-slate-50 dark:bg-slate-900/50">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="text-center mb-16">
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand mb-3">What we build</p>
+      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+        Four areas. One mission.
+      </h2>
+      <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+        From job intelligence to autonomous AI agents, every product we ship is built to remove noise and deliver outcomes.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+
+      <!-- Job Platform -->
+      <div class="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 hover:shadow-xl hover:shadow-brand/5 dark:hover:shadow-brand/10 hover:-translate-y-1 transition-all duration-300">
+        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-brand/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        <div class="relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-brand/10 dark:bg-brand/20 flex items-center justify-center mb-5 text-brand group-hover:shadow-lg group-hover:shadow-brand/20 transition-shadow duration-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Job Platform</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+            Curated tech job listings with salary insights and market data. Companies post directly; professionals find high-signal roles without the noise.
+          </p>
+          <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
+            Browse jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Market Intelligence -->
+      <div class="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300">
+        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        <div class="relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-5 text-blue-600 dark:text-blue-400 group-hover:shadow-lg group-hover:shadow-blue-500/20 transition-shadow duration-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Market Intelligence</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+            Deep research reports on AI adoption, salary dynamics, and the structural shifts reshaping software and hiring. Independent, data-driven insights.
+          </p>
+          <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:gap-2 transition-all">
+            Read reports <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Software Development -->
+      <div class="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 hover:shadow-xl hover:shadow-violet-500/5 dark:hover:shadow-violet-500/10 hover:-translate-y-1 transition-all duration-300">
+        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        <div class="relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center mb-5 text-violet-600 dark:text-violet-400 group-hover:shadow-lg group-hover:shadow-violet-500/20 transition-shadow duration-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Software Development</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+            Custom AI and automation solutions built for results without the overhead of traditional development. Fast, lean, built to last.
+          </p>
+          <a href="{{ url_for('about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:gap-2 transition-all">
+            Learn more <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- AI Agents as a Service -->
+      <div class="group relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 hover:shadow-xl hover:shadow-emerald-500/5 dark:hover:shadow-emerald-500/10 hover:-translate-y-1 transition-all duration-300">
+        <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+        <div class="relative z-10">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center mb-5 text-emerald-600 dark:text-emerald-400 group-hover:shadow-lg group-hover:shadow-emerald-500/20 transition-shadow duration-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">AI Agents as a Service</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
+            Autonomous AI agents that run business tasks end to end. Subscription-based. Oriented around outcomes, not seats.
+          </p>
+          <a href="{{ url_for('about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:gap-2 transition-all">
+            Learn more <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 4 — LIVE JOBS PREVIEW
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-24 bg-white dark:bg-slate-950">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="flex items-end justify-between mb-10">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand mb-3">Live from the platform</p>
+        <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          Latest roles, right now
+        </h2>
+      </div>
+      <a href="{{ url_for('jobs') }}" class="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
+        View all jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+    {% if featured_jobs %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {% for job in featured_jobs[:4] %}
+      <a href="{{ url_for('job_detail', job_id=job.id) }}"
+         class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 hover:border-brand/30 dark:hover:border-brand/30 hover:shadow-lg hover:shadow-brand/5 transition-all duration-300">
+        <div class="text-xs font-semibold text-brand mb-2 uppercase tracking-wider clamp-1">{{ job.company }}</div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2 clamp-2 group-hover:text-brand transition-colors">{{ job.title }}</h3>
+        <div class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span class="clamp-1">{{ job.location }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+      <p class="text-slate-500 dark:text-slate-400">Loading latest roles...</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-8 text-center sm:hidden">
+      <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand">
+        View all jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 5 — MARKET INTELLIGENCE TEASER
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-24 bg-slate-50 dark:bg-slate-900/50">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+      <div class="grid md:grid-cols-2 gap-0">
+        <!-- Text column -->
+        <div class="p-10 sm:p-14 flex flex-col justify-center">
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-blue-600 dark:text-blue-400 mb-4">Market Intelligence</p>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-4">
+            Data the tech industry actually needs.
+          </h2>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+            Deep research reports on AI adoption, salary dynamics, and the structural shifts reshaping software and hiring. Sourced and published independently.
+          </p>
+          <ul class="space-y-3 mb-8">
+            <li class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <svg class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              AI market adoption reports
+            </li>
+            <li class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <svg class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              Salary benchmarks and compensation data
+            </li>
+            <li class="flex items-center gap-2.5 text-sm text-slate-700 dark:text-slate-300">
+              <svg class="h-4 w-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              Hiring trend analysis
+            </li>
+          </ul>
+          <a href="{{ url_for('market_research_index') }}"
+             class="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-6 py-3 text-sm font-semibold hover:bg-blue-700 hover:-translate-y-0.5 transition-all duration-300 w-fit">
+            Read our reports
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <!-- Visual column -->
+        <div class="relative hidden md:flex min-h-[300px] bg-gradient-to-br from-blue-600 via-cyan-500 to-blue-400 items-center justify-center">
+          <div class="text-center text-white/90">
+            <svg class="w-20 h-20 mx-auto mb-4 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <div class="text-4xl font-extrabold">10K+</div>
+            <div class="text-sm mt-1 opacity-80">Salary data points analyzed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 6 — AI AGENTS AS A SERVICE
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-24 bg-slate-950 text-white relative overflow-hidden">
+  <!-- Background glow -->
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-violet-500/10 rounded-full blur-[120px] pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-6xl mx-auto px-4">
+    <div class="text-center mb-16">
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400 mb-3">AI Agents as a Service</p>
+      <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
+        Agents that work.
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Autonomously.</span>
+      </h2>
+      <p class="mt-4 text-lg text-slate-400 max-w-2xl mx-auto">
+        We build and deploy AI agents that run business tasks end to end. Replace manual processes. Subscription-based, outcome-oriented.
+      </p>
+    </div>
+
+    <!-- Process steps -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+      <div class="text-center p-6">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 text-emerald-400">
+          <span class="text-xl font-bold">1</span>
+        </div>
+        <h3 class="font-bold text-lg mb-2">Define the task</h3>
+        <p class="text-sm text-slate-400">Tell us what your team does manually. We map the workflow.</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 text-cyan-400">
+          <span class="text-xl font-bold">2</span>
+        </div>
+        <h3 class="font-bold text-lg mb-2">We build the agent</h3>
+        <p class="text-sm text-slate-400">Custom AI agent, tested against your data, deployed to your environment.</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4 text-violet-400">
+          <span class="text-xl font-bold">3</span>
+        </div>
+        <h3 class="font-bold text-lg mb-2">Agent runs autonomously</h3>
+        <p class="text-sm text-slate-400">Pay for outcomes, not seats. Scale up or down anytime.</p>
+      </div>
+    </div>
+
+    <div class="mt-12 text-center">
+      <a href="{{ url_for('about') }}"
+         class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-7 py-4 text-base font-semibold hover:bg-emerald-400 hover:-translate-y-0.5 transition-all duration-300">
+        Start a conversation
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 7 — PRICING TEASER
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-24 bg-white dark:bg-slate-950">
+  <div class="max-w-4xl mx-auto px-4 text-center">
+    <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand mb-3">Pricing</p>
+    <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      Intelligence. Access. Automation.
+    </h2>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
+      Free to start. Upgrade when you need deeper insights, more API calls, or custom agents.
+    </p>
+
+    <div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-left hover:shadow-lg transition-shadow duration-300">
+        <div class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1">Market Intelligence</div>
+        <div class="text-2xl font-extrabold text-slate-900 dark:text-white">Free</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">to start</div>
+        <p class="mt-3 text-sm text-slate-600 dark:text-slate-400">Report previews, basic job access, salary snapshots.</p>
+      </div>
+      <div class="rounded-2xl border-2 border-brand bg-brand/5 dark:bg-brand/10 p-6 text-left hover:shadow-lg hover:shadow-brand/10 transition-shadow duration-300">
+        <div class="text-sm font-semibold text-brand mb-1">API Access</div>
+        <div class="text-2xl font-extrabold text-slate-900 dark:text-white">$19<span class="text-base font-semibold text-slate-500">/mo</span></div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">premium tier</div>
+        <p class="mt-3 text-sm text-slate-600 dark:text-slate-400">10K requests/month, priority support, salary data API.</p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-left hover:shadow-lg transition-shadow duration-300">
+        <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-1">AI Agents</div>
+        <div class="text-2xl font-extrabold text-slate-900 dark:text-white">Custom</div>
+        <div class="text-xs text-slate-500 dark:text-slate-400">outcome-based</div>
+        <p class="mt-3 text-sm text-slate-600 dark:text-slate-400">Built for your workflows. Pay for results, not seats.</p>
+      </div>
+    </div>
+
+    <div class="mt-10">
+      <a href="{{ url_for('pricing') }}"
+         class="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-6 py-3 text-sm font-semibold hover:border-brand hover:text-brand transition-all duration-300">
+        See full pricing
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 8 — FINAL CTA
+     ═══════════════════════════════════════════════════════ -->
+<section class="py-24 relative overflow-hidden bg-slate-950">
+  <!-- Gradient background -->
+  <div class="absolute inset-0 bg-gradient-to-br from-brand/20 via-slate-950 to-violet-900/20 pointer-events-none" aria-hidden="true"></div>
+
+  <div class="relative z-10 max-w-3xl mx-auto px-4 text-center">
+    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
+      Move fast. Stay lean.
+    </h2>
+    <p class="text-lg text-slate-400 mb-10 max-w-xl mx-auto">
+      Whether you're hiring, building, or automating &mdash; Catalitium has the tools. Get started for free or talk to us about custom solutions.
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="{{ url_for('register') }}"
+         class="inline-flex items-center gap-2 rounded-xl bg-white text-slate-900 px-7 py-4 text-base font-semibold shadow-lg shadow-white/10 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+        Get started free
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </a>
+      <a href="{{ url_for('about') }}"
+         class="inline-flex items-center gap-2 rounded-xl border border-slate-600 text-slate-300 px-7 py-4 text-base font-semibold hover:border-slate-400 hover:text-white hover:-translate-y-0.5 transition-all duration-300">
+        Contact us
+      </a>
+    </div>
+
+    <div class="mt-10 pt-8 border-t border-slate-800">
+      <p class="text-sm text-slate-500 mb-4">Or join the weekly digest &mdash; curated jobs, salary insights, and market intelligence.</p>
+      <a href="{{ url_for('jobs') }}"
+         class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-blue-400 transition-colors">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Subscribe to Weekly Digest
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Catalitium",
+  "url": "{{ url_for('landing', _external=True) }}",
+  "logo": "{{ url_for('static', filename='img/logo.png', _external=True) }}",
+  "description": "Catalitium builds and deploys AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.",
+  "foundingDate": "2025",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "email": "catalitium@outlook.com",
+    "contactType": "customer support"
+  },
+  "knowsAbout": [
+    "Artificial Intelligence",
+    "AI Agents as a Service",
+    "Software Development",
+    "Market Intelligence",
+    "Job Platform",
+    "Salary Data"
+  ],
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Catalitium Services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Job Platform", "description": "Tech job listings with salary insights and market data" }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Market Intelligence", "description": "Research reports on AI adoption, salary dynamics, and hiring trends" }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "Software Development", "description": "Custom AI and automation solutions" }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": { "@type": "Service", "name": "AI Agents as a Service", "description": "Autonomous AI agents for business task automation" }
+      }
+    ]
+  }
+}
+</script>
+{% endblock %}
