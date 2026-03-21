@@ -52,17 +52,14 @@ Thumbs.db
 
 # Project specific
 data/archive/
-# Track code-review roadmap; ignore other generated docs under docs/
-docs/*
-!docs/CODE_REV_ROADMAP.md
+docs/
 app/**/__pycache__/
 app/models/__pycache__/
 app/controllers/__pycache__/
 app/views/__pycache__/
 
-app/__pycache__/app.cpython-310.pyc
-app/models/db.cpython-310.pyc
-app/controllers/auth.cpython-310.pyc
+# Local scratch at repo root (tracked tasks live under tasks/)
+/todo.md
 
 # Logs
 *.log

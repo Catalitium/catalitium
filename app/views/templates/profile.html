@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block title %}My Profile | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Manage your Catalitium profile: name, preferences, and account details.">
+<link rel="canonical" href="{{ url_for('profile', _external=True) }}">
+<meta property="og:title" content="My Profile | Catalitium">
+<meta property="og:description" content="Update your Catalitium account profile and preferences.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('profile', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="My Profile | Catalitium">
+<meta name="twitter:description" content="Your Catalitium account profile.">
+{% endblock %}
+
+{% block robots %}
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-3xl px-4 py-10">
   <div class="mb-6">

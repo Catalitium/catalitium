@@ -684,6 +684,7 @@ REPORTS = [
         "published_display": "December 2025",
         "pdf_path": "reports/R02- AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles.pdf",
         "read_time": "15 min read",
+        "gated": True,
         "template": "reports/junior_roles.html",
         "keywords": [
             "entry level tech jobs 2026",
@@ -1827,6 +1828,15 @@ def create_app() -> Flask:
                 "account_type": target_type,
                 "hire_access": existing_hire_access if action == "login" else False,
             }
+            next_path = session.pop("redirect_after_login", None)
+            if (
+                isinstance(next_path, str)
+                and next_path.startswith("/market-research/")
+                and (not next_path.startswith("//"))
+                and "\n" not in next_path
+                and "\r" not in next_path
+            ):
+                return redirect(next_path)
             return redirect(url_for("studio"))
         except Exception as exc:
             logger.warning("auth error (%s): %s", action, exc)
@@ -2998,6 +3008,10 @@ def create_app() -> Flask:
                 urls.append({"loc": loc, "priority": priority, "lastmod": lastmod, "changefreq": changefreq})
 
         _add(url_for("jobs", _external=True), priority="1.0", changefreq="daily")
+        _add(url_for("landing", _external=True), priority="0.95", changefreq="weekly")
+        _add(url_for("pricing", _external=True), priority="0.75", changefreq="weekly")
+        _add(url_for("developers", _external=True), priority="0.65", changefreq="monthly")
+        _add(url_for("companies", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("about", _external=True), priority="0.8", changefreq="monthly")
         _add(url_for("resources", _external=True), priority="0.9", changefreq="weekly")
         _add(url_for("market_research_index", _external=True), priority="0.9", changefreq="weekly")
@@ -3236,7 +3250,12 @@ def create_app() -> Flask:
         """Market Research hub — lists all published reports."""
         user = session.get("user")
         mi_tier = _get_mi_tier(user)
-        return render_template("market_research_index.html", reports=REPORTS, mi_tier=mi_tier)
+        return render_template(
+            "market_research_index.html",
+            reports=REPORTS,
+            mi_tier=mi_tier,
+            user=user,
+        )
 
     @app.get("/developers")
     def developers():
@@ -3252,6 +3271,10 @@ def create_app() -> Flask:
         if not report:
             abort(404)
         user = session.get("user")
+        if not user:
+            session["redirect_after_login"] = request.path
+            flash("Sign in to read this report.", "info")
+            return redirect(url_for("register"))
         mi_tier = _get_mi_tier(user)
         return render_template(
             report.get("template", "reports/report.html"),

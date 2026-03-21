@@ -2,6 +2,19 @@
 
 {% block title %}Recruitment Board | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Catalitium Salary Board for recruiters: benchmark tech compensation by role and region. Data for hiring and market intelligence.">
+<link rel="canonical" href="{{ url_for('recruiter_salary_board', _external=True) }}">
+<meta property="og:title" content="Recruitment Salary Board | Catalitium">
+<meta property="og:description" content="Salary benchmarks and compensation data for tech recruiters and hiring teams.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('recruiter_salary_board', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Recruitment Salary Board | Catalitium">
+<meta name="twitter:description" content="Recruiter salary board and benchmarks on Catalitium.">
+{% endblock %}
+
 {% block content %}
 <section class="space-y-8 py-10" aria-labelledby="job-browser-title">
   <div class="mx-auto max-w-7xl space-y-6">

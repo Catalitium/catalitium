@@ -154,4 +154,13 @@ Free tier: **50 requests/day** · Reset: UTC midnight
 
 ---
 
+## Pull requests
+
+1. Open a PR against the target branch (e.g. `main`) from your feature branch.
+2. **Smoke-test locally**: `python run.py`, hit the pages or flows you changed.
+3. Do **not** commit secrets (`.env`), `__pycache__/`, or local scratch files — see `.gitignore`.
+4. Describe **what** changed and **why** in the PR body (the template prompts you on GitHub).
+
+---
+
 MIT © 2026 Catalitium

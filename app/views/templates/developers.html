@@ -2,6 +2,19 @@
 
 {% block title %}Developers API — Jobs & Salary Data | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Catalitium Developers API: JSON endpoints for tech jobs and salary lookup. Integrate high-signal job data into your apps.">
+<link rel="canonical" href="{{ url_for('developers', _external=True) }}">
+<meta property="og:title" content="Developers API | Catalitium">
+<meta property="og:description" content="Jobs and salary JSON API for developers and analysts.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('developers', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Developers API | Catalitium">
+<meta name="twitter:description" content="Catalitium JSON API for jobs and salaries.">
+{% endblock %}
+
 {% block content %}
 <section class="max-w-4xl mx-auto space-y-8">
   <header class="space-y-3">

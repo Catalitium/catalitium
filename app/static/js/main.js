@@ -671,6 +671,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
 
   var emitApply = window.__applyAnalytics || function(){};
   var summarySpan = document.getElementById('jobModalSummary');
+  var successBox = document.getElementById('jobModalSuccess');
   var errorBox = document.getElementById('jobModalError');
   var submitBtn = document.getElementById('jobModalSubmit');
 
@@ -694,6 +695,10 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
     } else {
       errorBox.textContent = '';
       errorBox.classList.add('hidden');
+    }
+    if (successBox) {
+      successBox.textContent = '';
+      successBox.classList.add('hidden');
     }
   }
 
@@ -738,6 +743,10 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
     wrap.classList.remove('hidden');
     try { dialog.showModal(); } catch(_) { dialog.setAttribute('open', 'true'); }
     setError('');
+    if (successBox) {
+      successBox.textContent = '';
+      successBox.classList.add('hidden');
+    }
     setTimeout(function(){
       try { emailInput.focus(); } catch(_){}
     }, 0);
@@ -838,10 +847,19 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
           emitApply('redirect_missing', jobDetail);
           return;
         }
-        hideModal();
         setLoading(false);
-        emitApply('redirect', jobDetail);
-        openJobLink(target);
+        if (successBox) {
+          successBox.textContent = 'Opening the employer apply page. If you signed up for updates, check your inbox (including spam) for confirmation.';
+          successBox.classList.remove('hidden');
+        }
+        setTimeout(function(){
+          hideModal();
+          if (successBox) {
+            successBox.classList.add('hidden');
+          }
+          emitApply('redirect', jobDetail);
+          openJobLink(target);
+        }, 650);
       })
       .catch(function(err){
         setLoading(false);
@@ -907,8 +925,27 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
           var sk = document.getElementById('results-skeletons');
           if (sk) sk.classList.remove('hidden');
         } catch(_) {}
+        try {
+          setTimeout(function(){
+            var results = document.getElementById('results');
+            if (results) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        } catch(_) {}
       });
     }
+
+    document.addEventListener('keydown', function(e){
+      if (!e || e.defaultPrevented) return;
+      var t = e.target;
+      var tag = t && t.tagName ? t.tagName.toLowerCase() : '';
+      var inField = tag === 'input' || tag === 'textarea' || tag === 'select' || (t && t.isContentEditable);
+      if (inField) return;
+      if (e.key === '/' || (e.ctrlKey && (e.key === 'k' || e.key === 'K'))) {
+        e.preventDefault();
+        var q = document.getElementById('q');
+        if (q) { try { q.focus(); q.select(); } catch(_) {} }
+      }
+    }, true);
 
     // Weekly toggle: support click-outside close for dialog (existing UI)
     var toggle = document.getElementById('weekly-toggle');
@@ -1512,4 +1549,21 @@ function escHtml(s){
     var active = state.cards.filter(function(c){ return c.stage !== 'closed'; }).length;
     syncBadges(active);
   });
+})();
+
+/* Repeat visits: soft prompt to add to home screen (PWA) */
+(function(){
+  try {
+    if (!window.matchMedia || window.matchMedia('(display-mode: standalone)').matches) return;
+    var k = 'catalitium_visit_count';
+    var n = parseInt(localStorage.getItem(k) || '0', 10) + 1;
+    localStorage.setItem(k, String(n));
+    if (n !== 3 && n !== 6) return;
+    var bar = document.createElement('div');
+    bar.setAttribute('role', 'status');
+    bar.className = 'fixed bottom-24 md:bottom-6 left-3 right-3 z-[90] max-w-md mx-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-4 py-3 text-sm text-slate-700 dark:text-slate-200';
+    bar.innerHTML = '<span class="font-semibold">Add Catalitium to your home screen</span> for faster job search. Use your browser menu → Add to Home Screen / Install app.';
+    document.body.appendChild(bar);
+    setTimeout(function(){ try { bar.remove(); } catch(_) {} }, 12000);
+  } catch(_) {}
 })();

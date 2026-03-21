@@ -1,3 +1,4 @@
+/* Custom CSS + small utilities. Primary styling is Tailwind (CDN in base.html). */
 :root { --brand:#1a73e8; }
 ::selection { background: #1a73e82e; }
 

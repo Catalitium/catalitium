@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% block title %}Top Tech Companies | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Explore tech companies hiring on Catalitium: engineering cultures, locations, and open roles with salary context.">
+<link rel="canonical" href="{{ url_for('companies', _external=True) }}">
+<meta property="og:title" content="Top Tech Companies | Catalitium">
+<meta property="og:description" content="Discover companies and engineering cultures on Catalitium.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('companies', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Top Tech Companies | Catalitium">
+<meta name="twitter:description" content="Tech companies and hiring on Catalitium.">
+{% endblock %}
+
 {% block content %}
 <section class="pt-8 sm:pt-12 pb-8 max-w-5xl mx-auto px-4">
   <div class="text-center max-w-3xl mx-auto">

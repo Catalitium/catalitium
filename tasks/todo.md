@@ -1,12 +1,12 @@
 # Catalitium — task log
 
-See **[docs/CODE_REV_ROADMAP.md](../docs/CODE_REV_ROADMAP.md)** for the code-review backlog (enhancements, simplifications, optimizations).
+Roadmap items from the former `docs/CODE_REV_ROADMAP.md` are **implemented in the codebase** (search UX, job cards, auth copy, health `?deep=1`, rate-limit messages, SW cache bump, third-party script gating on non-prod hosts, etc.). Use `claude-rules.md`: plan → execute → verify.
 
 ## Plan
-- [ ] Pick next item from roadmap — note success criteria before coding.
+- [ ] Next improvement — define success criteria before coding.
 
 ## Progress
-- [x] Roadmap doc added on branch `code-rev` (proof: `docs/CODE_REV_ROADMAP.md` exists).
+- [x] Code-review roadmap themes implemented in app/templates/static (no separate docs folder).
 
 ## Review
-- Open questions: prioritize quick wins vs medium items per sprint capacity.
+- Prefer small follow-up PRs per theme (salary badges, AI summary, analytics).

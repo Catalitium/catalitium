@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Submit Job Details | Catalitium{% endblock %}
 
+{% block meta %}
+<meta name="description" content="Submit your job listing details after checkout on Catalitium.">
+<link rel="canonical" href="{{ url_for('stripe_success', _external=True) }}">
+<meta property="og:title" content="Submit Job Details | Catalitium">
+<meta property="og:description" content="Complete your Catalitium job post after payment.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('stripe_success', _external=True) }}">
+<meta property="og:site_name" content="Catalitium">
+<meta property="og:locale" content="en_US">
+<meta name="twitter:title" content="Submit Job Details | Catalitium">
+<meta name="twitter:description" content="Job submission form for Catalitium employers.">
+{% endblock %}
+
+{% block robots %}
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-2xl px-4 py-10">
 

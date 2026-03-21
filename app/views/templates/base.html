@@ -5,25 +5,71 @@
   <meta name="csrf-token" content="{{ csrf_token() }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Catalitium{% endblock %}</title>
-  <meta name="description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
-  <link rel="canonical" href="{{ request.base_url }}" />
+  {# Single source of truth for meta/OG text: override {% block meta %} per page, or pass meta_description / canonical_url / og_url from the view. #}
+  {% set _seo_path = request.path if request.path else '/' %}
+  {% set _canonical_default = request.url_root.rstrip('/') + (_seo_path if _seo_path.startswith('/') else '/' + _seo_path) %}
+  {% block meta %}
+  <meta name="description" content="{{ meta_description|default('Find high-signal tech jobs and salary insights. Search roles in AI, software engineering, and remote work—US, EU, UK & beyond.') }}" />
+  <link rel="canonical" href="{{ canonical_url|default(_canonical_default) }}" />
   <meta property="og:title" content="{{ (self.title() or 'Catalitium')|striptags }}" />
   <meta property="og:description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="{{ request.base_url }}" />
+  <meta property="og:url" content="{{ og_url|default(_canonical_default) }}" />
+  <meta property="og:site_name" content="Catalitium" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:title" content="{{ (self.title() or 'Catalitium')|striptags }}" />
+  <meta name="twitter:description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
+  {% endblock %}
+  {% block robots %}
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  {% endblock %}
+  {# Shared social preview image (pages that replace {% block meta %} still get a consistent image) #}
   <meta property="og:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
+  <meta property="og:image:alt" content="Catalitium — tech jobs and salary insights" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
-  {% block meta %}{% endblock %}
+  {% set _site_root = request.url_root.rstrip('/') %}
+  <script type="application/ld+json">
+  {{ {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": _site_root + "#website",
+        "name": "Catalitium",
+        "url": request.url_root,
+        "description": "High-signal tech job board with salary insights and market intelligence.",
+        "publisher": {"@id": _site_root + "#organization"},
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": url_for('jobs', _external=True) + "?title={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": _site_root + "#organization",
+        "name": "Catalitium",
+        "url": request.url_root,
+        "logo": {
+          "@type": "ImageObject",
+          "url": url_for('static', filename='img/logo.png', _external=True)
+        }
+      }
+    ]
+  }|tojson }}
+  </script>
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json', v=asset_version) }}">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Catalitium">
-  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <meta name="author" content="Catalitium">
   <link rel="dns-prefetch" href="https://www.googletagmanager.com">
   <link rel="dns-prefetch" href="https://consent.cookiebot.com">
