@@ -36,7 +36,7 @@
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Export CSV
       </button>
-      <a href="{{ url_for('index') }}"
+      <a href="{{ url_for('jobs') }}"
          class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90 shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         Browse Jobs
@@ -61,7 +61,7 @@
     </svg>
     <h2 class="text-lg font-semibold text-slate-700 mb-2">No applications tracked yet</h2>
     <p class="text-slate-500 text-sm mb-5 max-w-sm mx-auto">Hit the <strong>Track</strong> button on any job listing to add it to your pipeline.</p>
-    <a href="{{ url_for('index') }}"
+    <a href="{{ url_for('jobs') }}"
        class="inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
       Browse open roles →
     </a>

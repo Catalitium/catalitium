@@ -1079,7 +1079,7 @@ def create_app() -> Flask:
         if _api_request():
             return _api_error("rate_limited", "Too many requests", 429)
         flash("Too many requests. Please wait and try again.", "error")
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
         """Safely parse and normalize search parameters."""
@@ -1149,7 +1149,40 @@ def create_app() -> Flask:
         return _fmt(years, "year")
 
     @app.get("/")
-    def index():
+    def landing():
+        """Render the premium landing page."""
+        # If someone hits /?title=... or /?country=..., redirect to /jobs
+        if request.args.get("title") or request.args.get("country") or request.args.get("page"):
+            return redirect(url_for("jobs", **request.args), 301)
+
+        total_jobs = 0
+        try:
+            total_jobs = Job.count(None, None) or 0
+        except Exception:
+            pass
+
+        featured_jobs = []
+        try:
+            rows = Job.search(None, None, limit=4, offset=0)
+            for row in rows:
+                featured_jobs.append({
+                    "id": row.get("id"),
+                    "title": (row.get("job_title") or "").strip(),
+                    "company": row.get("company_name") or "",
+                    "location": row.get("location") or "Remote",
+                })
+        except Exception:
+            pass
+
+        return render_template(
+            "landing.html",
+            wide_layout=True,
+            total_jobs=total_jobs,
+            featured_jobs=featured_jobs,
+        )
+
+    @app.get("/jobs")
+    def jobs():
         """Render the main job search page with optional filters."""
         raw_title = (request.args.get("title") or "").strip()
         raw_country = (request.args.get("country") or "").strip()
@@ -1322,10 +1355,10 @@ def create_app() -> Flask:
             "per_page": per_page_display,
             "has_prev": page > 1,
             "has_next": page < pages_display,
-            "prev_url": url_for("index", title=title_q or None, country=(raw_country or None), page=page - 1)
+            "prev_url": url_for("jobs", title=title_q or None, country=(raw_country or None), page=page - 1)
             if page > 1
             else None,
-            "next_url": url_for("index", title=title_q or None, country=(raw_country or None), page=page + 1)
+            "next_url": url_for("jobs", title=title_q or None, country=(raw_country or None), page=page + 1)
             if page < pages_display
             else None,
         }
@@ -1358,7 +1391,7 @@ def create_app() -> Flask:
     @app.get("/remote")
     def remote_jobs():
         """301 redirect to remote jobs filter — preserves SEO equity for /remote URL."""
-        return redirect(url_for("index", country="Remote"), 301)
+        return redirect(url_for("jobs", country="Remote"), 301)
 
     @app.get("/recruiter-salary-board")
     def recruiter_salary_board():
@@ -1609,7 +1642,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
         email = (payload.get("email") or "").strip()
         job_id_raw = (payload.get("job_id") or "").strip()
         search_title = (payload.get("search_title") or "").strip()
@@ -1624,7 +1657,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         job_link = Job.get_link(job_id_raw)
         next_url = (payload.get("next") or "").strip()
@@ -1642,7 +1675,7 @@ def create_app() -> Flask:
                 if is_json:
                     return jsonify({"error": "subscribe_failed"}), 500
                 flash("We couldn't process your email. Please try again later.", "error")
-                return redirect(url_for("index"))
+                return redirect(url_for("jobs"))
             if is_json:
                 body = {"status": status}
                 if job_link:
@@ -1690,14 +1723,14 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "subscribe_failed"}), 500
             flash("We couldn't process your email. Please try again later.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if is_json:
             body = {"status": status or "ok"}
             if job_link:
                 body["redirect"] = job_link
             return jsonify(body), 200
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     @app.post("/subscribe.json")
     @_limit("20 per minute")
@@ -1778,12 +1811,12 @@ def create_app() -> Flask:
     @app.route("/logout", methods=["GET", "POST"])
     def logout():
         if request.method == "GET":
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
         if not _csrf_valid():
             flash("Session expired. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
         session.pop("user", None)
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     @app.post("/account/delete")
     @_limit("5 per hour")
@@ -1809,7 +1842,7 @@ def create_app() -> Flask:
             return redirect(url_for("profile"))
         session.pop("user", None)
         flash("Your account has been deleted.", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     @app.get("/studio")
     def studio():
@@ -1912,7 +1945,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
         email_raw = (payload.get("email") or "").strip()
         name_raw = (payload.get("name") or payload.get("name_company") or payload.get("company") or "").strip()
         message_raw = (payload.get("message") or "").strip()
@@ -1923,19 +1956,19 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if not name_raw or len(name_raw) < 2:
             if is_json:
                 return jsonify({"error": "invalid_name"}), 400
             flash("Please add your name or company.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if not message_raw or len(message_raw) < 5:
             if is_json:
                 return jsonify({"error": "invalid_message"}), 400
             flash("Please add a short message.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         status = insert_contact(email=email, name_company=name_raw, message=message_raw)
 
@@ -1943,12 +1976,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "contact_failed"}), 500
             flash("We could not send your message. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if is_json:
             return jsonify({"status": "ok"}), 200
         flash("Thanks! We received your message.", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     @app.post("/contact.json")
     @_limit("12 per minute")
@@ -1996,7 +2029,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         contact_email_raw = (payload.get("contact_email") or payload.get("email") or "").strip()
         job_title_raw = (payload.get("job_title") or "").strip()
@@ -2010,7 +2043,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid contact email.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         def _word_count(text: str) -> int:
             if not text:
@@ -2021,25 +2054,25 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_title"}), 400
             flash("Please add a job title.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if len(company_raw) < 2:
             if is_json:
                 return jsonify({"error": "invalid_company"}), 400
             flash("Please add a company name.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if len(description_raw) < 10:
             if is_json:
                 return jsonify({"error": "invalid_description"}), 400
             flash("Please add a short description.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if _word_count(description_raw) > 5000:
             if is_json:
                 return jsonify({"error": "description_too_long"}), 400
             flash("Description is too long (max ~5000 words).", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         status = insert_job_posting(
             contact_email=contact_email,
@@ -2054,12 +2087,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "job_posting_failed"}), 500
             flash("We could not submit the job. Please try again.", "error")
-            return redirect(url_for("index"))
+            return redirect(url_for("jobs"))
 
         if is_json:
             return jsonify({"status": "ok"}), 200
         flash("Thanks! Your job submission was received.", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("jobs"))
 
     @app.post("/job-posting.json")
     @_limit("10 per minute")
@@ -2195,7 +2228,7 @@ def create_app() -> Flask:
         )
 
         canonical_url = url_for(
-            "index",
+            "jobs",
             title=title or None,
             country=country or None,
             page=page,
@@ -2915,7 +2948,7 @@ def create_app() -> Flask:
             if loc:
                 urls.append({"loc": loc, "priority": priority, "lastmod": lastmod, "changefreq": changefreq})
 
-        _add(url_for("index", _external=True), priority="1.0", changefreq="daily")
+        _add(url_for("jobs", _external=True), priority="1.0", changefreq="daily")
         _add(url_for("about", _external=True), priority="0.8", changefreq="monthly")
         _add(url_for("resources", _external=True), priority="0.9", changefreq="weekly")
         _add(url_for("market_research_index", _external=True), priority="0.9", changefreq="weekly")
@@ -2936,7 +2969,7 @@ def create_app() -> Flask:
             {"country": "CH"},
         ]
         for target in filter_targets:
-            loc = url_for("index", title=target.get("title"), country=target.get("country"), _external=True)
+            loc = url_for("jobs", title=target.get("title"), country=target.get("country"), _external=True)
             _add(loc, priority="0.7", changefreq="daily")
 
         # Add individual job pages (last 60 days, up to 500)

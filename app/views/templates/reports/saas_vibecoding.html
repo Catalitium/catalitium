@@ -23,7 +23,7 @@
 
 <!-- Breadcrumb -->
 <nav class="mb-6 text-sm text-slate-500 flex items-center gap-2" aria-label="Breadcrumb">
-  <a href="{{ url_for('index') }}" class="hover:text-brand transition-colors">Home</a>
+  <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Home</a>
   <span>&rsaquo;</span>
   <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
   <span>&rsaquo;</span>
@@ -620,7 +620,7 @@
         <strong>Catalitium</strong> is a high-signal tech job board and market intelligence platform. Our mission is to equip tech talent with the tools, insights, and clarity they need to navigate and shape the future of work in AI, automation, and software.
       </p>
       <div class="flex flex-wrap gap-4 text-sm">
-        <a href="{{ url_for('index') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">Browse Tech Jobs</a>
+        <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">Browse Tech Jobs</a>
         <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 text-slate-700 px-4 py-2 font-medium hover:bg-slate-100 transition">All Reports</a>
         <a href="{{ url_for('about') }}" class="text-brand hover:underline py-2 text-sm">About Us</a>
         <a href="{{ url_for('legal') }}" class="text-slate-500 hover:underline py-2 text-sm">Privacy &amp; Terms</a>
@@ -697,12 +697,12 @@
   "author": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('index', _external=True) }}"
+    "url": "{{ url_for('jobs', _external=True) }}"
   },
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('index', _external=True) }}"
+    "url": "{{ url_for('jobs', _external=True) }}"
   },
   "datePublished": "{{ report.published }}",
   "dateModified": "{{ report.published }}",
