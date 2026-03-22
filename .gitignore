@@ -61,6 +61,7 @@ app/views/__pycache__/
 # Local scratch at repo root (tracked tasks live under tasks/)
 /todo.md
 commit_msg.txt
+testimonials_gemini.md
 
 # Logs
 *.log
