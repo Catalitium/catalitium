@@ -263,12 +263,17 @@
   function showSuggestions(type, items, input) {
     var list = document.getElementById('suggestions-' + type);
     if (!items.length) { list.classList.add('hidden'); return; }
-    list.innerHTML = items.map(function (s) {
-      return '<li class="px-4 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200" onclick="pickSuggestion(\'' + type + '\',this)">' + s + '</li>';
-    }).join('');
+    // Build nodes with textContent (XSS-safe — no innerHTML string concat)
+    list.innerHTML = '';
+    items.forEach(function (s) {
+      var li = document.createElement('li');
+      li.textContent = s;
+      li.className = 'px-4 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200';
+      li.addEventListener('click', function () { pickSuggestion(type, s, input); });
+      list.appendChild(li);
+    });
     list.classList.remove('hidden');
     // Position below input
-    var rect = input.getBoundingClientRect();
     list.style.top  = (input.offsetTop + input.offsetHeight + 2) + 'px';
     list.style.left = input.offsetLeft + 'px';
     list.style.width = input.offsetWidth + 'px';
@@ -280,8 +285,8 @@
     if (list) list.classList.add('hidden');
   }
 
-  window.pickSuggestion = function (type, li) {
-    document.getElementById('job_title').value = li.textContent.trim();
+  window.pickSuggestion = function (type, value, input) {
+    input.value = value;
     hideSuggestions(type);
   };
 
@@ -317,7 +322,10 @@
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
-      if (!data.ok) throw new Error(data.error || 'Submission failed');
+      if (!data.ok) {
+        if (data.error === 'save_failed') throw new Error('Could not save your submission. Please try again in a moment.');
+        throw new Error(data.error || 'Submission failed');
+      }
       var p = data.percentiles;
       var cur = p.currency;
       var fmt = function (n) { return cur + ' ' + Number(n).toLocaleString(); };

@@ -3293,11 +3293,46 @@ def create_app() -> Flask:
             },
         )
 
-    # Salary tool removed — redirect old URLs to salary board
+    # ------------------------------------------------------------------
+    # Salary Tool — live DACH calculator + role/region report
+    # ------------------------------------------------------------------
     @app.get("/salary-tool")
     @app.get("/salary-report")
-    def salary_report():
-        return redirect(url_for("recruiter_salary_board"), 301)
+    def salary_tool():
+        import json as _json
+        from datetime import datetime as _dt
+        seed_json = _json.dumps(
+            {f"{kw}:{city}": v for (kw, city), v in _SALARY_SEED.items()}
+        )
+        data = {
+            "Software Engineering":   {"count": 12_400, "min":  88_000, "median": 130_000, "max": 175_000},
+            "Product Management":     {"count":  3_200, "min":  85_000, "median": 125_000, "max": 165_000},
+            "Data & ML":              {"count":  4_800, "min":  80_000, "median": 128_000, "max": 170_000},
+            "Design":                 {"count":  1_800, "min":  72_000, "median": 108_000, "max": 140_000},
+            "DevOps / SRE":           {"count":  2_200, "min":  90_000, "median": 132_000, "max": 170_000},
+            "Engineering Management": {"count":  1_200, "min": 110_000, "median": 150_000, "max": 200_000},
+        }
+        region_data = {
+            "Zurich": {"median": 130_000, "count": 8_400},
+            "Geneva": {"median": 122_000, "count": 2_100},
+            "Berlin": {"median":  82_000, "count": 6_800},
+            "Munich": {"median":  90_000, "count": 3_200},
+        }
+        return render_template(
+            "salary_report.html",
+            data=data,
+            region_data=region_data,
+            generated=_dt.now(timezone.utc).strftime("%B %Y"),
+            salary_seed_json=seed_json,
+        )
+
+    @app.get("/salary/by-title")
+    def salary_by_title():
+        return render_template("salary_by_title.html")
+
+    @app.get("/salary/top-companies")
+    def salary_top_companies():
+        return render_template("salary_top_companies.html")
 
     # ------------------------------------------------------------------
     # Salary flywheel — crowd-sourced contribution form
@@ -3337,16 +3372,18 @@ def create_app() -> Flask:
             except Exception:
                 pass  # optional field — ignore invalid
 
-        insert_salary_submission(
+        status = insert_salary_submission(
             job_title=job_title,
             company=company,
             location=location,
             seniority=seniority,
             base_salary=base_salary,
             currency=currency,
-            years_exp=years_exp or None,
+            years_exp=years_exp,  # 0 is valid (junior); pass through directly
             email=email,
         )
+        if status != "ok":
+            return jsonify({"error": "save_failed"}), 500
 
         percentiles = _get_salary_percentiles(job_title, location)
         return jsonify({"ok": True, "percentiles": percentiles})
