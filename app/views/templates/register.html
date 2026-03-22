@@ -30,6 +30,13 @@
       onclick="switchTab('login')">Sign in</button>
   </div>
 
+  {% if from_source == 'resume' %}
+  <div class="mb-4 flex items-center gap-2 rounded-xl border border-brand/30 bg-brand/5 dark:bg-brand/10 px-4 py-3 text-sm text-slate-700 dark:text-slate-300">
+    <svg class="w-5 h-5 text-brand flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+    <span>Complete signup to upload your resume and get matched with relevant roles.</span>
+  </div>
+  {% endif %}
+
   <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
     <form method="post" action="{{ url_for('register') }}" class="space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

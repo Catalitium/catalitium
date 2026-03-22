@@ -28,14 +28,14 @@
         {% if title_q %}
           {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
         {% else %}
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">High-signal</span> tech roles <br class="hidden sm:block"/> &amp; salary intel
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">High-signal</span> tech jobs.
         {% endif %}
       </h1>
-      <p class="mt-5 text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+      <p class="mt-4 text-lg text-slate-600 dark:text-slate-400">
         {% if title_q %}
-          Browse {{ count|default(0) }} curated roles with transparent salary cues so you don't have to open ten tabs to compare offers.
+          {{ count|default(0) }} curated roles with verified salaries.
         {% else %}
-          We clean noisy job feeds, normalize titles, and parse verified salaries so you can find your next remote engineering or AI position in minutes.
+          Curated roles with verified salaries.
         {% endif %}
       </p>
       {% if not title_q %}
@@ -48,6 +48,11 @@
            class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-6 py-3.5 text-base font-semibold text-slate-800 dark:text-slate-200 hover:border-brand dark:hover:border-brand hover:text-brand dark:hover:text-brand hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           Try AI Agent (Free)
         </a>
+        <label class="inline-flex items-center justify-center rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 px-6 py-3.5 text-base font-semibold text-slate-600 dark:text-slate-300 cursor-pointer hover:border-brand hover:text-brand dark:hover:border-brand dark:hover:text-brand hover:-translate-y-0.5 transition-all duration-200 focus-within:ring-2 focus-within:ring-brand/50 focus-within:rounded-xl">
+          <svg class="w-5 h-5 mr-2 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+          Upload Resume
+          <input type="file" accept=".pdf,.doc,.docx" class="sr-only" id="resume-upload-input">
+        </label>
       </div>
       <div class="mt-6 flex items-center justify-center gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
         <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> Salary transparent</span>
@@ -118,6 +123,15 @@
     {% set show_exact = (title_q or country_q) %}
     {% set rounded = ((count // 1000) * 1000) if count and count >= 1000 else count %}
     <div class="flex items-center gap-2 flex-wrap text-xs sm:text-sm">
+      <!-- View toggle -->
+      <div class="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 gap-0.5 mr-1" role="group" aria-label="Switch view">
+        <button id="view-cards" type="button" data-view-toggle="cards" class="p-1.5 rounded-md border border-transparent text-brand border-brand transition-colors" aria-label="Card view" title="Card view">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button id="view-table" type="button" data-view-toggle="table" class="p-1.5 rounded-md border border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" aria-label="Table view" title="Table view">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
       <span id="js-results-count" class="font-medium text-slate-700 dark:text-slate-300">
         {% if show_exact %}
           {{ count|default(0) }} curated results
@@ -378,6 +392,65 @@
       </div>
     {% endif %}
   </div>
+
+  <!-- TABLE VIEW (Power View) -->
+  {% set CUR_TABLE = {'EUR':'EUR','USD':'USD','GBP':'GBP','CHF':'CHF'} %}
+  <div id="results-table" class="hidden overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+    {% if results and results|length > 0 %}
+    <table class="w-full text-sm text-left min-w-[700px]">
+      <thead class="text-[11px] uppercase tracking-wider bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+        <tr>
+          <th class="px-4 py-3 font-semibold">Title</th>
+          <th class="px-4 py-3 font-semibold">Company</th>
+          <th class="px-4 py-3 font-semibold">Location</th>
+          <th class="px-4 py-3 font-semibold">Salary Range</th>
+          <th class="px-4 py-3 font-semibold">vs Median</th>
+          <th class="px-4 py-3 font-semibold">Posted</th>
+          <th class="px-4 py-3 font-semibold w-20"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for j in results %}
+        <tr class="even:bg-slate-50/50 dark:even:bg-slate-900/30 hover:bg-brand/5 dark:hover:bg-brand/10 transition-colors">
+          <td class="px-4 py-3">
+            <a href="{{ job_url(j) }}" class="font-medium text-slate-900 dark:text-white hover:text-brand transition-colors">{{ j.title }}</a>
+            {% if j.is_new %}<span class="ml-1.5 text-[10px] font-semibold uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-1.5 py-0.5">New</span>{% endif %}
+            {% if j.is_ghost %}<span class="ml-1.5 text-[10px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800 rounded-full px-1.5 py-0.5">May be filled</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-400">{{ j.company or '—' }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{{ j.location or 'Remote' }}</td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            {% if j.estimated_salary_range_compact %}
+            <span class="font-medium text-slate-800 dark:text-slate-200">{{ (CUR_TABLE.get(j.median_salary_currency) or '') }} {{ j.estimated_salary_range_compact }}</span>
+            {% else %}
+            <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 whitespace-nowrap">
+            {% if j.salary_delta_pct is not none %}
+            <span class="{% if j.salary_delta_pct >= 0 %}text-emerald-700 dark:text-emerald-400{% else %}text-slate-500{% endif %} font-medium text-[13px]">
+              {% if j.salary_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ j.salary_delta_pct | abs }}%
+            </span>
+            {% else %}
+            <span class="text-slate-400">—</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap text-[13px]">{{ j.date_posted or '—' }}</td>
+          <td class="px-4 py-3">
+            <a href="{{ j.link or '#' }}" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center justify-center rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand/90 transition-colors">
+              Apply
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-6 text-center text-slate-500 dark:text-slate-400">No results to display in table view.</div>
+    {% endif %}
+  </div>
+
   <!-- Skeletons shown during form submit navigation -->
   <div id="results-skeletons" class="mt-3 hidden">
     <div class="rounded-xl border border-slate-200 p-4 animate-pulse h-24 bg-slate-50"></div>
@@ -387,33 +460,20 @@
   </div>
 </section>
 
-<!-- Editorial value / trust signals -->
-<section class="mx-auto max-w-6xl mt-6 px-3 sm:px-0" aria-label="How Catalitium curates jobs">
+
+<!-- Salary transparency -->
+<section class="mx-auto max-w-6xl mt-6 px-3 sm:px-0" aria-label="Salary transparency">
   <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 p-4 sm:p-6">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <div>
-        <p class="text-[13px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Editorial process</p>
-        <h3 class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">How we curate roles</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Every listing is sourced from employer feeds and hand-reviewed for clarity, compensation, location accuracy, and spam signals before it is surfaced in search.
-        </p>
-        <ul class="mt-3 space-y-2 text-sm text-slate-600">
-          <li>Titles and locations get normalized so filters stay reliable.</li>
-          <li>Suspicious redirects or missing companies are flagged and removed.</li>
-          <li>We rotate fresh roles daily so the feed stays under 7 days old.</li>
-        </ul>
-      </div>
-      <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
-        <p class="text-[13px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Salary insights</p>
-        <h3 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Transparency promise</h3>
-        <p class="mt-2 text-sm text-slate-600">
-          Salary tags blend employer provided ranges with Catalitium estimates. We mark ranges with Est. labels, note any missing data, and never inflate compensation to boost clicks.
-        </p>
-        <div class="mt-3 text-sm text-slate-600 space-y-1.5">
-          <p>Currency harmonized to USD/EUR/GBP/CHF to avoid surprises.</p>
-          <p>Outliers are reviewed manually before they appear on a card.</p>
-          <p>Sponsored employers follow the same disclosure and pay rules.</p>
-        </div>
+    <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+      <p class="text-[13px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Salary insights</p>
+      <h3 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Transparency promise</h3>
+      <p class="mt-2 text-sm text-slate-600">
+        Salary tags blend employer provided ranges with Catalitium estimates. We mark ranges with Est. labels, note any missing data, and never inflate compensation to boost clicks.
+      </p>
+      <div class="mt-3 text-sm text-slate-600 space-y-1.5">
+        <p>Currency harmonized to USD/EUR/GBP/CHF to avoid surprises.</p>
+        <p>Outliers are reviewed manually before they appear on a card.</p>
+        <p>Sponsored employers follow the same disclosure and pay rules.</p>
       </div>
     </div>
   </div>

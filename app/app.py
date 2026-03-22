@@ -1820,7 +1820,8 @@ def create_app() -> Flask:
         if session.get("user"):
             return redirect(url_for("studio"))
         if request.method == "GET":
-            return render_template("register.html", tab="signup", account_type="candidate")
+            from_source = request.args.get("from", "")
+            return render_template("register.html", tab="signup", account_type="candidate", from_source=from_source)
 
         action = request.form.get("action", "signup")
         if action not in {"signup", "login"}:

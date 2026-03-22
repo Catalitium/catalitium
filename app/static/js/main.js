@@ -1431,3 +1431,63 @@ function escHtml(s){
     setTimeout(function(){ try { bar.remove(); } catch(_) {} }, 12000);
   } catch(_) {}
 })();
+
+/* ── Resume Upload CTA ── */
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'resume-upload-input') {
+    var file = e.target.files && e.target.files[0];
+    if (file) {
+      try { sessionStorage.setItem('pending_resume', file.name); } catch(_) {}
+      window.location.href = '/register?from=resume';
+    }
+  }
+});
+
+/* ── View Toggle (Card ↔ Table) ── */
+(function() {
+  var KEY = 'catalitium_view';
+  function applyView(mode) {
+    var cards = document.getElementById('results');
+    var table = document.getElementById('results-table');
+    var btnCards = document.getElementById('view-cards');
+    var btnTable = document.getElementById('view-table');
+    if (!cards || !table) return;
+    if (mode === 'table') {
+      cards.classList.add('hidden');
+      table.classList.remove('hidden');
+    } else {
+      cards.classList.remove('hidden');
+      table.classList.add('hidden');
+      mode = 'cards';
+    }
+    if (btnCards && btnTable) {
+      var on = 'text-brand border-brand';
+      var off = 'text-slate-400 border-transparent hover:text-slate-600 dark:hover:text-slate-300';
+      [btnCards, btnTable].forEach(function(b) {
+        on.split(' ').forEach(function(c) { b.classList.remove(c); });
+        off.split(' ').forEach(function(c) { b.classList.remove(c); });
+      });
+      var active = mode === 'table' ? btnTable : btnCards;
+      var inactive = mode === 'table' ? btnCards : btnTable;
+      on.split(' ').forEach(function(c) { active.classList.add(c); });
+      off.split(' ').forEach(function(c) { inactive.classList.add(c); });
+    }
+    try { localStorage.setItem(KEY, mode); } catch(_) {}
+  }
+  document.addEventListener('click', function(e) {
+    var btn = e.target && e.target.closest('[data-view-toggle]');
+    if (!btn) return;
+    applyView(btn.getAttribute('data-view-toggle'));
+  });
+  // Restore saved preference on load
+  try {
+    var saved = localStorage.getItem(KEY);
+    if (saved === 'table') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { applyView('table'); });
+      } else {
+        applyView('table');
+      }
+    }
+  } catch(_) {}
+})();
