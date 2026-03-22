@@ -10,42 +10,6 @@
 <meta property="og:url" content="{{ job_url(job, _external=True) }}">
 {% endblock %}
 
-{% block head_extra %}
-{{ super() }}
-{% set _jp_url = job_url(job, _external=True) %}
-{% set _jp_desc = (job.description|striptags|truncate(4000, True, '…')) if job.description else (job.title + ' at ' + (job.company or 'Company') + ' — ' + job.location) %}
-{% set _date_iso = none %}
-{% if job.date_posted and job.date_posted|length >= 10 and job.date_posted[4:5] == '-' %}
-  {% set _date_iso = job.date_posted[:10] %}
-{% elif job.date_raw and job.date_raw|length == 8 %}
-  {% set _date_iso = job.date_raw[0:4] + '-' + job.date_raw[4:6] + '-' + job.date_raw[6:8] %}
-{% elif job.date_raw and job.date_raw|length >= 10 and job.date_raw[4:5] == '-' %}
-  {% set _date_iso = job.date_raw[:10] %}
-{% endif %}
-<script type="application/ld+json">
-{{ {
-  "@context": "https://schema.org",
-  "@type": "JobPosting",
-  "title": job.title,
-  "description": _jp_desc,
-  "url": _jp_url,
-  "datePosted": (_date_iso if _date_iso else none),
-  "hiringOrganization": {"@type": "Organization", "name": job.company or "Hiring organization"},
-  "jobLocation": {"@type": "Place", "name": job.location},
-  "employmentType": "FULL_TIME",
-  "baseSalary": ({
-    "@type": "MonetaryAmount",
-    "currency": job.median_salary_currency or "USD",
-    "value": {
-      "@type": "QuantitativeValue",
-      "minValue": job.salary_min,
-      "maxValue": job.salary_max,
-      "unitText": "YEAR"
-    }
-  } if job.salary_min and job.salary_max else none)
-}|tojson }}
-</script>
-{% endblock %}
 
 {% block content %}
 <!-- Breadcrumb -->
@@ -294,7 +258,7 @@
   "@context": "https://schema.org",
   "@type": "JobPosting",
   "title": "{{ job.title|e }}",
-  "description": "{{ job.description|truncate(500, True)|e }}",
+  "description": "{{ (job.description|striptags|truncate(4000, True, '…'))|e }}",
   "datePosted": "{{ job.date_raw }}",
   "employmentType": "FULL_TIME",
   "directApply": {% if job.link %}true{% else %}false{% endif %},

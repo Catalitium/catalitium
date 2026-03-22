@@ -4,18 +4,20 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Catalitium{% endblock %}</title>
+  {% block meta %}
   <meta name="description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
   <link rel="canonical" href="{{ request.base_url }}" />
   <meta property="og:title" content="{{ (self.title() or 'Catalitium')|striptags }}" />
   <meta property="og:description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="{{ request.base_url }}" />
+  {% endblock %}
   <meta property="og:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta property="og:site_name" content="Catalitium" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
-  {% block meta %}{% endblock %}
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   <meta name="mobile-web-app-capable" content="yes">
@@ -161,7 +163,7 @@
          class="fixed inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl bg-white dark:bg-slate-900 shadow-xl p-3 sm:max-w-md sm:mx-auto overflow-y-auto md:inset-y-0 md:right-0 md:bottom-0 md:top-0 md:mx-0 md:w-96 md:max-h-none md:h-full md:rounded-none md:rounded-l-2xl md:p-4 will-change-transform motion-safe:transition-transform motion-safe:duration-200 motion-safe:ease-out translate-y-full md:translate-x-full"
          style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);">
       <div class="flex items-center justify-between px-1 py-1">
-        <h2 id="navtitle" class="text-sm font-semibold text-slate-600 dark:text-slate-300">Menu</h2>
+        <span id="navtitle" class="text-sm font-semibold text-slate-600 dark:text-slate-300">Menu</span>
         <button class="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 text-slate-600 dark:text-slate-300" aria-label="Close menu" data-dismiss>
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -443,7 +445,7 @@
     <div class="p-6 sm:p-7 w-[90vw] max-w-lg">
       <div class="flex items-center gap-2">
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="contact-title" class="text-lg font-semibold dark:text-slate-100">Contact us</h2>
+        <span id="contact-title" class="text-lg font-semibold dark:text-slate-100">Contact us</span>
       </div>
       <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">Questions, partnerships, or feedback? Drop a note and we'll reply.</p>
 
@@ -559,6 +561,22 @@
   </nav>
 
   <script defer src="{{ url_for('static', filename='js/main.js', v=asset_version) }}"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Catalitium",
+    "url": "{{ url_for('landing', _external=True) }}",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "{{ url_for('jobs', _external=True) }}?title={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
   {% block body_extra %}{% endblock %}
   <script>
     if ('serviceWorker' in navigator) {
