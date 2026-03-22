@@ -63,7 +63,7 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
 
 
   <!-- Google AdSense -->
@@ -129,6 +129,7 @@
 
       <!-- Right: action buttons (desktop) -->
       <div class="hidden xl:flex items-center justify-end gap-3 shrink-0">
+        <a href="{{ url_for('salary_contribute') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium text-brand border border-brand/30 hover:bg-brand/10 transition-colors">+ Add Salary</a>
         <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
         {% if session.get("user") %}
         <a href="{{ url_for('post_job_form') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
@@ -216,6 +217,7 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('jobs') }}">Jobs</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('salary_tool') }}">Salaries</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand text-brand font-medium" href="{{ url_for('salary_contribute') }}">+ Add Your Salary</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         {% if session.get("user") %}
@@ -311,6 +313,7 @@
           <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Jobs</a>
           <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
           <a href="{{ url_for('salary_tool') }}" class="hover:text-brand transition-colors">Salaries</a>
+          <a href="{{ url_for('salary_contribute') }}" class="hover:text-brand transition-colors">Add Your Salary</a>
           <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
           <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
           <a href="{{ url_for('pricing') }}" class="hover:text-brand transition-colors">Pricing</a>

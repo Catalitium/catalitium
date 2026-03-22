@@ -113,6 +113,11 @@
       </button>
     </div>
 
+    <!-- Contribute nudge -->
+    <p class="text-right text-xs mb-3 text-slate-500 dark:text-slate-400">
+      Know your salary? <a href="{{ url_for('salary_contribute') }}" class="text-brand font-semibold hover:underline">Add it and see your percentile →</a>
+    </p>
+
     <!-- DACH Salary Calculator -->
     <div class="rounded-2xl border border-brand/20 bg-brand/5 dark:bg-slate-900/60 p-5 mb-6">
       <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">DACH Salary Calculator</p>
@@ -248,12 +253,12 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             {% for cat, d in data.items() %}
-            <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition">
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition">
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ cat }}</td>
-              <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ d.count }}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
               <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}CHF {{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -286,7 +291,7 @@
         {% if d.median %}
         <div>
           <div class="flex justify-between text-xs mb-1">
-            <span class="font-medium text-slate-700">{{ cat }}</span>
+            <span class="font-medium text-slate-700 dark:text-slate-300">{{ cat }}</span>
             <span class="text-brand font-semibold">CHF {{ '{:,}'.format(d.median) }}</span>
           </div>
           <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
@@ -330,7 +335,7 @@
 
     <!-- Methodology -->
     <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-5 text-xs text-slate-500 space-y-1.5">
-      <p class="font-semibold text-slate-700 text-sm">Methodology</p>
+      <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm">Methodology</p>
       <p>Salary estimates are derived from Catalitium&rsquo;s curated job database, blending employer-disclosed ranges
          with location-based reference data normalised to USD. Figures represent annual compensation estimates.
          Outliers are excluded from median calculations.</p>

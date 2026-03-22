@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% block title %}Share Your Salary · DACH Tech Pay Report | Catalitium{% endblock %}
+{% block title %}Add Your Tech Salary — See Your DACH Market Percentile | Catalitium{% endblock %}
 {% block meta %}
-<meta name="description" content="Share your tech salary anonymously and instantly see where you sit in the DACH market — P25, median, and P75 for your role and city.">
+<meta name="description" content="Share your salary anonymously and instantly see where you rank vs P25/P50/P75 in Zurich, Berlin and Munich. Takes 60 seconds.">
 {% endblock %}
 
 {% block content %}
@@ -240,7 +240,7 @@
     var inactive = 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300';
     ['CHF','EUR'].forEach(function (x) {
       var btn = document.getElementById('btn-' + x);
-      btn.className = btn.className.replace(/bg-\S+|text-\S+/g, '').trim();
+      ['bg-brand','text-white','bg-white','dark:bg-slate-700','text-slate-600','dark:text-slate-300'].forEach(function(c){ btn.classList.remove(c); });
       if (x === c) { btn.classList.add('bg-brand','text-white'); }
       else         { btn.classList.add('bg-white','dark:bg-slate-700','text-slate-600','dark:text-slate-300'); }
     });
