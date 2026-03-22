@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Tech Salaries by Role — DACH 2026 | Catalitium{% endblock %}
+{% block meta %}
+<meta name="description" content="Ranked list of DACH tech roles by median salary. See what Software Engineers, PMs, Data Scientists, and more earn in Zurich, Berlin, and Munich.">
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary/by-title"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">DACH Pay Report 2026</p>
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Tech Salaries by Role</h1>
+    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      Zurich baseline · all figures in CHF · adjust ~15–20% down for Berlin or Munich ·
+      <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">use the calculator</a> for city-specific ranges
+    </p>
+  </div>
+
+  <!-- Table -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden mb-8">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <th class="px-4 py-3">#</th>
+          <th class="px-4 py-3">Role</th>
+          <th class="px-4 py-3 text-right">Median (CHF)</th>
+          <th class="px-4 py-3 text-right hidden sm:table-cell">Range</th>
+          <th class="px-4 py-3 text-right hidden sm:table-cell">Level</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% set roles = [
+          ("Engineering Manager",      165000, "138k–195k", "Manager"),
+          ("Principal Engineer",        158000, "130k–190k", "L6+"),
+          ("Staff Engineer",            155000, "132k–185k", "L5–6"),
+          ("Senior DevOps / SRE",       132000, "112k–158k", "Senior"),
+          ("Senior Software Engineer",  130000, "110k–155k", "Senior"),
+          ("ML Engineer",               128000, "108k–152k", "Mid–Senior"),
+          ("Data Scientist",            125000, "105k–148k", "Mid–Senior"),
+          ("Product Manager",           125000, "105k–148k", "Mid–Senior"),
+          ("Backend Engineer",          118000, "100k–140k", "Mid"),
+          ("UX / Product Designer",     108000, "90k–128k",  "Mid"),
+          ("Software Engineer",         105000, "88k–125k",  "Mid"),
+          ("Frontend Engineer",         102000, "85k–122k",  "Mid"),
+          ("Data Analyst",               92000, "75k–112k",  "Mid"),
+          ("QA / Test Engineer",         88000, "72k–105k",  "Mid"),
+          ("Junior Software Engineer",   72000, "58k–88k",   "Junior"),
+        ] %}
+        {% for role, median, range_, level in roles %}
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+          <td class="px-4 py-3 text-slate-400 text-xs font-mono">{{ loop.index }}</td>
+          <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ role }}</td>
+          <td class="px-4 py-3 text-right font-bold text-brand">CHF {{ '{:,}'.format(median) }}</td>
+          <td class="px-4 py-3 text-right text-slate-400 text-xs hidden sm:table-cell">{{ range_ }}</td>
+          <td class="px-4 py-3 text-right hidden sm:table-cell">
+            <span class="inline-block rounded-full px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{{ level }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Disclaimer + CTA row -->
+  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <p class="text-xs text-slate-400 max-w-md">
+      Zurich baseline. Berlin/Munich typically run 15–20% lower. Figures reflect total base comp (bonuses and equity excluded).
+      Source: Catalitium market data + public benchmarks 2025–2026.
+    </p>
+    <a href="{{ url_for('salary_contribute') }}"
+      class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
+      + Add Your Salary
+    </a>
+  </div>
+
+  <!-- Nav links -->
+  <div class="mt-10 flex flex-wrap gap-3 text-sm">
+    <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">← Salary Calculator</a>
+    <a href="{{ url_for('salary_top_companies') }}" class="text-brand hover:underline">Top Paying Companies →</a>
+  </div>
+
+</div>
+{% endblock %}

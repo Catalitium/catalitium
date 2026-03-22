@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Top Paying Tech Companies — DACH 2026 | Catalitium{% endblock %}
+{% block meta %}
+<meta name="description" content="Ranked list of top paying tech employers in Zurich, Berlin, and Munich. See median total compensation at Google, Meta, Stripe, SAP, and more.">
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary/top-companies"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">DACH Pay Report 2026</p>
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Top Paying Tech Companies</h1>
+    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+      Ranked by median base salary · Zurich figures in CHF · Berlin &amp; Munich in EUR ·
+      <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">use the calculator</a> for role-specific ranges
+    </p>
+  </div>
+
+  <!-- Table -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden mb-8">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <th class="px-4 py-3">#</th>
+          <th class="px-4 py-3">Company</th>
+          <th class="px-4 py-3 hidden sm:table-cell">City</th>
+          <th class="px-4 py-3 text-right">Median Base</th>
+          <th class="px-4 py-3 text-right hidden sm:table-cell">Top Roles</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% set companies = [
+          ("Google",        "Zurich",  "CHF", 210000, "SWE, PM, Data"),
+          ("Meta",          "Zurich",  "CHF", 200000, "SWE, Infrastructure"),
+          ("Apple",         "Zurich",  "CHF", 185000, "SWE, ML"),
+          ("Stripe",        "Zurich",  "CHF", 175000, "SWE, Finance"),
+          ("Roche",         "Basel",   "CHF", 145000, "Data, Bioinfo"),
+          ("Novartis",      "Basel",   "CHF", 140000, "Data, Software"),
+          ("UBS",           "Zurich",  "CHF", 138000, "SWE, Quant"),
+          ("SAP",           "Munich",  "EUR",  92000, "SWE, PM"),
+          ("Celonis",       "Munich",  "EUR",  90000, "SWE, Data"),
+          ("Zalando",       "Berlin",  "EUR",  95000, "SWE, Data, PM"),
+          ("N26",           "Berlin",  "EUR",  88000, "SWE, Product"),
+          ("Delivery Hero", "Berlin",  "EUR",  85000, "SWE, Data"),
+        ] %}
+        {% for company, city, currency, median, roles in companies %}
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+          <td class="px-4 py-3 text-slate-400 text-xs font-mono">{{ loop.index }}</td>
+          <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ company }}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ city }}</td>
+          <td class="px-4 py-3 text-right font-bold text-brand">{{ currency }} {{ '{:,}'.format(median) }}</td>
+          <td class="px-4 py-3 text-right text-slate-400 text-xs hidden sm:table-cell">{{ roles }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Disclaimer + CTA row -->
+  <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <p class="text-xs text-slate-400 max-w-md">
+      Based on public data (Glassdoor, Levels.fyi, LinkedIn 2024–2026). Actual compensation varies by level, experience, and negotiation.
+      Zurich figures in CHF; Berlin and Munich in EUR.
+    </p>
+    <a href="{{ url_for('salary_contribute') }}"
+      class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
+      + Add Your Salary
+    </a>
+  </div>
+
+  <!-- Nav links -->
+  <div class="mt-10 flex flex-wrap gap-3 text-sm">
+    <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">← Salary Calculator</a>
+    <a href="{{ url_for('salary_by_title') }}" class="text-brand hover:underline">Salaries by Role →</a>
+  </div>
+
+</div>
+{% endblock %}

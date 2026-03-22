@@ -41,6 +41,7 @@ from .models.db import (
     insert_subscriber,
     insert_contact,
     insert_job_posting,
+    insert_salary_submission,
     get_job_summary,
     save_job_summary,
     create_api_key,
@@ -795,6 +796,46 @@ def _guest_daily_consume(count: int) -> None:
         return
     session["_guest_seen"] = int(session.get("_guest_seen") or 0) + count
     session.modified = True
+
+
+# ---------------------------------------------------------------------------
+# Salary flywheel — static percentile seed data
+# Key: (title_keyword, city_lowercase) — fuzzy matched at lookup time
+# ---------------------------------------------------------------------------
+_SALARY_SEED: dict[tuple[str, str], dict] = {
+    ("engineer", "zurich"):  {"p25": 110_000, "p50": 130_000, "p75": 155_000, "currency": "CHF"},
+    ("engineer", "geneva"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
+    ("engineer", "basel"):   {"p25": 100_000, "p50": 118_000, "p75": 140_000, "currency": "CHF"},
+    ("engineer", "berlin"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
+    ("engineer", "munich"):  {"p25":  72_000, "p50":  90_000, "p75": 110_000, "currency": "EUR"},
+    ("engineer", "vienna"):  {"p25":  58_000, "p50":  72_000, "p75":  88_000, "currency": "EUR"},
+    ("product",  "zurich"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
+    ("product",  "geneva"):  {"p25": 100_000, "p50": 120_000, "p75": 142_000, "currency": "CHF"},
+    ("product",  "berlin"):  {"p25":  62_000, "p50":  78_000, "p75":  96_000, "currency": "EUR"},
+    ("product",  "munich"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
+    ("data",     "zurich"):  {"p25": 108_000, "p50": 128_000, "p75": 152_000, "currency": "CHF"},
+    ("data",     "berlin"):  {"p25":  60_000, "p50":  76_000, "p75":  94_000, "currency": "EUR"},
+    ("data",     "munich"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
+    ("design",   "zurich"):  {"p25":  90_000, "p50": 108_000, "p75": 128_000, "currency": "CHF"},
+    ("design",   "berlin"):  {"p25":  52_000, "p50":  66_000, "p75":  82_000, "currency": "EUR"},
+    ("devops",   "zurich"):  {"p25": 112_000, "p50": 132_000, "p75": 158_000, "currency": "CHF"},
+    ("devops",   "berlin"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
+    ("manager",  "zurich"):  {"p25": 120_000, "p50": 145_000, "p75": 175_000, "currency": "CHF"},
+    ("manager",  "berlin"):  {"p25":  75_000, "p50":  95_000, "p75": 118_000, "currency": "EUR"},
+}
+
+_DACH_CHF_CITIES = ("zurich", "geneva", "basel")
+
+
+def _get_salary_percentiles(title: str, location: str) -> dict:
+    """Return P25/P50/P75 from seed data; fall back to generic DACH estimates."""
+    loc = location.lower()
+    title_lower = title.lower()
+    for (kw, city), data in _SALARY_SEED.items():
+        if city in loc and kw in title_lower:
+            return data
+    currency = "CHF" if any(c in loc for c in _DACH_CHF_CITIES) else "EUR"
+    return {"p25": 70_000, "p50": 90_000, "p75": 115_000, "currency": currency}
 
 
 def create_app() -> Flask:
@@ -2276,23 +2317,32 @@ def create_app() -> Flask:
     @app.get("/api/autocomplete")
     @_limit("90 per minute")
     def api_autocomplete():
-        """Return distinct job title suggestions for autocomplete."""
+        """Return distinct job title or company suggestions for autocomplete."""
         q = parse_str_arg(request.args, "q", default="", max_len=80).lower()
+        ac_type = parse_str_arg(request.args, "type", default="title", max_len=10)
         if len(q) < 2:
             return _api_success({"suggestions": []})
-        cache_key = f"autocomplete:{q}"
+        cache_key = f"autocomplete:{ac_type}:{q}"
         cached = autocomplete_cache.get(cache_key)
         if cached is not None:
             return _api_success(cached)
         try:
             db = get_db()
             with db.cursor() as cur:
-                cur.execute(
-                    "SELECT DISTINCT job_title FROM jobs "
-                    "WHERE LOWER(job_title) LIKE %s "
-                    "ORDER BY job_title LIMIT 8",
-                    (f"%{q}%",),
-                )
+                if ac_type == "company":
+                    cur.execute(
+                        "SELECT DISTINCT company FROM jobs "
+                        "WHERE LOWER(company) LIKE %s AND company IS NOT NULL "
+                        "ORDER BY company LIMIT 8",
+                        (f"%{q}%",),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT DISTINCT job_title FROM jobs "
+                        "WHERE LOWER(job_title) LIKE %s "
+                        "ORDER BY job_title LIMIT 8",
+                        (f"%{q}%",),
+                    )
                 rows = cur.fetchall()
                 suggestions = [r[0] for r in rows if r[0]]
         except Exception:
@@ -3243,11 +3293,100 @@ def create_app() -> Flask:
             },
         )
 
-    # Salary tool removed — redirect old URLs to salary board
+    # ------------------------------------------------------------------
+    # Salary Tool — live DACH calculator + role/region report
+    # ------------------------------------------------------------------
     @app.get("/salary-tool")
     @app.get("/salary-report")
-    def salary_report():
-        return redirect(url_for("recruiter_salary_board"), 301)
+    def salary_tool():
+        import json as _json
+        from datetime import datetime as _dt
+        seed_json = _json.dumps(
+            {f"{kw}:{city}": v for (kw, city), v in _SALARY_SEED.items()}
+        )
+        data = {
+            "Software Engineering":   {"count": 12_400, "min":  88_000, "median": 130_000, "max": 175_000},
+            "Product Management":     {"count":  3_200, "min":  85_000, "median": 125_000, "max": 165_000},
+            "Data & ML":              {"count":  4_800, "min":  80_000, "median": 128_000, "max": 170_000},
+            "Design":                 {"count":  1_800, "min":  72_000, "median": 108_000, "max": 140_000},
+            "DevOps / SRE":           {"count":  2_200, "min":  90_000, "median": 132_000, "max": 170_000},
+            "Engineering Management": {"count":  1_200, "min": 110_000, "median": 150_000, "max": 200_000},
+        }
+        region_data = {
+            "Zurich": {"median": 130_000, "count": 8_400},
+            "Geneva": {"median": 122_000, "count": 2_100},
+            "Berlin": {"median":  82_000, "count": 6_800},
+            "Munich": {"median":  90_000, "count": 3_200},
+        }
+        return render_template(
+            "salary_report.html",
+            data=data,
+            region_data=region_data,
+            generated=_dt.now(timezone.utc).strftime("%B %Y"),
+            salary_seed_json=seed_json,
+        )
+
+    @app.get("/salary/by-title")
+    def salary_by_title():
+        return render_template("salary_by_title.html")
+
+    @app.get("/salary/top-companies")
+    def salary_top_companies():
+        return render_template("salary_top_companies.html")
+
+    # ------------------------------------------------------------------
+    # Salary flywheel — crowd-sourced contribution form
+    # ------------------------------------------------------------------
+    @app.get("/salary/contribute")
+    def salary_contribute():
+        """Render the multi-step salary contribution form."""
+        return render_template("salary_contribute.html")
+
+    @app.post("/salary/contribute")
+    @_limit("30 per minute")
+    def salary_contribute_post():
+        """Accept a salary submission; return percentile data."""
+        if not _csrf_valid():
+            return jsonify({"error": "invalid_csrf"}), 400
+
+        payload = request.get_json(silent=True) or {}
+        job_title  = parse_str_arg(payload, "job_title",  max_len=120)
+        company    = parse_str_arg(payload, "company",    max_len=120)
+        location   = parse_str_arg(payload, "location",   max_len=80)
+        seniority  = parse_str_arg(payload, "seniority",  max_len=40)
+        currency   = parse_str_arg(payload, "currency",   max_len=3)
+        email_raw  = parse_str_arg(payload, "email",      max_len=200)
+        base_salary = parse_int_arg(payload, "base_salary", default=0, minimum=1, maximum=10_000_000)
+        years_exp   = parse_int_arg(payload, "years_exp",   default=0, minimum=0, maximum=50)
+
+        if not job_title or not location or not seniority or base_salary < 1:
+            return jsonify({"error": "missing_fields"}), 400
+
+        _VALID_CURRENCIES = {"CHF", "EUR"}
+        currency = currency.upper() if currency.upper() in _VALID_CURRENCIES else "CHF"
+
+        email: Optional[str] = None
+        if email_raw:
+            try:
+                email = validate_email(email_raw, check_deliverability=False).normalized
+            except Exception:
+                pass  # optional field — ignore invalid
+
+        status = insert_salary_submission(
+            job_title=job_title,
+            company=company,
+            location=location,
+            seniority=seniority,
+            base_salary=base_salary,
+            currency=currency,
+            years_exp=years_exp,  # 0 is valid (junior); pass through directly
+            email=email,
+        )
+        if status != "ok":
+            return jsonify({"error": "save_failed"}), 500
+
+        percentiles = _get_salary_percentiles(job_title, location)
+        return jsonify({"ok": True, "percentiles": percentiles})
 
     # ------------------------------------------------------------------
     # Service worker (must be served from root scope)

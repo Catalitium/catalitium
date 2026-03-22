@@ -108,6 +108,68 @@
       </button>
     </div>
 
+    <!-- DACH Salary Calculator -->
+    <div class="rounded-2xl border border-brand/20 bg-brand/5 dark:bg-slate-900/60 p-5 mb-6">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">DACH Salary Calculator</p>
+      <div class="flex flex-wrap gap-3 mb-4">
+        <select id="calc-role" onchange="calcSalary()"
+          class="flex-1 min-w-[160px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+          <option value="">Select role…</option>
+          <option value="engineer">Software Engineer</option>
+          <option value="product">Product Manager</option>
+          <option value="data">Data / ML Engineer</option>
+          <option value="design">Designer</option>
+          <option value="devops">DevOps / SRE</option>
+          <option value="manager">Engineering Manager</option>
+        </select>
+        <select id="calc-city" onchange="calcSalary()"
+          class="flex-1 min-w-[140px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+          <option value="">Select city…</option>
+          <option value="zurich">Zurich 🇨🇭</option>
+          <option value="geneva">Geneva 🇨🇭</option>
+          <option value="basel">Basel 🇨🇭</option>
+          <option value="berlin">Berlin 🇩🇪</option>
+          <option value="munich">Munich 🇩🇪</option>
+          <option value="vienna">Vienna 🇦🇹</option>
+        </select>
+      </div>
+      <div id="calc-result" class="hidden grid grid-cols-3 gap-3 text-center">
+        <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
+          <p class="text-xs text-slate-400 mb-1">P25</p>
+          <p id="calc-p25" class="text-lg font-bold text-slate-700 dark:text-slate-200">—</p>
+        </div>
+        <div class="rounded-xl bg-brand/10 border border-brand/30 p-3">
+          <p class="text-xs text-brand font-semibold mb-1">Median</p>
+          <p id="calc-p50" class="text-lg font-bold text-brand">—</p>
+        </div>
+        <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
+          <p class="text-xs text-slate-400 mb-1">P75</p>
+          <p id="calc-p75" class="text-lg font-bold text-slate-700 dark:text-slate-200">—</p>
+        </div>
+      </div>
+      <p id="calc-empty" class="text-sm text-slate-400">Select a role and city to see salary bands instantly.</p>
+    </div>
+    <script>
+    (function(){
+      var _seed = {{ salary_seed_json | safe }};
+      window.calcSalary = function(){
+        var role = document.getElementById('calc-role').value;
+        var city = document.getElementById('calc-city').value;
+        var key  = role + ':' + city;
+        var el   = document.getElementById('calc-result');
+        var emp  = document.getElementById('calc-empty');
+        if (!role || !city) { el.classList.add('hidden'); emp.classList.remove('hidden'); return; }
+        var d = _seed[key] || {p25:70000, p50:90000, p75:115000, currency: city==='zurich'||city==='geneva'||city==='basel'?'CHF':'EUR'};
+        var fmt = function(n){ return d.currency + ' ' + Number(n).toLocaleString(); };
+        document.getElementById('calc-p25').textContent = fmt(d.p25);
+        document.getElementById('calc-p50').textContent = fmt(d.p50);
+        document.getElementById('calc-p75').textContent = fmt(d.p75);
+        el.classList.remove('hidden');
+        emp.classList.add('hidden');
+      };
+    })();
+    </script>
+
     <!-- Key insight -->
     <div class="rounded-2xl bg-brand/5 border border-brand/20 px-5 py-4 mb-4">
       <p class="text-sm font-semibold text-brand mb-1">Quick read for this snapshot</p>
@@ -184,9 +246,9 @@
             <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition">
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ cat }}</td>
               <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}${{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}${{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}${{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}CHF {{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -201,7 +263,7 @@
         {% for region, d in region_data.items() %}
         <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center">
           <p class="text-2xl font-bold text-slate-900 dark:text-white">
-            {% if d.median %}${{ (d.median // 1000)|int }}k{% else %}&mdash;{% endif %}
+            {% if d.median %}CHF {{ (d.median // 1000)|int }}k{% else %}&mdash;{% endif %}
           </p>
           <p class="text-xs font-semibold text-brand mt-0.5">{{ region }}</p>
           <p class="text-xs text-slate-400 mt-1">{{ d.count }} roles</p>
@@ -220,7 +282,7 @@
         <div>
           <div class="flex justify-between text-xs mb-1">
             <span class="font-medium text-slate-700">{{ cat }}</span>
-            <span class="text-brand font-semibold">${{ '{:,}'.format(d.median) }}</span>
+            <span class="text-brand font-semibold">CHF {{ '{:,}'.format(d.median) }}</span>
           </div>
           <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
             <div class="h-2 rounded-full bg-gradient-to-r from-brand/60 to-brand"
@@ -231,6 +293,28 @@
         {% endfor %}
       </div>
     </section>
+
+    <!-- More salary data links + CTA -->
+    <div class="mb-8 grid gap-4 sm:grid-cols-3">
+      <a href="{{ url_for('salary_by_title') }}"
+        class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Title</p>
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Ranked salary list</p>
+        <p class="text-xs text-slate-400">SWE, PM, Data Scientist sorted by median CHF</p>
+      </a>
+      <a href="{{ url_for('salary_top_companies') }}"
+        class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand">Top Companies</p>
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Best-paying DACH employers</p>
+        <p class="text-xs text-slate-400">Google, Stripe, Roche and 10 more ranked</p>
+      </a>
+      <a href="{{ url_for('salary_contribute') }}"
+        class="flex flex-col gap-1 rounded-2xl border border-brand/40 bg-brand/5 p-4 hover:border-brand transition-colors">
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand">Add Your Salary</p>
+        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Help the community</p>
+        <p class="text-xs text-slate-400">Share anonymously and see your market percentile</p>
+      </a>
+    </div>
 
     <!-- Methodology -->
     <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-5 text-xs text-slate-500 space-y-1.5">
