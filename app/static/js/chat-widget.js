@@ -8,11 +8,11 @@
   var style = document.createElement('style');
   style.id = 'cat-chat-css';
   style.textContent = `
-    #cat-chat-btn{position:fixed;bottom:20px;right:20px;z-index:9999;width:52px;height:52px;border-radius:50%;background:#0f172a;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:transform .15s}
+    #cat-chat-btn{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom, 0px));right:20px;z-index:9999;width:52px;height:52px;border-radius:50%;background:#0f172a;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.3);transition:transform .15s}
     #cat-chat-btn:hover{transform:scale(1.07)}
     #cat-chat-badge{position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px}
-    #cat-chat-panel{position:fixed;bottom:82px;right:20px;z-index:9999;width:320px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s ease,transform .2s ease}
-    #cat-chat-panel.cat-open{opacity:1;transform:translateY(0);pointer-events:all}
+    #cat-chat-panel{position:fixed;bottom:calc(82px + env(safe-area-inset-bottom, 0px));right:20px;z-index:9999;width:320px;max-height:calc(100vh - 110px);background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .2s ease,transform .2s ease}
+    #cat-chat-panel.cat-open{opacity:1;transform:translateY(0);pointer-events:auto}
     #cat-chat-header{background:#0f172a;color:#fff;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
     #cat-chat-header-text{display:flex;flex-direction:column;gap:2px}
     #cat-chat-header strong{font-size:14px;font-weight:700}
@@ -23,7 +23,7 @@
     .cat-msg{max-width:85%;padding:8px 12px;border-radius:12px;line-height:1.45;word-wrap:break-word}
     .cat-msg-bot{align-self:flex-start;background:#f1f5f9;color:#1e293b;border-bottom-left-radius:3px}
     .cat-msg-user{align-self:flex-end;background:#0f172a;color:#fff;border-bottom-right-radius:3px}
-    .cat-cta-btn{display:block;margin-top:7px;background:#2563eb;color:#fff !important;text-decoration:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:99px;white-space:nowrap;width:fit-content}
+    .cat-cta-btn{display:inline-block;margin-top:7px;background:#2563eb;color:#fff !important;text-decoration:none;font-size:11px;font-weight:600;padding:5px 10px;border-radius:99px;white-space:nowrap}
     .cat-cta-btn:hover{background:#1d4ed8}
     .cat-chips{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0 2px}
     .cat-chip{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:99px;padding:5px 10px;font-size:12px;cursor:pointer;color:#1e293b;line-height:1}
@@ -44,7 +44,7 @@
     #cat-chat-send:disabled{opacity:.35;cursor:default}
     #cat-chat-send:not(:disabled):hover{background:#1e293b}
     #cat-char-count{font-size:10px;color:#94a3b8;text-align:right;padding:0 10px 6px;display:none}
-    @media(max-width:400px){#cat-chat-panel{width:calc(100vw - 40px);right:20px}}
+    @media(max-width:480px){#cat-chat-panel{width:calc(100vw - 40px);right:20px;border-radius:12px}}
   `;
   document.head.appendChild(style);
 
@@ -111,7 +111,7 @@
     if (pageCtx === 'jobs') {
       return '👋 Browsing jobs? I can help you filter by role, city, or salary range. What are you targeting?';
     }
-    return '👋 Hi! I\'m your Catalitium Career Advisor. I can help you benchmark your salary, find jobs in DACH, or prep for a negotiation. What\'s on your mind?';
+    return '👋 Hi! I\'m your Catalitium Career Advisor. I can help you benchmark your salary, find jobs, or prep for a negotiation. What\'s on your mind?';
   }
 
   var CHIPS = [
@@ -289,7 +289,6 @@
 
     addUserMsg(text);
     exchangeCount++;
-    gtmPush('chat_send', '', '');
 
     if (exchangeCount === 3 && !escalationSent) {
       escalationSent = true;
@@ -307,7 +306,7 @@
     panel.classList.add('cat-open');
     btn.setAttribute('aria-expanded', 'true');
     badge.style.display = 'none';
-    inputEl.focus();
+    if (window.innerWidth > 600) inputEl.focus();
     try { sessionStorage.setItem('cat_opened', '1'); } catch (e) {}
     if (messagesEl.children.length === 0) {
       setTimeout(function () {
