@@ -145,3 +145,107 @@ All real keys:
 - Free API tier: 500 calls/month, 50/day. Paid API tier: 10,000/month
 - Gated reports: `"gated": True` in `REPORTS` list; `_get_mi_tier()` checks DB for active MI sub
 - 404 handler returns JSON for all requests
+
+---
+
+## Session: Landing Page Redesign (March 2026)
+
+### Goal
+Create a premium, modern, tech-forward marketing landing page at `/` to showcase Catalitium's four business areas (Job Platform, Market Intelligence, Software Development, AI Agents as a Service), and move the existing job search functionality to `/jobs`.
+
+### Architecture & Route Restructure
+- Renamed `def index()` to `def jobs()` and moved its route from `/` to `/jobs`.
+- Added new `def landing()` route at `/` to render the new `landing.html` template, loading up to 4 featured jobs from the DB.
+- Added 301 redirect logic for legacy `/?title=...` URLs to forward to `/jobs?title=...`.
+- Updated over 100 `url_for("index")` references across 19 files (templates and Python) to `url_for("jobs")`.
+- Updated navigation links in `base.html`: Logo links to `/`, "Jobs" links to `/jobs`.
+
+### Visual Design & Landing Page Sections
+- **Hero**: "Automation over complexity." with animated gradient orbs (added to `styles.css`) and CTAs.
+- **Stats Bar**: Live active jobs count, 40+ countries, 10K+ salary data points.
+- **Services Grid**: 4 premium cards with color-coded icons and hover glow effects.
+- **Live Jobs Preview**: 4 featured job cards fetched directly from the database.
+- **Market Intelligence Teaser**: Side-by-side text and blue gradient visual.
+- **AI Agents**: 3-step autonomous process overview with emerald/cyan/violet accents.
+- **Pricing Teaser**: 3 compact subscription tier cards.
+- **Final CTA**: "Move fast. Stay lean." gradient section.
+
+### Files Modified & Created
+- **Created**: `app/views/templates/landing.html`
+- **Modified**: `app/app.py` (route changes), `app/views/templates/base.html` (wide layout toggle, nav links), `app/static/css/styles.css` (gradient animations).
+- **Updated `url_for` references**: `index.html`, `job_browser.html`, `job_detail.html`, `studio.html`, `salary_report.html`, `resources.html`, `subscription_success.html`, `job_card.html`, `market_research_index.html`, `tracker.html`, `stripe_cancel.html`, and 5 report templates.
+
+---
+
+## Session: Landing Page Light/Dark Mode Fix (March 2026)
+
+### Problem
+Sections 1 (Hero), 6 (AI Agents as a Service), and 8 (Final CTA) used hardcoded `bg-slate-950` with white text — always appearing dark regardless of system or user preference. Dark mode is class-based (`darkMode: 'class'` in Tailwind config), so without the `dark` class on `<html>`, those sections had no light fallback.
+
+### Fix
+All three sections now fully support both modes using `dark:` Tailwind variants:
+
+| Section | Before | After |
+|---------|--------|-------|
+| Hero (1) | `bg-slate-950` (hardcoded dark) | `bg-white dark:bg-slate-950` |
+| AI Agents (6) | `bg-slate-950 text-white` (hardcoded dark) | `bg-slate-50 dark:bg-slate-950` |
+| Final CTA (8) | `bg-slate-950` (hardcoded dark) | `bg-white dark:bg-slate-950` |
+
+Additional changes per section:
+- **Hero**: Status pill, h1, subtext, CTA buttons all get `dark:` variants. Dot grid split into two divs (black dots in light, white dots in dark). "Explore jobs" CTA uses brand blue in light / white in dark.
+- **AI Agents**: All headings, step titles, descriptions, icon colours, and the gradient "Autonomously." text adapted.
+- **Final CTA**: Gradient overlay adapted, both CTA buttons adapted, divider uses `border-slate-200 dark:border-slate-800`.
+
+### Commits
+```
+ecb4957  fix(ui): make landing page fully responsive to light/dark mode
+068476a  (merged to main, rebased on df19d47)
+```
+
+---
+
+## Session: UI Polish & SEO (March 2026)
+
+### Changes Made
+
+**Favicon**
+- Removed conflicting SVG data-URI favicon (blue circle with "C") from `base.html` line ~69 that was overriding the `logo.png` favicon links already defined above it.
+- `logo.png` now correctly serves as favicon across all browsers and devices (32×32, 16×16, 192×192, apple-touch-icon).
+
+**Header: Centered Navigation**
+- Restructured the desktop header from a single flexbox row to a 3-column CSS grid (`xl:grid-cols-[1fr_auto_1fr]`).
+- Left col (1fr): hamburger + logo. Center col (auto + `justify-center`): nav links. Right col (1fr + `justify-end`): action buttons.
+- Achieves true centering of nav links regardless of logo/button widths. Mobile layout unchanged.
+- File: `app/views/templates/base.html`
+
+**SEO Fixes** (based on Gemini scan of live site)
+- **Meta description** trimmed from 179 → 145 chars in `landing.html` (was truncated by Google).
+- **H1 structure**: "over complexity." text node moved inside the gradient `<span>` so scanners read one unified heading instead of two split text fragments.
+- File: `app/views/templates/landing.html`
+
+**Landing Page CTA Wiring**
+- "Start a conversation" button (AI Agents section) changed from `url_for('about')` → `url_for('register')`.
+- "Subscribe to Weekly Digest" bell link changed from `<a href=url_for('jobs')>` → `<button data-open-subscribe>` to trigger the existing subscription modal.
+- File: `app/views/templates/landing.html`
+
+**Social Media Icons — Footer**
+- Added a row of 7 icon buttons to the footer brand column (below SOC 2 / GDPR badges).
+- Platforms: LinkedIn, X/Twitter, Instagram, YouTube, TikTok, Discord, Telegram.
+- Styled as `w-8 h-8` bordered icon buttons with `hover:text-brand hover:border-brand` transition.
+- All open `target="_blank" rel="noopener noreferrer"` with `aria-label` for accessibility.
+- File: `app/views/templates/base.html`
+
+### Social Media URLs
+| Platform | URL |
+|----------|-----|
+| LinkedIn | https://www.linkedin.com/company/catalitium-ai/ |
+| X / Twitter | https://x.com/catalitium |
+| Instagram | https://www.instagram.com/catalitium/ |
+| YouTube | https://www.youtube.com/@Catalitium |
+| TikTok | https://www.tiktok.com/@catalitium |
+| Discord | https://discord.gg/6ZERxz9x |
+| Telegram | https://t.me/catalitiumcareers |
+
+### Files Modified
+- `app/views/templates/base.html` — favicon fix, header grid, social icons
+- `app/views/templates/landing.html` — SEO meta/H1, CTA links, subscribe trigger
