@@ -371,11 +371,4 @@
     }
   });
 
-  // ── Re-open if user was mid-session ──────────────────────────────────────
-  try {
-    if (sessionStorage.getItem('cat_opened') && !panel.classList.contains('cat-open')) {
-      setTimeout(openPanel, 800);
-    }
-  } catch (ex) {}
-
 }());

@@ -90,6 +90,11 @@
             class="tab-btn px-5 py-3 text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-200 transition-colors -mb-px">
       Talent Arbitrage Calculator
     </button>
+    <button id="tab-btn-jobs"
+            onclick="switchTab('jobs')"
+            class="tab-btn px-5 py-3 text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-200 transition-colors -mb-px">
+      Live Jobs
+    </button>
   </div>
 
   <!-- ─────────────────────────────────────────── -->
@@ -523,12 +528,83 @@
 
   </div><!-- /panel-arbitrage -->
 
+  <!-- ─────────────────────────────────────────── -->
+  <!--  DASHBOARD 3 — LIVE JOBS                    -->
+  <!-- ─────────────────────────────────────────── -->
+  <div id="panel-jobs" class="hidden pt-4">
+
+    <!-- Header row -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Live Listings</p>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Find Tech Roles</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Search roles with salary bands. Filter by title and region.</p>
+      </div>
+      {% if session.get("user") %}
+      <a href="{{ url_for('post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Post a Job
+      </a>
+      {% else %}
+      <a href="{{ url_for('register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Post a Job
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Search form -->
+    <form id="jobBrowserForm" data-api-url="{{ url_for('api_jobs') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] mb-6">
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-semibold text-slate-700 dark:text-slate-300">Title</span>
+        <input id="jobBrowserTitle" name="title" type="text" placeholder="e.g. Software Engineer"
+               class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+      </label>
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-semibold text-slate-700 dark:text-slate-300">Region</span>
+        <select id="jobBrowserCountry" name="country"
+                class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+          <option value="">Anywhere / Remote</option>
+          <option value="EU">Europe (EU hubs)</option>
+          <option value="US">United States</option>
+          <option value="UK">UK &amp; Ireland</option>
+          <option value="CH">Switzerland</option>
+          <option value="IN">India</option>
+        </select>
+      </label>
+      <button type="submit" class="self-end rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        Search
+      </button>
+    </form>
+
+    <!-- Stats -->
+    <div class="grid gap-3 sm:grid-cols-2 mb-6">
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Results</p>
+        <p id="jobBrowserCount" class="text-lg font-semibold text-slate-900 dark:text-white" aria-live="polite">Start your search</p>
+        <p id="jobBrowserContext" class="text-xs text-slate-500 dark:text-slate-400">Filter by title and region.</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Salary insight</p>
+        <p id="salaryOverview" class="text-lg font-semibold text-slate-900 dark:text-white" aria-live="polite">Search to see salary bands</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Median ranges from roles with stated pay.</p>
+      </div>
+    </div>
+
+    <!-- Job cards -->
+    <div id="jobCardsContainer" class="space-y-3" aria-live="polite"></div>
+
+    <!-- Pagination -->
+    <div id="paginationContainer" class="flex items-center justify-center gap-2 mt-6"></div>
+
+  </div><!-- /panel-jobs -->
+
 </div><!-- /container -->
 
 <script>
 /* ── Tab switching ── */
 function switchTab(name) {
-  ['salary', 'arbitrage'].forEach(function(t) {
+  ['salary', 'arbitrage', 'jobs'].forEach(function(t) {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
     var btn = document.getElementById('tab-btn-' + t);
     if (t === name) {
@@ -652,4 +728,8 @@ async function arb_copyText(n) {
 /* Init */
 arb_calc();
 </script>
+{% endblock %}
+
+{% block body_extra %}
+<script defer src="{{ url_for('static', filename='js/job_browser.js') }}"></script>
 {% endblock %}
