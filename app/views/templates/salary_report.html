@@ -173,7 +173,7 @@
     <!-- Key insight -->
     <div class="rounded-2xl bg-brand/5 border border-brand/20 px-5 py-4 mb-4">
       <p class="text-sm font-semibold text-brand mb-1">Quick read for this snapshot</p>
-      {% set top_cat = data | dictsort(by='value', attribute='median') | reverse | first %}
+      {% set top_cat = (data.items() | list) | sort(attribute='1.median', reverse=True) | first %}
       <p class="text-slate-700 text-sm">
         <strong>{{ top_cat[0] }}</strong> roles currently show the highest estimated median salaries on Catalitium.
         Use this report as a fast sense-check before you negotiate, open a new role, or sign off on an offer.
