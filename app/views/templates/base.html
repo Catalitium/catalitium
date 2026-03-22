@@ -131,9 +131,9 @@
       <div class="hidden xl:flex items-center justify-end gap-3 shrink-0">
         <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
         {% if session.get("user") %}
-        <a href="{{ url_for('hire') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
+        <a href="{{ url_for('post_job_form') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
         {% else %}
-        <a href="#" data-open-job-posting class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
+        <a href="{{ url_for('register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
         {% endif %}
         {% if session.get("user") %}
         <a href="{{ url_for('studio') }}" class="whitespace-nowrap text-sm font-medium text-brand hover:underline transition-colors">Account</a>
@@ -187,10 +187,17 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span>Research</span>
         </a>
-        <a href="#" data-open-job-posting class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        {% if session.get("user") %}
+        <a href="{{ url_for('post_job_form') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
           <span class="font-semibold text-brand">Post Job</span>
         </a>
+        {% else %}
+        <a href="{{ url_for('register') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
+          <span class="font-semibold text-brand">Post Job</span>
+        </a>
+        {% endif %}
       </div>
 
       <!-- Inline quick search -->
@@ -212,9 +219,9 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         {% if session.get("user") %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('hire') }}">Post a Job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('post_job_form') }}">Post a Job</a></li>
         {% else %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="#" data-open-job-posting>Post a Job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Post a Job</a></li>
         {% endif %}
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
@@ -312,9 +319,9 @@
           <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Company</p>
           <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About Us</a>
           {% if session.get("user") %}
-          <a href="{{ url_for('hire') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          <a href="{{ url_for('post_job_form') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
           {% else %}
-          <a href="#" data-open-job-posting class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
           {% endif %}
           <a href="#" data-open-contact class="hover:text-brand transition-colors">Contact Us</a>
           <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
@@ -455,85 +462,6 @@
     </div>
   </dialog>
 
-  <!-- Global Job Posting dialog -->
-  <dialog id="jobPostDialog" class="rounded-2xl p-0 bg-white dark:bg-slate-900 backdrop:bg-slate-900/40"
-          aria-labelledby="jobpost-title">
-    <form method="dialog" class="absolute right-3 top-3">
-      <button aria-label="Close dialog"
-              class="rounded-lg border border-slate-200 dark:border-slate-700 px-2 py-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300">✕</button>
-    </form>
-    <div class="p-6 sm:p-7 w-[90vw] max-w-xl">
-      <div class="flex items-center gap-2">
-        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" class="w-9 h-9 rounded-lg shadow-sm" loading="lazy" decoding="async">
-        <h2 id="jobpost-title" class="text-lg font-semibold dark:text-slate-100">Submit a job</h2>
-      </div>
-      <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">Share a role; we'll reach out via your email. Anonymous otherwise.</p>
-
-      <div id="jobPostSuccess" class="hidden mt-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 text-sm px-3 py-2">
-        Thanks! We received your job submission.
-      </div>
-
-      <form id="jobPostForm" method="post" action="{{ url_for('job_posting') }}" class="mt-5 space-y-3">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="space-y-1">
-          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-email">Contact email</label>
-          <input id="jobpost-email"
-                 name="contact_email"
-                 type="email"
-                 required
-                 autocomplete="email"
-                 placeholder="you@company.com"
-                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
-        </div>
-        <div class="space-y-1">
-          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-title-input">Job title</label>
-          <input id="jobpost-title-input"
-                 name="job_title"
-                 type="text"
-                 required
-                 placeholder="Role title"
-                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
-        </div>
-        <div class="space-y-1">
-          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-company">Company</label>
-          <input id="jobpost-company"
-                 name="company"
-                 type="text"
-                 required
-                 autocomplete="organization"
-                 placeholder="Company name"
-                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
-        </div>
-        <div class="space-y-1">
-          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-salary">Salary range (optional)</label>
-          <input id="jobpost-salary"
-                 name="salary_range"
-                 type="text"
-                 autocomplete="off"
-                 placeholder="e.g. 120k-150k CHF / year"
-                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
-          <p class="text-[11px] text-slate-500 dark:text-slate-400">Optional. Share range in any format; leave blank if unsure.</p>
-        </div>
-        <div class="space-y-1">
-          <label class="block text-sm text-slate-700 dark:text-slate-300" for="jobpost-description">Description</label>
-          <textarea id="jobpost-description"
-                    name="description"
-                    rows="6"
-                    required
-                    placeholder="Brief role summary, requirements, location..."
-                    class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none"></textarea>
-          <p id="jobpost-count" class="text-[11px] text-slate-500 dark:text-slate-400">0 / ~5000 words max</p>
-        </div>
-        <div id="jobPostError" class="hidden rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-sm px-3 py-2" aria-live="assertive"></div>
-        <div class="flex gap-2 pt-1">
-          <button type="submit" id="jobPostSubmit"
-                  class="rounded-xl bg-brand text-white px-5 py-3 hover:opacity-90 min-w-[140px]">Submit job</button>
-          <button type="button" data-close-job-posting
-                  class="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </dialog>
 
   <!-- Global Job Application Modal -->
   <div id="jobModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/40">

@@ -18,10 +18,10 @@
           <a href="{{ job_url(j) }}" class="hover:text-brand transition-colors focus-visible:outline-none focus-visible:underline">{{ j.title }}</a>
         </h2>
         {% if j.is_new %}
-        <span class="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>
+        <span class="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-full px-2 py-0.5">New</span>
         {% endif %}
         {% if 'remote' in (j.location or '')|lower %}
-        <a href="{{ url_for('jobs', country='Remote') }}" class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-full px-2 py-0.5 hover:bg-sky-100 transition-colors" title="Filter remote jobs">
+        <a href="{{ url_for('jobs', country='Remote') }}" class="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-full px-2 py-0.5 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors" title="Filter remote jobs">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Remote
         </a>
@@ -36,7 +36,7 @@
 
       <div class="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-slate-700 dark:text-slate-300" data-job-meta="true">
         {% if j.match_score %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-1 text-emerald-800 font-semibold" title="Relevance + trust score">
+        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-2 py-1 text-emerald-800 dark:text-emerald-300 font-semibold" title="Relevance + trust score">
           Match {{ j.match_score }}%
         </span>
         {% endif %}
@@ -46,24 +46,24 @@
           <span>{{ j.company }}</span>
         </span>
         {% endif %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-1 text-sky-800">
+        <span class="inline-flex items-center gap-1 rounded-full bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 px-2 py-1 text-sky-800 dark:text-sky-300">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.5 7-11.2A7 7 0 0012 3a7 7 0 00-7 6.8C5 15.5 12 21 12 21z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.1"/></svg>
           <span>{{ j.location or 'Remote / Anywhere' }}</span>
         </span>
         {% if j.date_posted %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-1 text-indigo-800">
+        <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 px-2 py-1 text-indigo-800 dark:text-indigo-300">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 4v3M17 4v3M5 9h14M7 6h10a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V8a2 2 0 012-2z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           <span>{{ j.date_posted }}</span>
         </span>
         {% endif %}
         {% if j.estimated_salary_range_compact %}
-        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-1 text-amber-800 font-semibold" title="Estimated salary range (blend of employer data + market median for this location)">
+        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-2 py-1 text-amber-800 dark:text-amber-300 font-semibold" title="Estimated salary range (blend of employer data + market median for this location)">
           <span class="text-amber-700">Est.</span>
           <span>{{ (CUR.get(j.median_salary_currency) or '') }} {{ j.estimated_salary_range_compact }}</span>
         </span>
         {% endif %}
         {% if j.salary_delta_pct is not none %}
-        <span class="inline-flex items-center gap-1 rounded-full {% if j.salary_delta_pct >= 0 %}bg-emerald-50 border border-emerald-200 text-emerald-900{% else %}bg-slate-100 border border-slate-200 text-slate-700{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">
+        <span class="inline-flex items-center gap-1 rounded-full {% if j.salary_delta_pct >= 0 %}bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">
           {% if j.salary_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ j.salary_delta_pct | abs }}% vs median
         </span>
         {% endif %}
