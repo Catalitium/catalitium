@@ -307,7 +307,6 @@
     btn.setAttribute('aria-expanded', 'true');
     badge.style.display = 'none';
     if (window.innerWidth > 600) inputEl.focus();
-    try { sessionStorage.setItem('cat_opened', '1'); } catch (e) {}
     if (messagesEl.children.length === 0) {
       setTimeout(function () {
         botReply(openingMessage(), null, 'greeting');
@@ -352,22 +351,6 @@
       inputEl.value = '';
       sendBtn.disabled = true;
       charCount.style.display = 'none';
-    }
-  });
-
-  // ── Exit intent (desktop) ─────────────────────────────────────────────────
-  document.addEventListener('mouseleave', function (e) {
-    if (e.clientY > 0) return; // only top-exit
-    try {
-      if (sessionStorage.getItem('cat_exit_shown')) return;
-      sessionStorage.setItem('cat_exit_shown', '1');
-    } catch (ex) {}
-    if (!panel.classList.contains('cat-open')) {
-      openPanel();
-      setTimeout(function () {
-        botReply('Before you go — want a quick salary check for your role in DACH?',
-          { label: 'Check My Salary →', href: '/salary-tool' }, 'exit_intent');
-      }, 300);
     }
   });
 
