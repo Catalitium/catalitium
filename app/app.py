@@ -2331,9 +2331,9 @@ def create_app() -> Flask:
             with db.cursor() as cur:
                 if ac_type == "company":
                     cur.execute(
-                        "SELECT DISTINCT company FROM jobs "
-                        "WHERE LOWER(company) LIKE %s AND company IS NOT NULL "
-                        "ORDER BY company LIMIT 8",
+                        "SELECT DISTINCT company_name FROM jobs "
+                        "WHERE LOWER(company_name) LIKE %s AND company_name IS NOT NULL "
+                        "ORDER BY company_name LIMIT 8",
                         (f"%{q}%",),
                     )
                 else:
