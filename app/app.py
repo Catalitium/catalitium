@@ -1946,6 +1946,34 @@ def create_app() -> Flask:
             return redirect(url_for("hire_onboarding"))
         return render_template("hire.html", user=user, hire=hire_data)
 
+    @app.get("/post-job")
+    def post_job_form():
+        """Full-page job posting form for authenticated recruiters/companies."""
+        user = session.get("user")
+        if not user:
+            return redirect(url_for("register"))
+
+        account_type = (user.get("account_type") or "").lower()
+        hire_access = bool(user.get("hire_access"))
+
+        if not _is_hire_eligible(account_type, hire_access):
+            flash(
+                "Job posting is available for recruiter and company accounts. "
+                "Complete your company setup to continue.",
+                "error",
+            )
+            return redirect(url_for("hire_onboarding"))
+
+        user_id = str(user.get("id") or "").strip()
+        if not user_id:
+            session.pop("user", None)
+            return redirect(url_for("register"))
+
+        hire_data, err = _get_hire_metadata(user_id)
+        if err and err != "Auth service unavailable.":
+            flash(err, "error")
+        return render_template("post_job_form.html", user=user, hire=hire_data)
+
     @app.route("/hire/onboarding", methods=["GET", "POST"])
     @_limit("10 per minute")
     def hire_onboarding():
@@ -2083,6 +2111,10 @@ def create_app() -> Flask:
         company_raw = (payload.get("company") or "").strip()
         description_raw = (payload.get("description") or "").strip()
         salary_range_raw = (payload.get("salary_range") or "").strip()
+        location_raw = (payload.get("location") or "").strip()
+        employment_type_raw = (payload.get("employment_type") or "").strip()
+        work_arrangement_raw = (payload.get("work_arrangement") or "").strip()
+        apply_url_raw = (payload.get("apply_url") or "").strip()
 
         try:
             contact_email = validate_email(contact_email_raw, check_deliverability=False).normalized
@@ -2090,7 +2122,7 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid contact email.", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
 
         def _word_count(text: str) -> int:
             if not text:
@@ -2101,31 +2133,42 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_title"}), 400
             flash("Please add a job title.", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
 
         if len(company_raw) < 2:
             if is_json:
                 return jsonify({"error": "invalid_company"}), 400
             flash("Please add a company name.", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
 
         if len(description_raw) < 10:
             if is_json:
                 return jsonify({"error": "invalid_description"}), 400
             flash("Please add a short description.", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
 
         if _word_count(description_raw) > 5000:
             if is_json:
                 return jsonify({"error": "description_too_long"}), 400
             flash("Description is too long (max ~5000 words).", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
+
+        # Enrich description with additional fields
+        description_full = description_raw
+        if location_raw:
+            description_full = f"Location: {location_raw}\n\n{description_full}"
+        if employment_type_raw:
+            description_full += f"\n\nEmployment type: {employment_type_raw}"
+        if work_arrangement_raw:
+            description_full += f"\nWork arrangement: {work_arrangement_raw}"
+        if apply_url_raw:
+            description_full += f"\n\nApply here: {apply_url_raw}"
 
         status = insert_job_posting(
             contact_email=contact_email,
             job_title=job_title_raw,
             company=company_raw,
-            description=description_raw,
+            description=description_full,
             salary_range=salary_range_raw,
             user_id=user_id,
         )
@@ -2134,12 +2177,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "job_posting_failed"}), 500
             flash("We could not submit the job. Please try again.", "error")
-            return redirect(url_for("jobs"))
+            return redirect(url_for("post_job_form"))
 
         if is_json:
             return jsonify({"status": "ok"}), 200
-        flash("Thanks! Your job submission was received.", "success")
-        return redirect(url_for("jobs"))
+        flash("Your job has been submitted and will go live within 24 hours.", "success")
+        return redirect(url_for("hire"))
 
     @app.post("/job-posting.json")
     @_limit("10 per minute")

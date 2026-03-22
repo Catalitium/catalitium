@@ -93,8 +93,10 @@
 <!-- ═══════════════════════════════════════════════════════
      SECTION 3 — SERVICES GRID
      ═══════════════════════════════════════════════════════ -->
-<section id="services" class="py-24 bg-slate-50 dark:bg-slate-900/50">
-  <div class="max-w-6xl mx-auto px-4">
+<section id="services" class="py-24 bg-slate-50 dark:bg-slate-900/50 relative overflow-hidden">
+  <!-- Subtle dot grid -->
+  <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.04]" style="background-image:radial-gradient(circle,currentColor 1px,transparent 1px);background-size:32px 32px" aria-hidden="true"></div>
+  <div class="relative z-10 max-w-6xl mx-auto px-4">
     <div class="text-center mb-16">
       <p class="text-xs font-semibold uppercase tracking-[0.3em] text-brand mb-3">What we build</p>
       <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
@@ -201,7 +203,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {% for job in featured_jobs[:4] %}
       <a href="{{ url_for('job_detail', job_id=job.id) }}"
-         class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 hover:border-brand/30 dark:hover:border-brand/30 hover:shadow-lg hover:shadow-brand/5 transition-all duration-300">
+         class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 hover:border-brand/30 dark:hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10 dark:hover:shadow-brand/20 hover:-translate-y-1 transition-all duration-300">
         <div class="text-xs font-semibold text-brand mb-2 uppercase tracking-wider clamp-1">{{ job.company }}</div>
         <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2 clamp-2 group-hover:text-brand transition-colors">{{ job.title }}</h3>
         <div class="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
@@ -280,6 +282,8 @@
      SECTION 6 — AI AGENTS AS A SERVICE
      ═══════════════════════════════════════════════════════ -->
 <section class="py-24 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
+  <!-- Subtle dot grid -->
+  <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.04]" style="background-image:radial-gradient(circle,currentColor 1px,transparent 1px);background-size:32px 32px" aria-hidden="true"></div>
   <!-- Background glow -->
   <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-violet-500/10 rounded-full blur-[120px] pointer-events-none" aria-hidden="true"></div>
 
@@ -297,21 +301,21 @@
 
     <!-- Process steps -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-      <div class="text-center p-6">
+      <div class="text-center p-6 rounded-2xl hover:bg-emerald-500/5 dark:hover:bg-emerald-500/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-4 text-emerald-600 dark:text-emerald-400">
           <span class="text-xl font-bold">1</span>
         </div>
         <h3 class="font-bold text-lg mb-2 text-slate-900 dark:text-white">Define the task</h3>
         <p class="text-sm text-slate-600 dark:text-slate-400">Tell us what your team does manually. We map the workflow.</p>
       </div>
-      <div class="text-center p-6">
+      <div class="text-center p-6 rounded-2xl hover:bg-cyan-500/5 dark:hover:bg-cyan-500/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 text-cyan-600 dark:text-cyan-400">
           <span class="text-xl font-bold">2</span>
         </div>
         <h3 class="font-bold text-lg mb-2 text-slate-900 dark:text-white">We build the agent</h3>
         <p class="text-sm text-slate-600 dark:text-slate-400">Custom AI agent, tested against your data, deployed to your environment.</p>
       </div>
-      <div class="text-center p-6">
+      <div class="text-center p-6 rounded-2xl hover:bg-violet-500/5 dark:hover:bg-violet-500/5 hover:-translate-y-1 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300">
         <div class="w-14 h-14 mx-auto rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center mb-4 text-violet-600 dark:text-violet-400">
           <span class="text-xl font-bold">3</span>
         </div>
