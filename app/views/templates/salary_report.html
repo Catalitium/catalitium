@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Salary Tool &amp; Talent Arbitrage Calculator | Catalitium{% endblock %}
+{% block title %}DACH Salary Tools — Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Live tech salary benchmarks by role and region, plus an interactive talent arbitrage calculator. Compare local vs. global engineering hire costs instantly. Updated {{ generated }}."/>
-<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tool"/>
-<meta property="og:title" content="Salary Tool &amp; Talent Arbitrage Calculator | Catalitium"/>
-<meta property="og:description" content="Free tech salary benchmarks and talent arbitrage modelling for engineering teams. Updated live from Catalitium job data."/>
+<meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tools"/>
+<meta property="og:title" content="DACH Salary Tools | Catalitium"/>
+<meta property="og:description" content="Benchmark tech salaries in Zurich, Berlin, Munich. Model local vs. global hire costs. Browse live roles. All in one place."/>
 <meta property="og:type" content="website"/>
-<meta name="keywords" content="tech salary tool, software engineer salary 2026, talent arbitrage calculator, global vs local engineering costs, developer salary benchmarks"/>
+<meta name="keywords" content="DACH salary tool, software engineer salary Zurich 2026, tech salary Switzerland, talent arbitrage calculator, developer salary benchmarks, Berlin tech salaries"/>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Catalitium Salary Tool",
-  "description": "Interactive tech salary benchmarks and talent arbitrage calculator for engineering teams.",
-  "url": "{{ request.url_root.rstrip('/') }}/salary-tool",
+  "name": "Catalitium Salary Tools",
+  "description": "Free DACH salary benchmarks, arbitrage calculator, and live tech job search for engineers and hiring teams.",
+  "url": "{{ request.url_root.rstrip('/') }}/salary-tools",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
@@ -299,8 +299,8 @@
       </div>
     </section>
 
-    <!-- More salary data links + CTA -->
-    <div class="mb-8 grid gap-4 sm:grid-cols-3">
+    <!-- More salary data links -->
+    <div class="mb-5 grid gap-4 sm:grid-cols-2">
       <a href="{{ url_for('salary_by_title') }}"
         class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
         <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Title</p>
@@ -313,11 +313,18 @@
         <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Best-paying DACH employers</p>
         <p class="text-xs text-slate-400">Google, Stripe, Roche and 10 more ranked</p>
       </a>
+    </div>
+
+    <!-- Contribute CTA banner -->
+    <div class="mb-8 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/8 to-sky-500/8 dark:from-brand/10 dark:to-sky-500/10 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Make the data better</p>
+        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary — unlock your market percentile</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Anonymous. Takes 60 seconds. See instantly where you stand vs. P25 / P50 / P75 in DACH.</p>
+      </div>
       <a href="{{ url_for('salary_contribute') }}"
-        class="flex flex-col gap-1 rounded-2xl border border-brand/40 bg-brand/5 p-4 hover:border-brand transition-colors">
-        <p class="text-xs font-semibold uppercase tracking-widest text-brand">Add Your Salary</p>
-        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Help the community</p>
-        <p class="text-xs text-slate-400">Share anonymously and see your market percentile</p>
+         class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
+        Add Your Salary →
       </a>
     </div>
 

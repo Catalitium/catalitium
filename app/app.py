@@ -3294,10 +3294,14 @@ def create_app() -> Flask:
         )
 
     # ------------------------------------------------------------------
-    # Salary Tool — live DACH calculator + role/region report
+    # Salary Tools — live DACH calculator + role/region report
     # ------------------------------------------------------------------
     @app.get("/salary-tool")
     @app.get("/salary-report")
+    def salary_tool_redirect():
+        return redirect(url_for("salary_tool"), 301)
+
+    @app.get("/salary-tools")
     def salary_tool():
         import json as _json
         from datetime import datetime as _dt
