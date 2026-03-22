@@ -63,7 +63,7 @@
     };
   </script>
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css', v=asset_version) }}" />
 
 
   <!-- Google AdSense -->
@@ -123,12 +123,13 @@
       <nav class="hidden xl:flex items-center justify-center gap-0.5 text-sm">
         <a href="{{ url_for('jobs') }}" {% if request.endpoint == 'jobs' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'jobs' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
         <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
-        <a href="{{ url_for('recruiter_salary_board') }}" {% if request.endpoint == 'recruiter_salary_board' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'recruiter_salary_board' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
+        <a href="{{ url_for('salary_tool') }}" {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
         <a href="{{ url_for('pricing') }}" {% if request.endpoint == 'pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
       </nav>
 
       <!-- Right: action buttons (desktop) -->
       <div class="hidden xl:flex items-center justify-end gap-3 shrink-0">
+        <a href="{{ url_for('salary_contribute') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium text-brand border border-brand/30 hover:bg-brand/10 transition-colors">+ Add Salary</a>
         <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
         {% if session.get("user") %}
         <a href="{{ url_for('post_job_form') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
@@ -180,7 +181,7 @@
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 12h6m-6 4h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
           <span>Pricing</span>
         </a>
-        <a href="{{ url_for('recruiter_salary_board') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('salary_tool') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <span class="font-semibold text-brand">Salaries</span>
         </a>
         <a href="{{ url_for('market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
@@ -215,7 +216,8 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('jobs') }}">Jobs</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('recruiter_salary_board') }}">Salaries</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('salary_tool') }}">Salaries</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand text-brand font-medium" href="{{ url_for('salary_contribute') }}">+ Add Your Salary</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         {% if session.get("user") %}
@@ -310,7 +312,8 @@
           <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Explore</p>
           <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Jobs</a>
           <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
-          <a href="{{ url_for('recruiter_salary_board') }}" class="hover:text-brand transition-colors">Salaries</a>
+          <a href="{{ url_for('salary_tool') }}" class="hover:text-brand transition-colors">Salaries</a>
+          <a href="{{ url_for('salary_contribute') }}" class="hover:text-brand transition-colors">Add Your Salary</a>
           <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
           <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
           <a href="{{ url_for('pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
@@ -520,7 +523,7 @@
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Alerts
       </button>
-      <a href="{{ url_for('recruiter_salary_board') }}"
+      <a href="{{ url_for('salary_tool') }}"
          class="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-slate-600 hover:text-brand active:text-brand transition-colors">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Salary
@@ -606,5 +609,6 @@
       }
     });
   </script>
+  <script defer src="{{ url_for('static', filename='js/chat-widget.js', v=asset_version) }}"></script>
 </body>
 </html>

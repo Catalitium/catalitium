@@ -242,6 +242,47 @@ def insert_contact(email: str, name_company: str, message: str) -> str:
 
 JOB_POSTING_ACTIVE_DAYS = 10  # listings expire after this many days
 
+
+def insert_salary_submission(
+    *,
+    job_title: str,
+    company: str = "",
+    location: str,
+    seniority: str,
+    base_salary: int,
+    currency: str,
+    years_exp: Optional[int] = None,
+    email: Optional[str] = None,
+) -> str:
+    """Insert a crowd-sourced salary data point; return 'ok' or 'error'."""
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO salary_submissions(
+                    job_title, company, location, seniority,
+                    base_salary, currency, years_exp, email, created_at
+                )
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    (job_title or "").strip(),
+                    (company or "").strip() or None,
+                    (location or "").strip(),
+                    (seniority or "").strip(),
+                    int(base_salary),
+                    (currency or "CHF").strip().upper(),
+                    years_exp,
+                    (email or "").strip() or None,
+                    _now_iso(),
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_salary_submission failed: %s", exc, exc_info=True)
+        return "error"
+
 def insert_job_posting(
     *,
     contact_email: str,
@@ -624,6 +665,21 @@ def init_db():
             cur.execute(
                 "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT"
             )
+            # Salary flywheel — crowd-sourced contributions
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS salary_submissions (
+                    id          SERIAL PRIMARY KEY,
+                    job_title   TEXT NOT NULL,
+                    company     TEXT,
+                    location    TEXT NOT NULL,
+                    seniority   TEXT NOT NULL,
+                    base_salary INTEGER NOT NULL,
+                    currency    TEXT NOT NULL DEFAULT 'CHF',
+                    years_exp   INTEGER,
+                    email       TEXT,
+                    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
             # Jobs search indexes (safe on existing table)
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_title_norm ON jobs(job_title_norm)"

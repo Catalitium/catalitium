@@ -70,39 +70,30 @@ Visit `http://localhost:5000`
 
 ---
 
-## Environment variables (canonical)
-
-| Variable | Purpose |
-|----------|---------|
-| `SECRET_KEY` | Flask session signing (**required** in production) |
-| `DATABASE_URL` or `SUPABASE_URL` | Postgres connection string (pooler URL OK; `pgbouncer=true` is stripped in code) |
-| `SUPABASE_PROJECT_URL` | `https://<ref>.supabase.co` for Auth API (derived from DB URL if omitted) |
-| `SUPABASE_SECRET_KEY` | Supabase **secret** key for server-side Auth + admin user metadata |
-| `DB_POOL_MAX` | Max connections in optional pool (default `4`) |
-| `ASSET_VERSION` | Cache-bust string for `main.js` query param |
-| `RATE_LIMIT_DEFAULT` / `RATELIMIT_STORAGE_URI` | Flask-Limiter defaults |
-| `STRIPE_SECRET_KEY` | Payments (optional for read-only job search) |
-
-Third-party scripts (Cookiebot, gtag, AdSense) load only when `is_production_env` is true (not on local dev hosts).
-
-**Performance:** See [`PERF_QUICK_WINS.md`](PERF_QUICK_WINS.md) for low-effort speed checklists (and what we already optimized in code).
-
----
-
 ## Project Structure
 
 ```
 catalitium/
 ├── app/
-│   ├── app.py                  # Flask app factory, all routes
+│   ├── app.py                  # Flask app factory — all routes, rate limiting, auth
+│   ├── api_utils.py            # JSON envelopes, query param helpers, TTL cache
 │   ├── models/
-│   │   └── db.py               # DB queries, connection pool, API key helpers
+│   │   └── db.py               # DB queries, connection pool, API key management
+│   ├── static/
+│   │   ├── css/styles.css      # Custom styles
+│   │   ├── js/                 # main.js, sw.js, ai_summary.js, tracker.js
+│   │   └── img/                # Logos, favicons
 │   └── views/
 │       └── templates/          # Jinja2 HTML templates
-├── scripts/                    # Utility scripts (email digests, smoke tests)
-├── .env.example                # All required env vars documented
+│           ├── base.html       # Layout, nav, service worker, cookie consent
+│           ├── components/     # Reusable partials (job_card, promo_card)
+│           └── reports/        # Market research report pages
+├── scripts/                    # Utility scripts (email digest, smoke tests)
+├── tests/                      # Pytest smoke + prod-readiness tests
+├── public/                     # Static assets served directly (testimonial images)
+├── .env.example                # All required env vars — copy to .env to run locally
 ├── requirements.txt            # Pinned Python dependencies
-└── run.py                      # Local dev entry point
+└── run.py                      # Local dev entry point (Gunicorn in prod)
 ```
 
 ---
