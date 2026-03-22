@@ -2,14 +2,12 @@
 {% block title %}Catalitium — AI-Powered Tools, Job Intelligence & Automation{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Catalitium builds and deploys AI-powered tools and agents. Job platform with salary insights, market intelligence reports, custom software development, and AI agents as a service.">
+<meta name="description" content="Catalitium builds AI-powered tools and agents. Job platform with salary insights, market reports, custom development, and AI agents as a service.">
 <link rel="canonical" href="{{ url_for('landing', _external=True) }}">
 <meta property="og:title" content="Catalitium — Automation over complexity.">
 <meta property="og:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ url_for('landing', _external=True) }}">
-<meta property="og:site_name" content="Catalitium">
-<meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Catalitium — Automation over complexity.">
 <meta name="twitter:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
 {% endblock %}
@@ -38,9 +36,7 @@
     </div>
 
     <h1 class="text-5xl sm:text-7xl lg:text-8xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.05]">
-      <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-500 to-violet-500 dark:from-blue-400 dark:via-cyan-400 dark:to-violet-400">Automation</span>
-      <br class="hidden sm:block">
-      over complexity.
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-cyan-500 to-violet-500 dark:from-blue-400 dark:via-cyan-400 dark:to-violet-400">Automation<br class="hidden sm:block"> over complexity.</span>
     </h1>
 
     <p class="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
@@ -325,7 +321,7 @@
     </div>
 
     <div class="mt-12 text-center">
-      <a href="{{ url_for('about') }}"
+      <a href="{{ url_for('register') }}"
          class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-7 py-4 text-base font-semibold hover:bg-emerald-600 dark:hover:bg-emerald-400 hover:-translate-y-0.5 transition-all duration-300">
         Start a conversation
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -409,11 +405,11 @@
 
     <div class="mt-10 pt-8 border-t border-slate-200 dark:border-slate-800">
       <p class="text-sm text-slate-500 mb-4">Or join the weekly digest &mdash; curated jobs, salary insights, and market intelligence.</p>
-      <a href="{{ url_for('jobs') }}"
+      <button type="button" data-open-subscribe
          class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:text-blue-700 dark:hover:text-blue-400 transition-colors">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Subscribe to Weekly Digest
-      </a>
+      </button>
     </div>
   </div>
 </section>
