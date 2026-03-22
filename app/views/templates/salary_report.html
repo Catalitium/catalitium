@@ -1,20 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Salary Tool &amp; Talent Arbitrage Calculator | Catalitium{% endblock %}
+{% block title %}DACH Salary Tools — Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Live tech salary benchmarks by role and region, plus an interactive talent arbitrage calculator. Compare local vs. global engineering hire costs instantly. Updated {{ generated }}."/>
-<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tool"/>
-<meta property="og:title" content="Salary Tool &amp; Talent Arbitrage Calculator | Catalitium"/>
-<meta property="og:description" content="Free tech salary benchmarks and talent arbitrage modelling for engineering teams. Updated live from Catalitium job data."/>
+<meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
+<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tools"/>
+<meta property="og:title" content="DACH Salary Tools | Catalitium"/>
+<meta property="og:description" content="Benchmark tech salaries in Zurich, Berlin, Munich. Model local vs. global hire costs. Browse live roles. All in one place."/>
 <meta property="og:type" content="website"/>
-<meta name="keywords" content="tech salary tool, software engineer salary 2026, talent arbitrage calculator, global vs local engineering costs, developer salary benchmarks"/>
+<meta name="keywords" content="DACH salary tool, software engineer salary Zurich 2026, tech salary Switzerland, talent arbitrage calculator, developer salary benchmarks, Berlin tech salaries"/>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Catalitium Salary Tool",
-  "description": "Interactive tech salary benchmarks and talent arbitrage calculator for engineering teams.",
-  "url": "{{ request.url_root.rstrip('/') }}/salary-tool",
+  "name": "Catalitium Salary Tools",
+  "description": "Free DACH salary benchmarks, arbitrage calculator, and live tech job search for engineers and hiring teams.",
+  "url": "{{ request.url_root.rstrip('/') }}/salary-tools",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
@@ -90,6 +90,11 @@
             class="tab-btn px-5 py-3 text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-200 transition-colors -mb-px">
       Talent Arbitrage Calculator
     </button>
+    <button id="tab-btn-jobs"
+            onclick="switchTab('jobs')"
+            class="tab-btn px-5 py-3 text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-200 transition-colors -mb-px">
+      Live Jobs
+    </button>
   </div>
 
   <!-- ─────────────────────────────────────────── -->
@@ -107,6 +112,11 @@
         Save as PDF
       </button>
     </div>
+
+    <!-- Contribute nudge -->
+    <p class="text-right text-xs mb-3 text-slate-500 dark:text-slate-400">
+      Know your salary? <a href="{{ url_for('salary_contribute') }}" class="text-brand font-semibold hover:underline">Add it and see your percentile →</a>
+    </p>
 
     <!-- DACH Salary Calculator -->
     <div class="rounded-2xl border border-brand/20 bg-brand/5 dark:bg-slate-900/60 p-5 mb-6">
@@ -243,12 +253,12 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             {% for cat, d in data.items() %}
-            <tr class="hover:bg-slate-50 dark:bg-slate-900/50 transition">
+            <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition">
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ cat }}</td>
-              <td class="px-4 py-3 text-right text-slate-600">{{ d.count }}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ d.count }}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
               <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}CHF {{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right text-slate-500">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -281,7 +291,7 @@
         {% if d.median %}
         <div>
           <div class="flex justify-between text-xs mb-1">
-            <span class="font-medium text-slate-700">{{ cat }}</span>
+            <span class="font-medium text-slate-700 dark:text-slate-300">{{ cat }}</span>
             <span class="text-brand font-semibold">CHF {{ '{:,}'.format(d.median) }}</span>
           </div>
           <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
@@ -294,8 +304,8 @@
       </div>
     </section>
 
-    <!-- More salary data links + CTA -->
-    <div class="mb-8 grid gap-4 sm:grid-cols-3">
+    <!-- More salary data links -->
+    <div class="mb-5 grid gap-4 sm:grid-cols-2">
       <a href="{{ url_for('salary_by_title') }}"
         class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
         <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Title</p>
@@ -308,17 +318,24 @@
         <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Best-paying DACH employers</p>
         <p class="text-xs text-slate-400">Google, Stripe, Roche and 10 more ranked</p>
       </a>
+    </div>
+
+    <!-- Contribute CTA banner -->
+    <div class="mb-8 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/8 to-sky-500/8 dark:from-brand/10 dark:to-sky-500/10 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Make the data better</p>
+        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary — unlock your market percentile</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Anonymous. Takes 60 seconds. See instantly where you stand vs. P25 / P50 / P75 in DACH.</p>
+      </div>
       <a href="{{ url_for('salary_contribute') }}"
-        class="flex flex-col gap-1 rounded-2xl border border-brand/40 bg-brand/5 p-4 hover:border-brand transition-colors">
-        <p class="text-xs font-semibold uppercase tracking-widest text-brand">Add Your Salary</p>
-        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Help the community</p>
-        <p class="text-xs text-slate-400">Share anonymously and see your market percentile</p>
+         class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
+        Add Your Salary →
       </a>
     </div>
 
     <!-- Methodology -->
     <section class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-5 text-xs text-slate-500 space-y-1.5">
-      <p class="font-semibold text-slate-700 text-sm">Methodology</p>
+      <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm">Methodology</p>
       <p>Salary estimates are derived from Catalitium&rsquo;s curated job database, blending employer-disclosed ranges
          with location-based reference data normalised to USD. Figures represent annual compensation estimates.
          Outliers are excluded from median calculations.</p>
@@ -523,12 +540,83 @@
 
   </div><!-- /panel-arbitrage -->
 
+  <!-- ─────────────────────────────────────────── -->
+  <!--  DASHBOARD 3 — LIVE JOBS                    -->
+  <!-- ─────────────────────────────────────────── -->
+  <div id="panel-jobs" class="hidden pt-4">
+
+    <!-- Header row -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Live Listings</p>
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Find Tech Roles</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Search roles with salary bands. Filter by title and region.</p>
+      </div>
+      {% if session.get("user") %}
+      <a href="{{ url_for('post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Post a Job
+      </a>
+      {% else %}
+      <a href="{{ url_for('register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Post a Job
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Search form -->
+    <form id="jobBrowserForm" data-api-url="{{ url_for('api_jobs') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] mb-6">
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-semibold text-slate-700 dark:text-slate-300">Title</span>
+        <input id="jobBrowserTitle" name="title" type="text" placeholder="e.g. Software Engineer"
+               class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+      </label>
+      <label class="flex flex-col gap-1 text-sm">
+        <span class="font-semibold text-slate-700 dark:text-slate-300">Region</span>
+        <select id="jobBrowserCountry" name="country"
+                class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+          <option value="">Anywhere / Remote</option>
+          <option value="EU">Europe (EU hubs)</option>
+          <option value="US">United States</option>
+          <option value="UK">UK &amp; Ireland</option>
+          <option value="CH">Switzerland</option>
+          <option value="IN">India</option>
+        </select>
+      </label>
+      <button type="submit" class="self-end rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        Search
+      </button>
+    </form>
+
+    <!-- Stats -->
+    <div class="grid gap-3 sm:grid-cols-2 mb-6">
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Results</p>
+        <p id="jobBrowserCount" class="text-lg font-semibold text-slate-900 dark:text-white" aria-live="polite">Start your search</p>
+        <p id="jobBrowserContext" class="text-xs text-slate-500 dark:text-slate-400">Filter by title and region.</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-3">
+        <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Salary insight</p>
+        <p id="salaryOverview" class="text-lg font-semibold text-slate-900 dark:text-white" aria-live="polite">Search to see salary bands</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Median ranges from roles with stated pay.</p>
+      </div>
+    </div>
+
+    <!-- Job cards -->
+    <div id="jobCardsContainer" class="space-y-3" aria-live="polite"></div>
+
+    <!-- Pagination -->
+    <div id="paginationContainer" class="flex items-center justify-center gap-2 mt-6"></div>
+
+  </div><!-- /panel-jobs -->
+
 </div><!-- /container -->
 
 <script>
 /* ── Tab switching ── */
 function switchTab(name) {
-  ['salary', 'arbitrage'].forEach(function(t) {
+  ['salary', 'arbitrage', 'jobs'].forEach(function(t) {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== name);
     var btn = document.getElementById('tab-btn-' + t);
     if (t === name) {
@@ -652,4 +740,8 @@ async function arb_copyText(n) {
 /* Init */
 arb_calc();
 </script>
+{% endblock %}
+
+{% block body_extra %}
+<script defer src="{{ url_for('static', filename='js/job_browser.js') }}"></script>
 {% endblock %}
