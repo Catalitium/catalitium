@@ -103,9 +103,9 @@
   </header>
 
   <!-- Description preview — always visible, uniquely truncated per card -->
-  {% set desc_preview = desc_clean | truncate(220, True, '…') %}
+  {% set desc_preview = desc_clean | truncate_text(220) %}
   {% if desc_preview and desc_preview|length > 30 %}
-  <p class="mt-2.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3">{{ desc_preview }}</p>
+  <p class="mt-2.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3" title="{{ desc_clean|e }}">{{ desc_preview }}</p>
   {% endif %}
 
   <!-- Full details toggle -->

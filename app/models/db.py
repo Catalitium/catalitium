@@ -690,6 +690,23 @@ def init_db():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_location ON jobs(LOWER(location))"
             )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_jobs_company_name ON jobs(LOWER(company_name))"
+            )
+            # Salary table indexes for fast city/region/country lookups
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_salary_city ON salary(LOWER(city))"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_salary_region ON salary(LOWER(region))"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_salary_country ON salary(LOWER(country))"
+            )
+            # Numeric salary column on jobs for direct filter queries
+            cur.execute(
+                "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_salary INTEGER"
+            )
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS stripe_orders (
                     id                    SERIAL PRIMARY KEY,
@@ -785,22 +802,16 @@ def _now_iso():
 
 # ------------------------- Normalization Functions ---------------------------
 
-COUNTRY_NORM = {
-    "deutschland":"DE","germany":"DE","deu":"DE","de":"DE",
-    "switzerland":"CH","schweiz":"CH","suisse":"CH","svizzera":"CH","ch":"CH",
-    "austria":"AT","Ã¶sterreich":"AT","at":"AT",
-    "europe":"EU","eu":"EU","eur":"EU","european union":"EU",
-    "uk":"UK","gb":"UK","england":"UK","united kingdom":"UK",
-    "usa":"US","united states":"US","america":"US","us":"US",
-    "spain":"ES","es":"ES","france":"FR","fr":"FR","italy":"IT","it":"IT",
-    "netherlands":"NL","nl":"NL","belgium":"BE","be":"BE","sweden":"SE","se":"SE",
-    "poland":"PL","colombia":"CO","mexico":"MX",
-    "portugal":"PT","ireland":"IE","denmark":"DK","finland":"FI","greece":"GR",
-    "hungary":"HU","romania":"RO","slovakia":"SK","slovenia":"SI","bulgaria":"BG",
-    "croatia":"HR","cyprus":"CY","czech republic":"CZ","czechia":"CZ","estonia":"EE",
-    "latvia":"LV","lithuania":"LT","luxembourg":"LU","malta":"MT",
-    "india":"IN","bharat":"IN","in":"IN",
-}
+def _load_country_norm() -> Dict[str, str]:
+    _path = Path(__file__).parent / "country_norm.json"
+    try:
+        with open(_path, encoding="utf-8") as _fh:
+            return json.load(_fh)
+    except Exception as _exc:
+        logger.warning("country_norm.json load failed: %s", _exc)
+        return {}
+
+COUNTRY_NORM: Dict[str, str] = _load_country_norm()
 
 LOCATION_COUNTRY_HINTS = {
     "amsterdam": "NL",
@@ -1047,13 +1058,13 @@ class Job:
         return patterns, sorted(equals)
 
     @staticmethod
-    def count(title: Optional[str] = None, country: Optional[str] = None) -> int:
+    def count(title: Optional[str] = None, country: Optional[str] = None, salary_min: Optional[int] = None) -> int:
         """Return number of jobs matching optional filters."""
-        key = ((title or "").strip().lower(), (country or "").strip().lower())
+        key = ((title or "").strip().lower(), (country or "").strip().lower(), salary_min or 0)
         cached = Job._cache_get_count(key)
         if cached is not None:
             return cached
-        where_sql, params_pg = Job._where(title, country)
+        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
         db = get_db()
         with db.cursor() as cur:
             cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql}", params_pg)
@@ -1068,6 +1079,7 @@ class Job:
         country: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        salary_min: Optional[int] = None,
     ) -> List[Dict]:
         """Return matching jobs ordered by recency."""
         key = (
@@ -1075,11 +1087,12 @@ class Job:
             (country or "").strip().lower(),
             int(limit),
             int(offset),
+            salary_min or 0,
         )
         cached = Job._cache_get_search(key)
         if cached is not None:
             return cached
-        where_sql, params_pg = Job._where(title, country)
+        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
         db = get_db()
         where_clause = where_sql
         params = list(params_pg)
@@ -1270,7 +1283,7 @@ class Job:
         return link.strip() if isinstance(link, str) else None
 
     @staticmethod
-    def _where(title: Optional[str], country: Optional[str]) -> Tuple[str, Tuple[str, ...]]:
+    def _where(title: Optional[str], country: Optional[str], salary_min: Optional[int] = None) -> Tuple[str, Tuple[str, ...]]:
         clauses_pg: List[str] = []
         params_pg: List[str] = []
 
@@ -1432,6 +1445,10 @@ class Job:
                     clause_pg = "(" + " OR ".join(subclauses_pg) + ")"
                     clauses_pg.append(clause_pg)
 
+        if salary_min and salary_min > 0:
+            clauses_pg.append("job_salary >= %s")
+            params_pg.append(salary_min)
+
         where_pg = f"WHERE {' AND '.join(clauses_pg)}" if clauses_pg else ""
         return where_pg, tuple(params_pg)
 
@@ -1548,33 +1565,23 @@ def get_salary_for_location(location: str):
 
     try:
         with db.cursor() as cur:
-            # try exact matches first
-            for cand in candidates:
-                if not cand:
-                    continue
+            # Single UNION query: city (priority 1) → region (2) → country (3)
+            lower_cands = [c.lower() for c in candidates if c]
+            if lower_cands:
                 cur.execute(
-                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(city) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
-                    (cand,),
-                )
-                row = cur.fetchone()
-                if row and row[0] is not None:
-                    return float(row[0]), (row[1] or None)
-            for cand in candidates:
-                if not cand:
-                    continue
-                cur.execute(
-                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(region) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
-                    (cand,),
-                )
-                row = cur.fetchone()
-                if row and row[0] is not None:
-                    return float(row[0]), (row[1] or None)
-            for cand in candidates:
-                if not cand:
-                    continue
-                cur.execute(
-                    f"SELECT {median_col}, {currency_col} FROM salary WHERE lower(country) = lower(%s) AND {median_col} IS NOT NULL LIMIT 1",
-                    (cand,),
+                    f"""
+                    SELECT {median_col}, {currency_col}, 1 AS priority FROM salary
+                      WHERE LOWER(city) = ANY(%s) AND {median_col} IS NOT NULL
+                    UNION ALL
+                    SELECT {median_col}, {currency_col}, 2 FROM salary
+                      WHERE LOWER(region) = ANY(%s) AND {median_col} IS NOT NULL
+                    UNION ALL
+                    SELECT {median_col}, {currency_col}, 3 FROM salary
+                      WHERE LOWER(country) = ANY(%s) AND {median_col} IS NOT NULL
+                    ORDER BY 3
+                    LIMIT 1
+                    """,
+                    (lower_cands, lower_cands, lower_cands),
                 )
                 row = cur.fetchone()
                 if row and row[0] is not None:
@@ -1599,8 +1606,8 @@ def get_salary_for_location(location: str):
             row = cur.fetchone()
             if row and row[0] is not None:
                 return float(row[0]), (row[1] or None)
-    except Exception:
-        # Best-effort: ignore DB errors and return None
+    except Exception as exc:
+        logger.warning("get_salary_for_location(%r) failed: %s", loc, exc)
         return None
     return None
 

@@ -62,6 +62,7 @@ app/views/__pycache__/
 /todo.md
 commit_msg.txt
 testimonials_gemini.md
+lessons.md
 
 # Logs
 *.log
