@@ -802,22 +802,16 @@ def _now_iso():
 
 # ------------------------- Normalization Functions ---------------------------
 
-COUNTRY_NORM = {
-    "deutschland":"DE","germany":"DE","deu":"DE","de":"DE",
-    "switzerland":"CH","schweiz":"CH","suisse":"CH","svizzera":"CH","ch":"CH",
-    "austria":"AT","Ã¶sterreich":"AT","at":"AT",
-    "europe":"EU","eu":"EU","eur":"EU","european union":"EU",
-    "uk":"UK","gb":"UK","england":"UK","united kingdom":"UK",
-    "usa":"US","united states":"US","america":"US","us":"US",
-    "spain":"ES","es":"ES","france":"FR","fr":"FR","italy":"IT","it":"IT",
-    "netherlands":"NL","nl":"NL","belgium":"BE","be":"BE","sweden":"SE","se":"SE",
-    "poland":"PL","colombia":"CO","mexico":"MX",
-    "portugal":"PT","ireland":"IE","denmark":"DK","finland":"FI","greece":"GR",
-    "hungary":"HU","romania":"RO","slovakia":"SK","slovenia":"SI","bulgaria":"BG",
-    "croatia":"HR","cyprus":"CY","czech republic":"CZ","czechia":"CZ","estonia":"EE",
-    "latvia":"LV","lithuania":"LT","luxembourg":"LU","malta":"MT",
-    "india":"IN","bharat":"IN","in":"IN",
-}
+def _load_country_norm() -> Dict[str, str]:
+    _path = Path(__file__).parent / "country_norm.json"
+    try:
+        with open(_path, encoding="utf-8") as _fh:
+            return json.load(_fh)
+    except Exception as _exc:
+        logger.warning("country_norm.json load failed: %s", _exc)
+        return {}
+
+COUNTRY_NORM: Dict[str, str] = _load_country_norm()
 
 LOCATION_COUNTRY_HINTS = {
     "amsterdam": "NL",

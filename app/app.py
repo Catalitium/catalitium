@@ -1,8 +1,10 @@
 """Flask application entry point and route definitions for Catalitium."""
 
+import csv
 import os
 import re
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, List
 from urllib.parse import urlparse
 
@@ -535,68 +537,30 @@ TITLE_BUCKET1_KEYWORDS = (
 )
 
 ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
+GHOST_JOB_DAYS = 30  # jobs older than this are considered potentially filled
+
+_DEMO_JOBS_CSV = Path(__file__).parent / "data" / "demo_jobs.csv"
+
 
 def _get_demo_jobs():
-    """Return demo jobs for empty search results."""
-    return [
-        {
-            "id": f"demo-{i}",
-            "title": title,
-            "company": company,
-            "location": location,
-            "description": desc,
-            "date_posted": date,
-            "link": "",
-            "is_new": False,
-        }
-        for i, (title, company, location, desc, date) in enumerate(
-            [
-                (
-                    "Senior Software Engineer (AI)",
-                    "Catalitium",
-                    "Remote / EU",
-                    "Own end-to-end features across ingestion, ranking, and AI-assisted matching.",
-                    "2025.10.01",
-                ),
-                (
-                    "Data Engineer",
-                    "Catalitium",
-                    "London, UK",
-                    "Build reliable pipelines and optimize warehouse performance.",
-                    "2025.09.28",
-                ),
-                (
-                    "Product Manager",
-                    "Stealth",
-                    "Zurich, CH",
-                    "Partner with design and engineering to deliver user value quickly.",
-                    "2025.09.27",
-                ),
-                (
-                    "Frontend Developer",
-                    "Acme Corp",
-                    "Barcelona, ES",
-                    "Ship delightful UI with Tailwind and strong accessibility.",
-                    "2025.09.26",
-                ),
-                (
-                    "Cloud DevOps Engineer",
-                    "Nimbus",
-                    "Remote / Europe",
-                    "Automate infrastructure, observability, and release workflows.",
-                    "2025.09.25",
-                ),
-                (
-                    "ML Engineer",
-                    "Quantix",
-                    "Remote",
-                    "Deploy ranking and semantic matching at scale.",
-                    "2025.09.24",
-                ),
-            ],
-            start=1,
-        )
-    ]
+    """Return demo jobs for empty search results, loaded from demo_jobs.csv."""
+    jobs = []
+    try:
+        with open(_DEMO_JOBS_CSV, newline="", encoding="utf-8") as fh:
+            for i, row in enumerate(csv.DictReader(fh), start=1):
+                jobs.append({
+                    "id": f"demo-{i}",
+                    "title": row.get("title", ""),
+                    "company": row.get("company", ""),
+                    "location": row.get("location", ""),
+                    "description": row.get("description", ""),
+                    "date_posted": row.get("date_posted", ""),
+                    "link": "",
+                    "is_new": False,
+                })
+    except Exception as exc:
+        logger.warning("_get_demo_jobs: could not load %s: %s", _DEMO_JOBS_CSV, exc)
+    return jobs
 
 REPORTS = [
     {
@@ -836,6 +800,18 @@ def _get_salary_percentiles(title: str, location: str) -> dict:
             return data
     currency = "CHF" if any(c in loc for c in _DACH_CHF_CITIES) else "EUR"
     return {"p25": 70_000, "p50": 90_000, "p75": 115_000, "currency": currency}
+
+
+def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
+    """Safely parse and normalize search parameters."""
+    try:
+        cleaned_title, sal_floor, sal_ceiling = parse_salary_query(raw_title or "")
+        title_q = normalize_title(cleaned_title)
+        country_q = normalize_country(raw_country or "")
+        return title_q, country_q, sal_floor, sal_ceiling
+    except Exception as e:
+        logger.warning(f"Search parameter parsing failed: {e}")
+        return "", "", None, None
 
 
 def create_app() -> Flask:
@@ -1144,20 +1120,16 @@ def create_app() -> Flask:
         flash("Too many requests. Please wait about a minute, then try again.", "error")
         return redirect(request.referrer or url_for("jobs"))
 
-    def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
-        """Safely parse and normalize search parameters."""
-        try:
-            cleaned_title, sal_floor, sal_ceiling = parse_salary_query(raw_title or "")
-            title_q = normalize_title(cleaned_title)
-            country_q = normalize_country(raw_country or "")
-            return title_q, country_q, sal_floor, sal_ceiling
-        except Exception as e:
-            logger.warning(f"Search parameter parsing failed: {e}")
-            return "", "", None, None
-
     @app.template_filter("slugify")
     def _slugify_filter(text: str) -> str:
         return _slugify(text or "")
+
+    @app.template_filter("truncate_text")
+    def _truncate_text_filter(s, length=220):
+        s = s or ""
+        if len(s) <= length:
+            return s
+        return s[:length].rsplit(" ", 1)[0] + "…"
 
     def _job_url(j, _external: bool = False) -> str:
         """Return canonical slug URL for a job dict used in templates."""
@@ -3747,7 +3719,7 @@ def _job_is_ghost(job_date_raw) -> bool:
         return False
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - dt) > timedelta(days=30)
+    return (datetime.now(timezone.utc) - dt) > timedelta(days=GHOST_JOB_DAYS)
 
 
 def _coerce_datetime(value) -> Optional[datetime]:
