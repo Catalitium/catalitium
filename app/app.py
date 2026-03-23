@@ -1274,12 +1274,21 @@ def create_app() -> Flask:
         q_title = title_q or None
         q_country = search_country or None
 
+        # Explicit salary_min filter from ?salary_min= query param
+        salary_min_filter: Optional[int] = None
+        raw_salary_min = (request.args.get("salary_min") or "").strip()
+        if raw_salary_min:
+            try:
+                salary_min_filter = max(0, int(raw_salary_min))
+            except ValueError:
+                pass
+
         total = 0
         rows = []
         try:
-            total = Job.count(q_title, q_country)
+            total = Job.count(q_title, q_country, salary_min=salary_min_filter)
             offset = (max(1, page) - 1) * per_page
-            rows = Job.search(q_title, q_country, limit=per_page, offset=offset)
+            rows = Job.search(q_title, q_country, limit=per_page, offset=offset, salary_min=salary_min_filter)
         except Exception:
             logger.exception("Job lookup failed during index rendering")
             rows = []

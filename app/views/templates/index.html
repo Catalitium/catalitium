@@ -805,6 +805,16 @@
       if (countryInput && !countryInput.value && savedCountry) countryInput.value = savedCountry;
     }
   } catch (_) {}
+
+  // Persist salary explorer open/closed state across page loads
+  (function() {
+    var el = document.getElementById('salary-explorer-details');
+    if (!el) return;
+    try { if (localStorage.getItem('salary_explorer_open') === '1') el.open = true; } catch(_) {}
+    el.addEventListener('toggle', function() {
+      try { localStorage.setItem('salary_explorer_open', el.open ? '1' : '0'); } catch(_) {}
+    });
+  })();
 })();
 </script>
 {% endblock %}
