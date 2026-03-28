@@ -1,11 +1,15 @@
 /* Catalitium Service Worker — resilient static caching.
  * Only GET /static/* is intercepted; HTML and APIs stay network-driven (no stale app shell). */
 /* Bump CACHE name on each static deploy so clients drop stale bundles. */
-var CACHE = 'catalitium-v5';
+var CACHE = 'catalitium-v6';
 var STATIC = [
   '/static/css/styles.css',
   '/static/js/main.js',
   '/static/img/logo.png',
+  '/static/img/apple-touch-icon.png',
+  '/static/img/favicon-32.png',
+  '/static/img/icon-192.png',
+  '/static/img/icon-512.png',
   '/static/manifest.json'
 ];
 
