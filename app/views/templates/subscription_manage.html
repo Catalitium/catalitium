@@ -87,7 +87,7 @@
         <input type="hidden" name="plan_key" value="{{ paid_key_1 }}">
         <button type="submit"
           class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 transition-colors shadow-sm shadow-brand/20">
-          {% if sub and sub.status == 'active' %}Switch to {{ products[paid_key_1].name }}{% else %}Subscribe — {{ products[paid_key_1].price_display }}/mo{% endif %}
+          {% if sub and sub.status == 'active' %}Switch to {{ products[paid_key_1].name }}{% else %}Subscribe, {{ products[paid_key_1].price_display }}/mo{% endif %}
         </button>
       </form>
       {% endif %}
@@ -98,12 +98,12 @@
         <input type="hidden" name="plan_key" value="{{ paid_key_2 }}">
         <button type="submit"
           class="rounded-xl border-2 border-slate-200 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand transition-colors">
-          {% if sub and sub.status == 'active' %}Switch to {{ products[paid_key_2].name }}{% else %}Subscribe — {{ products[paid_key_2].price_display }}/mo{% endif %}
+          {% if sub and sub.status == 'active' %}Switch to {{ products[paid_key_2].name }}{% else %}Subscribe, {{ products[paid_key_2].price_display }}/mo{% endif %}
         </button>
       </form>
       {% endif %}
 
-      {# Cancel button — only if active and not already scheduled to cancel #}
+      {# Cancel button, only if active and not already scheduled to cancel #}
       {% if sub and sub.status == 'active' and not sub.cancel_at_period_end %}
       <form method="post" action="{{ url_for('subscription_cancel') }}"
         onsubmit="return confirm('Cancel your {{ pl_label }} subscription? You keep access until the end of the billing period.')">

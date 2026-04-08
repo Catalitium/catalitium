@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends | Catalitium{% endblock %}
+{% block title %}Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Tech career resources, salary guides, and original market research on AI jobs and hiring trends — built from real job data. Sign in to read reports; Market Intelligence unlocks premium research.">
+<meta name="description" content="Tech career resources, salary guides, and original market research on AI jobs and hiring trends, built from real job data. Sign in to read reports; Market Intelligence unlocks premium research.">
 <link rel="canonical" href="{{ url_for('market_research_index', _external=True) }}">
-<meta property="og:title" content="Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends | Catalitium">
+<meta property="og:title" content="Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends | Catalitium">
 <meta property="og:description" content="Salary benchmarks, AI market reports, hiring trend data, and job search guides. Sign in to read full reports; Market Intelligence unlocks premium research. Published by Catalitium.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ url_for('market_research_index', _external=True) }}">
@@ -22,7 +22,7 @@
     <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">Catalitium Research</p>
     <h1 class="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white leading-tight mb-4">Market Research &amp; Resources</h1>
     <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl">
-      Original reports and data-driven guides on tech salaries, AI careers, and the future of work. Built from real job market data — use them to navigate your next move.
+      Original reports and data-driven guides on tech salaries, AI careers, and the future of work. Built from real job market data, use them to navigate your next move.
     </p>
   </div>
 
@@ -35,7 +35,7 @@
       </svg>
       Published Reports
     </h2>
-    <!-- Featured: first/latest report — full width spotlight -->
+    <!-- Featured: first/latest report, full width spotlight -->
     {% set featured = reports[0] %}
     <a href="{% if user %}{{ url_for('market_research_report', slug=featured.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
        class="group block rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 hover:shadow-lg motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 mb-6">
@@ -131,7 +131,7 @@
           <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-100 rounded-full px-2.5 py-0.5 flex-shrink-0">Coming Soon</span>
         </div>
         <h3 class="text-lg font-bold text-slate-500 dark:text-slate-400 mb-2 leading-snug">Tech Salary &amp; Compensation Report</h3>
-        <p class="text-sm text-slate-400 mb-4 leading-relaxed">Median, min, and max salary estimates for AI/ML, Developer, Senior, Data, and Remote roles &mdash; broken down by US, EU, UK, and Switzerland. Includes a printable PDF export.</p>
+        <p class="text-sm text-slate-400 mb-4 leading-relaxed">Median, min, and max salary estimates for AI/ML, Developer, Senior, Data, and Remote roles, broken down by US, EU, UK, and Switzerland. Includes a printable PDF export.</p>
         <div class="flex items-center justify-between">
           <span class="text-xs text-slate-400">Report in preparation</span>
           <span class="text-sm text-slate-400 flex items-center gap-1">
@@ -198,10 +198,10 @@
             <h3 class="font-bold text-slate-900 dark:text-white">The AI/ML Jobs Market</h3>
           </div>
         </div>
-        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">AI and ML roles now command the highest median salaries on our platform — 22% above the general developer average. Here's what's driving that premium and which skills are most in demand.</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">AI and ML roles now command the highest median salaries on our platform, 22% above the general developer average. Here's what's driving that premium and which skills are most in demand.</p>
         <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
           <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>LLM / transformer expertise commands a 15&ndash;25% premium over classical ML</span></li>
-          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Python + PyTorch/TensorFlow remain the baseline — RAG and agent frameworks are the differentiator</span></li>
+          <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Python + PyTorch/TensorFlow remain the baseline, RAG and agent frameworks are the differentiator</span></li>
           <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Remote AI/ML roles grew 34% year-on-year in our database</span></li>
           <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>EU hiring for AI roles: Germany and France lead, followed by Netherlands and Spain</span></li>
         </ul>
@@ -221,9 +221,9 @@
         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">The average engineer who negotiates receives 10&ndash;20% more than the initial offer. Here's a data-backed framework for doing it without awkwardness.</p>
         <ol class="space-y-2.5 text-sm text-slate-600 dark:text-slate-400">
           <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">1</span><span><strong class="text-slate-700 dark:text-slate-300">Anchor with data.</strong> Reference Catalitium's salary report for your role/region.</span></li>
-          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">2</span><span><strong class="text-slate-700 dark:text-slate-300">Ask for the top of the range.</strong> Employers expect negotiation — the initial offer is rarely the maximum.</span></li>
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">2</span><span><strong class="text-slate-700 dark:text-slate-300">Ask for the top of the range.</strong> Employers expect negotiation, the initial offer is rarely the maximum.</span></li>
           <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">3</span><span><strong class="text-slate-700 dark:text-slate-300">Negotiate total comp.</strong> If base is fixed, push on equity, bonus, signing bonus, remote days.</span></li>
-          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">4</span><span><strong class="text-slate-700 dark:text-slate-300">Get competing offers.</strong> The single best negotiation lever — even if you don't want to take it.</span></li>
+          <li class="flex gap-2.5"><span class="flex-shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold flex items-center justify-center">4</span><span><strong class="text-slate-700 dark:text-slate-300">Get competing offers.</strong> The single best negotiation lever, even if you don't want to take it.</span></li>
         </ol>
       </div>
 
@@ -258,7 +258,7 @@
             <h3 class="font-bold text-slate-900 dark:text-white">State of Remote Tech Work</h3>
           </div>
         </div>
-        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Remote tech roles pay 8&ndash;12% below equivalent on-site roles in absolute terms &mdash; but when adjusted for cost of living in lower-cost regions, effective purchasing power is often 30&ndash;60% higher.</p>
+        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Remote tech roles pay 8&ndash;12% below equivalent on-site roles in absolute terms, but when adjusted for cost of living in lower-cost regions, effective purchasing power is often 30&ndash;60% higher.</p>
         <div class="grid grid-cols-2 gap-3 text-center">
           <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3">
             <p class="text-2xl font-bold text-slate-900 dark:text-white">38%</p>
@@ -293,8 +293,8 @@
         <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Most job searches fail not from a lack of applications but from a lack of targeting. A focused search with 20 quality applications typically outperforms 200 spray-and-pray submissions.</p>
         <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-400">
           <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Use the AI Summary to qualify a role in 10 seconds before spending time on a full read</span></li>
-          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Filter by salary estimate before reading descriptions — eliminate mismatches early</span></li>
-          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Watch the market trends — apply in weeks where new postings peak</span></li>
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Filter by salary estimate before reading descriptions, eliminate mismatches early</span></li>
+          <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Watch the market trends, apply in weeks where new postings peak</span></li>
           <li class="flex items-start gap-2"><span class="text-brand font-bold flex-shrink-0">→</span><span>Ignore ghost job listings unless you can reach the hiring manager directly</span></li>
         </ul>
       </div>
@@ -324,7 +324,7 @@
   <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
     <div class="flex-1">
       <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Get research delivered weekly</h2>
-      <p class="text-sm text-slate-600 dark:text-slate-400">New salary data, market shifts, and hiring trends — straight to your inbox. One email per week, curated roles and salary signals, no spam.</p>
+      <p class="text-sm text-slate-600 dark:text-slate-400">New salary data, market shifts, and hiring trends, straight to your inbox. One email per week, curated roles and salary signals, no spam.</p>
     </div>
     <button type="button" data-open-subscribe
             class="flex-shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand text-white px-5 py-2.5 text-sm font-semibold hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
@@ -340,7 +340,7 @@
 {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  "name": "Market Research & Resources — Tech Salaries, AI Careers & Hiring Trends",
+  "name": "Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends",
   "description": "Free tech career resources, salary guides, and original market research on AI jobs, hiring trends, and the future of work. Built from real job data by Catalitium.",
   "url": "{{ url_for('market_research_index', _external=True) }}",
   "publisher": {

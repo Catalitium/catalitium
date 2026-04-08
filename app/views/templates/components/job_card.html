@@ -27,7 +27,7 @@
         </a>
         {% endif %}
         {% if j.is_ghost %}
-        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-full px-2 py-0.5" title="Posted over 30 days ago — may already be filled">
+        <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800 rounded-full px-2 py-0.5" title="Posted over 30 days ago, may already be filled">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           May be filled
         </span>
@@ -102,7 +102,7 @@
     </div>
   </header>
 
-  <!-- Description preview — always visible, uniquely truncated per card -->
+  <!-- Description preview, always visible, uniquely truncated per card -->
   {% set desc_preview = desc_clean | truncate_text(220) %}
   {% if desc_preview and desc_preview|length > 30 %}
   <p class="mt-2.5 text-sm text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-3" title="{{ desc_clean|e }}">{{ desc_preview }}</p>

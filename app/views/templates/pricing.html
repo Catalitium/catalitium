@@ -117,7 +117,7 @@
               class="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors
                 {% if p.badge %}bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/20
                 {% else %}border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand{% endif %}">
-              {% if mi_sub and mi_sub.status == 'active' %}Switch to {{ p.name }}{% else %}Subscribe — {{ p.price_display }}/mo{% endif %}
+              {% if mi_sub and mi_sub.status == 'active' %}Switch to {{ p.name }}{% else %}Subscribe, {{ p.price_display }}/mo{% endif %}
             </button>
           </form>
           {% else %}
@@ -125,7 +125,7 @@
             class="block w-full py-3 px-4 rounded-xl font-semibold text-sm text-center transition-colors
               {% if p.badge %}bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/20
               {% else %}border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand{% endif %}">
-            Subscribe — {{ p.price_display }}/mo
+            Subscribe, {{ p.price_display }}/mo
           </a>
           {% endif %}
         </div>
@@ -196,13 +196,13 @@
             <input type="hidden" name="plan_key" value="api_access">
             <button type="submit"
               class="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand">
-              Subscribe — {{ p.price_display }}/mo
+              Subscribe, {{ p.price_display }}/mo
             </button>
           </form>
           {% else %}
           <a href="{{ url_for('register') }}"
             class="block w-full py-3 px-4 rounded-xl font-semibold text-sm text-center border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand">
-            Subscribe — {{ p.price_display }}/mo
+            Subscribe, {{ p.price_display }}/mo
           </a>
           {% endif %}
         </div>

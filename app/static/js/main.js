@@ -384,7 +384,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
   contactModal.attach('data-open-contact', 'data-close-contact');
 
   // ------------------------------------------------------------------
-  // Job posting dialog — removed (now a full-page form at /post-job)
+  // Job posting dialog: removed (now a full-page form at /post-job)
   // ------------------------------------------------------------------
 
   // ------------------------------------------------------------------
@@ -877,7 +877,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
 })();
 
 // ====================================================================
-// VIBE FEATURES — shared util
+// VIBE FEATURES: shared util
 // ====================================================================
 function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -912,7 +912,7 @@ function escHtml(s){
     var safeLink  = escHtml(link);
 
     var newBadge   = job.is_new ? '<span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100 border border-emerald-200 rounded-full px-2 py-0.5">New</span>' : '';
-    var ghostBadge = isGhost ? '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5" title="Posted over 30 days ago — may already be filled"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>May be filled</span>' : '';
+    var ghostBadge = isGhost ? '<span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-0.5" title="Posted over 30 days ago; may already be filled"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>May be filled</span>' : '';
     var companyBadge = company ? '<span class="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2 py-1">'+company+'</span>' : '';
     var locBadge     = '<span class="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2 py-1 text-sky-800">'+location+'</span>';
     var dateBadge    = date ? '<span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-1 text-indigo-800">'+date+'</span>' : '';
@@ -1331,7 +1331,7 @@ function escHtml(s){
   var lastVisit = localStorage.getItem(LS_KEY);
   /* Update timestamp for next visit */
   localStorage.setItem(LS_KEY, new Date().toISOString());
-  if(!lastVisit) return; /* First visit — nothing to compare */
+  if(!lastVisit) return; /* First visit: nothing to compare */
 
   var lastTs = new Date(lastVisit).getTime();
   if(!lastTs) return;

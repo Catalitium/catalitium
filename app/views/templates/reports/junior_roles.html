@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}AI Didn&rsquo;t Kill Jobs &mdash; It Killed Junior Roles | Catalitium{% endblock %}
+{% block title %}AI Didn&rsquo;t Kill Jobs: It Killed Junior Roles | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Entry-level tech job postings dropped 35% since 2023. AI tools now write 46% of all code. CS graduate unemployment hit 6.1%. Catalitium&rsquo;s data report on the AI productivity paradox.">
@@ -36,7 +36,7 @@
         <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
       </p>
       <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight mb-4">
-        AI Didn&rsquo;t Kill Jobs &mdash; It Killed Junior Roles
+        AI Didn&rsquo;t Kill Jobs: It Killed Junior Roles
       </h1>
       <p class="text-lg text-slate-600 mb-5 leading-relaxed">{{ report.description }}</p>
 
@@ -99,7 +99,7 @@
       </div>
       <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
         <div class="text-3xl font-extrabold text-brand">20M</div>
-        <div class="text-xs text-slate-600 mt-1 leading-snug">GitHub Copilot users by July 2025 &mdash; 90% Fortune 100 adoption</div>
+        <div class="text-xs text-slate-600 mt-1 leading-snug">GitHub Copilot users by July 2025, 90% Fortune 100 adoption</div>
       </div>
       <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
         <div class="text-3xl font-extrabold text-brand">22&rarr;13</div>
@@ -110,13 +110,13 @@
     <!-- § Executive Summary -->
     <section id="executive-summary" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">Executive Summary</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">The global tech workforce is not shrinking &mdash; it is restructuring. Total US tech employment grew 1.2% in 2024 and is up 12.2% since 2021. But this aggregate growth masks a structural collapse at the bottom of the career ladder. Entry-level tech job postings have dropped more than 35% since January 2023. For roles with high AI exposure, the decline exceeds 40%.</p>
-      <p class="text-slate-700 leading-relaxed mb-4">At the same time, demand for senior and AI-skilled talent is accelerating. AI engineers averaged $206,000 in 2025 &mdash; a $50,000 increase in a single year. PwC&rsquo;s AI skill salary premium doubled from 25% to 56% in one year. GitHub Copilot reached 20 million users with 90% Fortune 100 adoption, writing 46% of the average user&rsquo;s code.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">The global tech workforce is not shrinking, it is restructuring. Total US tech employment grew 1.2% in 2024 and is up 12.2% since 2021. But this aggregate growth masks a structural collapse at the bottom of the career ladder. Entry-level tech job postings have dropped more than 35% since January 2023. For roles with high AI exposure, the decline exceeds 40%.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">At the same time, demand for senior and AI-skilled talent is accelerating. AI engineers averaged $206,000 in 2025, a $50,000 increase in a single year. PwC&rsquo;s AI skill salary premium doubled from 25% to 56% in one year. GitHub Copilot reached 20 million users with 90% Fortune 100 adoption, writing 46% of the average user&rsquo;s code.</p>
       <div class="rounded-xl bg-amber-50 border-l-4 border-amber-400 p-4 my-6">
         <p class="text-sm font-semibold text-amber-800 mb-1">Catalitium Interpretation</p>
-        <p class="text-sm text-amber-900 leading-relaxed">This is not a tech job crisis. It is a tech job bifurcation. The market is splitting into two tracks: AI-augmented senior roles commanding record premiums, and entry-level positions being compressed by AI productivity. The on-ramp is narrowing &mdash; not disappearing &mdash; but the timing is brutal for 2025 and 2026 graduates.</p>
+        <p class="text-sm text-amber-900 leading-relaxed">This is not a tech job crisis. It is a tech job bifurcation. The market is splitting into two tracks: AI-augmented senior roles commanding record premiums, and entry-level positions being compressed by AI productivity. The on-ramp is narrowing, not disappearing, but the timing is brutal for 2025 and 2026 graduates.</p>
       </div>
-      <p class="text-slate-700 leading-relaxed">CS bachelor&rsquo;s degrees more than doubled over the past decade to 112,720 in 2022&ndash;2023 &mdash; the highest increase of any major &mdash; just as entry-level demand collapsed. CS graduate unemployment reached 6.1% in 2024. Series A startup team sizes dropped from 22 to 15 employees between 2022 and 2024.</p>
+      <p class="text-slate-700 leading-relaxed">CS bachelor&rsquo;s degrees more than doubled over the past decade to 112,720 in 2022&ndash;2023, the highest increase of any major, just as entry-level demand collapsed. CS graduate unemployment reached 6.1% in 2024. Series A startup team sizes dropped from 22 to 15 employees between 2022 and 2024.</p>
     </section>
 
 {% if report.get('gated') and mi_tier == 'free' %}
@@ -127,8 +127,8 @@
     <!-- § 1 Global Tech Employment -->
     <section id="aggregates" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">1. Global Tech Employment: What the Aggregates Hide</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">US tech occupation employment reached approximately 5.9 million workers in 2024, projected to reach 6.1 million in 2025. Net tech employment stood at 9.6 million &mdash; essentially flat year-over-year. These headline numbers look stable. What they hide is a structural shift in who is being hired.</p>
-      <p class="text-slate-700 leading-relaxed mb-4">High-tech industry tech talent workforce actually shrank by 0.7% in 2024, even as overall tech employment grew. The growth is concentrated in AI-native roles, platform engineering, and senior positions &mdash; not in traditional junior entry points.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">US tech occupation employment reached approximately 5.9 million workers in 2024, projected to reach 6.1 million in 2025. Net tech employment stood at 9.6 million, essentially flat year-over-year. These headline numbers look stable. What they hide is a structural shift in who is being hired.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">High-tech industry tech talent workforce actually shrank by 0.7% in 2024, even as overall tech employment grew. The growth is concentrated in AI-native roles, platform engineering, and senior positions, not in traditional junior entry points.</p>
 
       <!-- Data table: US Tech Employment Snapshot -->
       <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
@@ -149,13 +149,13 @@
           </tbody>
         </table>
       </div>
-      <p class="text-slate-700 leading-relaxed">Tech unemployment stood at 2.4% in early 2025 &mdash; well below the US national average. But that figure disguises stratification: experienced AI engineers face near-zero unemployment; recent CS graduates face the worst entry-level market since the dot-com correction.</p>
+      <p class="text-slate-700 leading-relaxed">Tech unemployment stood at 2.4% in early 2025, well below the US national average. But that figure disguises stratification: experienced AI engineers face near-zero unemployment; recent CS graduates face the worst entry-level market since the dot-com correction.</p>
     </section>
 
     <!-- § 2 Entry Level Collapse -->
     <section id="entry-level-collapse" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">2. The Entry Level Collapse</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">Entry-level job postings in the US declined approximately 35% since January 2023 &mdash; over 100,000 fewer new monthly job postings, according to Revelio Labs data from August 2025. The pattern is not random. Roles with high AI exposure saw drops exceeding 40%.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">Entry-level job postings in the US declined approximately 35% since January 2023, over 100,000 fewer new monthly job postings, according to Revelio Labs data from August 2025. The pattern is not random. Roles with high AI exposure saw drops exceeding 40%.</p>
 
       <!-- CSS bar chart: entry-level decline by role category -->
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 mb-6">
@@ -184,14 +184,14 @@
       <p class="text-slate-700 leading-relaxed mb-4">Meta, Google, and Amazon reduced P1 and P2 (junior) hiring rates by 73% relative to their 2021 peak. Simultaneously, these companies grew headcount in Staff+ and Principal engineer categories. The industry is restructuring around fewer, more senior people capable of leveraging AI tooling.</p>
       <div class="rounded-xl bg-amber-50 border-l-4 border-amber-400 p-4 my-6">
         <p class="text-sm font-semibold text-amber-800 mb-1">Catalitium Interpretation</p>
-        <p class="text-sm text-amber-900 leading-relaxed">Entry-level roles dropped because junior work &mdash; writing boilerplate, generating tests, scaffolding APIs &mdash; can now be delegated to AI. Companies do not need as many people to do the volume of output that previously required large junior cohorts. This is structural, not cyclical.</p>
+        <p class="text-sm text-amber-900 leading-relaxed">Entry-level roles dropped because junior work, writing boilerplate, generating tests, scaffolding APIs, can now be delegated to AI. Companies do not need as many people to do the volume of output that previously required large junior cohorts. This is structural, not cyclical.</p>
       </div>
     </section>
 
     <!-- § 3 Senior Premium -->
     <section id="senior-premium" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">3. The Senior Premium Effect</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">While junior demand collapses, senior and AI-skilled talent is experiencing the opposite dynamic. AI engineers earned an average of $206,000 in 2025 &mdash; a $50,000 increase from the prior year. Senior AI engineers exceed $300,000 total compensation at large tech companies.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">While junior demand collapses, senior and AI-skilled talent is experiencing the opposite dynamic. AI engineers earned an average of $206,000 in 2025, a $50,000 increase from the prior year. Senior AI engineers exceed $300,000 total compensation at large tech companies.</p>
 
       <!-- AI Skill Premium table -->
       <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
@@ -212,13 +212,13 @@
           </tbody>
         </table>
       </div>
-      <p class="text-slate-700 leading-relaxed">The AI skill premium now surpasses a master&rsquo;s degree premium in documented salary impact. This is the fastest skill repricing ever measured at scale. The market is rewarding people who can direct AI systems &mdash; not those replacing the work those systems now handle.</p>
+      <p class="text-slate-700 leading-relaxed">The AI skill premium now surpasses a master&rsquo;s degree premium in documented salary impact. This is the fastest skill repricing ever measured at scale. The market is rewarding people who can direct AI systems, not those replacing the work those systems now handle.</p>
     </section>
 
     <!-- § 4 AI Productivity -->
     <section id="ai-productivity" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">4. AI Productivity: What the Numbers Actually Show</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">GitHub Copilot reached 20 million cumulative users as of July 2025 &mdash; adding 5 million users in 3 months between April and July. With 1.3 million paid subscribers, 50,000 organizations, and 90% Fortune 100 adoption, Copilot is now enterprise infrastructure.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">GitHub Copilot reached 20 million cumulative users as of July 2025, adding 5 million users in 3 months between April and July. With 1.3 million paid subscribers, 50,000 organizations, and 90% Fortune 100 adoption, Copilot is now enterprise infrastructure.</p>
 
       <!-- Productivity table -->
       <div class="overflow-x-auto rounded-xl border border-slate-200 mb-6">
@@ -250,8 +250,8 @@
     <!-- § 5 Lean Team Model -->
     <section id="lean-team" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">5. Hiring Behavior Shift: The Lean Team Model</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">The organizational response to AI productivity gains is not to hire more people. It is to need fewer. Average software startup team size at Series A dropped from 22 employees in 2022 to 15 employees in 2024, according to Carta &mdash; a 32% reduction in two years. Investor expectations are now built around this lean model.</p>
-      <p class="text-slate-700 leading-relaxed mb-4">Duolingo cut its contractor workforce by 10% in January 2024, directly citing AI as the replacement. Salesforce announced a hiring pause for software engineers in 2025, with Marc Benioff stating AI agents eliminated the need for additional headcount. These are not isolated events &mdash; they reflect a recalibrated model of how much human labor is needed per unit of software output.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">The organizational response to AI productivity gains is not to hire more people. It is to need fewer. Average software startup team size at Series A dropped from 22 employees in 2022 to 15 employees in 2024, according to Carta, a 32% reduction in two years. Investor expectations are now built around this lean model.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">Duolingo cut its contractor workforce by 10% in January 2024, directly citing AI as the replacement. Salesforce announced a hiring pause for software engineers in 2025, with Marc Benioff stating AI agents eliminated the need for additional headcount. These are not isolated events, they reflect a recalibrated model of how much human labor is needed per unit of software output.</p>
 
       <!-- Series A team size bar chart -->
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-5 mb-6">
@@ -281,8 +281,8 @@
     <!-- § 6 Education Pipeline -->
     <section id="education" class="mb-10 scroll-mt-20">
       <h2 class="text-2xl font-bold text-slate-900 mb-4">6. Education Pipeline Misalignment</h2>
-      <p class="text-slate-700 leading-relaxed mb-4">CS bachelor&rsquo;s degrees more than doubled over the past decade: from 51,696 in 2013&ndash;14 to 112,720 in 2022&ndash;23 &mdash; the highest increase in bachelor&rsquo;s degree earners of any major, at 4.3% year-over-year growth, even as overall bachelor&rsquo;s degrees declined 3.0%. The education system responded to the &ldquo;learn to code&rdquo; moment of the 2010s. The market that awaited those graduates is fundamentally different.</p>
-      <p class="text-slate-700 leading-relaxed mb-4">CS graduate unemployment hit 6.1% in 2024 (NACE) &mdash; up from 3.9% in 2022. Median starting salary for new CS graduates dropped 5% in real terms between 2022 and 2024. The supply-demand scissors are closing precisely when the largest graduating cohort in history is entering the market.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">CS bachelor&rsquo;s degrees more than doubled over the past decade: from 51,696 in 2013&ndash;14 to 112,720 in 2022&ndash;23, the highest increase in bachelor&rsquo;s degree earners of any major, at 4.3% year-over-year growth, even as overall bachelor&rsquo;s degrees declined 3.0%. The education system responded to the &ldquo;learn to code&rdquo; moment of the 2010s. The market that awaited those graduates is fundamentally different.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">CS graduate unemployment hit 6.1% in 2024 (NACE), up from 3.9% in 2022. Median starting salary for new CS graduates dropped 5% in real terms between 2022 and 2024. The supply-demand scissors are closing precisely when the largest graduating cohort in history is entering the market.</p>
       <div class="rounded-xl bg-brand/5 border border-brand/20 p-5 mb-6">
         <h3 class="font-semibold text-slate-800 mb-3 text-sm uppercase tracking-wide">CS Degree Supply vs. Entry-Level Demand (2013&ndash;2024)</h3>
         <div class="space-y-3">
@@ -309,23 +309,23 @@
       <!-- Pull quote: Dario Amodei -->
       <blockquote class="border-l-4 border-brand pl-5 my-6">
         <p class="text-slate-700 italic leading-relaxed">&ldquo;AI could eliminate up to 50% of entry-level office jobs within five years. Unemployment could spike to 10&ndash;20%. Most of them are unaware this is about to happen.&rdquo;</p>
-        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Dario Amodei, CEO, Anthropic (May 2025)</cite>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">Dario Amodei, CEO, Anthropic (May 2025)</cite>
       </blockquote>
 
       <!-- Pull quote: Sam Altman -->
       <blockquote class="border-l-4 border-slate-300 pl-5 my-6">
         <p class="text-slate-700 italic leading-relaxed">&ldquo;In 2025, we may see the first AI that can do the work of a mid-level software engineer.&rdquo;</p>
-        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Sam Altman, CEO, OpenAI (January 2025)</cite>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">Sam Altman, CEO, OpenAI (January 2025)</cite>
       </blockquote>
 
       <!-- Pull quote: Satya Nadella -->
       <blockquote class="border-l-4 border-slate-300 pl-5 my-6">
         <p class="text-slate-700 italic leading-relaxed">&ldquo;30% of Microsoft&rsquo;s code is now written by AI.&rdquo;</p>
-        <cite class="block mt-2 text-sm text-slate-500 not-italic">&mdash; Satya Nadella, CEO, Microsoft (October 2024)</cite>
+        <cite class="block mt-2 text-sm text-slate-500 not-italic">Satya Nadella, CEO, Microsoft (October 2024)</cite>
       </blockquote>
 
-      <p class="text-slate-700 leading-relaxed mb-4">WEF Future of Jobs Report 2025 projects 92 million jobs displaced and 170 million created by 2030 &mdash; a net gain of 78 million globally. AI and information processing technologies will create 19 million jobs while displacing 9 million. But the 10-million displacement will be concentrated at the junior and entry-level end.</p>
-      <p class="text-slate-700 leading-relaxed">The Bureau of Labor Statistics projects 15% growth for software developers from 2024 to 2034 &mdash; faster than average. But that growth is concentrated at the senior and specialized end of the distribution, not in the entry-level roles that have historically absorbed new graduates.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">WEF Future of Jobs Report 2025 projects 92 million jobs displaced and 170 million created by 2030, a net gain of 78 million globally. AI and information processing technologies will create 19 million jobs while displacing 9 million. But the 10-million displacement will be concentrated at the junior and entry-level end.</p>
+      <p class="text-slate-700 leading-relaxed">The Bureau of Labor Statistics projects 15% growth for software developers from 2024 to 2034, faster than average. But that growth is concentrated at the senior and specialized end of the distribution, not in the entry-level roles that have historically absorbed new graduates.</p>
     </section>
 
     <!-- § 8 Growing vs Declining -->
@@ -345,7 +345,7 @@
             <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Data engineering &amp; MLOps</li>
             <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>&ldquo;AI whisperer&rdquo; roles (prompt + eval)</li>
             <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>Senior full-stack with AI tooling</li>
-            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>AI-augmented junior roles (rare &mdash; high bar)</li>
+            <li class="flex gap-2"><span class="text-emerald-600 flex-shrink-0">&bull;</span>AI-augmented junior roles (rare, high bar)</li>
           </ul>
         </div>
         <div class="rounded-xl border border-rose-200 bg-rose-50 p-5">
@@ -379,10 +379,10 @@
           <h3 class="font-bold text-slate-900 mb-3">For Job Seekers</h3>
           <ul class="space-y-2 text-sm text-slate-700">
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Stop applying to 2021-era junior roles. Reframe around AI-augmented output.</li>
-            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Target the AI skill premium directly. PwC&rsquo;s 56% is real &mdash; 6 months of focused AI tooling beats a second degree.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Target the AI skill premium directly. PwC&rsquo;s 56% is real, 6 months of focused AI tooling beats a second degree.</li>
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Show work. Build and deploy with Claude, Cursor, or Copilot. Outcomes over credentials.</li>
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Use non-traditional entry points: open source, contract work, building in public.</li>
-            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Be the developer who knows when the AI is wrong &mdash; critical evaluation is a career asset.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Be the developer who knows when the AI is wrong, critical evaluation is a career asset.</li>
           </ul>
         </div>
 
@@ -393,7 +393,7 @@
           <h3 class="font-bold text-slate-900 mb-3">For Recruiters</h3>
           <ul class="space-y-2 text-sm text-slate-700">
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Audit junior role descriptions. If they describe work AI can do in hours, the role won&rsquo;t exist in 18 months.</li>
-            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Build AI fluency assessment into technical screens. Include a task where candidates use AI &mdash; and demonstrate judgment about the output.</li>
+            <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Build AI fluency assessment into technical screens. Include a task where candidates use AI, and demonstrate judgment about the output.</li>
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Recalibrate salary bands for AI-skilled roles before losing candidates.</li>
             <li class="flex gap-2"><span class="text-brand flex-shrink-0">&rsaquo;</span>Create &ldquo;AI augmented junior&rdquo; tracks that hire for judgment and learning velocity, not task execution.</li>
           </ul>
@@ -417,10 +417,10 @@
 
     <!-- § Conclusion -->
     <section id="conclusion" class="mb-10 scroll-mt-20">
-      <h2 class="text-2xl font-bold text-slate-900 mb-4">Conclusion: The Ladder Hasn&rsquo;t Disappeared &mdash; Its Bottom Rung Has</h2>
+      <h2 class="text-2xl font-bold text-slate-900 mb-4">Conclusion: The Ladder Hasn&rsquo;t Disappeared, Its Bottom Rung Has</h2>
       <p class="text-slate-700 leading-relaxed mb-4">The data in this report describes a market in the middle of a structural transition, not at the end of one. Total tech employment continues to grow. AI skills are being rewarded at unprecedented rates. Senior and specialized roles are holding up.</p>
-      <p class="text-slate-700 leading-relaxed mb-4">But the entry level &mdash; the on-ramp that every senior engineer once traveled &mdash; is under severe pressure. The CS degree that reliably launched careers for a decade is now producing graduates into the worst entry-level market since the dot-com correction.</p>
-      <p class="text-slate-700 leading-relaxed">The lean team model is being locked in at the Series A stage, with investor expectations built around it. This is not a temporary dip waiting to recover. The ladder hasn&rsquo;t disappeared &mdash; its bottom rung has been replaced by a higher bar. The question for individuals and institutions is whether they adapt faster than the market moves.</p>
+      <p class="text-slate-700 leading-relaxed mb-4">But the entry level, the on-ramp that every senior engineer once traveled, is under severe pressure. The CS degree that reliably launched careers for a decade is now producing graduates into the worst entry-level market since the dot-com correction.</p>
+      <p class="text-slate-700 leading-relaxed">The lean team model is being locked in at the Series A stage, with investor expectations built around it. This is not a temporary dip waiting to recover. The ladder hasn&rsquo;t disappeared, its bottom rung has been replaced by a higher bar. The question for individuals and institutions is whether they adapt faster than the market moves.</p>
     </section>
 
     <!-- Subscribe -->
