@@ -1,4 +1,4 @@
-/* Catalitium — AI Job Summary loader
+/* Catalitium - AI Job Summary loader
    Fetches /api/summary/<job_id>, renders bullets + skill pills.
    Works on job_detail.html (single fetch) and index.html (IntersectionObserver for first 3).
 */
@@ -6,11 +6,11 @@
   'use strict';
 
   var BULLET_ICONS = [
-    /* what you'll do — briefcase */
+    /* what you'll do - briefcase */
     '<svg class="w-4 h-4 text-brand flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
-    /* what you need — check circle */
+    /* what you need - check circle */
     '<svg class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M8.5 12.5l2.5 2.5 4-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    /* what you get — gift */
+    /* what you get - gift */
     '<svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 12v9H4v-9M22 7H2v5h20V7zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   ];
 

@@ -336,7 +336,7 @@ _CATEGORY_CONTEXTS = {
     },
     "us": {
         "headline": "Tech Jobs in the United States",
-        "intro": "The US remains the highest-paying market for tech globally. Major hubs include the San Francisco Bay Area, New York, Seattle, Austin, and Boston — alongside fully remote-first companies headquartered across the country.",
+        "intro": "The US remains the highest-paying market for tech globally. Major hubs include the San Francisco Bay Area, New York, Seattle, Austin, and Boston, alongside fully remote-first companies headquartered across the country.",
         "salary_note": "Typical range: $110k–$185k USD",
     },
     "uk": {
@@ -351,7 +351,7 @@ _CATEGORY_CONTEXTS = {
     },
     "data": {
         "headline": "Data Science & Analytics Jobs",
-        "intro": "Data science roles bridge statistics, programming, and business intelligence. Demand is strong across all sectors — from fintech to e-commerce — with Python, SQL, and cloud data platforms (Snowflake, BigQuery, dbt) as the core stack.",
+        "intro": "Data science roles bridge statistics, programming, and business intelligence. Demand is strong across all sectors, from fintech to e-commerce, with Python, SQL, and cloud data platforms (Snowflake, BigQuery, dbt) as the core stack.",
         "salary_note": "Typical range: $110k–$170k USD &middot; &euro;75k–&euro;120k EUR",
     },
 }
@@ -668,7 +668,7 @@ REPORTS = [
         "short_title": "The Death of SaaS Report 2026",
         "description": (
             "A data-driven market report analyzing how AI-assisted development is structurally "
-            "disrupting the $315 billion SaaS industry — with sourced data from a16z, Gartner, "
+            "disrupting the $315 billion SaaS industry, with sourced data from a16z, Gartner, "
             "YC, Retool, Deloitte, and Emergence Capital."
         ),
         "published": "2026-02-01",
@@ -723,7 +723,7 @@ def _send_subscribe_confirmation(email: str, focus: str = "") -> None:
     body = f"""Welcome to Catalitium.
 
 You're now on the weekly high-match digest.{focus_line}
-Every week we send you the highest-signal tech jobs with real salary data — no noise, no spam.
+Every week we send you the highest-signal tech jobs with real salary data: no noise, no spam.
 
 Browse jobs now: {os.getenv("BASE_URL", "https://catalitium.com")}
 

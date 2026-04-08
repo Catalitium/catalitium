@@ -23,13 +23,13 @@
 
   <div class="mb-2 flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    Payment confirmed — {{ order.plan_name }}
+    Payment confirmed, {{ order.plan_name }}
   </div>
   <h1 class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">Submit your job details</h1>
   <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
     Fill in the details below. We'll review and publish your listing within 24 hours.
     {% if product and product.slots > 1 %}
-    Your <strong>{{ order.plan_name }}</strong> includes {{ product.slots }} posts/month — you can submit more from your hire dashboard.
+    Your <strong>{{ order.plan_name }}</strong> includes {{ product.slots }} posts/month, you can submit more from your hire dashboard.
     {% endif %}
   </p>
 

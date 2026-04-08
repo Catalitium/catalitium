@@ -122,7 +122,7 @@
   ];
 
   var ESCALATION = {
-    text: 'By the way — if you want a real expert to review your situation, our coaches are available this week.',
+    text: 'By the way, if you want a real expert to review your situation, our coaches are available this week.',
     cta: { label: 'Book a Free 15-min Call →', href: '/negotiate' }
   };
 
@@ -151,7 +151,7 @@
     {
       topic: 'visa',
       keywords: ['visa','permit','swiss','b permit','work permit','relocate','expat','canton','immigration','residency'],
-      text: 'Switzerland requires a minimum salary for work permits — varies by canton and role. Want me to check if an offer qualifies?',
+      text: 'Switzerland requires a minimum salary for work permits, varies by canton and role. Want me to check if an offer qualifies?',
       cta: { label: 'Check Permit Eligibility →', href: '/salary/work-permit' }
     },
     {
@@ -169,7 +169,7 @@
 
   var FALLBACK = {
     topic: 'fallback',
-    text: 'Good question — that one\'s better answered by a human. Our career coaches specialise in DACH tech compensation.',
+    text: 'Good question, that one\'s better answered by a human. Our career coaches specialise in DACH tech compensation.',
     cta: { label: 'Talk to a Coach →', href: '/negotiate' }
   };
 

@@ -47,7 +47,7 @@ def send_welcome(smtp, email: str) -> bool:
     body = """\
 Hi,
 
-You signed up for Catalitium a while back — welcome properly.
+You signed up for Catalitium a while back, welcome properly.
 
 Catalitium is a high-signal job board for tech professionals.
 Every listing comes with real salary data so you know your market value
@@ -66,7 +66,7 @@ info@catalitium.com
 https://catalitium.com
 """
     msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = "Welcome to Catalitium — your weekly job digest"
+    msg["Subject"] = "Welcome to Catalitium, your weekly job digest"
     msg["From"]    = f"Catalitium <{SMTP_FROM}>"
     msg["To"]      = email
     try:

@@ -1,4 +1,4 @@
-/* Catalitium — Application Tracker (localStorage Kanban)
+/* Catalitium - Application Tracker (localStorage Kanban)
    Zero backend. All data lives in localStorage key: catalitium_tracker_v1
 */
 (function(){

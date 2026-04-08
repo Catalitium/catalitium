@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}My Job Tracker — Application Pipeline | Catalitium{% endblock %}
+{% block title %}My Job Tracker | Application Pipeline | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Track every job application in one place. Move roles through Applied → Phone Screen → Interview → Offer. Your personal Kanban board, no login needed.">
 <link rel="canonical" href="{{ url_for('tracker', _external=True) }}">
 <meta property="og:title" content="Job Application Tracker | Catalitium">
-<meta property="og:description" content="Free Kanban board to track your tech job applications. No account required — data stays on your device.">
+<meta property="og:description" content="Free Kanban board to track your tech job applications. No account required, data stays on your device.">
 <meta property="og:type" content="website">
 {% endblock %}
 
@@ -28,7 +28,7 @@
     <div>
       <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Catalitium</p>
       <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">My Job Tracker</h1>
-      <p class="mt-1 text-slate-500 text-sm">Your personal application pipeline — stored privately on this device.</p>
+      <p class="mt-1 text-slate-500 text-sm">Your personal application pipeline, stored privately on this device.</p>
     </div>
     <div class="flex items-center gap-3 flex-shrink-0 no-print">
       <button type="button" data-export-csv
@@ -109,11 +109,11 @@
         ("How does the Job Tracker work?",
          "Hit the Track button on any job card to add it to your pipeline at the Applied stage. Then drag or tap the move buttons to advance it through Phone Screen → Interview → Offer → Closed as your process moves forward."),
         ("Is my data stored on Catalitium's servers?",
-         "No. Everything is stored in your browser's localStorage. Nothing is sent to our servers — your application data is completely private and lives only on your device."),
+         "No. Everything is stored in your browser's localStorage. Nothing is sent to our servers, your application data is completely private and lives only on your device."),
         ("Can I export my tracked applications?",
          "Yes. Click the Export CSV button at the top of the page to download all your tracked jobs, including the current stage, days in stage, and any notes you've added."),
         ("Does the tracker sync across devices?",
-         "Not yet — it's device-specific. For sync across devices, subscribe to our newsletter and we'll let you know when cross-device tracking launches."),
+         "Not yet, it's device-specific. For sync across devices, subscribe to our newsletter and we'll let you know when cross-device tracking launches."),
         ("What is a good response rate for tech jobs?",
          "Industry data suggests a 10–30% response rate is typical for cold applications. Warm introductions and referrals can push this above 50%. Use the Catalitium salary insights to ensure your target roles match your compensation expectations before applying."),
       ] %}
@@ -141,9 +141,9 @@
   "@type": "FAQPage",
   "mainEntity": [
     {"@type":"Question","name":"How does the Job Tracker work?","acceptedAnswer":{"@type":"Answer","text":"Hit the Track button on any job card to add it to your pipeline at the Applied stage. Then drag or tap the move buttons to advance it through Phone Screen, Interview, Offer, and Closed as your process moves forward."}},
-    {"@type":"Question","name":"Is my data stored on Catalitium's servers?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is stored in your browser's localStorage. Nothing is sent to our servers — your application data is completely private and lives only on your device."}},
+    {"@type":"Question","name":"Is my data stored on Catalitium's servers?","acceptedAnswer":{"@type":"Answer","text":"No. Everything is stored in your browser's localStorage. Nothing is sent to our servers, your application data is completely private and lives only on your device."}},
     {"@type":"Question","name":"Can I export my tracked applications?","acceptedAnswer":{"@type":"Answer","text":"Yes. Click the Export CSV button at the top of the page to download all your tracked jobs, including the current stage, days in stage, and any notes."}},
-    {"@type":"Question","name":"Does the tracker sync across devices?","acceptedAnswer":{"@type":"Answer","text":"Not yet — it is device-specific. For sync across devices, subscribe to the Catalitium newsletter to be notified when cross-device tracking launches."}}
+    {"@type":"Question","name":"Does the tracker sync across devices?","acceptedAnswer":{"@type":"Answer","text":"Not yet, it is device-specific. For sync across devices, subscribe to the Catalitium newsletter to be notified when cross-device tracking launches."}}
   ]
 }
 </script>

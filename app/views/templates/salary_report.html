@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}DACH Salary Tools — Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
+{% block title %}DACH Salary Tools | Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
@@ -24,7 +24,7 @@
 
 {% block head_extra %}
 <style>
-  /* Range thumb — Tailwind can't do pseudo-elements */
+  /* Range thumb, Tailwind can't do pseudo-elements */
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -74,7 +74,7 @@
     <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Salary Tool</h1>
     <p class="mt-1 text-slate-500">
       Live salary benchmarks for senior builders and serious recruiters. See what similar roles pay by region,
-      then model local vs. global hiring with the arbitrage calculator &mdash; updated {{ generated }}.
+      then model local vs. global hiring with the arbitrage calculator, updated {{ generated }}.
     </p>
   </div>
 
@@ -98,7 +98,7 @@
   </div>
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 1 — SALARY REPORT               -->
+  <!--  DASHBOARD 1, SALARY REPORT               -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-salary">
 
@@ -146,15 +146,15 @@
       <div id="calc-result" class="hidden grid grid-cols-3 gap-3 text-center">
         <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
           <p class="text-xs text-slate-400 mb-1">P25</p>
-          <p id="calc-p25" class="text-lg font-bold text-slate-700 dark:text-slate-200">—</p>
+          <p id="calc-p25" class="text-lg font-bold text-slate-700 dark:text-slate-200">-</p>
         </div>
         <div class="rounded-xl bg-brand/10 border border-brand/30 p-3">
           <p class="text-xs text-brand font-semibold mb-1">Median</p>
-          <p id="calc-p50" class="text-lg font-bold text-brand">—</p>
+          <p id="calc-p50" class="text-lg font-bold text-brand">-</p>
         </div>
         <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3">
           <p class="text-xs text-slate-400 mb-1">P75</p>
-          <p id="calc-p75" class="text-lg font-bold text-slate-700 dark:text-slate-200">—</p>
+          <p id="calc-p75" class="text-lg font-bold text-slate-700 dark:text-slate-200">-</p>
         </div>
       </div>
       <p id="calc-empty" class="text-sm text-slate-400">Select a role and city to see salary bands instantly.</p>
@@ -256,9 +256,9 @@
             <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 dark:bg-slate-900/50 transition">
               <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ cat }}</td>
               <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ d.count }}</td>
-              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}CHF {{ '{:,}'.format(d.median) }}{% else %}&mdash;{% endif %}</td>
-              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}&mdash;{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.min %}CHF {{ '{:,}'.format(d.min) }}{% else %}-{% endif %}</td>
+              <td class="px-4 py-3 text-right font-semibold text-brand">{% if d.median %}CHF {{ '{:,}'.format(d.median) }}{% else %}-{% endif %}</td>
+              <td class="px-4 py-3 text-right text-slate-500 dark:text-slate-400">{% if d.max %}CHF {{ '{:,}'.format(d.max) }}{% else %}-{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -273,7 +273,7 @@
         {% for region, d in region_data.items() %}
         <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 text-center">
           <p class="text-2xl font-bold text-slate-900 dark:text-white">
-            {% if d.median %}CHF {{ (d.median // 1000)|int }}k{% else %}&mdash;{% endif %}
+            {% if d.median %}CHF {{ (d.median // 1000)|int }}k{% else %}-{% endif %}
           </p>
           <p class="text-xs font-semibold text-brand mt-0.5">{{ region }}</p>
           <p class="text-xs text-slate-400 mt-1">{{ d.count }} roles</p>
@@ -324,7 +324,7 @@
     <div class="mb-8 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/8 to-sky-500/8 dark:from-brand/10 dark:to-sky-500/10 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Make the data better</p>
-        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary — unlock your market percentile</p>
+        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary to unlock your market percentile</p>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Anonymous. Takes 60 seconds. See instantly where you stand vs. P25 / P50 / P75 in DACH.</p>
       </div>
       <a href="{{ url_for('salary_contribute') }}"
@@ -340,14 +340,14 @@
          with location-based reference data normalised to USD. Figures represent annual compensation estimates.
          Outliers are excluded from median calculations.</p>
       <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>.
-         All figures are estimates &mdash; verify compensation directly with employers.</p>
+         All figures are estimates, verify compensation directly with employers.</p>
       <p class="mt-2"><a href="{{ url_for('jobs') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
     </section>
 
   </div><!-- /panel-salary -->
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 2 — TALENT ARBITRAGE CALCULATOR  -->
+  <!--  DASHBOARD 2, TALENT ARBITRAGE CALCULATOR  -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-arbitrage" class="hidden">
 
@@ -357,7 +357,7 @@
       <p class="text-slate-500 text-sm max-w-2xl">
         Model the real cost difference between a local senior engineering hire and placing elite global contractors.
         Adjust salary, overhead, client rate, and headcount to see annual savings, your margin, and client-ready
-        talking points &mdash; calculated live in your browser.
+        talking points, calculated live in your browser.
       </p>
     </div>
 
@@ -471,22 +471,22 @@
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-5 mb-6">
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Local All-In Cost</p>
-          <p class="text-2xl font-bold text-rose-500" id="arb-localAllin">&mdash;</p>
+          <p class="text-2xl font-bold text-rose-500" id="arb-localAllin">-</p>
           <p class="text-xs text-slate-400 mt-1">per year, one engineer</p>
         </div>
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Global Total (client)</p>
-          <p class="text-2xl font-bold text-brand" id="arb-globalClient">&mdash;</p>
+          <p class="text-2xl font-bold text-brand" id="arb-globalClient">-</p>
           <p class="text-xs text-slate-400 mt-1" id="arb-globalSub">per year</p>
         </div>
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Your Margin</p>
-          <p class="text-2xl font-bold text-emerald-500" id="arb-margin">&mdash;</p>
+          <p class="text-2xl font-bold text-emerald-500" id="arb-margin">-</p>
           <p class="text-xs text-slate-400 mt-1">recurring / year</p>
         </div>
         <div>
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Client Savings</p>
-          <p class="text-2xl font-bold text-emerald-500" id="arb-savings">&mdash;</p>
+          <p class="text-2xl font-bold text-emerald-500" id="arb-savings">-</p>
           <p class="text-xs text-slate-400 mt-1" id="arb-savingsSub">vs. local hires</p>
         </div>
       </div>
@@ -511,11 +511,11 @@
 
       <!-- Monthly insight callout -->
       <div class="rounded-xl bg-brand/5 border border-brand/15 px-4 py-3 text-sm text-slate-600 leading-relaxed">
-        Local runs <strong class="text-slate-800 dark:text-slate-200" id="arb-insLocal">&mdash;</strong>/mo per engineer.
-        Your global team costs the client <strong class="text-slate-800 dark:text-slate-200" id="arb-insGlobal">&mdash;</strong>/mo
-        (<strong id="arb-insN">&mdash;</strong> engineers).
-        That&rsquo;s <strong class="text-emerald-600" id="arb-insSave">&mdash;</strong>/mo saved
-        &mdash; you pocket <strong class="text-brand" id="arb-insMargin">&mdash;</strong>/mo margin.
+        Local runs <strong class="text-slate-800 dark:text-slate-200" id="arb-insLocal">-</strong>/mo per engineer.
+        Your global team costs the client <strong class="text-slate-800 dark:text-slate-200" id="arb-insGlobal">-</strong>/mo
+        (<strong id="arb-insN">-</strong> engineers).
+        That&rsquo;s <strong class="text-emerald-600" id="arb-insSave">-</strong>/mo saved
+       , you pocket <strong class="text-brand" id="arb-insMargin">-</strong>/mo margin.
       </div>
     </div>
 
@@ -541,7 +541,7 @@
   </div><!-- /panel-arbitrage -->
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 3 — LIVE JOBS                    -->
+  <!--  DASHBOARD 3, LIVE JOBS                    -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-jobs" class="hidden pt-4">
 
