@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Developers API — Jobs & Salary Data | Catalitium{% endblock %}
+{% block title %}Developers API: Jobs & Salary Data | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Catalitium Developers API: JSON endpoints for tech jobs and salary lookup. Integrate high-signal job data into your apps.">
@@ -29,10 +29,10 @@
   <section class="space-y-3">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">What you get</h2>
     <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
-      <li><strong>Job search API</strong> &mdash; <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs</code> with filters.</li>
-      <li><strong>Job detail API</strong> &mdash; <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs/&lt;id&gt;</code> with apply URL.</li>
-      <li><strong>Salary lookup API</strong> &mdash; <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/salary</code> by title / country.</li>
-      <li><strong>Free tier</strong> &mdash; 100 requests/month, with clear rate-limit headers on every response.</li>
+      <li><strong>Job search API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs</code> with filters.</li>
+      <li><strong>Job detail API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs/&lt;id&gt;</code> with apply URL.</li>
+      <li><strong>Salary lookup API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/salary</code> by title / country.</li>
+      <li><strong>Free tier</strong>, 100 requests/month, with clear rate-limit headers on every response.</li>
     </ul>
   </section>
 
@@ -100,10 +100,10 @@ print("Found", data["meta"]["total"], "jobs")</code></pre>
       The free tier grants <strong>100 requests per month</strong>. Each response includes:
     </p>
     <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1">
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code> &mdash; your monthly quota.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Remaining</code> &mdash; requests left this month.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Reset</code> &mdash; ISO date/time for the next reset.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Window</code> &mdash; always <code>monthly</code> for now.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code>, your monthly quota.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Remaining</code>, requests left this month.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Reset</code>, ISO date/time for the next reset.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Window</code>, always <code>monthly</code> for now.</li>
     </ul>
   </section>
 </section>

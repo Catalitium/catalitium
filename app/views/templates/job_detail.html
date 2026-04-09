@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ job.title }} at {{ job.company }} — {{ job.location }} | Catalitium{% endblock %}
+{% block title %}{{ job.title }} at {{ job.company }}, {{ job.location }} | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="{{ job.title }} at {{ job.company }} in {{ job.location }}. {% if job.estimated_salary_range_compact %}Estimated salary {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}. {% endif %}{{ (job.description|striptags)|truncate(155, True, '…') }}">
@@ -116,7 +116,7 @@
       <span class="text-[11px] text-slate-400 ml-auto">Powered by Claude</span>
     </div>
     {% if ai_summary and ai_summary.bullets %}
-    {# Server-side render — visible to Google without JS #}
+    {# Server-side render, visible to Google without JS #}
     <div class="ai-skeleton hidden" aria-hidden="true"></div>
     <div class="ai-content">
       <ul class="space-y-2 mb-4">

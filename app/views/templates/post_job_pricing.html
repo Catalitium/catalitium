@@ -83,7 +83,7 @@
           class="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors
             {% if p.badge == 'Most Popular' %}bg-brand text-white hover:bg-brand/90 shadow-lg shadow-brand/20
             {% else %}border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand{% endif %}">
-          {% if p.mode == 'subscription' %}Subscribe — {{ p.price_display }}/mo{% else %}Buy Now — {{ p.price_display }}{% endif %}
+          {% if p.mode == 'subscription' %}Subscribe, {{ p.price_display }}/mo{% else %}Buy Now, {{ p.price_display }}{% endif %}
         </button>
       </form>
 
