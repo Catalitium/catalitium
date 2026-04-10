@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block title %}From Build to Buy: LLM Platform Era in Europe | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Europe enterprise LLM ~$1.09B, 76% AI purchased vs built, EU AI Act costs, API pricing tiers, European AI salaries. Catalitium European Tech &amp; AI Report, February 2026.">
+<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:title" content="{{ report.title }}">
+<meta property="og:description" content="{{ report.description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta name="keywords" content="{{ report.keywords | join(', ') }}">
+<meta name="author" content="Catalitium">
+<meta property="article:published_time" content="{{ report.published }}">
+{% endblock %}
+
+{% block content %}
+
+<div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center"></div>
+
+<nav class="mb-6 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2" aria-label="Breadcrumb">
+  <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Home</a>
+  <span>&rsaquo;</span>
+  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <span>&rsaquo;</span>
+  <span class="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
+</nav>
+
+<div class="max-w-6xl mx-auto lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 lg:items-start">
+
+  <article>
+
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
+        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+      </p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Catalitium European Tech &amp; AI Market Report &mdash; February 2026</p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+        From Build to Buy: How the LLM Platform Era Is Rewriting Software Economics
+      </h1>
+      <p class="text-lg text-slate-600 dark:text-slate-400 mb-5 leading-relaxed">Understanding the economics of built versus bought AI capabilities in Europe. 20+ institutional sources.</p>
+
+      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 border-y border-slate-100 dark:border-slate-800 py-4">
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg>
+          Published {{ report.published_display }}
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+          {{ report.read_time }}
+        </span>
+        <span class="text-slate-400 dark:text-slate-500">&bull;</span>
+        <span class="text-slate-600 dark:text-slate-400 font-medium">Europe &bull; 20+ sources</span>
+        {% if not (report.get('gated') and mi_tier == 'free') %}
+        <button onclick="window.print()" class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+          Download PDF
+        </button>
+        {% endif %}
+      </div>
+    </header>
+
+    <details class="lg:hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 mb-8">
+      <summary class="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">Table of Contents</summary>
+      <ol class="mt-3 space-y-1 text-sm text-brand list-decimal list-inside">
+        <li><a href="#how-to-use" class="hover:underline">How to Use This Report</a></li>
+        <li><a href="#intro" class="hover:underline">Introduction</a></li>
+        <li><a href="#visuals" class="hover:underline">Visual Dashboard</a></li>
+        <li><a href="#s1" class="hover:underline">Section 1 &mdash; LLM Market Size</a></li>
+        <li><a href="#s2" class="hover:underline">Section 2 &mdash; Build vs Buy Flip</a></li>
+        <li><a href="#s3" class="hover:underline">Section 3 &mdash; Cost Structure</a></li>
+        <li><a href="#s4" class="hover:underline">Section 4 &mdash; Talent Market</a></li>
+        <li><a href="#s5" class="hover:underline">Section 5 &mdash; EU AI Act</a></li>
+        <li><a href="#s6" class="hover:underline">Section 6 &mdash; Outlook 2026&ndash;2028</a></li>
+        <li><a href="#roles" class="hover:underline">Roles: Growing vs Declining</a></li>
+        <li><a href="#myths" class="hover:underline">5 Myths vs Reality</a></li>
+        <li><a href="#recommendations" class="hover:underline">Recommendations</a></li>
+        <li><a href="#methodology" class="hover:underline">Methodology &amp; Sources</a></li>
+      </ol>
+    </details>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand">$1.09B</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Europe enterprise LLM revenue 2024 (~24% of global)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">76%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Enterprise AI use cases purchased (2025)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand">83.3%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Projected Europe LLM CAGR to 2030</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-2xl sm:text-3xl font-extrabold text-brand">€29.3k</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">EU AI Act compliance / high-risk system / year</div>
+      </div>
+    </div>
+
+    <section id="how-to-use" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">How to Use This Report</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">European SaaS CEOs</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#s3" class="text-brand hover:underline">Section 3</a> (API vs build) and <a href="#s5" class="text-brand hover:underline">Section 5</a> (AI Act) for budget and vendor strategy.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Product &amp; Engineering</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#s2" class="text-brand hover:underline">Build-to-buy flip</a> and <a href="#roles" class="text-brand hover:underline">role shifts</a> for team design.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Investors</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#s1" class="text-brand hover:underline">Market sizing</a> and <a href="#s6" class="text-brand hover:underline">forward outlook</a>.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Talent &amp; HR</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#s4" class="text-brand hover:underline">Section 4</a> salary benchmarks and <a href="#recommendations" class="text-brand hover:underline">recommendations</a>.</p>
+        </div>
+      </div>
+    </section>
+
+{% if report.get('gated') and mi_tier == 'free' %}
+    {% include 'reports/_paywall.html' %}
+{% else %}
+
+    <section id="intro" class="mb-10 scroll-mt-20">
+      <p class="text-slate-700 dark:text-slate-300 leading-relaxed">Europe&rsquo;s LLM market has already reached billion-dollar scale. For mid-market SaaS the question is not whether to engage with LLM capabilities but how to do so profitably in a market where <strong>consumption is doubling</strong> faster than infrastructure costs are declining.</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">catalitium.com &bull; February 2026 &bull; Data compiled from 20+ institutional sources</p>
+    </section>
+
+    <section id="visuals" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Visual Dashboard</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Graph-style snapshots of the core market and economics signals</p>
+
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-5 mb-4">
+        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Build vs buy flip in one year</p>
+        <div class="grid sm:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">2024</p>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Built in-house</span><span>47%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 mb-2"><div class="h-3 rounded-full bg-amber-500" style="width:47%"></div></div>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Purchased</span><span class="font-semibold">53%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand" style="width:53%"></div></div>
+          </div>
+          <div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">2025</p>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Built in-house</span><span>24%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 mb-2"><div class="h-3 rounded-full bg-amber-500" style="width:24%"></div></div>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Purchased</span><span class="font-bold text-brand">76%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand" style="width:76%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Europe LLM market growth trajectory</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2023</span><span>$270.6M</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-slate-400 dark:bg-slate-500" style="width:12%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2024</span><span>$1.09B</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand/70" style="width:30%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2030 projection</span><span class="font-semibold text-brand">~$50.1B</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand" style="width:92%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">EU AI Act cost pressure (SME lens)</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Compliance per high-risk system / year</span><span>€29.3k</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-rose-500" style="width:44%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>QMS setup (one-time)</span><span>€193k&ndash;€330k</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-rose-600" style="width:86%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Overhead on AI spend</span><span class="font-semibold text-rose-700">~17%</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-rose-400" style="width:17%"></div></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Relative burden can exceed 5% of revenue for small SaaS firms with high-risk deployments.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="s1" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Section 1 &mdash; The LLM Platform Market</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Size, growth, and the European opportunity</p>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Metric</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Finding</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Source</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Confidence</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Global LLM market 2023</td><td class="p-3">$1.59B &ndash; $4.5B (range)</td><td class="p-3">Pragma / Hostinger</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">Europe LLM 2023</td><td class="p-3">$270.61M</td><td class="p-3">Pragma / IntelMarketResearch</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">Europe enterprise LLM 2024</td><td class="p-3">$1,086.8M (23.7% of global)</td><td class="p-3">Grand View Research</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">Model API spending 2025</td><td class="p-3">$8.4B (more than doubled YoY)</td><td class="p-3">AlphaBold</td><td class="p-3">Estimate</td></tr>
+            <tr><td class="p-3">Enterprise AI adoption</td><td class="p-3">55% (2023) &rarr; 78% (2024)</td><td class="p-3">AlphaBold</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">Europe SaaS 2025</td><td class="p-3">$104.2B at 24% CAGR</td><td class="p-3">Antom</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">EU enterprise AI in production</td><td class="p-3">13.5% of enterprises (2024)</td><td class="p-3">Antom / Eurostat</td><td class="p-3">Confirmed</td></tr>
+            <tr><td class="p-3">Europe LLM 2030 projection</td><td class="p-3">~$50.1B at 83.3% CAGR</td><td class="p-3">Pragma / Hostinger</td><td class="p-3">Projection</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-slate-700 dark:text-slate-300 mb-4">
+        <p class="font-semibold text-slate-900 dark:text-white mb-2">Catalitium interpretation</p>
+        <p>Europe&rsquo;s LLM market is real, compounding faster than nearly any enterprise software category, and still early. For mid-market European SaaS, the question is how to adopt&mdash;and the data overwhelmingly favors <strong>buying</strong> over building for all but the largest players.</p>
+      </div>
+      <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-2 list-disc list-inside">
+        <li>Enterprise LLM revenue ~<strong>$1.09B</strong> in 2024 is a concrete segment, not hype.</li>
+        <li>Model API spend scaling to <strong>$8.4B</strong> flags the <strong>platform layer</strong> as the fastest-growing part of the stack.</li>
+        <li><strong>86.5%</strong> of EU enterprises not yet in production AI implies a long runway.</li>
+        <li>Even low single-digit shares of SaaS budgets shifting to LLM APIs implies <strong>multi-billion</strong> annual spend by 2027.</li>
+      </ul>
+    </section>
+
+    <div id="ad-mid-article" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+    <section id="s2" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Section 2 &mdash; The Great Build-to-Buy Flip</h2>
+      <p class="text-slate-700 dark:text-slate-300 text-sm mb-4">In one year, enterprise AI went from nearly half built in-house to three-quarters purchased&mdash;a structural shift comparable to cloud migration.</p>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Metric</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Finding</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Source</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Build vs buy (2024)</td><td class="p-3">47% built / 53% purchased</td><td class="p-3">Menlo Ventures (via Beam)</td></tr>
+            <tr><td class="p-3">Build vs buy (2025)</td><td class="p-3">24% built / 76% purchased</td><td class="p-3">Menlo Ventures</td></tr>
+            <tr><td class="p-3">Hybrid architectures</td><td class="p-3">65% APIs + in-house</td><td class="p-3">Gartner (via Zartis)</td></tr>
+            <tr><td class="p-3">Platform &amp; app spend</td><td class="p-3">~$37B to platforms &amp; applications</td><td class="p-3">Menlo Ventures</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-slate-700 dark:text-slate-300">
+        <p class="font-semibold text-slate-900 dark:text-white mb-2">Catalitium interpretation</p>
+        <p>The flip mirrors cloud: few SaaS companies run their own hyperscale clouds; by 2028 few will own foundation models. The platform layer commoditizes; differentiation moves to <strong>data, workflow, and UX</strong>.</p>
+      </div>
+    </section>
+
+    <section id="s3" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Section 3 &mdash; Cost Structure: Build vs Buy</h2>
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Build strategy (selected costs)</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">Metric</th><th class="p-3 font-semibold">Finding</th><th class="p-3 font-semibold">Source</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Frontier model compute (illustrative)</td><td class="p-3">~€370.4M total (70% GPU)</td><td class="p-3">Future Society</td></tr>
+            <tr><td class="p-3">AI Act / high-risk system</td><td class="p-3">€29.3k annually</td><td class="p-3">Intellera / 2021.AI</td></tr>
+            <tr><td class="p-3">QMS setup</td><td class="p-3">€193k &ndash; €330k</td><td class="p-3">CEPS / 2021.AI</td></tr>
+            <tr><td class="p-3">QMS maintenance / year</td><td class="p-3">~€71.4k</td><td class="p-3">2021.AI</td></tr>
+            <tr><td class="p-3">AI Act overhead (affected use cases)</td><td class="p-3">~17% of AI spending</td><td class="p-3">CEPS / CDI</td></tr>
+            <tr><td class="p-3">Time to production</td><td class="p-3">Build: months&ndash;years &bull; Buy: weeks to pilot</td><td class="p-3">AlphaBold / Zartis</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">Buy strategy &mdash; API pricing (USD per 1M tokens)</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">Model</th><th class="p-3 font-semibold">Provider</th><th class="p-3 font-semibold">Input</th><th class="p-3 font-semibold">Output</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Mistral 7B</td><td class="p-3">Mistral</td><td class="p-3">$0.25</td><td class="p-3">$0.25</td></tr>
+            <tr><td class="p-3">Gemini 1.5 Flash</td><td class="p-3">Google</td><td class="p-3">$0.35</td><td class="p-3">$1.05</td></tr>
+            <tr><td class="p-3">Llama 3 70B</td><td class="p-3">via APIs</td><td class="p-3">$0.70</td><td class="p-3">$0.90</td></tr>
+            <tr><td class="p-3">GPT-3.5 Turbo</td><td class="p-3">OpenAI</td><td class="p-3">$0.50</td><td class="p-3">$1.50</td></tr>
+            <tr><td class="p-3">GPT-4o mini</td><td class="p-3">OpenAI</td><td class="p-3">$0.60</td><td class="p-3">$2.40</td></tr>
+            <tr><td class="p-3">Claude Haiku 3.5</td><td class="p-3">Anthropic</td><td class="p-3">$0.80</td><td class="p-3">$4.00</td></tr>
+            <tr><td class="p-3">Mistral Large</td><td class="p-3">Mistral</td><td class="p-3">$4.00</td><td class="p-3">$12.00</td></tr>
+            <tr><td class="p-3">Claude Sonnet 4</td><td class="p-3">Anthropic</td><td class="p-3">$3.00</td><td class="p-3">$15.00</td></tr>
+            <tr><td class="p-3">GPT-4o</td><td class="p-3">OpenAI</td><td class="p-3">$5.00</td><td class="p-3">$20.00</td></tr>
+            <tr><td class="p-3">Claude Opus 4.1</td><td class="p-3">Anthropic</td><td class="p-3">$15.00</td><td class="p-3">$75.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-2">
+        <li>Budget vs frontier spread ~<strong>300:1</strong>&mdash;three pricing tiers, not one market.</li>
+        <li>Single high-risk system compliance can exceed <strong>5% of revenue</strong> for a €2M ARR SaaS.</li>
+        <li>At 10k&ndash;100k MAU, budget-tier APIs can mean LLM features for <strong>low thousands USD/month</strong>.</li>
+      </ul>
+      <div class="rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-slate-700 dark:text-slate-300 mt-4">
+        <p class="font-semibold text-slate-900 dark:text-white mb-1">Catalitium interpretation</p>
+        <p>For most mid-market European SaaS, <strong>buy + own data + differentiate on workflow</strong> beats capital poured into in-house foundation stacks.</p>
+      </div>
+    </section>
+
+    <section id="s4" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Section 4 &mdash; Team Composition &amp; European Talent</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">Country</th><th class="p-3 font-semibold">Role</th><th class="p-3 font-semibold">Typical pay</th><th class="p-3 font-semibold">Source</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Switzerland</td><td class="p-3">AI Engineer</td><td class="p-3">~€148k</td><td class="p-3">Qubit Labs</td></tr>
+            <tr><td class="p-3">UK</td><td class="p-3">AI/ML Engineer (median)</td><td class="p-3">~€120k</td><td class="p-3">IntuitionLabs</td></tr>
+            <tr><td class="p-3">Germany</td><td class="p-3">AI/ML SWE</td><td class="p-3">€71k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">Germany</td><td class="p-3">AI Engineer</td><td class="p-3">~€102k</td><td class="p-3">Qubit Labs</td></tr>
+            <tr><td class="p-3">France</td><td class="p-3">AI/ML SWE</td><td class="p-3">€66k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">Netherlands</td><td class="p-3">AI/ML SWE</td><td class="p-3">€68k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">Spain</td><td class="p-3">AI/ML SWE</td><td class="p-3">€56k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">Italy</td><td class="p-3">AI/ML SWE</td><td class="p-3">€58k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">DE / UK</td><td class="p-3">AI Solutions Architect</td><td class="p-3">€88k / €91k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">DE / UK</td><td class="p-3">AI Consultant</td><td class="p-3">€78k / €80k</td><td class="p-3">DigitalDefynd</td></tr>
+            <tr><td class="p-3">Western / Nordic</td><td class="p-3">Lead AI Engineers</td><td class="p-3">Up to $250k</td><td class="p-3">Alcor</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-2">
+        <li>~<strong>2.6x</strong> geographic spread: Switzerland vs Spain/Italy.</li>
+        <li>Lean &ldquo;buy&rdquo; team (~€250k&ndash;€400k/year loaded) vs build stack (researchers, MLOps, infra, compliance) heavily favors buy at most scales.</li>
+        <li><strong>AI Solutions Architects</strong> and consultants are the integrator roles of the platform era.</li>
+      </ul>
+    </section>
+
+    <section id="s5" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Section 5 &mdash; The European Regulatory Premium</h2>
+      <p class="text-sm text-slate-700 dark:text-slate-300 mb-4">The EU AI Act creates asymmetric cost: heavy for mid-market builders who deploy high-risk systems; comparatively light as a share of investment for frontier GPAI providers.</p>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">Metric</th><th class="p-3 font-semibold">Finding</th><th class="p-3 font-semibold">Source</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Compliance / high-risk system / yr</td><td class="p-3">€29.3k</td><td class="p-3">Intellera</td></tr>
+            <tr><td class="p-3">QMS setup</td><td class="p-3">€193k &ndash; €330k</td><td class="p-3">CEPS / 2021.AI</td></tr>
+            <tr><td class="p-3">QMS maintenance</td><td class="p-3">~€71.4k / yr</td><td class="p-3">2021.AI</td></tr>
+            <tr><td class="p-3">Overhead on AI spend (SMEs, high-risk)</td><td class="p-3">~17%</td><td class="p-3">CEPS / CDI</td></tr>
+            <tr><td class="p-3">GPAI compliance / investment</td><td class="p-3">0.07% &ndash; 1.34%</td><td class="p-3">Future Society</td></tr>
+            <tr><td class="p-3">Macro economic cost to Europe by 2025</td><td class="p-3">&gt;€30B</td><td class="p-3">CDI assessment</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-sm text-slate-700 dark:text-slate-300">Example: €20M ARR SaaS with 3 high-risk systems: ~€160k/year compliance band vs ~0.8% of revenue; same structure at €2M ARR can exceed <strong>5% of revenue</strong> for one system.</p>
+      <div class="rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm text-slate-700 dark:text-slate-300 mt-4">
+        <p class="font-semibold text-slate-900 dark:text-white mb-1">Catalitium interpretation</p>
+        <p>The AI Act accelerates <strong>build-to-buy</strong>: compliant platforms absorb model-level fixed cost; buyers still own downstream obligations but avoid rebuilding QMS for every model.</p>
+      </div>
+    </section>
+
+    <section id="s6" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Section 6 &mdash; Forward Outlook (2026&ndash;2028)</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">Metric</th><th class="p-3 font-semibold">Finding</th><th class="p-3 font-semibold">Notes</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Global LLM 2030</td><td class="p-3">~$259.8B @ 79.8% CAGR</td><td class="p-3">Projection</td></tr>
+            <tr><td class="p-3">Europe LLM 2030</td><td class="p-3">~$50.1B @ 83.3% CAGR</td><td class="p-3">Projection</td></tr>
+            <tr><td class="p-3">Build share by 2028</td><td class="p-3">Only very high scale / specialized cos.</td><td class="p-3">Directional</td></tr>
+            <tr><td class="p-3">Low-end inference</td><td class="p-3">&lt;$0.35/M input, falling</td><td class="p-3">InventiveHQ</td></tr>
+            <tr><td class="p-3">Mid-level AI salary growth</td><td class="p-3">9.2% in 2025</td><td class="p-3">MRJ Recruitment</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-2">
+        <li>Per-token deflation continues; economic case for proprietary foundation models <strong>narrows</strong>.</li>
+        <li>Open-weight and API parity erode pure model moats; value migrates to <strong>application layer</strong>.</li>
+        <li><strong>LLM gateways</strong> and multi-model routing become default by ~2027.</li>
+      </ul>
+    </section>
+
+    <section id="roles" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Fastest Growing vs Declining Roles (February 2026)</h2>
+      <div class="grid sm:grid-cols-2 gap-4 text-sm">
+        <div class="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/35 p-5">
+          <h3 class="font-bold text-emerald-900 dark:text-emerald-100 mb-3">Rising</h3>
+          <ul class="space-y-1 text-emerald-900 dark:text-emerald-200">
+            <li>AI Integration Engineer</li>
+            <li>AI Product Manager</li>
+            <li>LLM Solutions Architect</li>
+            <li>MLOps Engineer (platform-focused)</li>
+            <li>Prompt / AI Workflow Engineer</li>
+            <li>AI Governance Specialist</li>
+            <li>AI Data Pipeline Engineer</li>
+            <li>Cloud AI Platform Engineer</li>
+            <li>AI Compliance Analyst</li>
+            <li>AI Customer Success Engineer</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/35 p-5">
+          <h3 class="font-bold text-rose-900 dark:text-rose-100 mb-3">Declining relative demand</h3>
+          <ul class="space-y-1 text-rose-900 dark:text-rose-200">
+            <li>ML Research Scientist (in-house at SaaS)</li>
+            <li>Custom Model Trainer (non-frontier)</li>
+            <li>Manual QA (AI-testable workflows)</li>
+            <li>Traditional Data Scientist (non-AI)</li>
+            <li>Junior Backend (boilerplate)</li>
+            <li>Internal Tooling Developer</li>
+            <li>ETL Developer</li>
+            <li>Entry-level Data Analyst</li>
+            <li>Standalone Prompt Engineer</li>
+            <li>Infrastructure Engineer (cloud-managed)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="myths" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">5 Myths vs Reality</h2>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr><th class="p-3 font-semibold">#</th><th class="p-3 font-semibold">Myth</th><th class="p-3 font-semibold">Reality</th></tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">1</td><td class="p-3">Own model always cheaper long term</td><td class="p-3">Compliance + talent + infra favor buy until very large scale; 24% still build.</td></tr>
+            <tr><td class="p-3">2</td><td class="p-3">Regulation kills EU AI innovation</td><td class="p-3">Frontier GPAI compliance small % of investment; Europe ~24% of enterprise LLM revenue.</td></tr>
+            <tr><td class="p-3">3</td><td class="p-3">Most enterprises still build AI</td><td class="p-3">76% purchased in 2025.</td></tr>
+            <tr><td class="p-3">4</td><td class="p-3">LLM APIs too expensive for mid-market</td><td class="p-3">Budget tiers $0.25&ndash;$0.35/M; 300:1 spread across tiers.</td></tr>
+            <tr><td class="p-3">5</td><td class="p-3">Europe is behind on LLMs</td><td class="p-3">~$50B EU projection by 2030; already ~24% of global enterprise LLM revenue.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="recommendations" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Catalitium Recommendations</h2>
+      <div class="grid md:grid-cols-3 gap-4 text-sm text-slate-700 dark:text-slate-300">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-2">Job seekers</h3>
+          <ul class="space-y-2 list-disc list-inside">
+            <li>Prioritize API integration, orchestration, gateways.</li>
+            <li>Add EU AI Act literacy alongside technical skills.</li>
+            <li>Target mid-market SaaS adopting first AI features.</li>
+            <li>Portfolio: end-to-end LLM integration + compliance docs.</li>
+            <li>Exploit geographic arbitrage where remote policies allow.</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-2">Recruiters</h3>
+          <ul class="space-y-2 list-disc list-inside">
+            <li>Stop hiring ML researchers for API integration work.</li>
+            <li>Prioritize AI PMs and integration architects for buy strategies.</li>
+            <li>Benchmark loaded cost vs €250k&ndash;€400k lean buy team.</li>
+            <li>Source integrators from consulting alumni where relevant.</li>
+            <li>Invest in AI governance hiring; undersupplied in Europe.</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-2">Companies</h3>
+          <ul class="space-y-2 list-disc list-inside">
+            <li>Default to buy without a quantified build case.</li>
+            <li>CapEx vs OpEx: APIs + integration talent, not training clusters.</li>
+            <li>Hybrid gateway architecture from day one.</li>
+            <li>Use AI Act as vendor filter.</li>
+            <li>Stress-test API costs at 3&times; current usage.</li>
+            <li>Team design: one AI PM + two integrators + one architect often beats three researchers.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-10 rounded-xl border border-brand/20 bg-brand/5 p-6">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Closing Statement</h2>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">The LLM platform era in Europe is here. Buying beats building for the majority of mid-market SaaS not because building is impossible, but because API commoditization, compliance, and talent scarcity make proprietary foundation stacks a poor use of capital. Winners in 2028 will own the best <strong>data, workflows, and integration speed</strong>&mdash;not the best base model.</p>
+    </section>
+
+    <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10 no-print">
+      <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Get the next Catalitium report in your inbox</h3>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">One weekly email with market signal and the best tech jobs. No spam. Unsubscribe anytime.</p>
+      <form action="{{ url_for('subscribe') }}" method="post" class="flex flex-col sm:flex-row gap-3">
+        <input type="hidden" name="search_title" value="market-research-r07">
+        <label for="r07-subscribe-email" class="sr-only">Your email</label>
+        <input id="r07-subscribe-email" name="email" type="email" required autocomplete="email" placeholder="you@company.com" class="flex-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit" class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 whitespace-nowrap">Subscribe</button>
+      </form>
+      <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Privacy-friendly. One email per week.</p>
+    </div>
+
+    <section id="methodology" class="mb-10 scroll-mt-20 border-t border-slate-100 dark:border-slate-800 pt-8">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Research Methodology</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2">This report synthesizes data from 2021&ndash;2026 from Pragma Market Research, IntelMarketResearch, Grand View Research, Hostinger, Menlo Ventures, AlphaBold, Gartner (via Zartis), IntuitionLabs, InventiveHQ, Intellera, 2021.AI, Future Society, CEPS, Center for Data Innovation, DigitalDefynd, Qubit Labs, Alcor, Antom, MRJ Recruitment, and strategic commentary (a16z, Guru Startups). Conflicting figures are shown as ranges. Estimates are labeled. Public and commercially published sources only, as of February 2026.</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4"><strong>Data quality protocol:</strong> this report avoids synthetic interpolation for missing public series, preserves uncertainty bands for conflicting market-size estimates, and keeps projections explicitly tagged to source methodology.</p>
+      <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Source index (20)</p>
+      <ol class="text-xs text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside">
+        <li>Pragma Market Research</li>
+        <li>Hostinger (LLM statistics)</li>
+        <li>Grand View Research (Europe enterprise LLM)</li>
+        <li>IntelMarketResearch</li>
+        <li>AlphaBold (buy vs build)</li>
+        <li>Beam / Menlo Ventures (AI flip)</li>
+        <li>Zartis</li>
+        <li>Guru Startups</li>
+        <li>IntuitionLabs (API pricing)</li>
+        <li>InventiveHQ</li>
+        <li>Intellera Consulting (AI Act SMEs)</li>
+        <li>2021.AI (penalties &amp; compliance)</li>
+        <li>Future Society (GPAI compliance)</li>
+        <li>CEPS (AI Act costs)</li>
+        <li>Center for Data Innovation</li>
+        <li>DigitalDefynd (EU AI salaries)</li>
+        <li>Qubit Labs</li>
+        <li>Alcor BPO</li>
+        <li>Antom (Europe SaaS)</li>
+        <li>MRJ Recruitment</li>
+      </ol>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-4">Educational and strategic intelligence only; not legal, financial, or investment advice. Third-party statistics subject to rapid change.</p>
+    </section>
+
+    <p class="text-xs text-slate-400 dark:text-slate-500 leading-relaxed mb-8">Catalitium Market Intelligence &mdash; February 2026.</p>
+    <div id="ad-bottom" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+{% endif %}
+  </article>
+
+  <aside class="hidden lg:block sticky top-20 self-start no-print">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Contents</p>
+      <ol class="space-y-1.5 text-sm text-slate-600 dark:text-slate-400 list-decimal list-inside">
+        <li><a href="#how-to-use" class="hover:text-brand">How to Use</a></li>
+        <li><a href="#intro" class="hover:text-brand">Intro</a></li>
+        <li><a href="#visuals" class="hover:text-brand">Visuals</a></li>
+        <li><a href="#s1" class="hover:text-brand">LLM market</a></li>
+        <li><a href="#s2" class="hover:text-brand">Build vs buy</a></li>
+        <li><a href="#s3" class="hover:text-brand">Costs</a></li>
+        <li><a href="#s4" class="hover:text-brand">Talent</a></li>
+        <li><a href="#s5" class="hover:text-brand">AI Act</a></li>
+        <li><a href="#s6" class="hover:text-brand">Outlook</a></li>
+        <li><a href="#roles" class="hover:text-brand">Roles</a></li>
+        <li><a href="#myths" class="hover:text-brand">Myths</a></li>
+        <li><a href="#recommendations" class="hover:text-brand">Recommendations</a></li>
+        <li><a href="#methodology" class="hover:text-brand">Methodology</a></li>
+      </ol>
+      {% if not (report.get('gated') and mi_tier == 'free') %}
+      <div class="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <button onclick="window.print()" class="w-full inline-flex justify-center items-center gap-2 rounded-xl border border-brand text-brand px-3 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">Download PDF</button>
+      </div>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ report.title }}",
+  "description": "{{ report.description }}",
+  "author": {"@type": "Organization", "name": "Catalitium"},
+  "datePublished": "{{ report.published }}",
+  "dateModified": "{{ report.published }}",
+  "keywords": "{{ report.keywords | join(', ') }}"
+}
+</script>
+{% endblock %}

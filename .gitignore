@@ -45,6 +45,7 @@ data/archive/
 # Development/IDE
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
 .DS_Store
