@@ -24,6 +24,23 @@
       Simple JSON endpoints for high-signal tech jobs and salary lookup. Built for engineers, analysts,
       and recruiters who want to use Catalitium data in their own tools without ceremony.
     </p>
+    <div class="flex flex-wrap gap-3 pt-2">
+      <a href="{{ url_for('docs_api') }}"
+         class="inline-flex items-center justify-center rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+        Full API reference
+      </a>
+      {% if session.get('user') %}
+      <a href="{{ url_for('studio') }}#api-access"
+         class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-brand transition-colors">
+        Studio — API setup
+      </a>
+      {% else %}
+      <a href="{{ url_for('register') }}"
+         class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-brand transition-colors">
+        Sign in for API keys
+      </a>
+      {% endif %}
+    </div>
   </header>
 
   <section class="space-y-3">
@@ -32,14 +49,15 @@
       <li><strong>Job search API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs</code> with filters.</li>
       <li><strong>Job detail API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs/&lt;id&gt;</code> with apply URL.</li>
       <li><strong>Salary lookup API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/salary</code> by title / country.</li>
-      <li><strong>Free tier</strong>, 100 requests/month, with clear rate-limit headers on every response.</li>
+      <li><strong>Free tier</strong> (after email confirmation): 50 requests/day and 500/month, with rate-limit headers on every response.</li>
+      <li><strong>API Access</strong> (paid): 10,000 calls/month — manage in <a href="{{ url_for('pricing') }}" class="text-brand font-medium hover:underline">Pricing</a>.</li>
     </ul>
   </section>
 
   <section class="space-y-3">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Getting an API key</h2>
     <ol class="list-decimal list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
-      <li>POST your email to <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/api/keys/register</code>.</li>
+      <li>While signed in, POST to <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/api/keys/register</code> (or use <strong>Register free API key</strong> in <a href="{{ url_for('studio') }}" class="text-brand hover:underline">Studio</a>).</li>
       <li>Click the confirmation link in the email (key activates once).</li>
       <li>Send the key in <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-API-Key</code> for all <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/v1/*</code> calls.</li>
     </ol>
@@ -97,13 +115,12 @@ print("Found", data["meta"]["total"], "jobs")</code></pre>
   <section class="space-y-2">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Limits &amp; headers</h2>
     <p class="text-sm text-slate-700 dark:text-slate-300">
-      The free tier grants <strong>100 requests per month</strong>. Each response includes:
+      Quotas combine <strong>daily</strong> and <strong>calendar-month</strong> limits (see <a href="{{ url_for('docs_api') }}" class="text-brand hover:underline">API reference</a>). Each response includes:
     </p>
     <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1">
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code>, your monthly quota.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Remaining</code>, requests left this month.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Reset</code>, ISO date/time for the next reset.</li>
-      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Window</code>, always <code>monthly</code> for now.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code> / <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">Remaining</code> for the daily window.</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Reset</code>, next daily reset (UTC).</li>
+      <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Window</code> is <code>daily</code>; monthly totals are in <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">GET /api/keys/usage</code>.</li>
     </ul>
   </section>
 </section>

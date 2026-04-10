@@ -1839,14 +1839,22 @@ def confirm_api_key_by_token(token: str, now: datetime) -> bool:
         with db.cursor() as cur:
             cur.execute(
                 """
-                UPDATE api_keys
+                UPDATE api_keys AS k
                 SET is_active = TRUE,
-                    tier = 'free',
+                    tier = CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM user_subscriptions u
+                            WHERE LOWER(TRIM(u.user_email)) = LOWER(TRIM(k.email))
+                              AND u.product_line = 'api_access'
+                              AND u.status = 'active'
+                        ) THEN 'api_access'
+                        ELSE 'free'
+                    END,
                     confirm_token = NULL,
                     confirm_token_expires_at = NULL
-                WHERE confirm_token = %s
-                  AND confirm_token_expires_at > %s
-                  AND is_active = FALSE
+                WHERE k.confirm_token = %s
+                  AND k.confirm_token_expires_at > %s
+                  AND k.is_active = FALSE
                 """,
                 (token, now),
             )
@@ -1872,11 +1880,11 @@ def revoke_api_key(key_hash: str) -> bool:
 
 
 def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
-    """Validate key, reset daily counter if it's a new day, enforce quota, then increment.
+    """Validate key, reset daily/monthly counters on window rollover, enforce quotas, increment.
 
     Returns:
-        dict with daily_limit/requests_today/tier on success,
-        {"error": "quota_exceeded"} when over daily quota,
+        dict with limits, tier, and usage on success,
+        {"error": "quota_exceeded", "window": "daily"|"monthly"} when over quota,
         None when key is not found or inactive.
     """
     try:
@@ -1884,7 +1892,9 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
         with db.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, tier, is_active, daily_limit, requests_today, day_window
+                SELECT id, tier, is_active,
+                       daily_limit, requests_today, day_window,
+                       monthly_limit, requests_this_month, month_window
                 FROM api_keys
                 WHERE key_hash = %s
                 """,
@@ -1893,13 +1903,36 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
             row = cur.fetchone()
             if not row:
                 return None
-            rec_id, tier, is_active, daily_limit, requests_today, day_window = row
+            (
+                rec_id,
+                tier,
+                is_active,
+                daily_limit,
+                requests_today,
+                day_window,
+                monthly_limit,
+                requests_this_month,
+                month_window,
+            ) = row
             if not is_active:
                 return None
-            # Fall back to 50 if the column is NULL (pre-migration rows)
             if daily_limit is None:
                 daily_limit = 50
+            if monthly_limit is None:
+                monthly_limit = 500
+
             today = now.strftime("%Y-%m-%d")
+            month = now.strftime("%Y-%m")
+
+            if (month_window or "") != month:
+                cur.execute(
+                    "UPDATE api_keys SET requests_this_month = 0, month_window = %s WHERE id = %s",
+                    (month, rec_id),
+                )
+                requests_this_month = 0
+            if requests_this_month >= monthly_limit:
+                return {"error": "quota_exceeded", "window": "monthly"}
+
             if day_window != today:
                 cur.execute(
                     "UPDATE api_keys SET requests_today = 0, day_window = %s WHERE id = %s",
@@ -1907,17 +1940,26 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
                 )
                 requests_today = 0
             if requests_today >= daily_limit:
-                return {"error": "quota_exceeded"}
+                return {"error": "quota_exceeded", "window": "daily"}
+
             cur.execute(
-                "UPDATE api_keys SET requests_today = requests_today + 1 "
-                "WHERE id = %s RETURNING requests_today",
+                """
+                UPDATE api_keys
+                SET requests_today = requests_today + 1,
+                    requests_this_month = requests_this_month + 1
+                WHERE id = %s
+                RETURNING requests_today, requests_this_month
+                """,
                 (rec_id,),
             )
             new_row = cur.fetchone()
-            new_count = new_row[0] if new_row else requests_today + 1
+            new_daily = new_row[0] if new_row else requests_today + 1
+            new_monthly = new_row[1] if new_row else requests_this_month + 1
             return {
                 "daily_limit": daily_limit,
-                "requests_today": new_count,
+                "requests_today": new_daily,
+                "monthly_limit": monthly_limit,
+                "requests_this_month": new_monthly,
                 "tier": tier,
             }
     except Exception as exc:
@@ -1925,21 +1967,42 @@ def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
         return None
 
 
-def update_api_key_limit_by_email(email: str, new_limit: int) -> bool:
-    """Update monthly_limit for the active API key belonging to this email.
+def sync_api_key_quota_for_api_access(email: str, paid_active: bool) -> bool:
+    """Align api_keys rows for this email with API Access subscription state.
 
-    Called when user subscribes to / cancels the api_access product so their
-    quota reflects the current tier (500 free, 10 000 paid).
+    Paid active: 10k/month, high daily ceiling, tier api_access.
+    Not paid: free-tier limits, tier free. Updates all rows for the email so
+    pending keys pick up correct limits before activation.
     """
+    email_clean = (email or "").strip()
+    if not email_clean:
+        return False
     try:
         db = get_db()
         with db.cursor() as cur:
-            cur.execute(
-                "UPDATE api_keys SET monthly_limit = %s WHERE email = %s AND is_active = TRUE",
-                (new_limit, email),
-            )
-            db.commit()
+            if paid_active:
+                cur.execute(
+                    """
+                    UPDATE api_keys
+                    SET monthly_limit = 10000,
+                        daily_limit = 10000,
+                        tier = 'api_access'
+                    WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+                    """,
+                    (email_clean,),
+                )
+            else:
+                cur.execute(
+                    """
+                    UPDATE api_keys
+                    SET monthly_limit = 500,
+                        daily_limit = 50,
+                        tier = 'free'
+                    WHERE LOWER(TRIM(email)) = LOWER(TRIM(%s))
+                    """,
+                    (email_clean,),
+                )
         return True
     except Exception as exc:
-        logger.warning("update_api_key_limit_by_email error: %s", exc)
+        logger.warning("sync_api_key_quota_for_api_access error: %s", exc)
         return False

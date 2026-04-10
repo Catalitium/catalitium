@@ -59,7 +59,7 @@ from .models.db import (
     upsert_user_subscription,
     get_user_subscriptions,
     get_subscription_by_stripe_id,
-    update_api_key_limit_by_email,
+    sync_api_key_quota_for_api_access,
 )
 
 try:
@@ -1053,7 +1053,10 @@ def create_app() -> Flask:
             if usage is None:
                 return jsonify({"error": "invalid_key"}), 401
             if isinstance(usage, dict) and usage.get("error") == "quota_exceeded":
-                return jsonify({"error": "quota_exceeded"}), 429
+                return jsonify({
+                    "error": "quota_exceeded",
+                    "window": usage.get("window", "daily"),
+                }), 429
             g.api_key_record = usage
 
             @after_this_request
@@ -2002,7 +2005,33 @@ def create_app() -> Flask:
         user = session.get("user")
         if not user:
             return redirect(url_for("register"))
-        return render_template("studio.html", user=user)
+        user_id = str(user.get("id") or "").strip()
+        email = (user.get("email") or "").strip()
+        subs = get_user_subscriptions(user_id) if user_id else {}
+        api_access_sub = subs.get("api_access")
+        api_key_panel = None
+        if email:
+            key_rec = get_api_key_by_email(email)
+            if key_rec:
+                api_key_panel = {
+                    "key_prefix": key_rec.get("key_prefix"),
+                    "is_active": bool(key_rec.get("is_active")),
+                    "tier": key_rec.get("tier") or "",
+                    "monthly_limit": key_rec.get("monthly_limit"),
+                    "daily_limit": key_rec.get("daily_limit"),
+                }
+        return render_template(
+            "studio.html",
+            user=user,
+            subs=subs,
+            api_access_sub=api_access_sub,
+            api_key_panel=api_key_panel,
+        )
+
+    @app.get("/docs/api")
+    def docs_api():
+        """Public developer reference for the Catalitium HTTP API."""
+        return render_template("docs_api.html")
 
     @app.route("/profile", methods=["GET", "POST"])
     @_limit("10 per minute")
@@ -2587,22 +2616,106 @@ def create_app() -> Flask:
         p["price_id"]: k for k, p in _STRIPE_B2C_PRODUCTS.items() if p["price_id"]
     }
 
-    def _handle_b2c_subscription_event(sub_obj: Dict) -> None:
-        """Sync a Stripe subscription object to user_subscriptions."""
-        sub_id = sub_obj.get("id", "")
-        metadata = sub_obj.get("metadata") or {}
-        user_id = metadata.get("user_id", "")
-        user_email = metadata.get("user_email", "")
-        product_line = metadata.get("product_line", "")
-        tier = metadata.get("tier", "")
+    def _stripe_subscription_to_dict(sub_obj: Any) -> Dict[str, Any]:
+        """Normalize Stripe SDK objects to plain dicts for webhook handlers."""
+        if isinstance(sub_obj, dict):
+            return sub_obj
+        to_dict = getattr(sub_obj, "to_dict", None)
+        if callable(to_dict):
+            return to_dict()
+        try:
+            return dict(sub_obj)
+        except Exception:
+            return {}
+
+    def _ensure_api_access_key_from_subscription(
+        *,
+        user_id: str,
+        user_email: str,
+        base_url: str,
+    ) -> None:
+        """Create an api_keys row + email raw key when none exists (paid API Access)."""
+        user_email = (user_email or "").strip()
+        if not user_email:
+            return
+        base = (base_url or os.getenv("BASE_URL", "https://catalitium.com")).rstrip("/")
+
+        existing = get_api_key_by_email(user_email)
+        if existing:
+            return
+
+        raw_key = "cat_" + secrets.token_hex(22)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        key_prefix = raw_key[:12]
+        confirm_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        ok = create_api_key(
+            email=user_email,
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            confirm_token=confirm_token,
+            confirm_token_expires_at=expires_at,
+            created_from_ip="stripe_webhook",
+            user_id=str(user_id or ""),
+        )
+        if not ok:
+            logger.warning("api_access: create_api_key failed email=%s", user_email)
+            return
+        sync_api_key_quota_for_api_access(user_email, True)
+        confirm_url = f"{base}/api/keys/confirm?token={confirm_token}"
+        body = (
+            "Your Catalitium API Access subscription is active.\n\n"
+            f"Your API key:\n\n  {raw_key}\n\n"
+            f"Activate it within 24 hours:\n\n  {confirm_url}\n\n"
+            f"Then use header:\n  X-API-Key: {raw_key}\n\n"
+            "Included: up to 10,000 successful API calls per calendar month.\n\n"
+            "-- Catalitium Team\nhttps://catalitium.com"
+        )
+        _send_mail(user_email, "Catalitium API Access — your API key", body)
+        logger.info("api_access: key provisioned prefix=%s email=%s", key_prefix, user_email)
+
+    def _checkout_api_access_confirmation_email(user_email: str, had_active_key_before: bool) -> None:
+        """Short receipt when checkout completes; skip if we already emailed a new key."""
+        user_email = (user_email or "").strip()
+        if not user_email or not had_active_key_before:
+            return
+        base = os.getenv("BASE_URL", "https://catalitium.com").rstrip("/")
+        _send_mail(
+            user_email,
+            "Catalitium — API Access payment confirmed",
+            (
+                "Thanks — your API Access subscription payment was received.\n\n"
+                "Your existing API key now includes the paid monthly quota "
+                "(10,000 calls per month). Continue using the same key with "
+                "header X-API-Key.\n\n"
+                f"Manage your plan: {base}/account/subscription\n\n"
+                "-- Catalitium Team"
+            ),
+        )
+
+    def _handle_b2c_subscription_event(sub_obj: Any) -> None:
+        """Sync a Stripe subscription object to user_subscriptions and API keys."""
+        sub_d = _stripe_subscription_to_dict(sub_obj)
+        sub_id = sub_d.get("id", "")
+        metadata = dict(sub_d.get("metadata") or {})
+        user_id = (metadata.get("user_id") or "").strip()
+        user_email = (metadata.get("user_email") or "").strip()
+        product_line = (metadata.get("product_line") or "").strip()
+        tier = (metadata.get("tier") or "").strip()
 
         if not user_id or not product_line:
             logger.warning("_handle_b2c_subscription_event: missing metadata sub=%s", sub_id)
             return
 
         # Resolve tier from live price (handles plan changes mid-subscription)
-        items = (sub_obj.get("items") or {}).get("data") or []
-        price_id = items[0]["price"]["id"] if items else None
+        items = (sub_d.get("items") or {}).get("data") or []
+        price_id = None
+        if items and isinstance(items[0], dict):
+            price_obj = items[0].get("price")
+            if isinstance(price_obj, dict):
+                price_id = price_obj.get("id")
+            elif isinstance(price_obj, str):
+                price_id = price_obj
         if price_id and price_id in _B2C_PRICE_TO_KEY:
             matched = _STRIPE_B2C_PRODUCTS[_B2C_PRICE_TO_KEY[price_id]]
             tier = matched["tier"]
@@ -2613,24 +2726,29 @@ def create_app() -> Flask:
             "past_due": "past_due", "unpaid": "past_due",
             "incomplete": "past_due", "canceled": "cancelled",
         }
-        status = _STATUS_MAP.get(sub_obj.get("status", ""), "past_due")
+        status = _STATUS_MAP.get(sub_d.get("status", ""), "past_due")
         upsert_user_subscription(
             user_id=user_id,
             user_email=user_email,
             product_line=product_line,
             tier=tier,
-            stripe_customer_id=sub_obj.get("customer"),
+            stripe_customer_id=sub_d.get("customer"),
             stripe_subscription_id=sub_id,
             stripe_price_id=price_id,
             status=status,
-            current_period_end=sub_obj.get("current_period_end"),
-            cancel_at_period_end=bool(sub_obj.get("cancel_at_period_end")),
+            current_period_end=sub_d.get("current_period_end"),
+            cancel_at_period_end=bool(sub_d.get("cancel_at_period_end")),
         )
 
-        # Keep API key quota in sync with api_access subscription tier
         if product_line == "api_access" and user_email:
-            new_limit = 10_000 if status == "active" else 500
-            update_api_key_limit_by_email(user_email, new_limit)
+            paid_active = status == "active"
+            sync_api_key_quota_for_api_access(user_email, paid_active)
+            if paid_active:
+                _ensure_api_access_key_from_subscription(
+                    user_id=user_id,
+                    user_email=user_email,
+                    base_url=os.getenv("BASE_URL", "https://catalitium.com"),
+                )
 
     @app.get("/pricing")
     def pricing():
@@ -2728,6 +2846,13 @@ def create_app() -> Flask:
             return redirect(url_for("register"))
         plan_key = request.args.get("plan_key", "")
         product = _STRIPE_B2C_PRODUCTS.get(plan_key)
+        if plan_key == "api_access":
+            flash(
+                "API Access is active. Check your email for your key, then open Studio (Account) "
+                "to see setup steps and documentation.",
+                "success",
+            )
+            return redirect(url_for("studio", api_welcome="1"))
         return render_template("subscription_success.html", user=user, product=product)
 
     @app.get("/account/subscription")
@@ -3054,6 +3179,46 @@ def create_app() -> Flask:
             )
             logger.info("stripe_webhook: order paid session=%s", cs_id)
 
+            if subscription_id and data_obj.get("mode") == "subscription":
+                try:
+                    _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+                    sub_raw = _stripe.Subscription.retrieve(subscription_id)
+                    sub_d = _stripe_subscription_to_dict(sub_raw)
+                    sess_meta = data_obj.get("metadata") or {}
+                    sub_meta = dict(sub_d.get("metadata") or {})
+                    merged_meta = {**sub_meta}
+                    for k, v in sess_meta.items():
+                        if v is not None and str(v).strip() != "":
+                            merged_meta.setdefault(k, str(v).strip())
+                    sub_d["metadata"] = merged_meta
+                    uemail = (sess_meta.get("user_email") or merged_meta.get("user_email") or "").strip()
+                    uid = (sess_meta.get("user_id") or merged_meta.get("user_id") or "").strip()
+                    plan_key = (sess_meta.get("plan_key") or "").strip()
+                    prior = get_api_key_by_email(uemail) if uemail else None
+                    had_active = bool(prior and prior.get("is_active"))
+                    was_pending = bool(prior and not prior.get("is_active"))
+                    _handle_b2c_subscription_event(sub_d)
+                    if plan_key == "api_access" and uemail:
+                        base = os.getenv("BASE_URL", "https://catalitium.com").rstrip("/")
+                        after = get_api_key_by_email(uemail)
+                        if was_pending and after and not after.get("is_active"):
+                            tok = after.get("confirm_token")
+                            if tok:
+                                _send_mail(
+                                    uemail,
+                                    "Activate your Catalitium API key (API Access)",
+                                    (
+                                        "Your API Access subscription is active.\n\n"
+                                        "Confirm the API key you registered earlier:\n\n"
+                                        f"  {base}/api/keys/confirm?token={tok}\n\n"
+                                        "Then use header X-API-Key on /v1/* endpoints.\n\n"
+                                        "-- Catalitium"
+                                    ),
+                                )
+                        _checkout_api_access_confirmation_email(uemail, had_active)
+                except Exception as exc:
+                    logger.warning("stripe_webhook: checkout subscription sync failed %s", exc)
+
         elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
             _handle_b2c_subscription_event(data_obj)
             logger.info("stripe_webhook: subscription synced sub=%s type=%s", data_obj.get("id"), event_type)
@@ -3070,6 +3235,8 @@ def create_app() -> Flask:
                     stripe_subscription_id=sub_id,
                     status="cancelled",
                 )
+                if existing.get("product_line") == "api_access" and existing.get("user_email"):
+                    sync_api_key_quota_for_api_access(existing["user_email"], False)
             logger.info("stripe_webhook: subscription cancelled sub=%s", sub_id)
 
         elif event_type == "invoice.payment_succeeded":
@@ -3096,6 +3263,8 @@ def create_app() -> Flask:
                         stripe_subscription_id=sub_id,
                         status="past_due",
                     )
+                    if existing.get("product_line") == "api_access" and existing.get("user_email"):
+                        sync_api_key_quota_for_api_access(existing["user_email"], False)
             logger.warning("stripe_webhook: payment failed customer=%s sub=%s", customer_id, sub_id)
 
         return jsonify({"status": "ok"}), 200
@@ -3676,7 +3845,7 @@ def create_app() -> Flask:
             f"  {confirm_url}\n\n"
             f"Once activated, include it in API requests with the header:\n"
             f"  X-API-Key: {raw_key}\n\n"
-            f"Free tier: 50 requests/day.\n\n"
+            f"Free tier: 50 requests/day and 500 per calendar month after activation.\n\n"
             f"-- Catalitium Team"
         )
         _send_mail(email, "Activate your Catalitium API key", body)
@@ -3707,6 +3876,8 @@ def create_app() -> Flask:
             "tier": rec.get("tier"),
             "daily_limit": rec.get("daily_limit", 50),
             "requests_today": rec.get("requests_today", 0),
+            "monthly_limit": rec.get("monthly_limit", 500),
+            "requests_this_month": rec.get("requests_this_month", 0),
             "reset_date": reset_dt.isoformat(),
         }), 200
 
