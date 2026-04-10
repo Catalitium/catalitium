@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}DACH Salary Tools | Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
+{% block title %}DACH Salary Tools: Benchmarks, Arbitrage &amp; Job Search | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
@@ -24,7 +24,7 @@
 
 {% block head_extra %}
 <style>
-  /* Range thumb, Tailwind can't do pseudo-elements */
+  /* Range thumb: Tailwind can't do pseudo-elements */
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -98,7 +98,7 @@
   </div>
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 1, SALARY REPORT               -->
+  <!--  DASHBOARD 1: SALARY REPORT               -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-salary">
 
@@ -324,7 +324,7 @@
     <div class="mb-8 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/8 to-sky-500/8 dark:from-brand/10 dark:to-sky-500/10 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Make the data better</p>
-        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary to unlock your market percentile</p>
+        <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary, unlock your market percentile</p>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Anonymous. Takes 60 seconds. See instantly where you stand vs. P25 / P50 / P75 in DACH.</p>
       </div>
       <a href="{{ url_for('salary_contribute') }}"
@@ -347,7 +347,7 @@
   </div><!-- /panel-salary -->
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 2, TALENT ARBITRAGE CALCULATOR  -->
+  <!--  DASHBOARD 2: TALENT ARBITRAGE CALCULATOR  -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-arbitrage" class="hidden">
 
@@ -514,8 +514,8 @@
         Local runs <strong class="text-slate-800 dark:text-slate-200" id="arb-insLocal">-</strong>/mo per engineer.
         Your global team costs the client <strong class="text-slate-800 dark:text-slate-200" id="arb-insGlobal">-</strong>/mo
         (<strong id="arb-insN">-</strong> engineers).
-        That&rsquo;s <strong class="text-emerald-600" id="arb-insSave">-</strong>/mo saved
-       , you pocket <strong class="text-brand" id="arb-insMargin">-</strong>/mo margin.
+        That&rsquo;s <strong class="text-emerald-600" id="arb-insSave">-</strong>/mo saved;
+        you pocket <strong class="text-brand" id="arb-insMargin">-</strong>/mo margin.
       </div>
     </div>
 
@@ -541,7 +541,7 @@
   </div><!-- /panel-arbitrage -->
 
   <!-- ─────────────────────────────────────────── -->
-  <!--  DASHBOARD 3, LIVE JOBS                    -->
+  <!--  DASHBOARD 3: LIVE JOBS                    -->
   <!-- ─────────────────────────────────────────── -->
   <div id="panel-jobs" class="hidden pt-4">
 

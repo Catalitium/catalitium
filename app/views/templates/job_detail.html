@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ job.title }} at {{ job.company }} | {{ job.location }} | Catalitium{% endblock %}
+{% block title %}{{ job.title }} at {{ job.company }}, {{ job.location }} | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="{{ job.title }} at {{ job.company }} in {{ job.location }}. {% if job.estimated_salary_range_compact %}Estimated salary {{ job.estimated_salary_range_compact }} {{ job.median_salary_currency }}. {% endif %}{{ (job.description|striptags)|truncate(155, True, '…') }}">

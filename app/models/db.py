@@ -665,7 +665,7 @@ def init_db():
             cur.execute(
                 "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT"
             )
-            # Salary flywheel — crowd-sourced contributions
+            # Salary flywheel: crowd-sourced contributions
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS salary_submissions (
                     id          SERIAL PRIMARY KEY,
@@ -1531,7 +1531,7 @@ def parse_salary_query(q: str):
         cleaned = (s[:single_match.start()] + s[single_match.end():]).strip()
         return cleaned, vals[0] if vals else None, None
 
-    # No inline salary filter found — return cleaned query and no bounds
+    # No inline salary filter found; return cleaned query and no bounds
     return s, None, None
 
 

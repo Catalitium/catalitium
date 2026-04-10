@@ -384,7 +384,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
   contactModal.attach('data-open-contact', 'data-close-contact');
 
   // ------------------------------------------------------------------
-  // Job posting dialog - removed (now a full-page form at /post-job)
+  // Job posting dialog: removed (now a full-page form at /post-job)
   // ------------------------------------------------------------------
 
   // ------------------------------------------------------------------
@@ -877,7 +877,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
 })();
 
 // ====================================================================
-// VIBE FEATURES - shared util
+// VIBE FEATURES: shared util
 // ====================================================================
 function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -1331,7 +1331,7 @@ function escHtml(s){
   var lastVisit = localStorage.getItem(LS_KEY);
   /* Update timestamp for next visit */
   localStorage.setItem(LS_KEY, new Date().toISOString());
-  if(!lastVisit) return; /* First visit - nothing to compare */
+  if(!lastVisit) return; /* First visit: nothing to compare */
 
   var lastTs = new Date(lastVisit).getTime();
   if(!lastTs) return;

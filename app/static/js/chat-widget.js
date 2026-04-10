@@ -151,7 +151,7 @@
     {
       topic: 'visa',
       keywords: ['visa','permit','swiss','b permit','work permit','relocate','expat','canton','immigration','residency'],
-      text: 'Switzerland requires a minimum salary for work permits, varies by canton and role. Want me to check if an offer qualifies?',
+      text: 'Switzerland requires a minimum salary for work permits; it varies by canton and role. Want me to check if an offer qualifies?',
       cta: { label: 'Check Permit Eligibility →', href: '/salary/work-permit' }
     },
     {
@@ -169,7 +169,7 @@
 
   var FALLBACK = {
     topic: 'fallback',
-    text: 'Good question, that one\'s better answered by a human. Our career coaches specialise in DACH tech compensation.',
+    text: 'Good question; that one\'s better answered by a human. Our career coaches specialise in DACH tech compensation.',
     cta: { label: 'Talk to a Coach →', href: '/negotiate' }
   };
 

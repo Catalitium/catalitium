@@ -1,5 +1,5 @@
 {
-  "name": "Catalitium, Tech Jobs",
+  "name": "Catalitium: Tech Jobs",
   "short_name": "Catalitium",
   "description": "Curated tech job listings with salary insights",
   "start_url": "/",
@@ -10,16 +10,16 @@
   "lang": "en",
   "icons": [
     {
-      "src": "/static/img/icon-192.png",
+      "src": "/static/img/logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/static/img/icon-512.png",
+      "src": "/static/img/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [

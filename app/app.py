@@ -101,7 +101,7 @@ except ImportError:
     _sb_create_client = None
 
 _supabase_client = None        # used for sign_in / sign_up
-_supabase_admin_client = None  # used only for admin.* calls — never stores a user session
+_supabase_admin_client = None  # used only for admin.* calls; never stores a user session
 
 _PROFILE_FIELDS = ("full_name", "headline", "location", "bio", "website")
 _ACCOUNT_TYPES = {"candidate", "recruiter", "company"}
@@ -129,7 +129,7 @@ def _get_supabase():
     """Return the shared Supabase client for **end-user auth** (sign_in, sign_up).
 
     Kept separate from `_get_supabase_admin` so user-facing auth never shares the
-    same client instance as `auth.admin.*` calls — mixing them can overwrite
+    same client instance as `auth.admin.*` calls; mixing them can overwrite
     internal session state and break admin metadata updates."""
     global _supabase_client
     if _supabase_client is None and _sb_create_client:
@@ -149,7 +149,7 @@ def _get_supabase():
 def _get_supabase_admin():
     """Return a dedicated client for **auth.admin** only (profiles, metadata).
 
-    Never use this for sign_in/sign_up — use `_get_supabase()` so admin JWT
+    Never use this for sign_in/sign_up; use `_get_supabase()` so admin JWT
     handling does not clobber the user session used for login flows."""
     global _supabase_admin_client
     if _supabase_admin_client is None and _sb_create_client:
@@ -336,7 +336,7 @@ _CATEGORY_CONTEXTS = {
     },
     "us": {
         "headline": "Tech Jobs in the United States",
-        "intro": "The US remains the highest-paying market for tech globally. Major hubs include the San Francisco Bay Area, New York, Seattle, Austin, and Boston, alongside fully remote-first companies headquartered across the country.",
+        "intro": "The US remains the highest-paying market for tech globally. Major hubs include the San Francisco Bay Area, New York, Seattle, Austin, and Boston, plus fully remote-first companies headquartered across the country.",
         "salary_note": "Typical range: $110k–$185k USD",
     },
     "uk": {
@@ -351,7 +351,7 @@ _CATEGORY_CONTEXTS = {
     },
     "data": {
         "headline": "Data Science & Analytics Jobs",
-        "intro": "Data science roles bridge statistics, programming, and business intelligence. Demand is strong across all sectors, from fintech to e-commerce, with Python, SQL, and cloud data platforms (Snowflake, BigQuery, dbt) as the core stack.",
+        "intro": "Data science roles bridge statistics, programming, and business intelligence. Demand is strong across all sectors (from fintech to e-commerce), with Python, SQL, and cloud data platforms (Snowflake, BigQuery, dbt) as the core stack.",
         "salary_note": "Typical range: $110k–$170k USD &middot; &euro;75k–&euro;120k EUR",
     },
 }
@@ -763,8 +763,8 @@ def _guest_daily_consume(count: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Salary flywheel — static percentile seed data
-# Key: (title_keyword, city_lowercase) — fuzzy matched at lookup time
+# Salary flywheel: static percentile seed data
+# Key: (title_keyword, city_lowercase); fuzzy matched at lookup time
 # ---------------------------------------------------------------------------
 _SALARY_SEED: dict[tuple[str, str], dict] = {
     ("engineer", "zurich"):  {"p25": 110_000, "p50": 130_000, "p75": 155_000, "currency": "CHF"},
@@ -1032,7 +1032,7 @@ def create_app() -> Flask:
             _apply_cache_control_headers(response)
         except Exception:
             pass
-        # ETag for small HTML only — hashing large pages on every request burns CPU (slow TTFB).
+        # ETag for small HTML only; hashing large pages on every request burns CPU (slow TTFB).
         try:
             if (
                 response.status_code == 200
@@ -1086,7 +1086,7 @@ def create_app() -> Flask:
             raise SystemExit(1)
 
     if not os.getenv("STRIPE_SECRET_KEY"):
-        logger.warning("STRIPE_SECRET_KEY not set — payment routes will fail")
+        logger.warning("STRIPE_SECRET_KEY not set; payment routes will fail")
 
     @app.errorhandler(404)
     def handle_not_found(_error):
@@ -1447,7 +1447,7 @@ def create_app() -> Flask:
 
     @app.get("/remote")
     def remote_jobs():
-        """301 redirect to remote jobs filter — preserves SEO equity for /remote URL."""
+        """301 redirect to remote jobs filter; preserves SEO equity for /remote URL."""
         return redirect(url_for("jobs", country="Remote"), 301)
 
     @app.get("/recruiter-salary-board")
@@ -2112,7 +2112,7 @@ def create_app() -> Flask:
             flash("Job posting is available for recruiter and company accounts only.", "error")
             return redirect(url_for("hire_onboarding"))
 
-        # --- Plan check (Elite/Premium gate — integration pending) ---
+        # --- Plan check (Elite/Premium gate; integration pending) ---
         # Uncomment when payment tiers are live:
         # user_plan = (user.get("plan") or "free").lower()
         # if user_plan not in ("elite", "premium"):
@@ -2587,7 +2587,7 @@ def create_app() -> Flask:
         _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
         base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
 
-        # If already subscribed to this product line — upgrade/downgrade in place
+        # If already subscribed to this product line, upgrade/downgrade in place
         subs = get_user_subscriptions(user_id)
         existing = subs.get(product["product_line"])
         if existing and existing.get("status") == "active" and existing.get("stripe_subscription_id"):
@@ -3276,7 +3276,7 @@ def create_app() -> Flask:
         )
 
     # ------------------------------------------------------------------
-    # Salary Tools — live DACH calculator + role/region report
+    # Salary Tools: live DACH calculator + role/region report
     # ------------------------------------------------------------------
     @app.get("/salary-tool")
     @app.get("/salary-report")
@@ -3321,7 +3321,7 @@ def create_app() -> Flask:
         return render_template("salary_top_companies.html")
 
     # ------------------------------------------------------------------
-    # Salary flywheel — crowd-sourced contribution form
+    # Salary flywheel: crowd-sourced contribution form
     # ------------------------------------------------------------------
     @app.get("/salary/contribute")
     def salary_contribute():
@@ -3356,7 +3356,7 @@ def create_app() -> Flask:
             try:
                 email = validate_email(email_raw, check_deliverability=False).normalized
             except Exception:
-                pass  # optional field — ignore invalid
+                pass  # optional field; ignore invalid
 
         status = insert_salary_submission(
             job_title=job_title,
@@ -3420,7 +3420,7 @@ def create_app() -> Flask:
         return render_template("companies.html")
 
     # ------------------------------------------------------------------
-    # Resources hub — 301 redirect to Market Research
+    # Resources hub: 301 redirect to Market Research
     # ------------------------------------------------------------------
     @app.get("/resources")
     def resources():
@@ -3432,7 +3432,7 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------
     @app.get("/market-research")
     def market_research_index():
-        """Market Research hub — lists all published reports."""
+        """Market Research hub: lists all published reports."""
         user = session.get("user")
         mi_tier = _get_mi_tier(user)
         return render_template(
@@ -3469,7 +3469,7 @@ def create_app() -> Flask:
         )
 
     # ------------------------------------------------------------------
-    # API Key lifecycle — register, confirm, usage, revoke
+    # API Key lifecycle: register, confirm, usage, revoke
     # ------------------------------------------------------------------
 
     @app.post("/api/keys/register")
@@ -3571,7 +3571,7 @@ def create_app() -> Flask:
         return jsonify({"message": "Key revoked."}), 200
 
     # ------------------------------------------------------------------
-    # v1/ — Authenticated data API (protected by _require_api_key)
+    # v1/: Authenticated data API (protected by _require_api_key)
     # ------------------------------------------------------------------
 
     @app.get("/v1/jobs")
