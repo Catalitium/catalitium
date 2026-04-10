@@ -9,4 +9,6 @@ flask-compress==1.23
 brotli==1.2.0
 supabase==2.10.0
 stripe==11.4.1
+pypdf
+python-docx
 pytest>=8

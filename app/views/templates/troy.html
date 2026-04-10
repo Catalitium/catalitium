@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}TROY CV Dashboard | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Upload a CV and preview the TROY analysis dashboard demo.">
+<link rel="canonical" href="{{ url_for('troy_dashboard', _external=True) }}">
+<meta property="og:title" content="TROY CV Dashboard | Catalitium">
+<meta property="og:description" content="UI-first CV analysis demo with terminal feed, analytics cards, and chat.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('troy_dashboard', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Okara-style TROY: full-bleed dashboard, hide site chrome when active */
+  body.troy-dashboard-active header { display: none !important; }
+  body.troy-dashboard-active footer { display: none !important; }
+  body.troy-dashboard-active #troy-shell,
+  body.troy-dashboard-active #troy-workspace {
+    min-height: 100dvh;
+  }
+  body.troy-dashboard-active #content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0.5rem !important;
+    max-width: none !important;
+  }
+  .troy-card {
+    background: #1A1A1A;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+  }
+  .troy-tab-active {
+    background: rgba(255, 122, 0, 0.15);
+    color: #FF7A00;
+    border-color: rgba(255, 122, 0, 0.35);
+  }
+  .troy-gauge-track {
+    background: conic-gradient(from -90deg, #22c55e 0deg, #22c55e var(--troy-deg, 0deg), #2a2a2a var(--troy-deg, 0deg));
+  }
+  .troy-action-details[open] .troy-chevron { transform: rotate(180deg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="troy-shell" class="min-h-[calc(100dvh-3.5rem)] bg-[#0D0D0D] text-[#E5E5E5]">
+  <!-- Landing: upload -->
+  <div id="troy-upload-hero" class="mx-auto max-w-xl px-4 py-10 sm:py-14">
+    <div class="troy-card p-6 sm:p-8">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF7A00]">TROY · Demo</p>
+      <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">CV intelligence workspace</h1>
+      <p class="mt-2 text-sm text-[#9CA3AF] leading-relaxed">
+        Upload a PDF or DOCX. You’ll get an Okara-style dashboard: terminal feed, analytics, actions, and chat.
+      </p>
+      <form id="troy-upload-form" class="mt-6 space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input id="troy-file-input" name="cv_file" type="file" accept=".pdf,.docx"
+               class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-[#E5E5E5] file:mr-3 file:rounded-lg file:border-0 file:bg-[#FF7A00]/20 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[#FF7A00]">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <button type="submit" id="troy-upload-btn"
+                  class="rounded-xl bg-[#FF7A00] px-5 py-3 text-sm font-semibold text-[#0D0D0D] hover:bg-[#ff8f26] transition-colors">
+            Analyze CV
+          </button>
+        </div>
+        <textarea id="troy-text-fallback" name="cv_text" rows="3"
+                  placeholder="Optional: paste CV text if needed."
+                  class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280]"></textarea>
+      </form>
+      <p id="troy-upload-error" class="mt-3 hidden rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
+    </div>
+  </div>
+
+  <!-- Full-page dashboard (shown after analyze) -->
+  <div id="troy-workspace" class="hidden flex min-h-[calc(100dvh-3.5rem)] flex-col">
+    <!-- Terminal strip -->
+    <div class="troy-card mx-3 mt-2 shrink-0 p-4 sm:mx-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-3 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold text-white">TROY Terminal</span>
+          <span class="rounded-full border border-white/10 bg-[#111] px-2 py-0.5 text-[11px] text-[#9CA3AF]">Live parse</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+          </span>
+          <span id="troy-terminal-status" class="text-xs font-medium text-emerald-400">Ready</span>
+        </div>
+      </div>
+      <div id="troy-terminal" class="max-h-36 overflow-y-auto font-mono text-[13px] leading-6 text-[#FF7A00]"></div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid flex-1 grid-cols-1 gap-3 p-3 sm:p-4 xl:grid-cols-12 xl:gap-3 min-h-0">
+      <!-- Left: Candidate + documents -->
+      <div class="flex flex-col gap-3 xl:col-span-3 min-h-0">
+        <div class="troy-card p-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Candidate</p>
+          <div class="mt-3 flex gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF7A00]/20 text-sm font-bold text-[#FF7A00]">C</div>
+            <div class="min-w-0">
+              <p class="text-base font-semibold text-white">Catalitium</p>
+              <p id="troy-persona-line" class="text-xs text-[#9CA3AF]">—</p>
+            </div>
+          </div>
+          <h2 id="troy-headline" class="mt-4 text-sm font-semibold leading-snug text-white">—</h2>
+          <p id="troy-fit-summary" class="mt-2 text-xs leading-relaxed text-[#9CA3AF] text-justify"></p>
+          <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div class="rounded-lg bg-[#111] py-2">
+              <p class="text-[10px] uppercase text-[#6B7280]">Level</p>
+              <p id="troy-level" class="text-xs font-semibold text-white">—</p>
+            </div>
+            <div class="rounded-lg bg-[#111] py-2">
+              <p class="text-[10px] uppercase text-[#6B7280]">Confidence</p>
+              <p id="troy-confidence" class="text-xs font-semibold text-[#FF7A00]">—</p>
+            </div>
+            <div class="rounded-lg bg-[#111] py-2">
+              <p class="text-[10px] uppercase text-[#6B7280]">Words</p>
+              <p id="troy-word-count" class="text-xs font-semibold text-white">—</p>
+            </div>
+          </div>
+        </div>
+        <div class="troy-card flex flex-1 flex-col p-4 min-h-[200px]">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Documents</p>
+          <ul id="troy-documents" class="mt-3 flex flex-col gap-2 overflow-y-auto text-sm"></ul>
+        </div>
+      </div>
+
+      <!-- Analytics -->
+      <div class="troy-card flex flex-col p-4 xl:col-span-4 min-h-0">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Analytics</p>
+        <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
+          <button type="button" data-troy-tab="overview" class="troy-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium transition-colors">Overview</button>
+          <button type="button" data-troy-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Skills</button>
+          <button type="button" data-troy-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Signals</button>
+        </div>
+
+        <div id="troy-panel-overview" class="troy-tab-panel mt-4 flex flex-1 flex-col gap-4 overflow-y-auto min-h-0">
+          <div class="rounded-xl border border-white/5 bg-[#111] p-3">
+            <p class="text-xs font-medium text-[#9CA3AF]">ATS estimate</p>
+            <div class="mt-2 flex items-end justify-between gap-2">
+              <span id="troy-ats-score" class="text-3xl font-bold tabular-nums text-[#FF7A00]">0</span>
+              <p id="troy-ats-coverage" class="text-right text-xs text-[#9CA3AF]"></p>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+              <div class="rounded-lg bg-emerald-500/10 px-2 py-1.5 text-emerald-300">
+                <span class="text-[#6B7280]">Matched</span>
+                <p id="troy-keywords-hit" class="mt-0.5 font-medium text-emerald-200"></p>
+              </div>
+              <div class="rounded-lg bg-[#FF7A00]/10 px-2 py-1.5 text-[#FFAB66]">
+                <span class="text-[#6B7280]">Missing</span>
+                <p id="troy-keywords-missing" class="mt-0.5 font-medium text-[#FDBA74]"></p>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-center gap-6 py-2">
+            <div class="text-center">
+              <div id="troy-gauge-structure" class="troy-gauge-track relative mx-auto h-[72px] w-[72px] rounded-full" style="--troy-deg: 0deg;">
+                <div class="absolute inset-[7px] flex items-center justify-center rounded-full bg-[#1A1A1A] text-sm font-bold text-white">
+                  <span id="troy-gauge-structure-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-[#6B7280]">Structure</p>
+            </div>
+            <div class="text-center">
+              <div id="troy-gauge-keywords" class="troy-gauge-track relative mx-auto h-[72px] w-[72px] rounded-full" style="--troy-deg: 0deg;">
+                <div class="absolute inset-[7px] flex items-center justify-center rounded-full bg-[#1A1A1A] text-sm font-bold text-white">
+                  <span id="troy-gauge-keywords-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-[#6B7280]">Keywords</p>
+            </div>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Core CV signals</p>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+                <p class="text-[10px] uppercase text-[#6B7280]">Structure</p>
+                <p id="troy-vital-structure" class="mt-1 text-lg font-semibold text-[#FF7A00]">—</p>
+              </div>
+              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+                <p class="text-[10px] uppercase text-[#6B7280]">Keywords</p>
+                <p id="troy-vital-keywords" class="mt-1 text-lg font-semibold text-emerald-400">—</p>
+              </div>
+              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+                <p class="text-[10px] uppercase text-[#6B7280]">Impact</p>
+                <p id="troy-vital-impact" class="mt-1 text-lg font-semibold text-[#FF7A00]">—</p>
+              </div>
+              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+                <p class="text-[10px] uppercase text-[#6B7280]">Narrative</p>
+                <p id="troy-vital-narrative" class="mt-1 text-lg font-semibold text-emerald-400">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="troy-panel-skills" class="troy-tab-panel mt-4 hidden flex flex-1 flex-col overflow-y-auto min-h-0">
+          <div id="troy-skills" class="space-y-3"></div>
+        </div>
+
+        <div id="troy-panel-risks" class="troy-tab-panel mt-4 hidden flex-1 flex-col gap-3 overflow-y-auto min-h-0">
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Timeline</p>
+            <ul id="troy-timeline" class="mt-2 space-y-2 text-xs text-[#D1D5DB]"></ul>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Risk flags</p>
+            <ul id="troy-risk-flags" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FCA5A5]"></ul>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Quick wins</p>
+            <ul id="troy-quick-wins" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FDE68A]"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions feed -->
+      <div class="troy-card flex flex-col p-4 xl:col-span-2 min-h-0">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Actions</p>
+        <div id="troy-actions" class="mt-3 flex flex-col gap-2 overflow-y-auto flex-1 min-h-0"></div>
+      </div>
+
+      <!-- Chat -->
+      <aside class="troy-card flex flex-col p-4 xl:col-span-3 min-h-[420px] xl:min-h-0 xl:max-h-[calc(100dvh-14rem)]">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to TROY</p>
+        <div id="troy-chat-log" class="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto rounded-xl bg-[#111] p-3 min-h-[200px]"></div>
+        <form id="troy-chat-form" class="mt-3">
+          <div class="flex items-center gap-2 rounded-full border border-white/10 bg-[#111] px-3 py-1.5">
+            <span class="text-[#6B7280]" aria-hidden="true">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+            </span>
+            <input type="text" id="troy-chat-input" placeholder="Ask me anything…"
+                   class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-0">
+            <button type="submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-[#0D0D0D] hover:bg-[#ff8f26]" aria-label="Send">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script defer src="{{ url_for('static', filename='js/troy.js', v=asset_version) }}"></script>
+{% endblock %}

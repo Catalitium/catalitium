@@ -82,6 +82,15 @@ from .api_utils import (
     parse_int_arg,
     parse_str_arg,
 )
+from .services.cv_extract import (
+    CVExtractionError,
+    extract_cv_from_upload,
+    normalize_cv_text,
+)
+from .services.troy_mock_analysis import (
+    build_mock_analysis,
+    generate_chat_reply,
+)
 
 try:
     from flask_limiter import Limiter
@@ -3522,6 +3531,79 @@ def create_app() -> Flask:
         return render_template(
             "developers.html",
         )
+
+    @app.get("/troy")
+    def troy_dashboard():
+        """Render TROY CV dashboard demo page."""
+        return render_template("troy.html", wide_layout=True)
+
+    @app.post("/troy/analyze")
+    @_limit("20 per minute")
+    def troy_analyze():
+        """Accept CV upload/text fallback and return deterministic mock analysis."""
+        if not _csrf_valid():
+            return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
+
+        upload = request.files.get("cv_file")
+        text_fallback = (request.form.get("cv_text") or "").strip()
+        if not upload and not text_fallback:
+            return _api_error("missing_cv_input", "Upload a PDF/DOCX file or paste CV text.", 400)
+
+        source: Dict[str, Any] = {}
+        try:
+            if upload and (upload.filename or "").strip():
+                extracted = extract_cv_from_upload(upload)
+                cv_text = extracted.text
+                source = {
+                    "inputType": "file",
+                    "filename": extracted.filename,
+                    "extension": extracted.extension,
+                    "byteSize": extracted.byte_size,
+                    "truncated": extracted.truncated,
+                }
+            else:
+                cv_text = normalize_cv_text(text_fallback)
+                source = {
+                    "inputType": "text",
+                    "filename": "pasted_cv_text",
+                    "extension": "txt",
+                    "byteSize": len(cv_text.encode("utf-8")),
+                    "truncated": len(cv_text) >= 50_000,
+                }
+        except CVExtractionError as exc:
+            return _api_error(exc.code, exc.message, exc.status)
+
+        analysis = build_mock_analysis(cv_text, file_label=source.get("filename", "uploaded_cv"))
+        session["troy_chat_context"] = {
+            "summary": (analysis.get("chatContext") or {}).get("summary", ""),
+            "missingKeywords": (analysis.get("atsScore") or {}).get("missingKeywords", []),
+            "persona": (analysis.get("overview") or {}).get("persona", ""),
+        }
+        session.modified = True
+        return _api_success({"analysis": analysis, "source": source})
+
+    @app.post("/troy/chat")
+    @_limit("40 per minute")
+    def troy_chat():
+        """Return a rule-based mock chat reply for TROY dashboard."""
+        if not _csrf_valid():
+            return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
+
+        payload = request.get_json(silent=True) or {}
+        message = str(payload.get("message") or "").strip()
+        if not message:
+            return _api_error("invalid_message", "Please write a message for TROY chat.", 400)
+
+        session_ctx = session.get("troy_chat_context") or {}
+        chat_context = payload.get("chat_context") or {}
+        merged_context = {
+            "summary": str(chat_context.get("summary") or session_ctx.get("summary") or ""),
+            "missingKeywords": payload.get("missing_keywords")
+            or session_ctx.get("missingKeywords")
+            or [],
+        }
+        reply = generate_chat_reply(message, merged_context)
+        return _api_success({"reply": reply})
 
     @app.get("/market-research/<slug>")
     def market_research_report(slug):
