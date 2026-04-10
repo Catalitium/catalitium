@@ -14,15 +14,6 @@
 <meta name="twitter:description" content="Legal information and privacy policy for Catalitium.">
 {% endblock %}
 
-{% block head_extra %}
-<script
-  id="usercentrics-ppg"
-  privacy-policy-id="ec114445-97fa-4ee5-90e6-e97b028cf9a1"
-  data-language="en"
-  src="https://policygenerator.usercentrics.eu/api/privacy-policy"
-></script>
-{% endblock %}
-
 {% block content %}
 <section class="pt-8 sm:pt-12 pb-6">
   <div class="mx-auto max-w-3xl px-3 sm:px-0 text-center">
@@ -33,8 +24,15 @@
       How we collect, use, and protect your data, plus the terms that govern using Catalitium.
     </p>
     <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
-      Last updated: 1 November 2025 • Catalitium S.L., Madrid (Spain)
+      Version 2.0 &bull; Last updated: April 2026 &bull; Catalitium, Madrid (Spain)
     </p>
+    <details class="mt-3 text-xs text-slate-500 dark:text-slate-400 text-left max-w-sm mx-auto">
+      <summary class="cursor-pointer hover:text-brand transition-colors select-none">Changelog</summary>
+      <ul class="mt-2 space-y-1 list-disc pl-5">
+        <li><strong class="dark:text-white">v2.0 (April 2026):</strong> Swiss nDSG section added; GDPR Art. 13 retention table; Controller Identity block; CMP references corrected; contact email unified; DSR link added.</li>
+        <li><strong class="dark:text-white">v1.0 (November 2025):</strong> Initial policy publication.</li>
+      </ul>
+    </details>
   </div>
 </section>
 
@@ -47,6 +45,7 @@
     <a href="#cookies" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Cookies</a>
     <a href="#terms" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Terms &amp; Conditions</a>
     <a href="#dpa" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Data Processing Addendum (DPA)</a>
+    <a href="#swiss" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Swiss nDSG</a>
     <a href="#disclaimer" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Disclaimer</a>
     <a href="#contact" class="ml-3 text-brand hover:text-brand/80 dark:hover:text-brand/80 transition-colors">Notices &amp; Contact</a>
   </nav>
@@ -56,10 +55,34 @@
     <header class="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
       <h2 class="text-xl font-semibold text-slate-800 dark:text-white">Privacy Policy (EU/UK/CH-first)</h2>
       <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-        How Catalitium S.L. processes personal data for candidates, employers, and visitors.
+        How Catalitium processes personal data for candidates, employers, and visitors.
       </p>
     </header>
     <div class="px-5 py-6 space-y-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+      <section id="controller-identity">
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Controller Identity</h3>
+        <dl class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+          <div><dt class="font-semibold dark:text-white inline">Trading name:</dt>
+            <dd class="inline ml-1">Catalitium</dd></div>
+          <div><dt class="font-semibold dark:text-white inline">Operating location:</dt>
+            <dd class="inline ml-1">Madrid, Spain</dd></div>
+          <div><dt class="font-semibold dark:text-white inline">Legal status:</dt>
+            <dd class="inline ml-1">Pre-incorporation sole trader. Company registration in progress.</dd></div>
+          <div><dt class="font-semibold dark:text-white inline">Lead supervisory authority:</dt>
+            <dd class="inline ml-1">
+              <a href="https://www.aepd.es" class="text-brand hover:text-brand/80 transition-colors"
+                 target="_blank" rel="noopener noreferrer">AEPD — Agencia Española de Protección de Datos</a>
+            </dd></div>
+          <div><dt class="font-semibold dark:text-white inline">Primary contact:</dt>
+            <dd class="inline ml-1">
+              <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a>
+            </dd></div>
+        </dl>
+        <p class="mt-3 text-xs text-slate-400 dark:text-slate-500">
+          This page will be updated with full company registration details (CIF/NIF) upon incorporation. Until then, Catalitium operates as a sole trader under Spanish law.
+        </p>
+      </section>
+
       <section>
         <h3 class="text-base font-semibold text-slate-800 dark:text-white">Controller &amp; Contacts</h3>
         <p class="mt-2">
@@ -105,51 +128,18 @@
       <section id="cookies">
         <h3 class="text-base font-semibold text-slate-800 dark:text-white">Cookies &amp; Consent</h3>
         <p class="mt-2">
-          We use cookies and similar technologies to operate the site, measure performance, and serve relevant advertising. Your consent is requested before any non-essential cookies are set, via the Cookiebot consent banner. You can change or withdraw your consent at any time using the <button type="button" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}" class="text-brand hover:text-brand/80 transition-colors">Cookie Settings</button> link in our footer.
+          We use cookies and similar technologies to operate the site, measure performance, and serve relevant advertising. Your consent is requested via our cookie consent banner before any non-essential cookies are set. You can change or withdraw your consent at any time using the <button type="button" onclick="if(typeof Cookiebot!==’undefined’){Cookiebot.renew();}" class="text-brand hover:text-brand/80 transition-colors">Cookie Settings</button> link in our footer. Withdrawing consent does not affect the lawfulness of processing based on consent before its withdrawal.
         </p>
-        <div class="mt-3 overflow-x-auto">
-          <table class="min-w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg">
-            <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300">
-              <tr>
-                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Cookie / Provider</th>
-                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Purpose</th>
-                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Category</th>
-                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Basis</th>
-              </tr>
-            </thead>
-            <tbody class="text-slate-600 dark:text-slate-400 leading-relaxed">
-              <tr class="border-b border-slate-100 dark:border-slate-800/50">
-                <td class="px-3 py-2">Session cookie (Catalitium)</td>
-                <td class="px-3 py-2">Keeps you signed in; required for core functionality.</td>
-                <td class="px-3 py-2">Strictly Necessary</td>
-                <td class="px-3 py-2">Legitimate interest / no consent needed</td>
-              </tr>
-              <tr class="border-b border-slate-100 dark:border-slate-800/50">
-                <td class="px-3 py-2">CookieConsent (Cookiebot)</td>
-                <td class="px-3 py-2">Stores your cookie preferences.</td>
-                <td class="px-3 py-2">Strictly Necessary</td>
-                <td class="px-3 py-2">Legitimate interest / no consent needed</td>
-              </tr>
-              <tr class="border-b border-slate-100 dark:border-slate-800/50">
-                <td class="px-3 py-2">_ga, _ga_* (Google Analytics)</td>
-                <td class="px-3 py-2">Measures site usage (page views, sessions) in aggregate. IP anonymised. No cross-site tracking.</td>
-                <td class="px-3 py-2">Statistics</td>
-                <td class="px-3 py-2">Consent</td>
-              </tr>
-              <tr>
-                <td class="px-3 py-2">DART / IDE / DoubleClick (Google AdSense)</td>
-                <td class="px-3 py-2">Serves relevant advertising. Google may use this cookie to show ads based on your visit to this and other sites.</td>
-                <td class="px-3 py-2">Marketing</td>
-                <td class="px-3 py-2">Consent</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="mt-3">
+          <script id="CookieDeclaration"
+            src="https://consent.cookiebot.com/70cfdf85-67b0-4b4a-ae22-c93865b19f79/cd.js"
+            type="text/javascript" async></script>
         </div>
         <p class="mt-3">
           <strong class="dark:text-white">Google AdSense disclosure:</strong> Google, as a third-party vendor, uses cookies to serve ads on our site. Google’s use of advertising cookies enables it to serve ads to users based on their visit to our site and other sites on the Internet. You may opt out of personalised advertising by visiting <a href="https://www.google.com/settings/ads" class="text-brand hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>, or by opting out of a third-party vendor’s use of cookies via the <a href="https://www.networkadvertising.org/choices/" class="text-brand hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">NAI opt-out page</a>.
         </p>
         <p class="mt-2">
-          Consent is managed by <a href="https://www.cookiebot.com/en/privacy-policy/" class="text-brand hover:text-brand/80 transition-colors" target="_blank" rel="noopener noreferrer">Cookiebot</a>. For full details of cookies set, visit your browser’s developer tools or the Cookiebot declaration widget.
+          The full declaration of cookies set on this site is shown in the table above, updated automatically by our consent platform. You can also inspect cookies at any time via your browser’s developer tools.
         </p>
       </section>
 
@@ -173,11 +163,65 @@
       </section>
 
       <section>
-        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Retention</h3>
-        <p class="mt-2">
-          We keep data only as long as needed for the purposes above and legal obligations. Typical examples: account data for the life
-          of the account; application data for up to 24 months after last activity; invoicing records per tax law. We then delete or anonymize.
-        </p>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Retention (Art. 13 GDPR)</h3>
+        <p class="mt-2">We keep personal data only as long as necessary for the stated purpose or as required by law, then delete or anonymise it.</p>
+        <div class="mt-3 overflow-x-auto">
+          <table class="min-w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg">
+            <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300">
+              <tr>
+                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Purpose</th>
+                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Legal Basis</th>
+                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Data Type</th>
+                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Retention Period</th>
+                <th class="text-left px-3 py-2 font-semibold border-b border-slate-200 dark:border-slate-700">Deletion Method</th>
+              </tr>
+            </thead>
+            <tbody class="text-slate-600 dark:text-slate-400 leading-relaxed divide-y divide-slate-100 dark:divide-slate-800/50">
+              <tr>
+                <td class="px-3 py-2">Account &amp; profile</td>
+                <td class="px-3 py-2">Contract (Art. 6(1)(b))</td>
+                <td class="px-3 py-2">Name, email, CV, preferences</td>
+                <td class="px-3 py-2">Life of account + 30 days after deletion request</td>
+                <td class="px-3 py-2">Secure deletion / anonymisation</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-2">Job applications</td>
+                <td class="px-3 py-2">Contract / Legitimate interest (Art. 6(1)(b)/(f))</td>
+                <td class="px-3 py-2">CV, cover letter, messages</td>
+                <td class="px-3 py-2">24 months after last activity</td>
+                <td class="px-3 py-2">Secure deletion</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-2">Invoicing &amp; billing</td>
+                <td class="px-3 py-2">Legal obligation (Art. 6(1)(c))</td>
+                <td class="px-3 py-2">Name, address, payment reference</td>
+                <td class="px-3 py-2">7 years (Spanish tax law)</td>
+                <td class="px-3 py-2">Archival then secure deletion</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-2">Analytics (aggregated)</td>
+                <td class="px-3 py-2">Legitimate interest (Art. 6(1)(f))</td>
+                <td class="px-3 py-2">Anonymised usage metrics</td>
+                <td class="px-3 py-2">26 months (Google Analytics default)</td>
+                <td class="px-3 py-2">Auto-expiry via Google Analytics</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-2">Subscription / marketing emails</td>
+                <td class="px-3 py-2">Consent (Art. 6(1)(a))</td>
+                <td class="px-3 py-2">Email address, opt-in record</td>
+                <td class="px-3 py-2">Until unsubscribe + 3 years (proof of consent)</td>
+                <td class="px-3 py-2">Suppression list retained; data deleted</td>
+              </tr>
+              <tr>
+                <td class="px-3 py-2">Server &amp; security logs</td>
+                <td class="px-3 py-2">Legitimate interest (Art. 6(1)(f))</td>
+                <td class="px-3 py-2">IP address, user-agent, timestamps</td>
+                <td class="px-3 py-2">90 days</td>
+                <td class="px-3 py-2">Automatic log rotation / deletion</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section>
@@ -190,13 +234,13 @@
       <section>
         <h3 class="text-base font-semibold text-slate-800 dark:text-white">Your rights (EEA/UK/CH)</h3>
         <p class="mt-2">
-          You may request access, rectification, erasure, restriction, portability, and object to processing; you can withdraw consent at any time. 
+          You may request access, rectification, erasure, restriction, portability, and object to processing; you can withdraw consent at any time. Withdrawal does not affect the lawfulness of processing based on consent before its withdrawal.
           Email <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a>. You can also lodge a complaint with the AEPD (Spain) or your local authority.
         </p>
+        <p class="mt-2">
+          To submit a formal Data Subject Request (DSR), use our <a href="#contact" class="text-brand hover:text-brand/80 transition-colors">contact form</a> and include your request type (access, erasure, portability, etc.). We respond within 30 days.
+        </p>
       </section>
-
-      <!-- Usercentrics Privacy Policy Generator, renders full policy from policy ID ec114445 -->
-      <div class="uc-privacy-policy"></div>
     </div>
   </article>
 
@@ -323,7 +367,7 @@
       <section>
         <h3 class="text-base font-semibold text-slate-800 dark:text-white">1. Scope &amp; Parties</h3>
         <p class="mt-2">
-          This DPA forms part of the agreement between the Controller and Catalitium S.L. (“Processor”). It governs Processor’s handling of 
+          This DPA forms part of the agreement between the Controller and Catalitium (“Processor”). It governs Processor’s handling of
           personal data on behalf of Controller in connection with employer tools (e.g., applicant intake, job distribution, messaging).
         </p>
       </section>
@@ -403,6 +447,58 @@
     </div>
   </article>
 
+  <!-- SWISS nDSG SUPPLEMENT -->
+  <article id="swiss" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+    <header class="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
+      <h2 class="text-xl font-semibold text-slate-800 dark:text-white">Swiss nDSG Supplement</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        Additional disclosures required under Switzerland's Federal Act on Data Protection (nDSG / revDSG), effective 1 September 2023.
+      </p>
+    </header>
+    <div class="px-5 py-6 space-y-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+
+      <section>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Supervisory Authority</h3>
+        <p class="mt-2">
+          For data subjects in Switzerland, the competent supervisory authority is the
+          <a href="https://www.edoeb.admin.ch" class="text-brand hover:text-brand/80 transition-colors"
+             target="_blank" rel="noopener noreferrer">Federal Data Protection and Information Commissioner (FDPIC / PFPDT)</a>,
+          Feldeggweg 1, CH-3003 Berne, Switzerland. You have the right to lodge a complaint with the FDPIC if you believe your data rights have been violated.
+        </p>
+      </section>
+
+      <section>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Data Subject Rights under nDSG (Art. 25&ndash;27)</h3>
+        <ul class="mt-2 list-disc pl-5 space-y-1">
+          <li><strong class="dark:text-white">Right of access (Art. 25):</strong> You may request confirmation of whether we process your personal data and obtain a copy.</li>
+          <li><strong class="dark:text-white">Right to rectification:</strong> You may request correction of inaccurate data.</li>
+          <li><strong class="dark:text-white">Right to erasure / restriction (Art. 25):</strong> You may request deletion or restriction of processing where the legal basis no longer applies.</li>
+          <li><strong class="dark:text-white">Right to data portability:</strong> Where processing is automated and based on consent or contract, you may request your data in a structured, machine-readable format.</li>
+          <li><strong class="dark:text-white">Right to object (Art. 27):</strong> You may object to processing based on legitimate interests; we will cease unless we can demonstrate compelling legitimate grounds.</li>
+        </ul>
+        <p class="mt-2">
+          To exercise these rights, email <a href="mailto:catalitium@outlook.com"
+            class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a>. We respond within 30 days.
+        </p>
+      </section>
+
+      <section>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Representative in Switzerland</h3>
+        <p class="mt-2">
+          Catalitium operates from Spain (EEA). We do not currently maintain a designated local representative in Switzerland under Art. 14 nDSG. Where Swiss-resident users' data is processed on a large scale, we will appoint a representative and update this section accordingly. For all enquiries in the meantime, contact us directly at <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a>.
+        </p>
+      </section>
+
+      <section>
+        <h3 class="text-base font-semibold text-slate-800 dark:text-white">Data Protection Impact Assessments (DPIA)</h3>
+        <p class="mt-2">
+          Where processing is likely to result in a high risk to the rights and freedoms of natural persons (including Swiss residents), Catalitium carries out a Data Protection Impact Assessment prior to initiating such processing. DPIAs are reviewed annually or when processing activities materially change.
+        </p>
+      </section>
+
+    </div>
+  </article>
+
   <!-- DISCLAIMER -->
   <article id="disclaimer" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
     <header class="border-b border-slate-200 dark:border-slate-800 px-5 py-4">
@@ -437,7 +533,7 @@
   <section id="contact" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm px-5 py-6 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
     <h2 class="text-base font-semibold text-slate-800 dark:text-white">Notices &amp; Contact</h2>
     <p class="mt-2">
-      <strong class="dark:text-white">Legal &amp; Terms:</strong> <a href="mailto:catalitium@gmail.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@gmail.com</a><br>
+      <strong class="dark:text-white">Legal &amp; Terms:</strong> <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a><br>
       <strong class="dark:text-white">Privacy &amp; Data Rights:</strong> <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a><br>
       <strong class="dark:text-white">DSA/Notice &amp; Takedown:</strong> <a href="mailto:catalitium@outlook.com" class="text-brand hover:text-brand/80 transition-colors">catalitium@outlook.com</a>
     </p>
@@ -446,7 +542,7 @@
       (iii) your contact details, and (iv) a good-faith statement of lack of authorization. We act expeditiously and may suspend repeat infringers.
     </p>
     <p class="mt-2 text-slate-500 dark:text-slate-400">
-      © 2018–2025 Catalitium S.L. “Catalitium” and related marks are trademarks of Catalitium S.L.
+      © 2018–2025 Catalitium. “Catalitium” and related marks are trademarks of Catalitium.
     </p>
   </section>
 
