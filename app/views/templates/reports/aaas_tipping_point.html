@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+
+{% block title %}The AaaS Tipping Point: Why AI Agents Are Killing SaaS Economics in 2026 | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Agentic AI, enterprise spend shifts, and 30&ndash;50% workflow-level TCO vs. seat-based SaaS. Sourced from Gartner, IDC, McKinsey, and vendor benchmarks. Catalitium, 37 sources.">
+<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:title" content="{{ report.title }}">
+<meta property="og:description" content="{{ report.description }}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta name="keywords" content="{{ report.keywords | join(', ') }}">
+<meta name="author" content="Catalitium">
+<meta property="article:published_time" content="{{ report.published }}">
+{% endblock %}
+
+{% block content %}
+
+<div id="ad-top" class="my-4 text-center min-h-[90px] flex items-center justify-center"></div>
+
+<nav class="mb-6 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2" aria-label="Breadcrumb">
+  <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Home</a>
+  <span>&rsaquo;</span>
+  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <span>&rsaquo;</span>
+  <span class="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
+</nav>
+
+<div class="max-w-6xl mx-auto lg:grid lg:grid-cols-[1fr_260px] lg:gap-10 lg:items-start">
+
+  <article>
+
+    <header class="mb-8">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
+        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+      </p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
+        The AaaS Tipping Point: Why AI Agents Are Killing SaaS Economics in 2026
+      </h1>
+      <p class="text-lg text-slate-600 dark:text-slate-400 mb-5 leading-relaxed">Enterprise spend, analyst forecasts, workflow-level TCO, and pricing models as agents displace seat-based SaaS. 37 sources.</p>
+
+      <div class="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-slate-400 border-y border-slate-100 dark:border-slate-800 py-4">
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" stroke-linecap="round"/></svg>
+          Published {{ report.published_display }}
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+          {{ report.read_time }}
+        </span>
+        <span class="text-slate-400 dark:text-slate-500">&bull;</span>
+        <span class="text-slate-600 dark:text-slate-400 font-medium">Global scope &bull; 37 sources</span>
+        {% if not (report.get('gated') and mi_tier == 'free') %}
+        <button onclick="window.print()"
+                class="no-print ml-auto inline-flex items-center gap-2 rounded-xl border border-brand text-brand px-4 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+          Download PDF
+        </button>
+        {% endif %}
+      </div>
+    </header>
+
+    <details class="lg:hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 mb-8">
+      <summary class="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer select-none">Table of Contents</summary>
+      <ol class="mt-3 space-y-1 text-sm text-brand list-decimal list-inside">
+        <li><a href="#how-to-use" class="hover:underline">How to Use This Report</a></li>
+        <li><a href="#executive-summary" class="hover:underline">Executive Summary</a></li>
+        <li><a href="#visuals" class="hover:underline">Visual Market Signals</a></li>
+        <li><a href="#key-findings" class="hover:underline">Key Findings</a></li>
+        <li><a href="#data-breakdown" class="hover:underline">Data Breakdown</a></li>
+        <li><a href="#deep-analysis" class="hover:underline">Deep Analysis</a></li>
+        <li><a href="#implications-companies" class="hover:underline">Implications for Tech Companies</a></li>
+        <li><a href="#implications-professionals" class="hover:underline">Implications for Tech Professionals</a></li>
+        <li><a href="#catalitium-angle" class="hover:underline">Catalitium Angle</a></li>
+        <li><a href="#methodology" class="hover:underline">Sources &amp; Methodology</a></li>
+      </ol>
+    </details>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">40%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Enterprise apps with task-specific AI agents by 2026 (Gartner)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">30%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Share of enterprise application revenue from agentic AI by 2035 (Gartner)</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">30&ndash;50%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Observed TCO-style savings in targeted agent workflows</div>
+      </div>
+      <div class="rounded-2xl bg-brand/5 border border-brand/20 p-4 text-center">
+        <div class="text-3xl font-extrabold text-brand">42%</div>
+        <div class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-snug">Fortune 500 with AI agents in production by early 2026</div>
+      </div>
+    </div>
+
+    <section id="how-to-use" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">How to Use This Report</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">SaaS &amp; Platform Vendors</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">Read <a href="#deep-analysis" class="text-brand hover:underline">Deep Analysis</a> on TCO and pricing models, plus <a href="#implications-companies" class="text-brand hover:underline">implications for tech companies</a> on shifting from seats to execution-based revenue.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Enterprise Buyers &amp; CIOs</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">Start with <a href="#data-breakdown" class="text-brand hover:underline">Data Breakdown</a> on budget signals and <a href="#data-barriers" class="text-brand hover:underline">barriers to adoption</a>; use TCO tables to frame pilot ROI.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Investors</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#hypothesis-2028" class="text-brand hover:underline">Section 1 of Deep Analysis</a> triangulates the &ldquo;30%+ by 2028&rdquo; hypothesis against SaaS, AI-centric spend, and GenAI budgets.</p>
+        </div>
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+          <p class="text-xs font-semibold uppercase tracking-wide text-brand mb-2">Tech Professionals</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed"><a href="#implications-professionals" class="text-brand hover:underline">Implications for Tech Professionals</a> maps skills, domains, and career positioning to agentic adoption curves.</p>
+        </div>
+      </div>
+    </section>
+
+{% if report.get('gated') and mi_tier == 'free' %}
+    {% include 'reports/_paywall.html' %}
+{% else %}
+
+    <section id="executive-summary" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Executive Summary</h2>
+      <p class="text-slate-700 dark:text-slate-300 leading-relaxed mb-4">This report examines whether autonomous AI Agents as a Service (AaaS) are on track to capture at least 30 percent of enterprise software spend by 2028 by displacing traditional SaaS through lower total cost of ownership (TCO) and higher automation. Evidence from Gartner, IDC, McKinsey, Automation Anywhere, and emerging agent platforms shows rapid enterprise experimentation with agentic AI, material cost reductions of 30&ndash;50 percent in targeted workflows, and early shifts in budget allocation from licenses to automation outcomes. If these trends continue, AaaS is likely to become the default interface for many operational workflows by the late 2020s, forcing SaaS vendors to pivot from selling seats to orchestrating and operating agents on behalf of customers.</p>
+    </section>
+
+    <section id="visuals" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">Visual Market Signals</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Chart-style snapshots built from the report's cited benchmarks</p>
+
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-5 mb-4">
+        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Projected shift to agentic enterprise applications</p>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2024 apps with task-specific AI agents</span><span class="font-semibold">~5%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-slate-400 dark:bg-slate-500" style="width:5%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2025</span><span class="font-semibold">15%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand/70" style="width:15%"></div></div>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>2026 (projected)</span><span class="font-bold text-brand">40%</span></div>
+            <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand" style="width:40%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Workflow cost model: human-led vs agent-led support</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Human-assisted support</span><span>$6&ndash;$40 / interaction</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-rose-400" style="width:95%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Agent self-service</span><span class="font-semibold">$0.50&ndash;$0.70</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-emerald-500" style="width:12%"></div></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-3">Indicative range from cited customer-support benchmarks.</p>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-3">Enterprise maturity curve (agentic AI)</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Some implementation</span><span>79%</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-brand" style="width:79%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Experimenting</span><span>39%</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-amber-500" style="width:39%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1"><span>Scaling in production</span><span>23%</span></div>
+              <div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-3 rounded-full bg-emerald-500" style="width:23%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="ad-mid-article" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+    <section id="key-findings" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Key Findings</h2>
+      <ol class="space-y-4 list-decimal list-inside text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+        <li><strong class="text-slate-900 dark:text-white">Agentic AI is moving into enterprise core spend,</strong> but major analysts do not yet break out &ldquo;AaaS&rdquo; as its own line item. IDC forecasts worldwide enterprise application revenue reaching 483.1 billion USD in 2027, with more than two-thirds from public cloud, largely SaaS. Gartner reports SaaS as the largest cloud segment (247.2 billion USD in 2024, ~20% YoY). AI-centric systems spending grows much faster (~27% annually 2022&ndash;2026 in cited guides), with agentic AI expected to drive a growing share of enterprise application revenue over time.</li>
+        <li><strong class="text-slate-900 dark:text-white">GenAI and agentic systems are already pulling single- to low-double-digit shares</strong> of SaaS-adjacent budgets. Commentary and surveys cite enterprise generative AI spend rising from 1.7 billion USD in 2023 to 37 billion USD in 2025, on the order of ~6% of the global SaaS market over that window, with most use cases bought rather than built in-house. IDC estimated enterprise investment in generative AI solutions above 19.5 billion USD in 2023.</li>
+        <li><strong class="text-slate-900 dark:text-white">Gartner expects deep penetration of agentic AI in applications:</strong> ~40% of enterprise applications integrated with task-specific AI agents by 2026 (up from a low single-digit base), and agentic AI accounting for roughly 30% of enterprise application software revenue by 2035. By 2028, about a third of user experiences may shift from native apps to agentic front ends.</li>
+        <li><strong class="text-slate-900 dark:text-white">Workflow-level TCO evidence supports large savings in narrow domains.</strong> Automation Anywhere reports AI service agents resolving more than 80% of employee IT support requests across 70+ deployments, with up to ~50% ITSM licensing cost reduction and large-enterprise savings on the order of 5M+ USD annually. PagerGPT-style benchmarks cite cost per interaction falling from roughly 6&ndash;40 USD (human-assisted) to about 0.50&ndash;0.70 USD via self-service agents. Case compilations cite 30&ndash;45% productivity gains and 50&ndash;80% error reductions in some knowledge-work processes.</li>
+        <li><strong class="text-slate-900 dark:text-white">Adoption is broad; maturity varies.</strong> McKinsey&rsquo;s 2024 State of AI finds 65% of organizations regularly using generative AI and 72% with AI deployed in at least one function. Arcade&rsquo;s 2025 agentic analysis reports 79% with some AI agent implementation, 23% scaling, 39% experimenting. Benchmarks cited in industry commentary place a substantial minority of Fortune 500 companies running agents in production by early 2026.</li>
+        <li><strong class="text-slate-900 dark:text-white">Pricing is shifting from seats toward usage and outcomes.</strong> LangGraph&rsquo;s model combines per-node execution fees with standby time; agent platforms often emphasize execution volume and concurrency over seat count. Commentary highlights outcome-based and per-action models as emerging standards versus classic per-user SaaS.</li>
+        <li><strong class="text-slate-900 dark:text-white">Barriers are organizational and risk-driven:</strong> skills gaps, integration difficulty, security, data protection, and governance for autonomous execution—not lack of interest.</li>
+      </ol>
+    </section>
+
+    <section id="data-breakdown" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Data Breakdown</h2>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">1. Size of SaaS and AI-Centric Markets (Global)</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Metric</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2023</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2024</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2025</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2026 (proj.) / latest public anchor</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Global SaaS market revenue (USD)</td><td class="p-3">No public series</td><td class="p-3">~399.1B</td><td class="p-3">No public series</td><td class="p-3">No public series</td><td class="p-3">Grand View Research base; ~12% CAGR cited forward</td></tr>
+            <tr><td class="p-3">Public cloud SaaS spending (USD)</td><td class="p-3">206B</td><td class="p-3">247.2B</td><td class="p-3">No public series</td><td class="p-3">No public series</td><td class="p-3">Gartner cloud forecast</td></tr>
+            <tr><td class="p-3">Enterprise application revenue (USD)</td><td class="p-3" colspan="3">No public series</td><td class="p-3">483.1B (2027)</td><td class="p-3">IDC; &gt;2/3 cloud (mostly SaaS)</td></tr>
+            <tr><td class="p-3">AI-centric systems spend (USD)</td><td class="p-3">166B</td><td class="p-3">No public series</td><td class="p-3">No public series</td><td class="p-3">423B (2027)</td><td class="p-3">IDC AI Systems Spending Guide</td></tr>
+            <tr><td class="p-3">Enterprise GenAI solutions (USD)</td><td class="p-3">19.5B</td><td class="p-3">No public series</td><td class="p-3">No public series</td><td class="p-3">No public series</td><td class="p-3">IDC 2023 estimate</td></tr>
+            <tr><td class="p-3">Enterprise GenAI spend (VC commentary)</td><td class="p-3">1.7B</td><td class="p-3">No public series</td><td class="p-3">37B</td><td class="p-3">80B+ (2026 proj.)</td><td class="p-3">Menlo / enterprise commentary</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2"><strong>Interpretation:</strong> SaaS is a ~400B USD-scale market in 2024 while AI-centric and GenAI lines grow faster and already absorb several percent of SaaS-adjacent incremental budget. As agentic AI dominates deployment patterns inside those lines, spend behaves increasingly like AaaS even when still booked as SaaS or AI platforms.</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-8"><strong>Data completeness note:</strong> &ldquo;No public series&rdquo; means no reliable year-specific value is published in open analyst sources for that exact metric/year combination. Where only a 2027 anchor is available, the value is shown in the final column with year labeling preserved.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">2. Penetration of AI Agents in Enterprise Applications</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Indicator</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2024</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2025</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">2026 (proj.) / latest public anchor</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Source</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">Enterprise apps with AI agents</td><td class="p-3">~5%</td><td class="p-3">15%</td><td class="p-3">40%</td><td class="p-3">Gartner</td></tr>
+            <tr><td class="p-3">Fortune 500: agents in production</td><td class="p-3">18%</td><td class="p-3">No public series</td><td class="p-3">42%</td><td class="p-3">Deloitte / AgenticCareers benchmarks</td></tr>
+            <tr><td class="p-3">Scaling agentic AI systems</td><td class="p-3">No public series</td><td class="p-3">23%</td><td class="p-3">No public series</td><td class="p-3">McKinsey via Arcade</td></tr>
+            <tr><td class="p-3">Experimenting with agents</td><td class="p-3">No public series</td><td class="p-3">39%</td><td class="p-3">No public series</td><td class="p-3">McKinsey via Arcade</td></tr>
+            <tr><td class="p-3">Some AI agent implementation</td><td class="p-3">No public series</td><td class="p-3">79%</td><td class="p-3">No public series</td><td class="p-3">Arcade 2025</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-2"><strong>Interpretation:</strong> By 2026, a large minority of enterprise applications and large enterprises are expected to run agents in production, often still bundled as features of incumbent SaaS rather than standalone AaaS SKUs.</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-8"><strong>Comparability note:</strong> survey-based adoption metrics (implementation, experimentation, scaling) are not direct year-over-year equivalents across all sources; blanks are preserved as &ldquo;No public series&rdquo; to avoid fabricated interpolation.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">3. Budget Shift (2025&ndash;2026)</h3>
+      <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300 mb-4">
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>GenAI vs SaaS market:</strong> VC analysis tags ~37B USD enterprise GenAI spend in 2025 as on the order of ~6% of global SaaS over a three-year window—mid-single-digit reallocation of incremental software budget toward GenAI (often agentic or semi-agentic).</li>
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>AI share of core IT:</strong> IDC predicts G2000 firms allocating over 40% of core IT spend to AI initiatives by 2025, with intelligent automation and AI systems growing far faster than aggregate IT spend.</li>
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>Agentic share of AI budget:</strong> Arcade (2025) finds 43% of companies allocating more than half of AI budgets to agentic systems.</li>
+      </ul>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8"><strong>Interpretation:</strong> Public data still lacks a clean &ldquo;% of SaaS formally shifted to AaaS&rdquo; series; the best read is low-double-digit directional reallocation into agentic deployments alongside faster-growing AI-centric totals.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">4. TCO: AI Agents vs Traditional SaaS-Mediated Workflows</h3>
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 mb-4">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 dark:bg-slate-900/50 text-left">
+            <tr>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Domain</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Traditional</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Agentic / AaaS</th>
+              <th class="p-3 font-semibold text-slate-700 dark:text-slate-300">Observed impact</th>
+            </tr>
+          </thead>
+          <tbody class="text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-800">
+            <tr><td class="p-3">ITSM</td><td class="p-3">Seat-based ITSM + manual triage</td><td class="p-3">AI service agents + ITSM</td><td class="p-3">80%+ requests resolved autonomously; up to ~50% license reduction; 5M+ USD/year savings (large enterprise)</td></tr>
+            <tr><td class="p-3">Customer support</td><td class="p-3">Humans + ticketing SaaS; ~6&ndash;40 USD / interaction</td><td class="p-3">AI self-service agents</td><td class="p-3">~0.50&ndash;0.70 USD / interaction; ~50&ndash;58% savings cited; faster response</td></tr>
+            <tr><td class="p-3">Knowledge work</td><td class="p-3">Manual flows in general SaaS</td><td class="p-3">Multi-agent orchestration + human oversight</td><td class="p-3">30&ndash;45% productivity; 50&ndash;80% error reduction (case compilations)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8"><strong>Interpretation:</strong> 30&ndash;50% operating-cost reductions are well documented in selected workflows; portfolio-wide 40&ndash;50% TCO across entire software estates is not yet proven in public cross-enterprise data.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">5. Industry &amp; Company Size (Where Data Exists)</h3>
+      <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4">McKinsey highlights banking, high tech, and life sciences among industries with large genAI impact potential; 72% of organizations had AI in at least one function by 2024. Agentic use cases cluster in customer service, supply chain, and IT operations; manufacturing shows strong reported growth in agent adoption for predictive maintenance and quality. Large enterprises (Fortune 500 / G2000) lead production deployments; smaller firms adopt genAI broadly but full agentic stacks are less uniformly reported.</p>
+
+      <h3 id="data-barriers" class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">6. Barriers to AaaS Adoption</h3>
+      <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300 mb-4">
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>Skills &amp; integration:</strong> ~1/3 of enterprise AI leaders cite skills as top obstacle; ~28% struggle integrating genAI into existing stacks (Forrester 2024 highlights).</li>
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>Security &amp; data:</strong> Enterprise surveys report very high shares (often ~90%+) concerned about security and data protection for AI applications.</li>
+        <li class="flex gap-2"><span class="text-brand flex-shrink-0">&bull;</span><strong>Governance:</strong> Analysts stress new models for data access, BYOAI, and autonomous external action.</li>
+      </ul>
+    </section>
+
+    <section id="deep-analysis" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Deep Analysis</h2>
+
+      <h3 id="hypothesis-2028" class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">1. Are AaaS Subscriptions on Track to Capture 30%+ of Enterprise Software Spend by 2028?</h3>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">No major analyst publishes AaaS as a standalone wallet share, so the 30%-by-2028 claim must be triangulated from enterprise application revenue, SaaS totals, AI-centric spend, and GenAI budget growth. Global SaaS revenue near ~399B USD in 2024, with forward growth, implies a 2028 SaaS market in the hundreds of billions to low trillions depending on definition. IDC&rsquo;s enterprise application forecast and AI-centric spending guide show AI lines compounding much faster than aggregate IT. GenAI spend rises from tens of billions toward larger totals in commentary.</p>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">The open question is how much of AI-centric and GenAI spend is true AaaS (autonomous workflow execution, usage/outcome pricing) versus API access, infra, or embedded assistants. Gartner&rsquo;s long-range agentic revenue share anchor (~30% of enterprise application revenue by 2035) supports a path where double-digit shares by 2028 are plausible under aggressive interpolation, but published 2026 data cannot validate an exact 30% AaaS wallet share or cleanly separate &ldquo;AaaS&rdquo; from &ldquo;agentic SaaS&rdquo; in financial reporting.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">2. TCO Dynamics &mdash; When Do AI Agents Beat SaaS Economics by 40&ndash;50%?</h3>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">Case evidence is strongest in IT support and high-volume customer service: labor plus seat-based tools replaced by agent execution and orchestration, with documented per-interaction and licensing savings. Gains come from substituting seats and manual handling with compute plus orchestration, and from fewer errors and rework.</p>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">Uniform 40&ndash;50% TCO improvement across whole software estates is not established: integration, compliance, observability, and legacy coupling create front-loaded cost, and incumbents may embed agents and capture part of the value through repriced bundles.</p>
+
+      <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3">3. Pricing Models Signal the Shift from SaaS to AaaS</h3>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-4">Seat-based SaaS monetizes access; AaaS monetizes work completed&mdash;per node, per action, per outcome. LangGraph-style per-node pricing, tiered agent platforms scaling on concurrency and execution volume, and ITSM vendors positioning agents as license-cost reducers all point the same direction: buyers optimize unit economics of work, not seat counts.</p>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">That compresses the traditional SaaS margin on under-utilized seats and pushes value capture toward whoever operates the execution layer—often while systems of record remain as SaaS underneath.</p>
+    </section>
+
+    <section id="implications-companies" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Implications for Tech Companies</h2>
+      <ol class="space-y-3 list-decimal list-inside text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+        <li><strong class="text-slate-900 dark:text-white">Re-segment around end-to-end workflows</strong> where agents can own measurable outcomes (IT tickets, bookings, cases), not feature checklists that still require manual execution.</li>
+        <li><strong class="text-slate-900 dark:text-white">Move pricing toward execution and outcomes</strong>—hybrid platform fees plus indexed revenue on tasks completed, tickets resolved, or time saved.</li>
+        <li><strong class="text-slate-900 dark:text-white">Invest in orchestration, monitoring, and governance</strong> as first-class product surface area alongside traditional access control and audit.</li>
+        <li><strong class="text-slate-900 dark:text-white">Prioritize categories with proven ROI</strong>—service desks, CX, and high-volume back-office where benchmarks already exist.</li>
+        <li><strong class="text-slate-900 dark:text-white">Plan for hybrid estates:</strong> SaaS as system of record, agents as the experience and orchestration layer—who owns orchestration owns a growing share of marginal value.</li>
+      </ol>
+    </section>
+
+    <section id="implications-professionals" class="mb-10 scroll-mt-20">
+      <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Implications for Tech Professionals</h2>
+      <ol class="space-y-3 list-decimal list-inside text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+        <li><strong class="text-slate-900 dark:text-white">Build agent orchestration and workflow design skills,</strong> not only single-turn prompting.</li>
+        <li><strong class="text-slate-900 dark:text-white">Bias toward domains with production agent adoption</strong>—customer service, IT operations, manufacturing automation—where demand signals are strongest.</li>
+        <li><strong class="text-slate-900 dark:text-white">Master ROI language:</strong> cost per ticket, FTE equivalents, error rates, and cycle time.</li>
+        <li><strong class="text-slate-900 dark:text-white">Pair technical depth with security, compliance, and data governance,</strong> especially in regulated sectors.</li>
+        <li><strong class="text-slate-900 dark:text-white">Align your narrative with outcome metrics</strong> as employers shift from shipping features to delivering measurable operational results.</li>
+      </ol>
+    </section>
+
+    <section id="catalitium-angle" class="mb-10 scroll-mt-20 rounded-xl border border-brand/20 bg-brand/5 p-6">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Catalitium Angle</h2>
+      <p class="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">Catalitium sits at this intersection: deploying AI Agents as a Service for clients, measuring workflow-level outcomes, and tracking hiring demand for agentic skills through its job platform. Live agent deployments in back-office, support, and revenue workflows complement external case studies on where TCO compression is real versus where integration still dominates. Job-market data grounds how roles for orchestration, workflow design, and governance evolve as enterprises move from experimentation to production agents.</p>
+    </section>
+
+    <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10 no-print">
+      <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Get the next Catalitium report in your inbox</h3>
+      <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">One weekly email with market signal and the best tech jobs. No spam. Unsubscribe anytime.</p>
+      <form action="{{ url_for('subscribe') }}" method="post" class="flex flex-col sm:flex-row gap-3">
+        <input type="hidden" name="search_title" value="market-research-r09">
+        <label for="r09-subscribe-email" class="sr-only">Your email</label>
+        <input id="r09-subscribe-email" name="email" type="email" required autocomplete="email"
+               placeholder="you@company.com"
+               class="flex-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        <button type="submit"
+                class="inline-flex justify-center rounded-xl bg-brand text-white px-5 py-3 font-semibold hover:opacity-90 whitespace-nowrap">Subscribe</button>
+      </form>
+      <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Privacy-friendly. One email per week.</p>
+    </div>
+
+    <section id="methodology" class="mb-10 scroll-mt-20 border-t border-slate-100 dark:border-slate-800 pt-8">
+      <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Sources &amp; Methodology</h2>
+      <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">Research window: 2023&ndash;2026. Figures are attributed to public analyst reports, vendor disclosures, and cited surveys. Forward-looking statements retain the uncertainty of the underlying forecasts. Catalitium synthesis sections are editorial judgment, not independent primary data collection.</p>
+      <ol class="space-y-2 text-xs text-slate-600 dark:text-slate-400 list-decimal list-inside">
+        <li><a href="https://www.cxoinsightme.com/future/tech/gartner-40-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026/" class="text-brand hover:underline" rel="noopener noreferrer">Gartner / CXO Insight &mdash; task-specific AI agents in enterprise apps</a></li>
+        <li><a href="https://www.deloitte.com/us/en/insights/industry/technology/technology-media-and-telecom-predictions/2026/saas-ai-agents.html" class="text-brand hover:underline" rel="noopener noreferrer">Deloitte Insights &mdash; SaaS meets AI agents</a></li>
+        <li><a href="https://www.linkedin.com/posts/kumar-gautam-3652b982_nvidia-founder-jensen-huang-just-said-it-activity-7441056335867138048-tmwK" class="text-brand hover:underline" rel="noopener noreferrer">NVIDIA / commentary (LinkedIn)</a></li>
+        <li><a href="https://iconnect007.com/article/137265/idc-forecasts-robust-market-for-enterprise-applications-as-organizations-pursue-digital-era-strategies/137268/ein" class="text-brand hover:underline" rel="noopener noreferrer">IDC enterprise applications forecast (summary)</a></li>
+        <li><a href="https://www.grandviewresearch.com/horizon/outlook/software-as-a-service-saas-market-size/global" class="text-brand hover:underline" rel="noopener noreferrer">Grand View Research &mdash; global SaaS market size</a></li>
+        <li><a href="https://martech-pulse.com/news/ai-agents-force-rethink-of-saas-pricing-and-improve-customer-experiences/" class="text-brand hover:underline" rel="noopener noreferrer">Automation Anywhere &mdash; AI agents and SaaS pricing (syndicated)</a></li>
+        <li><a href="https://arcade.dev/blog/agentic-framework-adoption-trends" class="text-brand hover:underline" rel="noopener noreferrer">Arcade &mdash; Agentic AI adoption trends 2025</a></li>
+        <li><a href="https://www.intel.com/content/dam/www/central-libraries/us/en/documents/2024-03/idc-ai-strategy-in-2024-growth-roi-security-brief.pdf" class="text-brand hover:underline" rel="noopener noreferrer">IDC &mdash; Enterprise AI strategy brief (PDF)</a></li>
+        <li><a href="https://theedgemalaysia.com/node/712402" class="text-brand hover:underline" rel="noopener noreferrer">Gartner public cloud spending (reported)</a></li>
+        <li><a href="https://www.idc.com/wp-content/uploads/2025/03/IDC_FutureScape_Worldwide_Artificial_Intelligence_and_Automation_2024_Predictions_-_2023_Oct.pdf" class="text-brand hover:underline" rel="noopener noreferrer">IDC FutureScape AI &amp; Automation 2024 (PDF)</a></li>
+        <li><a href="https://www.linkedin.com/posts/noamsp_enterprise-genai-spend-jumped-from-17b-activity-7406332271798145024-PvWo" class="text-brand hover:underline" rel="noopener noreferrer">Enterprise GenAI spend commentary (LinkedIn)</a></li>
+        <li><a href="https://www.processexcellencenetwork.com/ai/news/gartner-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026" class="text-brand hover:underline" rel="noopener noreferrer">Process Excellence Network &mdash; Gartner agents</a></li>
+        <li><a href="https://www.swfte.com/es/blog/enterprise-ai-predictions-2026" class="text-brand hover:underline" rel="noopener noreferrer">Enterprise AI predictions 2026 (blog)</a></li>
+        <li><a href="https://www.linkedin.com/posts/nparasuraman_ai-agenticai-gartner-activity-7379163636486840320-ksTE" class="text-brand hover:underline" rel="noopener noreferrer">Gartner agentic AI commentary (LinkedIn)</a></li>
+        <li><a href="https://www.linkedin.com/pulse/agentic-ai-workflows-industry-worth-usd-227-billion-2034-markets-us-tyl1c" class="text-brand hover:underline" rel="noopener noreferrer">Agentic AI workflows market commentary</a></li>
+        <li><a href="https://pagergpt.ai/customer-support/reduce-customer-support-costs" class="text-brand hover:underline" rel="noopener noreferrer">PagerGPT &mdash; AI agents and support costs</a></li>
+        <li><a href="https://troylendman.com/2025-agentic-ai-workflows-transformative-case-studies-revealed/" class="text-brand hover:underline" rel="noopener noreferrer">Agentic workflow case studies (commentary)</a></li>
+        <li><a href="https://tucson.com/online_features/press_releases/article_9108d267-31f5-5bd4-a0b4-64a44bd2efec.html" class="text-brand hover:underline" rel="noopener noreferrer">Automation Anywhere press (syndicated)</a></li>
+        <li><a href="https://www.linkedin.com/posts/biztory_a-2024-mckinsey-study-showed-that-65-percent-activity-7295382654311383041--Is0" class="text-brand hover:underline" rel="noopener noreferrer">McKinsey gen AI adoption (LinkedIn summary)</a></li>
+        <li><a href="https://www.mckinsey.de/capabilities/quantumblack/our-insights/the-state-of-ai-2024" class="text-brand hover:underline" rel="noopener noreferrer">McKinsey &mdash; The state of AI in early 2024</a></li>
+        <li><a href="https://agenticcareers.co/blog/enterprise-ai-agent-adoption-2026-benchmarks" class="text-brand hover:underline" rel="noopener noreferrer">AgenticCareers &mdash; Enterprise AI agent adoption 2026</a></li>
+        <li><a href="https://nevermined.ai/blog/pricing-models-monetizing-ai-agents" class="text-brand hover:underline" rel="noopener noreferrer">Nevermined &mdash; pricing models for AI agents</a></li>
+        <li><a href="https://www.youtube.com/watch?v=45B6aI8jI7s" class="text-brand hover:underline" rel="noopener noreferrer">Relevance AI vs CrewAI (video)</a></li>
+        <li><a href="https://www.zenml.io/blog/langgraph-pricing" class="text-brand hover:underline" rel="noopener noreferrer">ZenML &mdash; LangGraph pricing guide</a></li>
+        <li><a href="https://softwarestrategiesblog.com/2024/02/11/top-10-insights-from-forresters-state-of-generative-ai-in-2024-report/" class="text-brand hover:underline" rel="noopener noreferrer">Forrester State of Generative AI 2024 (highlights)</a></li>
+        <li><a href="https://writer.com/guides/generative-ai-survey/" class="text-brand hover:underline" rel="noopener noreferrer">Writer.com enterprise genAI survey</a></li>
+        <li><a href="https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/the-economic-potential-of-generative-ai-the-next-productivity-frontier" class="text-brand hover:underline" rel="noopener noreferrer">McKinsey &mdash; Economic potential of generative AI</a></li>
+        <li><a href="https://www.linkedin.com/posts/sarbjeetjohal_gtc26-gtc2026-activity-7440809697827434496-Wj6-" class="text-brand hover:underline" rel="noopener noreferrer">NVIDIA / SaaS vs agents commentary (LinkedIn)</a></li>
+        <li><a href="https://www.deloittedigital.com/nl/en/hub/future-of-service.html" class="text-brand hover:underline" rel="noopener noreferrer">Deloitte Digital &mdash; future of service</a></li>
+        <li><a href="https://www.aicerts.ai/news/agentic-ai-operational-cost-reduction-strategies-for-2026/" class="text-brand hover:underline" rel="noopener noreferrer">AI CERTs &mdash; agentic cost reduction</a></li>
+        <li><a href="https://cosupport.ai/articles/customer-service-ai-first-future-2026" class="text-brand hover:underline" rel="noopener noreferrer">CoSupport AI &mdash; AI-first customer service</a></li>
+        <li><a href="https://www.researchandmarkets.com/reports/6127860/enterprises-ai-agents-market-global-forecast" class="text-brand hover:underline" rel="noopener noreferrer">Research and Markets &mdash; enterprise AI agents forecast</a></li>
+        <li><a href="https://www.linkedin.com/posts/niranjan-singh%E2%9C%A8-6323b51a_agenticai-nvidia-itservices-activity-7441004020607102976-u3N0" class="text-brand hover:underline" rel="noopener noreferrer">NVIDIA GTC commentary (LinkedIn)</a></li>
+        <li><a href="https://hashtagweb.dev/the-future-of-web-development-in-2024-key-trends-to-watch-and-how-hashtagweb-can-help/" class="text-brand hover:underline" rel="noopener noreferrer">HashtagWeb &mdash; AI support cost commentary</a></li>
+        <li><a href="https://www.nexgencloud.com/blog/case-studies/how-ai-and-rag-chatbots-cut-customer-service-costs-by-millions" class="text-brand hover:underline" rel="noopener noreferrer">NexGenCloud &mdash; RAG chatbots case study</a></li>
+        <li><a href="https://intellectia.ai/blog/will-ai-disrupt-saas-business-model-2026" class="text-brand hover:underline" rel="noopener noreferrer">Intellectia.ai &mdash; AI vs SaaS business model</a></li>
+        <li><a href="{{ url_for('landing', _external=True) }}" class="text-brand hover:underline">Catalitium &mdash; company overview</a></li>
+      </ol>
+    </section>
+
+    <p class="text-xs text-slate-400 dark:text-slate-500 leading-relaxed mb-8">This report is produced for educational and strategic planning purposes. It does not constitute legal, financial, or employment advice. Statistics are attributed to third-party sources. Data reflects information available as of March 2026.</p>
+
+    <div id="ad-bottom" class="my-8 text-center min-h-[90px] flex items-center justify-center no-print"></div>
+
+{% endif %}
+  </article>
+
+  <aside class="hidden lg:block sticky top-20 self-start no-print">
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Contents</p>
+      <ol class="space-y-1.5 text-sm text-slate-600 dark:text-slate-400 list-decimal list-inside">
+        <li><a href="#how-to-use" class="hover:text-brand transition-colors">How to Use</a></li>
+        <li><a href="#executive-summary" class="hover:text-brand transition-colors">Executive Summary</a></li>
+        <li><a href="#visuals" class="hover:text-brand transition-colors">Visual Signals</a></li>
+        <li><a href="#key-findings" class="hover:text-brand transition-colors">Key Findings</a></li>
+        <li><a href="#data-breakdown" class="hover:text-brand transition-colors">Data Breakdown</a></li>
+        <li><a href="#deep-analysis" class="hover:text-brand transition-colors">Deep Analysis</a></li>
+        <li><a href="#implications-companies" class="hover:text-brand transition-colors">For Companies</a></li>
+        <li><a href="#implications-professionals" class="hover:text-brand transition-colors">For Professionals</a></li>
+        <li><a href="#catalitium-angle" class="hover:text-brand transition-colors">Catalitium Angle</a></li>
+        <li><a href="#methodology" class="hover:text-brand transition-colors">Sources</a></li>
+      </ol>
+      {% if not (report.get('gated') and mi_tier == 'free') %}
+      <div class="mt-5 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <button onclick="window.print()"
+                class="w-full inline-flex justify-center items-center gap-2 rounded-xl border border-brand text-brand px-3 py-2 text-sm font-semibold hover:bg-brand hover:text-white motion-safe:transition-all">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+          Download PDF
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </aside>
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ report.title }}",
+  "description": "{{ report.description }}",
+  "author": {"@type": "Organization", "name": "Catalitium", "url": "{{ url_for('jobs', _external=True) }}"},
+  "publisher": {"@type": "Organization", "name": "Catalitium", "url": "{{ url_for('jobs', _external=True) }}"},
+  "datePublished": "{{ report.published }}",
+  "dateModified": "{{ report.published }}",
+  "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ url_for('market_research_report', slug=report.slug, _external=True) }}"},
+  "keywords": "{{ report.keywords | join(', ') }}",
+  "inLanguage": "en",
+  "about": [
+    {"@type": "Thing", "name": "Agents as a Service"},
+    {"@type": "Thing", "name": "SaaS Economics"},
+    {"@type": "Thing", "name": "Enterprise AI"},
+    {"@type": "Thing", "name": "Agentic AI"},
+    {"@type": "Thing", "name": "Total Cost of Ownership"}
+  ]
+}
+</script>
+{% endblock %}

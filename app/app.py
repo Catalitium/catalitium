@@ -586,6 +586,80 @@ REPORTS = [
         ],
     },
     {
+        "slug": "aaas-tipping-point-saas-economics-2026",
+        "title": "The AaaS Tipping Point: Why AI Agents Are Killing SaaS Economics in 2026",
+        "short_title": "The AaaS Tipping Point Report 2026",
+        "description": (
+            "Whether Agents as a Service can capture 30%+ of enterprise software spend by 2028: "
+            "Gartner, IDC, McKinsey, and workflow-level TCO evidence on agentic AI vs. seat-based SaaS. "
+            "37 sources, April 2026."
+        ),
+        "published": "2026-03-01",
+        "published_display": "March 2026",
+        "pdf_path": "",
+        "read_time": "22 min read",
+        "gated": True,
+        "template": "reports/aaas_tipping_point.html",
+        "keywords": [
+            "AaaS agents as a service 2026",
+            "AI agents vs SaaS economics",
+            "enterprise software spend agentic AI",
+            "Gartner agentic AI enterprise applications",
+            "SaaS TCO vs AI agents",
+            "Automation Anywhere AI service agents",
+            "LangGraph pricing per action",
+            "Fortune 500 AI agents production 2026",
+        ],
+    },
+    {
+        "slug": "ai-skill-premium-index-2026",
+        "title": "The AI Skill Premium Index 2026: Which AI Skills Command the Highest Salary Premiums",
+        "short_title": "AI Skill Premium Index 2026",
+        "description": (
+            "Lightcast, Levels.fyi, Pave, and SignalFire data on AI vs SWE pay: ~28% posting premium, "
+            "43% with 2+ AI skills, LLM and safety specializations, myths vs reality. February 2026."
+        ),
+        "published": "2026-02-15",
+        "published_display": "February 2026",
+        "pdf_path": "",
+        "read_time": "18 min read",
+        "gated": True,
+        "template": "reports/ai_skill_premium_index_2026.html",
+        "keywords": [
+            "AI skill salary premium 2026",
+            "LLM engineer compensation vs ML engineer",
+            "Lightcast AI job postings premium",
+            "Levels.fyi AI engineer salary 2025",
+            "MLOps salary premium",
+            "AI safety alignment salary growth",
+            "tech compensation Big Tech AI vs SWE",
+        ],
+    },
+    {
+        "slug": "european-llm-build-vs-buy-2026",
+        "title": "From Build to Buy: How the LLM Platform Era Is Rewriting Software Economics (Europe)",
+        "short_title": "European LLM Build vs Buy Report 2026",
+        "description": (
+            "Europe enterprise LLM market ~$1.09B, 76% of AI now purchased vs built, EU AI Act compliance costs, "
+            "API pricing tiers, and talent benchmarks. 20+ sources, February 2026."
+        ),
+        "published": "2026-02-01",
+        "published_display": "February 2026",
+        "pdf_path": "",
+        "read_time": "24 min read",
+        "gated": True,
+        "template": "reports/european_llm_build_buy_2026.html",
+        "keywords": [
+            "Europe LLM market 2026",
+            "build vs buy enterprise AI Europe",
+            "EU AI Act compliance cost SME",
+            "Menlo Ventures AI purchased vs built",
+            "European SaaS LLM API economics",
+            "AI engineer salary Europe Switzerland Spain",
+            "LLM API pricing comparison 2025",
+        ],
+    },
+    {
         "slug": "200k-engineer-ai-reshaping-software-salaries-2026",
         "title": "The $200K Engineer: How AI Productivity Is Reshaping Software Salaries",
         "short_title": "The $200K Engineer Report 2026",
