@@ -3375,6 +3375,23 @@ def create_app() -> Flask:
         return jsonify({"ok": True, "percentiles": percentiles})
 
     # ------------------------------------------------------------------
+    # Favicons / touch icons at well-known URLs (mobile browsers often
+    # request /favicon.ico and /apple-touch-icon.png before parsing HTML).
+    # ------------------------------------------------------------------
+    _static_img_dir = os.path.join(os.path.dirname(__file__), "static", "img")
+
+    @app.get("/favicon.ico")
+    def favicon_ico():
+        return send_from_directory(_static_img_dir, "favicon.ico", mimetype="image/x-icon")
+
+    @app.get("/apple-touch-icon.png")
+    @app.get("/apple-touch-icon-precomposed.png")
+    def apple_touch_icon_well_known():
+        return send_from_directory(
+            _static_img_dir, "apple-touch-icon.png", mimetype="image/png"
+        )
+
+    # ------------------------------------------------------------------
     # Service worker (must be served from root scope)
     # ------------------------------------------------------------------
     @app.get("/sw.js")

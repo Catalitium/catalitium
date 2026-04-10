@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.ico', v=asset_version) }}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png', v=asset_version) }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon-16.png', v=asset_version) }}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/icon-192.png', v=asset_version) }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/apple-touch-icon.png', v=asset_version) }}">
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico', v=asset_version) }}">
   <title>{% block title %}Catalitium{% endblock %}</title>
   {% block meta %}
   <meta name="description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
@@ -42,11 +48,6 @@
   <script>tailwind.config={darkMode: 'class',theme:{extend:{colors:{brand:"#1a73e8"}}}}</script>
   <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
   <link rel="preload" href="{{ url_for('static', filename='img/logo.png') }}" as="image">
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/logo.png') }}">
-  <link rel="shortcut icon" href="{{ url_for('static', filename='img/logo.png') }}">
 
   <!-- Cookiebot CMP, MUST load first before any tracking or ad scripts -->
   <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="70cfdf85-67b0-4b4a-ae22-c93865b19f79" data-blockingmode="auto" type="text/javascript"></script>
@@ -102,13 +103,13 @@
   <div id="page-progress" class="fixed top-0 left-0 h-0.5 bg-brand z-[100] transition-all duration-300 w-0 pointer-events-none" aria-hidden="true"></div>
   <!-- Compact Header (sticky) -->
   <header class="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 shadow-sm bg-white/90 dark:bg-slate-950/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-950/70">
-    <div class="mx-auto max-w-6xl px-4 h-14 flex items-center xl:grid xl:grid-cols-[1fr_auto_1fr]">
+    <div class="mx-auto max-w-6xl px-4 h-14 flex items-center md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:gap-2 lg:gap-3 md:items-center">
 
       <!-- Left: hamburger + logo -->
       <div class="flex items-center gap-3">
-        <!-- Hamburger (mobile/tablet only, hidden on xl+) -->
+        <!-- Hamburger below md only; md+ inline top bar (grid prevents column overlap) -->
         <button id="hamburger" aria-label="Open menu" aria-controls="navsheet" aria-expanded="false"
-                class="xl:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 dark:border-slate-600 dark:text-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
+                class="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 dark:border-slate-600 dark:text-slate-300 hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
           </svg>
@@ -117,20 +118,20 @@
         <!-- Logo -->
         <a href="{{ url_for('landing') }}" class="flex items-center gap-2 shrink-0">
           <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Catalitium logo" decoding="async" loading="eager" fetchpriority="high" width="28" height="28" class="w-7 h-7 rounded">
-          <span class="font-semibold tracking-tight text-slate-900 dark:text-white hidden xl:inline">Catalitium</span>
+          <span class="font-semibold tracking-tight text-slate-900 dark:text-white hidden lg:inline">Catalitium</span>
         </a>
       </div>
 
-      <!-- Center: Desktop nav links (xl+) -->
-      <nav class="hidden xl:flex items-center justify-center gap-0.5 text-sm">
-        <a href="{{ url_for('jobs') }}" {% if request.endpoint == 'jobs' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'jobs' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
-        <a href="{{ url_for('salary_tool') }}" {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
-        <a href="{{ url_for('pricing') }}" {% if request.endpoint == 'pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap px-2.5 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
+      <!-- Center: inline nav from md+; icon-only wordmark md–lg saves space in split panes -->
+      <nav class="hidden md:flex md:min-w-0 w-full items-center justify-center gap-0.5 text-sm [&>a]:px-1.5 lg:[&>a]:px-2.5">
+        <a href="{{ url_for('jobs') }}" {% if request.endpoint == 'jobs' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'jobs' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
+        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
+        <a href="{{ url_for('salary_tool') }}" {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
+        <a href="{{ url_for('pricing') }}" {% if request.endpoint == 'pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
       </nav>
 
-      <!-- Right: action buttons (desktop) -->
-      <div class="hidden xl:flex items-center justify-end gap-3 shrink-0">
+      <!-- Right: action buttons from md+; tighter gaps until lg -->
+      <div class="hidden md:flex items-center justify-end gap-1.5 lg:gap-3 shrink-0">
         <a href="{{ url_for('salary_contribute') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium text-brand border border-brand/30 hover:bg-brand/10 transition-colors">+ Add Salary</a>
         <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
         {% if session.get("user") %}
