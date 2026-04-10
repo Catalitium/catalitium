@@ -23,18 +23,54 @@ from flask import (
     after_this_request,
     session,
 )
-from email_validator import validate_email, EmailNotValidError
+# email-validator removed — replaced with stdlib (no deliverability check needed;
+# Supabase validates on auth). Drop-in shim keeps all except/catch clauses unchanged.
+_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+class EmailNotValidError(ValueError):
+    """Raised when an email address fails basic format validation."""
+
+
+def validate_email(email: str, *, check_deliverability: bool = False):  # noqa: ARG001
+    """Lightweight format-only email validator. Returns an object with .normalized."""
+    class _Result:
+        normalized: str
+
+    r = _Result()
+    r.normalized = email.strip().lower()
+    if not _EMAIL_RE.match(r.normalized):
+        raise EmailNotValidError(f"Invalid email: {email!r}")
+    return r
+from .config import (
+    PER_PAGE_MAX,
+    GHOST_JOB_DAYS,
+    GUEST_DAILY_LIMIT,
+    SUMMARY_CACHE_TTL,
+    SUMMARY_CACHE_MAX,
+    AUTOCOMPLETE_CACHE_TTL,
+    AUTOCOMPLETE_CACHE_MAX,
+    SALARY_INSIGHTS_CACHE_TTL,
+    SALARY_INSIGHTS_CACHE_MAX,
+)
+from .mailer import (
+    send_subscribe_welcome,
+    send_api_key_activation,
+    send_api_access_key_provisioned,
+    send_api_access_payment_confirmed,
+    send_api_key_activation_reminder,
+    send_job_posting_admin_notification,
+    send_job_posting_confirmation,
+)
+from .normalization import normalize_country, normalize_title
 from .models.db import (
     SECRET_KEY,
     SUPABASE_URL,
-    PER_PAGE_MAX,
     logger,
     close_db,
     init_db,
     get_db,
     get_salary_for_location,
-    normalize_country,
-    normalize_title,
     parse_salary_query,
     parse_salary_range_string,
     parse_job_description,
@@ -71,8 +107,6 @@ import urllib.request as _urllib_req
 import hashlib
 import secrets
 import functools
-import smtplib
-from email.mime.text import MIMEText
 from werkzeug.middleware.proxy_fix import ProxyFix
 from .api_utils import (
     TTLCache,
@@ -109,8 +143,8 @@ try:
 except ImportError:
     _sb_create_client = None
 
-_supabase_client = None        # used for sign_in / sign_up
-_supabase_admin_client = None  # used only for admin.* calls; never stores a user session
+_supabase_clients: dict = {}  # keyed "user" and "admin" — kept separate intentionally
+                              # (mixing user-auth and admin clients overwrites session state)
 
 _PROFILE_FIELDS = ("full_name", "headline", "location", "bio", "website")
 _ACCOUNT_TYPES = {"candidate", "recruiter", "company"}
@@ -134,45 +168,34 @@ def _derive_supabase_project_url() -> str:
     return ""
 
 
-def _get_supabase():
-    """Return the shared Supabase client for **end-user auth** (sign_in, sign_up).
+def _get_supabase_client(admin: bool = False) -> Optional[Any]:
+    """Return a cached Supabase client.
 
-    Kept separate from `_get_supabase_admin` so user-facing auth never shares the
-    same client instance as `auth.admin.*` calls; mixing them can overwrite
-    internal session state and break admin metadata updates."""
-    global _supabase_client
-    if _supabase_client is None and _sb_create_client:
+    admin=False → user-auth client (sign_in, sign_up, sign_out).
+    admin=True  → admin client (auth.admin.* only).
+    Two separate instances are intentional: mixing them overwrites session state."""
+    key_name = "admin" if admin else "user"
+    if key_name not in _supabase_clients and _sb_create_client:
         project_url = _derive_supabase_project_url()
-        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
-        if not project_url or not key:
-            logger.warning("Supabase auth client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
+        secret_key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+        if not project_url or not secret_key:
+            logger.warning("Supabase client unavailable (admin=%s): missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY", admin)
             return None
         try:
-            _supabase_client = _sb_create_client(project_url, key)
+            _supabase_clients[key_name] = _sb_create_client(project_url, secret_key)
         except Exception as exc:
-            logger.warning("Supabase auth client init failed: %s", exc)
+            logger.warning("Supabase client init failed (admin=%s): %s", admin, exc)
             return None
-    return _supabase_client
+    return _supabase_clients.get(key_name)
 
 
-def _get_supabase_admin():
-    """Return a dedicated client for **auth.admin** only (profiles, metadata).
+# Convenience aliases so callsites stay readable
+def _get_supabase() -> Optional[Any]:
+    return _get_supabase_client(admin=False)
 
-    Never use this for sign_in/sign_up; use `_get_supabase()` so admin JWT
-    handling does not clobber the user session used for login flows."""
-    global _supabase_admin_client
-    if _supabase_admin_client is None and _sb_create_client:
-        project_url = _derive_supabase_project_url()
-        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
-        if not project_url or not key:
-            logger.warning("Supabase admin client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
-            return None
-        try:
-            _supabase_admin_client = _sb_create_client(project_url, key)
-        except Exception as exc:
-            logger.warning("Supabase admin client init failed: %s", exc)
-            return None
-    return _supabase_admin_client
+
+def _get_supabase_admin() -> Optional[Any]:
+    return _get_supabase_client(admin=True)
 
 
 def _clean_profile_data(raw: Dict[str, Any]) -> Dict[str, str]:
@@ -546,7 +569,6 @@ TITLE_BUCKET1_KEYWORDS = (
 )
 
 ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
-GHOST_JOB_DAYS = 30  # jobs older than this are considered potentially filled
 
 _DEMO_JOBS_CSV = Path(__file__).parent / "data" / "demo_jobs.csv"
 
@@ -774,55 +796,14 @@ REPORTS = [
 ]
 
 
-def _send_mail(to: str, subject: str, body: str) -> None:
-    """Send a plain-text email via SMTP. Best-effort; logs on failure, never raises."""
-    host = os.getenv("SMTP_HOST", "").strip()
-    port = int(os.getenv("SMTP_PORT", "587"))
-    user = os.getenv("SMTP_USER", "").strip()
-    pw = os.getenv("SMTP_PASS", "").strip()
-    frm = os.getenv("SMTP_FROM", "noreply@catalitium.com").strip()
-    if not host:
-        logger.warning("_send_mail: SMTP_HOST not configured, skipping email to %s", to)
-        return
-    try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = frm
-        msg["To"] = to
-        with smtplib.SMTP(host, port, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.ehlo()
-            if user:
-                s.login(user, pw)
-            s.send_message(msg)
-    except Exception as exc:
-        logger.warning("_send_mail failed (to=%s): %s", to, exc)
-
-
-def _send_subscribe_confirmation(email: str, focus: str = "") -> None:
-    """Send a welcome confirmation email to a new subscriber."""
-    focus_line = f"\nYour focus: {focus}\n" if focus else ""
-    body = f"""Welcome to Catalitium.
-
-You're now on the weekly high-match digest.{focus_line}
-Every week we send you the highest-signal tech jobs with real salary data: no noise, no spam.
-
-Browse jobs now: {os.getenv("BASE_URL", "https://catalitium.com")}
-
---
-Catalitium | info@catalitium.com
-Unsubscribe: {os.getenv("BASE_URL", "https://catalitium.com")}/unsubscribe
-"""
-    _send_mail(email, "You're on the Catalitium weekly digest", body)
+# Email functions live in app/mailer.py — imported at the top of this file.
 
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
 # ---------------------------------------------------------------------------
-# Guest daily job view limit
+# Guest daily job view limit  (threshold defined in app/config.py)
 # ---------------------------------------------------------------------------
-GUEST_DAILY_LIMIT = 5_000
 
 
 def _guest_daily_remaining() -> int:
@@ -949,9 +930,9 @@ def create_app() -> Flask:
             return fn
         return limiter.exempt(fn)
 
-    summary_cache = TTLCache(ttl_seconds=90, max_size=400)
-    autocomplete_cache = TTLCache(ttl_seconds=120, max_size=400)
-    salary_insights_cache = TTLCache(ttl_seconds=120, max_size=250)
+    summary_cache = TTLCache(ttl_seconds=SUMMARY_CACHE_TTL, max_size=SUMMARY_CACHE_MAX)
+    autocomplete_cache = TTLCache(ttl_seconds=AUTOCOMPLETE_CACHE_TTL, max_size=AUTOCOMPLETE_CACHE_MAX)
+    salary_insights_cache = TTLCache(ttl_seconds=SALARY_INSIGHTS_CACHE_TTL, max_size=SALARY_INSIGHTS_CACHE_MAX)
 
     @app.before_request
     def assign_request_id():
@@ -1831,7 +1812,7 @@ def create_app() -> Flask:
             return redirect(job_link)
 
         if status == "ok":
-            _send_subscribe_confirmation(email, digest_label)
+            send_subscribe_welcome(email, digest_label)
             message = "You're subscribed to the weekly high-match digest."
             if digest_label:
                 message = f"{message} Focus: {digest_label}."
@@ -1875,11 +1856,7 @@ def create_app() -> Flask:
             return jsonify(body), 200
         return redirect(url_for("jobs"))
 
-    @app.post("/subscribe.json")
-    @_limit("20 per minute")
-    def subscribe_json():
-        """Alias JSON endpoint for compatibility."""
-        return subscribe()
+    # /subscribe.json removed — POST /subscribe detects request.is_json automatically
 
     @app.route("/register", methods=["GET", "POST"])
     @_limit("10 per minute")
@@ -2193,11 +2170,7 @@ def create_app() -> Flask:
         flash("Thanks! We received your message.", "success")
         return redirect(url_for("jobs"))
 
-    @app.post("/contact.json")
-    @_limit("12 per minute")
-    def contact_json():
-        """Alias JSON endpoint for compatibility."""
-        return contact()
+    # /contact.json removed — POST /contact detects request.is_json automatically
 
     @app.post("/job-posting")
     @_limit("10 per minute")
@@ -2319,11 +2292,7 @@ def create_app() -> Flask:
         flash("Your job has been submitted and will go live within 24 hours.", "success")
         return redirect(url_for("hire"))
 
-    @app.post("/job-posting.json")
-    @_limit("10 per minute")
-    def job_posting_json():
-        """Alias JSON endpoint for compatibility."""
-        return job_posting()
+    # /job-posting.json removed — POST /job-posting detects request.is_json automatically
 
     @app.post("/events/apply")
     @_limit("120 per minute")
@@ -2663,15 +2632,7 @@ def create_app() -> Flask:
             return
         sync_api_key_quota_for_api_access(user_email, True)
         confirm_url = f"{base}/api/keys/confirm?token={confirm_token}"
-        body = (
-            "Your Catalitium API Access subscription is active.\n\n"
-            f"Your API key:\n\n  {raw_key}\n\n"
-            f"Activate it within 24 hours:\n\n  {confirm_url}\n\n"
-            f"Then use header:\n  X-API-Key: {raw_key}\n\n"
-            "Included: up to 10,000 successful API calls per calendar month.\n\n"
-            "-- Catalitium Team\nhttps://catalitium.com"
-        )
-        _send_mail(user_email, "Catalitium API Access — your API key", body)
+        send_api_access_key_provisioned(user_email, raw_key, confirm_url)
         logger.info("api_access: key provisioned prefix=%s email=%s", key_prefix, user_email)
 
     def _checkout_api_access_confirmation_email(user_email: str, had_active_key_before: bool) -> None:
@@ -2679,19 +2640,7 @@ def create_app() -> Flask:
         user_email = (user_email or "").strip()
         if not user_email or not had_active_key_before:
             return
-        base = os.getenv("BASE_URL", "https://catalitium.com").rstrip("/")
-        _send_mail(
-            user_email,
-            "Catalitium — API Access payment confirmed",
-            (
-                "Thanks — your API Access subscription payment was received.\n\n"
-                "Your existing API key now includes the paid monthly quota "
-                "(10,000 calls per month). Continue using the same key with "
-                "header X-API-Key.\n\n"
-                f"Manage your plan: {base}/account/subscription\n\n"
-                "-- Catalitium Team"
-            ),
-        )
+        send_api_access_payment_confirmed(user_email)
 
     def _handle_b2c_subscription_event(sub_obj: Any) -> None:
         """Sync a Stripe subscription object to user_subscriptions and API keys."""
@@ -3107,32 +3056,23 @@ def create_app() -> Flask:
 
         admin_email = os.getenv("ADMIN_EMAIL", "").strip()
         if admin_email:
-            _send_mail(
-                admin_email,
-                f"[New Job Posting] {job_title} at {company} ({order['plan_name']})",
-                (
-                    f"Plan: {order['plan_name']}\n"
-                    f"Paid by: {order['user_email']}\n"
-                    f"Session: {session_id}\n\n"
-                    f"Title: {job_title}\n"
-                    f"Company: {company}\n"
-                    f"Location: {location or 'Not specified'}\n"
-                    f"Salary: {salary_range or 'Not specified'}\n"
-                    f"Apply URL: {apply_url or 'Not specified'}\n\n"
-                    f"Description:\n{description}"
-                ),
+            send_job_posting_admin_notification(
+                admin_email=admin_email,
+                job_title=job_title,
+                company=company,
+                plan_name=order["plan_name"],
+                user_email=order["user_email"],
+                session_id=session_id,
+                location=location,
+                salary_range=salary_range,
+                apply_url=apply_url,
+                description=description,
             )
-        _send_mail(
-            order["user_email"],
-            f"Job posting confirmed: {job_title} at {company}",
-            (
-                f"Hi,\n\nYour job posting has been received and will go live shortly.\n\n"
-                f"Plan: {order['plan_name']}\n"
-                f"Job title: {job_title}\n"
-                f"Company: {company}\n\n"
-                f"We'll review and publish it within 24 hours.\n\n"
-                f"Thanks,\nThe Catalitium Team\nhttps://catalitium.com"
-            ),
+        send_job_posting_confirmation(
+            user_email=order["user_email"],
+            job_title=job_title,
+            company=company,
+            plan_name=order["plan_name"],
         )
 
         flash("Job submitted! It will go live within 24 hours. Check your email for confirmation.", "success")
@@ -3204,17 +3144,7 @@ def create_app() -> Flask:
                         if was_pending and after and not after.get("is_active"):
                             tok = after.get("confirm_token")
                             if tok:
-                                _send_mail(
-                                    uemail,
-                                    "Activate your Catalitium API key (API Access)",
-                                    (
-                                        "Your API Access subscription is active.\n\n"
-                                        "Confirm the API key you registered earlier:\n\n"
-                                        f"  {base}/api/keys/confirm?token={tok}\n\n"
-                                        "Then use header X-API-Key on /v1/* endpoints.\n\n"
-                                        "-- Catalitium"
-                                    ),
-                                )
+                                send_api_key_activation_reminder(uemail, f"{base}/api/keys/confirm?token={tok}")
                         _checkout_api_access_confirmation_email(uemail, had_active)
                 except Exception as exc:
                     logger.warning("stripe_webhook: checkout subscription sync failed %s", exc)
@@ -3648,10 +3578,10 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------
     @app.get("/sw.js")
     def service_worker():
-        """Serve the PWA service worker from root so it controls all pages."""
-        resp = send_from_directory(
-            os.path.join(os.path.dirname(__file__), "static", "js"),
-            "sw.js",
+        """Render the PWA service worker with ASSET_VERSION injected so cache busts on deploy."""
+        asset_version = app.config.get("ASSET_VERSION", "v1")
+        resp = Response(
+            render_template("sw.js", asset_version=asset_version),
             mimetype="application/javascript",
         )
         resp.headers["Service-Worker-Allowed"] = "/"
@@ -3837,18 +3767,7 @@ def create_app() -> Flask:
 
         base_url = request.host_url.rstrip("/")
         confirm_url = f"{base_url}/api/keys/confirm?token={confirm_token}"
-        body = (
-            f"Hello,\n\n"
-            f"Your Catalitium API key is:\n\n"
-            f"  {raw_key}\n\n"
-            f"To activate it, visit the link below (valid 24 hours):\n\n"
-            f"  {confirm_url}\n\n"
-            f"Once activated, include it in API requests with the header:\n"
-            f"  X-API-Key: {raw_key}\n\n"
-            f"Free tier: 50 requests/day and 500 per calendar month after activation.\n\n"
-            f"-- Catalitium Team"
-        )
-        _send_mail(email, "Activate your Catalitium API key", body)
+        send_api_key_activation(email, raw_key, confirm_url)
         logger.info("API key created prefix=%s ip=%s email=%s user_id=%s", key_prefix, ip, email, user_id)
         return jsonify({"message": "Check your email to activate your key."}), 200
 
