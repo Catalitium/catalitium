@@ -69,7 +69,7 @@
               <div class="flex items-center justify-end gap-2">
                 <div class="w-20 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                   <div class="h-full rounded-full {% if exp.category == 'ai-native' %}bg-emerald-500{% elif exp.category == 'ai-adjacent' %}bg-amber-500{% else %}bg-slate-400{% endif %}"
-                       style="width: {{ exp.exposure_pct|min(100) }}%"></div>
+                       style="width: {{ [exp.exposure_pct, 100]|min }}%"></div>
                 </div>
                 <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ exp.exposure_pct }}%</span>
               </div>
