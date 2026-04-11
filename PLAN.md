@@ -1,81 +1,78 @@
-# PLAN — Smart Discovery & Explore Hub
+# PLAN — Career Decision Intelligence Tools
 
-**Branch:** `feature/smart-discovery-explore`
+**Branch:** `feature/career-decision-intelligence`
 **Sprint:** 2 — Levels.fyi Feature Sprint
-**Status:** In progress
+**Prefix:** `/career/` routes, `career_*` functions
 
 ---
 
-## Goal
+## Objective
 
-Build a smart discovery layer that helps users explore the job market beyond
-keyword search: an Explore Hub with top titles/locations/companies, advanced
-filters on the existing /jobs page, quality scoring on every card, a
-remote-friendliness leaderboard, and a function-category browser.
-
-No new database tables. Read-only queries on existing `jobs` schema.
-
----
+Build six career decision-intelligence tools that help professionals evaluate job offers, understand AI exposure, track hiring velocity, estimate earnings, explore career paths, and benchmark their market position. All read-only against existing schema — no new tables, no new dependencies.
 
 ## Deliverables
 
-| # | Deliverable | Route / File | Status |
-|---|-------------|-------------|--------|
-| A | `app/models/explore.py` — quality score, categorize, explore data, remote companies, function distribution, hiring urgency | New file | Pending |
-| B | Explore Hub page | `GET /explore` → `explore.html` | Pending |
-| C | Advanced Filter Panel on /jobs | Edit `index.html`, `jobs.py._where()`, `app.py.jobs()` | Pending |
-| D | Quality Score badge on job cards | Edit `job_card.html`, `app.py.jobs()` | Pending |
-| E | Remote-Friendliness page | `GET /explore/remote-companies` → `explore_remote.html` | Pending |
-| F | Function Browse page | `GET /explore/functions` → `explore_functions.html` | Pending |
-| G | Route wiring + sitemap | Edit `app.py` | Pending |
-| H | Tests (15+) | `tests/test_explore.py` | Pending |
+### A. Model Layer — `app/models/career.py`
 
----
+| Function | Purpose |
+|----------|---------|
+| `compute_worth_it_score(job_dict, salary_ref, company_stats)` | Score a job 0-100 across 5 dimensions (salary, company signal, role quality, remote, alternatives) |
+| `find_alternatives(title, location, exclude_id, limit)` | Search for similar jobs excluding current one |
+| `compute_ai_exposure(function_category)` | Rank function categories by % of AI-mentioning job descriptions |
+| `get_hiring_velocity(location, function, limit)` | Compare company hiring last 30 days vs previous 30 days |
+| `estimate_earnings(title, location, currency)` | Build low/median/high salary range from reference + submissions |
+| `get_career_paths(title_norm)` | Derive progression, lateral moves, top employers from jobs table |
+| `compute_market_position(title, location, years_exp, current_salary, currency)` | Return percentile rank vs market |
+
+### B–G. Routes & Templates
+
+| Route | Template | Description |
+|-------|----------|-------------|
+| `GET /career/evaluate` | `career_evaluate.html` | "Is This Worth It?" score breakdown with gauge |
+| `GET /career/ai-exposure` | `career_ai_exposure.html` | AI exposure ranking by function category |
+| `GET /career/hiring-trends` | `career_hiring_trends.html` | Hiring velocity dashboard (hot/cooling/stable) |
+| `GET /career/earnings` | `career_earnings.html` | First-year earnings estimator with visual bar |
+| `GET /career/paths` | `career_paths.html` | Career path explorer (next steps, lateral, employers) |
+| `GET /career/market-position` | `career_market_position.html` | Market position tool with percentile gauge |
+
+### H. Integration
+
+- `job_detail.html`: Add "Is this role worth it?" link near salary area
+- `compare.html`: Add "Evaluate" link per job in the comparison table
+- Sitemap: 6 new career URLs at priority 0.7
+
+### I. Tests — `tests/test_career.py`
+
+- Unit tests for each model function (structure, edge cases)
+- Route smoke tests (200 status)
+- ≥20 tests total
 
 ## Architecture Decisions
 
-1. **Quality score is computed in Python at render time** — no DB column needed.
-   `compute_quality_score(job_dict)` returns a `QualityScore` dict per contract.
+- **Read-only queries** on `jobs`, `salary`, `salary_submissions` tables
+- **Conservative fallbacks** via try/except — graceful degradation when DB unavailable
+- All templates extend `base.html`, use existing Tailwind CDN classes
+- `noindex` on ephemeral evaluation pages, proper SEO on reference pages
 
-2. **Function categorization uses keyword matching on `job_title_norm`** — maps
-   to 10 categories + "Other". Pure function, no DB.
-
-3. **Explore data aggregation uses GROUP BY on existing `jobs` table** — three
-   queries (top titles, top locations, top companies), cached for the request.
-
-4. **Advanced filters extend `Job._where()`** with optional kwargs:
-   `remote`, `has_salary`, `freshness`, `function_cat`, `salary_max`.
-
-5. **No new dependencies** — uses only stdlib + existing Flask/psycopg stack.
-
----
-
-## File Touch Map
+## Files Touched
 
 | File | Action |
 |------|--------|
-| `app/models/explore.py` | CREATE |
-| `app/models/jobs.py` | EDIT — extend `_where()` with new filter params |
-| `app/app.py` | EDIT — add 3 explore routes, edit jobs() for filters + quality |
-| `app/views/templates/index.html` | EDIT — add collapsible advanced filter panel |
-| `app/views/templates/components/job_card.html` | EDIT — add quality dot |
-| `app/views/templates/explore.html` | CREATE |
-| `app/views/templates/explore_remote.html` | CREATE |
-| `app/views/templates/explore_functions.html` | CREATE |
-| `app/static/js/main.js` | EDIT — add filter localStorage persistence |
-| `tests/test_explore.py` | CREATE |
-| `PLAN.md` | CREATE (this file) |
-| `HANDOFF.md` | CREATE (after implementation) |
+| `app/models/career.py` | CREATE |
+| `app/views/templates/career_*.html` (×6) | CREATE |
+| `tests/test_career.py` | CREATE |
+| `app/app.py` | ADD routes + sitemap entries |
+| `app/views/templates/job_detail.html` | ADD "worth it" link |
+| `app/views/templates/compare.html` | ADD evaluate link |
+| `PLAN.md` | CREATE |
+| `HANDOFF.md` | CREATE |
 
----
+## Out of Scope
 
-## Risks & Mitigations
-
-- **Slow aggregation queries:** Use LIMIT and simple GROUP BY; no JOINs.
-- **Merge conflicts with other Sprint 2 branches:** Following AGENT_CONTRACT.md
-  touch rules strictly — only editing files assigned to this branch.
-- **Empty data on fresh installs:** All explore queries use `try/except` with
-  empty-list fallbacks.
+- Carl integration
+- New Python dependencies
+- New database tables or migrations
+- Modifications to base.html, index.html, job_card.html, main.js, companies.html, salary_report.html
 
 ---
 

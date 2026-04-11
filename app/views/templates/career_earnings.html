@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}First-Year Earnings Estimator | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Estimate your first-year earnings for any role and location. Salary intelligence powered by Catalitium.">
+<link rel="canonical" href="{{ url_for('career_earnings', _external=True) }}">
+<meta property="og:title" content="Earnings Estimator | Catalitium">
+<meta property="og:description" content="See estimated salary ranges for any tech role and location.">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+      <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Earnings Estimator</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Estimate first-year base salary for any role</p>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 mb-5">
+    <form method="get" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="title" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target Role</label>
+          <input id="title" name="title" type="text" required placeholder="e.g. Software Engineer" value="{{ request.args.get('title', '') }}"
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        </div>
+        <div>
+          <label for="location" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Target Location</label>
+          <input id="location" name="location" type="text" required placeholder="e.g. Berlin, Germany" value="{{ request.args.get('location', '') }}"
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="current_salary" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Current Salary <span class="text-slate-400 font-normal">(optional)</span></label>
+          <input id="current_salary" name="current_salary" type="number" placeholder="e.g. 65000" value="{{ request.args.get('current_salary', '') }}"
+                 class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+        </div>
+        <div>
+          <label for="currency" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Currency</label>
+          <select id="currency" name="currency"
+                  class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+            <option value="EUR" {% if request.args.get('currency', 'EUR') == 'EUR' %}selected{% endif %}>EUR</option>
+            <option value="USD" {% if request.args.get('currency') == 'USD' %}selected{% endif %}>USD</option>
+            <option value="CHF" {% if request.args.get('currency') == 'CHF' %}selected{% endif %}>CHF</option>
+            <option value="GBP" {% if request.args.get('currency') == 'GBP' %}selected{% endif %}>GBP</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="rounded-xl bg-brand text-white px-6 py-3 font-semibold text-sm hover:opacity-90 transition">Estimate Earnings</button>
+    </form>
+  </div>
+
+  {% if earnings %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+    <h2 class="text-base font-semibold text-slate-800 dark:text-slate-100 mb-1">Estimated Base Salary</h2>
+    <p class="text-xs text-slate-500 mb-4">{{ earnings.title }} in {{ earnings.location }}</p>
+
+    {% if earnings.base_median %}
+    <div class="flex items-end justify-between mb-2">
+      <span class="text-sm text-slate-500">{{ earnings.currency }} {{ '{:,}'.format(earnings.base_low) }}</span>
+      <span class="text-2xl font-bold text-brand">{{ earnings.currency }} {{ '{:,}'.format(earnings.base_median) }}</span>
+      <span class="text-sm text-slate-500">{{ earnings.currency }} {{ '{:,}'.format(earnings.base_high) }}</span>
+    </div>
+    <div class="relative h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden mb-2">
+      <div class="absolute inset-0 rounded-full bg-gradient-to-r from-amber-300 via-brand to-amber-300"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-2 border-brand shadow"></div>
+    </div>
+    <div class="flex items-center justify-between text-xs text-slate-400 mb-4">
+      <span>Low</span>
+      <span>Median</span>
+      <span>High</span>
+    </div>
+
+    {% if current_salary %}
+    <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+      <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+        Your current salary: <strong class="text-slate-800 dark:text-slate-200">{{ earnings.currency }} {{ '{:,}'.format(current_salary) }}</strong>
+      </p>
+      {% set diff = earnings.base_median - current_salary %}
+      {% if diff > 0 %}
+      <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Potential uplift: +{{ earnings.currency }} {{ '{:,}'.format(diff|int) }} (+{{ ((diff / current_salary) * 100)|round(1) }}%)</p>
+      {% elif diff < 0 %}
+      <p class="text-sm font-semibold text-rose-600 dark:text-rose-400">Below estimate by: {{ earnings.currency }} {{ '{:,}'.format(diff|abs|int) }} ({{ ((diff / current_salary) * 100)|round(1) }}%)</p>
+      {% else %}
+      <p class="text-sm font-semibold text-brand">You're right at the market median.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="mt-4 flex items-center gap-2">
+      <span class="inline-flex items-center text-[11px] font-medium rounded-full px-2 py-0.5 border
+        {% if earnings.data_source == 'combined' %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800
+        {% elif earnings.data_source == 'reference' %}bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800
+        {% elif earnings.data_source == 'submissions' %}bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800
+        {% else %}bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700{% endif %}">
+        Data: {{ earnings.data_source }}
+      </span>
+    </div>
+    {% else %}
+    <p class="text-slate-500 dark:text-slate-400">Insufficient salary data for this role and location. Try a broader search.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

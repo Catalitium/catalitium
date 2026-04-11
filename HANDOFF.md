@@ -1,74 +1,83 @@
-# Handoff: feature/smart-discovery-explore
+# HANDOFF — Career Decision Intelligence Tools
 
-## Files Changed
+**Branch:** `feature/career-decision-intelligence`
+**Status:** Complete — 30/30 tests passing
+**Date:** April 2026
 
-| File | Action | Description |
-|------|--------|-------------|
-| `PLAN.md` | **EDIT** | Architecture plan for the explore feature |
-| `HANDOFF.md` | **EDIT** | This file |
-| `app/models/explore.py` | **NEW** | Quality scoring (`compute_quality_score`), function categorization (`categorize_function`), explore aggregations (`get_explore_data`, `get_remote_companies`, `get_function_distribution`) |
-| `app/views/templates/explore.html` | **NEW** | Explore Hub page — top titles, locations, companies |
-| `app/views/templates/explore_remote.html` | **NEW** | Remote-friendliness company leaderboard |
-| `app/views/templates/explore_functions.html` | **NEW** | Function category browser with salary data coverage |
-| `tests/test_explore.py` | **NEW** | 32 tests covering quality scoring, function categorization, routes, and filters |
-| `app/app.py` | **EDIT** | Added explore imports, `/explore` + `/explore/remote-companies` + `/explore/functions` routes, sitemap entries, `compute_quality_score` wired into `/jobs` item loop, advanced filter params (`remote`, `has_salary`, `freshness`, `function`, `salary_max`) in jobs route |
-| `app/models/jobs.py` | **EDIT** | Added `remote`, `has_salary`, `freshness`, `function_cat`, `salary_max` keyword params to `Job._where()` with corresponding SQL clause generation |
-| `app/views/templates/components/job_card.html` | **EDIT** | Added quality score badge display |
-| `app/views/templates/index.html` | **EDIT** | Added advanced filter panel (remote, has salary, freshness, function category) |
-| `app/static/js/main.js` | **EDIT** | Added filter panel state persistence |
+---
 
-## Routes Added
+## What Was Built
 
-| Route | Function | Method |
-|-------|----------|--------|
-| `/explore` | `explore_hub` | GET |
-| `/explore/remote-companies` | `explore_remote` | GET |
-| `/explore/functions` | `explore_functions` | GET |
+Six career decision intelligence tools accessible under the `/career/` URL prefix:
 
-## Sitemap Entries Added
+| Route | Function | Purpose |
+|-------|----------|---------|
+| `/career/evaluate` | `career_evaluate` | "Is This Worth It?" job evaluator with 0-100 score |
+| `/career/ai-exposure` | `career_ai_exposure` | AI/automation exposure ranking by job function |
+| `/career/hiring-trends` | `career_hiring_trends` | Hiring velocity dashboard (hot/cooling/stable companies) |
+| `/career/earnings` | `career_earnings` | First-year earnings estimator with comparison bar |
+| `/career/paths` | `career_paths` | Career path explorer (promotions, lateral moves, employers) |
+| `/career/market-position` | `career_market_position` | Market position benchmarking with percentile gauge |
 
-- `/explore` — priority 0.7, weekly
-- `/explore/remote-companies` — priority 0.7, weekly
-- `/explore/functions` — priority 0.7, weekly
+## Files Created
+
+- `app/models/career.py` — All business logic (7 public functions, helpers)
+- `app/views/templates/career_evaluate.html` — Evaluation UI with score gauge
+- `app/views/templates/career_ai_exposure.html` — AI exposure table with category badges
+- `app/views/templates/career_hiring_trends.html` — Hiring velocity cards grouped by trend
+- `app/views/templates/career_earnings.html` — Earnings form with visual salary bar
+- `app/views/templates/career_paths.html` — Path explorer with next steps/lateral/employers
+- `app/views/templates/career_market_position.html` — Market position form with percentile gauge
+- `tests/test_career.py` — 30 tests (unit + route smoke)
+- `PLAN.md` — Pre-implementation plan
+- `HANDOFF.md` — This file
+
+## Files Modified
+
+- `app/app.py` — Added 6 career routes + 6 sitemap entries
+- `app/views/templates/job_detail.html` — Added "Is this role worth it?" link
+- `app/views/templates/compare.html` — Added "Evaluate →" link per job
+
+## Architecture
+
+- **No new tables** — Read-only queries on `jobs`, `salary`, `salary_submissions`
+- **No new dependencies** — Pure Python logic with existing Flask/psycopg stack
+- **Conservative guards** — All DB queries wrapped in try/except with graceful fallbacks
+- **Type shapes** — Follows `WorthItScore` and `AIExposure` from AGENT_CONTRACT.md
+
+## WorthItScore Breakdown (each 0-20, total 0-100)
+
+| Dimension | Logic |
+|-----------|-------|
+| `salary_vs_market` | 20 if posted salary ≥ median, 10 if below, 5 if estimated only, 0 if no data |
+| `company_signal` | 20 if 10+ jobs & recent (14d), 10 if 5+, 5 if 2+, 0 otherwise |
+| `role_quality` | Up to 20 based on description length + salary transparency + specific location |
+| `remote_availability` | 20 if remote, 10 if hybrid, 0 otherwise |
+| `alternatives_count` | 20 if 10+ similar roles, 10 if 5+, 5 if 2+, 0 otherwise |
 
 ## Test Results
 
 ```
-32 passed, 25 warnings in 245.73s (0:04:05)
+30 passed, 0 failed (tests/test_career.py)
 ```
 
-All 32 tests pass:
-- 10 unit tests for `compute_quality_score` (complete, empty, partial, numeric salary, date formats, cap, whitespace)
-- 13 unit tests for `categorize_function` (Backend, Frontend, Fullstack, ML/AI, DevOps, Data, Product, Security, Other, None, empty, case-insensitive, categories have keywords)
-- 3 explore route smoke tests (`/explore`, `/explore/remote-companies`, `/explore/functions`)
-- 5 advanced filter smoke tests (`remote=1`, `has_salary=1`, `freshness=7`, `function=Backend`, combined filters)
-- 1 sitemap verification (all three explore URLs present)
+- 6 WorthItScore unit tests
+- 3 AI exposure tests
+- 2 hiring velocity tests
+- 3 earnings estimator tests
+- 2 career paths tests
+- 3 market position tests
+- 6 route smoke tests (all return 200)
+- 2 parameterized route tests (with query params)
+- 3 internal helper tests
 
-Warnings are pre-existing `psycopg_pool` deprecation notices and `gotrue` package warnings, unrelated to this branch.
+## Merge Notes
 
-## Known Issues
-
-- Explore aggregation queries (`get_explore_data`, `get_remote_companies`, `get_function_distribution`) hit the live DB. In test mode with no live DB, they gracefully return empty results and render empty-state pages.
-- The `freshness` filter uses string interpolation for the interval (`%s days`); the value is validated to `{7, 14, 30}` only, so SQL injection is not possible.
-- `ConnectionPool` shutdown warnings in pytest output are a known Python 3.14 / psycopg_pool interaction, not caused by this branch.
-
-## Merge Conflict Zones
-
-Per AGENT_CONTRACT.md:
-
-- **`app/app.py`**: This branch adds routes under `/explore/` prefix with `explore_*` function names. Other Sprint 2 branches use `/salary/` and `/career/` prefixes. The jobs route edit (advanced filter params) is in the `jobs()` function body — only this branch touches that section per contract. Low conflict risk.
-- **`app/models/jobs.py`**: Only this branch extends `_where()` with new filter kwargs. Other branches use READ only. No conflict expected.
-- **`app/views/templates/index.html`**: Only this branch adds the advanced filter panel per contract. No conflict expected.
-- **`app/views/templates/components/job_card.html`**: This branch adds quality/urgency badges. Sprint 1's compare branch added a Compare button (different location in the template). Low conflict risk.
-- **`app/static/js/main.js`**: Filter persistence code appended to end of file. Sprint 1's compare branch also appended code. May need trivial merge resolution at file end.
-- All new files (`explore.py`, `explore.html`, `explore_remote.html`, `explore_functions.html`, `test_explore.py`) are unique to this branch per contract.
-
-## No New Dependencies
-
-- No new Python packages in `requirements.txt`
-- No new database tables or migrations
-- Read-only queries on existing `jobs` table only
+- All routes use unique `/career/*` prefix — no conflicts with other sprint branches
+- Only touched `job_detail.html` (added link) and `compare.html` (added link) per AGENT_CONTRACT
+- Sitemap entries use priority 0.7, changefreq weekly
+- No changes to: `base.html`, `index.html`, `job_card.html`, `main.js`, `companies.html`, `salary_report.html`
 
 ---
 
-*Completed: April 2026*
+*Handoff complete. Ready for integration review.*
