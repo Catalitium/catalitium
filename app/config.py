@@ -30,6 +30,13 @@ SALARY_INSIGHTS_CACHE_MAX: int = 250
 SITEMAP_CACHE_TTL: int = 3600       # sitemap.xml in-process cache + Cache-Control (seconds)
 
 # ---------------------------------------------------------------------------
+# Carl CV demo (Talk to Carl)
+# ---------------------------------------------------------------------------
+CARL_CHAT_MAX_TURNS: int = 3
+CARL_CHAT_MAX_MESSAGE_CHARS: int = 280
+CARL_CHAT_MAX_REPLY_CHARS: int = 360
+
+# ---------------------------------------------------------------------------
 # Database pool
 # ---------------------------------------------------------------------------
 DB_POOL_MIN: int = 1

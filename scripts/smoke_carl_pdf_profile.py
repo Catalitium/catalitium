@@ -72,6 +72,11 @@ def main() -> int:
 
     app = create_app()
     client = app.test_client()
+
+    uid = (os.environ.get("CARL_TEST_USER_ID") or "00000000-0000-4000-8000-000000009991").strip()
+    with client.session_transaction() as sess:
+        sess["user"] = {"id": uid, "email": "smoke-carl@example.invalid"}
+
     r = client.get("/carl")
     if r.status_code != 200:
         print("FAIL: GET /carl", r.status_code, file=sys.stderr)
@@ -81,11 +86,6 @@ def main() -> int:
         print("FAIL: no csrf in /carl", file=sys.stderr)
         return 5
     csrf = m.group(1)
-
-    uid = (os.environ.get("CARL_TEST_USER_ID") or "").strip()
-    if uid:
-        with client.session_transaction() as sess:
-            sess["user"] = {"id": uid, "email": "smoke-carl@example.invalid"}
 
     data = {"csrf_token": csrf, "cv_file": (io.BytesIO(raw), pdf.name)}
     resp = client.post("/carl/analyze", data=data, headers={"X-CSRF-Token": csrf})
@@ -102,16 +102,17 @@ def main() -> int:
         print("FAIL: missing analysis in data", file=sys.stderr)
         return 8
 
-    if uid:
+    if os.environ.get("CARL_TEST_USER_ID"):
         from app.models.db import get_db
 
+        verify_uid = os.environ["CARL_TEST_USER_ID"].strip()
         with app.app_context():
             db = get_db()
             with db.cursor() as cur:
                 cur.execute(
                     "SELECT length(cv_extracted_text), cv_meta IS NOT NULL, cv_extracted_at IS NOT NULL "
                     "FROM profiles WHERE id = %s::uuid",
-                    (uid,),
+                    (verify_uid,),
                 )
                 row = cur.fetchone()
         if not row or row[0] is None or int(row[0] or 0) < 10:

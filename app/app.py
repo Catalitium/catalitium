@@ -54,6 +54,8 @@ from .config import (
     SALARY_INSIGHTS_CACHE_TTL,
     SALARY_INSIGHTS_CACHE_MAX,
     SITEMAP_CACHE_TTL,
+    CARL_CHAT_MAX_TURNS,
+    CARL_CHAT_MAX_MESSAGE_CHARS,
 )
 from .mailer import (
     send_subscribe_welcome,
@@ -134,7 +136,9 @@ from .services.cv_extract import (
 )
 from .services.carl_mock_analysis import (
     build_mock_analysis,
+    carl_effective_user_message,
     generate_chat_reply,
+    is_carl_message_grounded,
 )
 
 try:
@@ -3281,7 +3285,7 @@ def create_app() -> Flask:
         import time as _time
         if _sitemap_cache["data"] and _time.time() - _sitemap_cache["ts"] < SITEMAP_CACHE_TTL:
             return _sitemap_cache["data"]
-        today = datetime.utcnow().date().isoformat()
+        today = datetime.now(timezone.utc).date().isoformat()
         urls = []
         most_recent_date: Optional[str] = None
 
@@ -3664,12 +3668,18 @@ def create_app() -> Flask:
     @app.get("/carl")
     def carl_dashboard():
         """Render Carl CV dashboard demo page."""
+        if not session.get("user"):
+            session["redirect_after_login"] = url_for("carl_dashboard")
+            flash("Sign in to use Carl.", "info")
+            return redirect(url_for("register"))
         return render_template("carl.html", wide_layout=True)
 
     @app.post("/carl/analyze")
     @_limit("20 per minute")
     def carl_analyze():
         """Accept CV upload/text fallback and return deterministic mock analysis."""
+        if not session.get("user"):
+            return _api_error("login_required", "Sign in to analyze your CV in Carl.", 401)
         if not _csrf_valid():
             return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
@@ -3703,63 +3713,169 @@ def create_app() -> Flask:
             return _api_error(exc.code, exc.message, exc.status)
 
         analysis = build_mock_analysis(cv_text, file_label=source.get("filename", "uploaded_cv"))
+        overview = analysis.get("overview") or {}
+        skills_radar = analysis.get("skillsRadar") or []
+        ats_block = analysis.get("atsScore") or {}
+        chat_ctx = analysis.get("chatContext") or {}
+
+        saved_at_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        carl_snapshot = {
+            "headline": str(overview.get("headline") or ""),
+            "persona": str(overview.get("persona") or ""),
+            "level": str(overview.get("level") or ""),
+            "atsScore": int(ats_block.get("score") or 0),
+            "keywordCoverage": int(ats_block.get("keywordCoverage") or 0),
+            "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:3] if s.get("skill")],
+            "saved_at": saved_at_iso,
+        }
+        persist_meta: Dict[str, Any] = {**source, "carl": carl_snapshot}
+
         user = session.get("user") or {}
         user_id = user.get("id")
-        if user_id and SUPABASE_URL:
+        profile_sync: Dict[str, Any] = {"status": "skipped", "message": None, "saved_at": None}
+        if not user_id or not SUPABASE_URL:
+            profile_sync["message"] = "Database not configured or missing user."
+        else:
             try:
                 saved = upsert_profile_cv_extract(
                     str(user_id),
                     cv_text,
-                    source,
+                    persist_meta,
                     email=str(user.get("email") or "").strip() or None,
                 )
                 if saved == "ok":
                     logger.info("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
+                    profile_sync = {"status": "saved", "message": None, "saved_at": saved_at_iso}
                 else:
                     logger.warning("Carl: profile CV not persisted (status=%s)", saved)
+                    profile_sync = {
+                        "status": "error",
+                        "message": "Could not write to your profile row.",
+                        "saved_at": None,
+                    }
             except Exception as exc:
                 logger.warning("profile cv upsert skipped: %s", exc, exc_info=True)
-        overview = analysis.get("overview") or {}
-        skills_radar = analysis.get("skillsRadar") or []
+                profile_sync = {
+                    "status": "error",
+                    "message": "Profile sync failed unexpectedly.",
+                    "saved_at": None,
+                }
+
+        terminal_logs = list(analysis.get("terminalLogs") or [])
+        if profile_sync.get("status") == "saved":
+            terminal_logs.append("[Carl] supabase: profile cv_meta updated (cv + carl snapshot).")
+        elif profile_sync.get("status") == "error":
+            terminal_logs.append("[Carl] supabase: profile sync failed (see server logs).")
+        else:
+            terminal_logs.append("[Carl] supabase: profile sync skipped (no database or user).")
+        analysis["terminalLogs"] = terminal_logs
+
         session["carl_chat_context"] = {
-            "summary": (analysis.get("chatContext") or {}).get("summary", ""),
-            "missingKeywords": (analysis.get("atsScore") or {}).get("missingKeywords", []),
+            "summary": chat_ctx.get("summary", ""),
+            "missingKeywords": ats_block.get("missingKeywords", []),
+            "matchedKeywords": ats_block.get("matchedKeywords", []),
+            "suggestedPrompts": chat_ctx.get("suggestedPrompts", []),
             "persona": overview.get("persona", ""),
             "level": overview.get("level", ""),
             "headline": overview.get("headline", ""),
             "fileLabel": str(source.get("filename") or "uploaded_cv"),
             "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:5] if s.get("skill")],
         }
+        session["carl_chat_turns"] = 0
         session.modified = True
-        return _api_success({"analysis": analysis, "source": source})
+        return _api_success(
+            {
+                "analysis": analysis,
+                "source": source,
+                "profile_sync": profile_sync,
+            }
+        )
 
     @app.post("/carl/chat")
     @_limit("40 per minute")
     def carl_chat():
         """Return a rule-based mock chat reply for Carl dashboard."""
+        if not session.get("user"):
+            return _api_error("login_required", "Sign in to use Talk to Carl.", 401)
         if not _csrf_valid():
             return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
-        payload = request.get_json(silent=True) or {}
-        message = str(payload.get("message") or "").strip()
-        if not message:
-            return _api_error("invalid_message", "Please write a message for Carl chat.", 400)
-
         session_ctx = session.get("carl_chat_context") or {}
-        chat_context = payload.get("chat_context") or {}
+        if not session_ctx:
+            return _api_error("carl_session_stale", "Analyze a CV first, then chat about that pass.", 400)
+
+        turns = int(session.get("carl_chat_turns") or 0)
+        if turns >= CARL_CHAT_MAX_TURNS:
+            return _api_success(
+                {
+                    "reply": (
+                        "You have used all free Talk to Carl prompts for this CV pass. "
+                        "Unlock the Jobs API on Pricing or review integration on Developers."
+                    ),
+                    "chat_limit_reached": True,
+                    "cta": {
+                        "developers": url_for("developers"),
+                        "pricing": url_for("pricing"),
+                    },
+                }
+            )
+
+        payload = request.get_json(silent=True) or {}
+        raw_message = str(payload.get("message") or "").strip()
+        has_prompt_id = "prompt_id" in payload
+        prompt_id: Optional[int] = None
+        if has_prompt_id:
+            try:
+                prompt_id = int(payload.get("prompt_id"))
+            except (TypeError, ValueError):
+                return _api_error("invalid_prompt_id", "Invalid prompt selection.", 400)
+
+        effective_message, pe_err = carl_effective_user_message(
+            raw_message, session_ctx, prompt_id=prompt_id if has_prompt_id else None
+        )
+        if pe_err == "invalid_prompt_id":
+            return _api_error("invalid_prompt_id", "Invalid prompt selection.", 400)
+        if not effective_message:
+            return _api_error("invalid_message", "Please write a message for Carl chat.", 400)
+        if len(effective_message) > CARL_CHAT_MAX_MESSAGE_CHARS:
+            return _api_error(
+                "message_too_long",
+                f"Keep messages under {CARL_CHAT_MAX_MESSAGE_CHARS} characters for this demo.",
+                400,
+            )
+
+        if not is_carl_message_grounded(
+            effective_message,
+            session_ctx,
+            prompt_id=prompt_id if has_prompt_id else None,
+        ):
+            return _api_error(
+                "chat_not_grounded",
+                "Ask about this CV pass using a suggested chip or words from your analysis (keywords, role, file name).",
+                400,
+            )
+
         merged_context = {
-            "summary": str(chat_context.get("summary") or session_ctx.get("summary") or ""),
-            "missingKeywords": payload.get("missing_keywords")
-            or session_ctx.get("missingKeywords")
-            or [],
-            "persona": str(chat_context.get("persona") or session_ctx.get("persona") or ""),
-            "level": str(chat_context.get("level") or session_ctx.get("level") or ""),
-            "headline": str(chat_context.get("headline") or session_ctx.get("headline") or ""),
-            "fileLabel": str(chat_context.get("fileLabel") or session_ctx.get("fileLabel") or ""),
-            "topSkillNames": chat_context.get("topSkillNames") or session_ctx.get("topSkillNames") or [],
+            "summary": str(session_ctx.get("summary") or ""),
+            "missingKeywords": session_ctx.get("missingKeywords") or [],
+            "persona": str(session_ctx.get("persona") or ""),
+            "level": str(session_ctx.get("level") or ""),
+            "headline": str(session_ctx.get("headline") or ""),
+            "fileLabel": str(session_ctx.get("fileLabel") or ""),
+            "topSkillNames": session_ctx.get("topSkillNames") or [],
         }
-        reply = generate_chat_reply(message, merged_context)
-        return _api_success({"reply": reply})
+        reply = generate_chat_reply(effective_message, merged_context)
+        new_turns = turns + 1
+        session["carl_chat_turns"] = new_turns
+        session.modified = True
+        out: Dict[str, Any] = {"reply": reply}
+        if new_turns >= CARL_CHAT_MAX_TURNS:
+            out["chat_limit_reached"] = True
+            out["cta"] = {
+                "developers": url_for("developers"),
+                "pricing": url_for("pricing"),
+            }
+        return _api_success(out)
 
     @app.get("/market-research/<slug>")
     def market_research_report(slug):
