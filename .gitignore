@@ -93,3 +93,4 @@ node_modules/
 # Track tasks/todo.md; ignore other task exports
 tasks/*
 !tasks/todo.md
+worktrees/

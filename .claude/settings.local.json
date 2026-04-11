@@ -6,7 +6,9 @@
       "Bash(git checkout:*)",
       "Bash(powershell -Command:*)",
       "Bash(python:*)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(grep:*)",
+      "Bash(.venv/Scripts/python:*)"
     ]
   }
 }
