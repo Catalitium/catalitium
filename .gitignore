@@ -44,7 +44,8 @@ data/archive/
 
 # Development/IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .cursor/
 *.swp
 *.swo

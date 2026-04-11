@@ -15,7 +15,11 @@ If anything breaks → STOP, re-plan, never push forward.
 - **Subagent Mode**: For research, parallel exploration, or heavy analysis, spin a clean subagent. One job per subagent.
 - **Dynamic Adaptation**: After every lesson, immediately test the new rule on the current task. Rules auto-evolve.
 
-## 3. Task Management (always in `tasks/todo.md`)
+## 3. Git identity + Windows Git binary (this repo only)
+- **Always** use the **Catalitium** org identity for commits here, not a personal GitHub name/email. Local author: `git config --local user.name` / `user.email` (see `.git/config`). Prefer the org GitHub **noreply** email from GitHub → Settings → Email when you want verified commits; until then defaults are **Catalitium** + **dev@catalitium.com**.
+- **PATH:** Keeping `C:\Program Files\Git\mingw64\bin` on User or System `PATH` is fine (duplicate in both is harmless). Windows may still resolve `git` to `Git\cmd\git.exe` first; on older Git for Windows that can cause `error: unknown option 'trailer'` on `git commit`. This repo sets **Cursor/VS Code** `git.path` in [`.vscode/settings.json`](.vscode/settings.json) to **mingw64 `git.exe`**. In a plain terminal, use `"%ProgramFiles%\Git\mingw64\bin\git.exe"` or upgrade Git for Windows. Inspect PATH with [`scripts/check-git-path.ps1`](scripts/check-git-path.ps1).
+
+## 4. Task Management (always in `tasks/todo.md`)
 ```markdown
 ## Plan
 - [ ] Item 1 — success criteria
