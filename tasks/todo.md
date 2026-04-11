@@ -55,7 +55,7 @@ Re-check `jobs_salary_min` after each deploy (must be **200**). If it is **500**
 - [x] `GET https://catalitium.com/health` → **200**
 - [x] `GET https://catalitium.com/sitemap.xml` → **200**
 - [x] `GET https://catalitium.com/jobs` → **200**
-- [ ] **`GET https://catalitium.com/jobs?salary_min=80000` → was 500** (2026-04-11). Deploy latest `main` (includes demo-job payload + `salary_delta_pct` template guards), then re-run `pwsh -File scripts/smoke_prod.ps1` until this returns **200**.
+- [x] **`GET https://catalitium.com/jobs?salary_min=80000` → 200** (post-deploy; `pwsh -File scripts/smoke_prod.ps1` exit 0)
 
 ### Phase 4
 
@@ -65,4 +65,4 @@ Re-check `jobs_salary_min` after each deploy (must be **200**). If it is **500**
 
 ## Review
 
-Phases 1–4 are closed from the repo side: smokes are scripted, docs match reality, prod env is set. **Open item:** fix or verify **`/jobs?salary_min=` on production** (500 vs 200) using server logs and deploy revision parity with `main`.
+Production deploy verified **2026-04-11**: `scripts/smoke_prod.ps1` all green. Re-run that script after each future deploy.
