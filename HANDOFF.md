@@ -1,52 +1,61 @@
-# Handoff: feature/candidate-decision-tools
+# HANDOFF — Salary Intelligence Hub
+
+**Branch:** `feature/salary-intelligence-hub`
+**Sprint:** 2
+
+---
 
 ## Files Changed
 
 | File | Action | Description |
 |------|--------|-------------|
-| `PLAN.md` | **NEW** | Architecture plan for the feature |
-| `HANDOFF.md` | **NEW** | This file |
-| `app/models/compare.py` | **NEW** | Scoring engine: `score_job()`, `compare_jobs()` |
-| `app/views/templates/compare.html` | **NEW** | Side-by-side comparison page (extends base.html) |
-| `tests/test_compare.py` | **NEW** | 16 tests covering scoring engine + routes |
-| `app/app.py` | **EDIT** | Added `/compare` route (`compare_workspace`), `/tracker` route (`tracker`), sitemap entries |
-| `app/views/templates/components/job_card.html` | **EDIT** | Added Compare toggle button in actions row |
-| `app/static/js/main.js` | **EDIT** | Added compare localStorage logic + floating "Compare Now" FAB |
+| `PLAN.md` | CREATED | Sprint plan |
+| `HANDOFF.md` | CREATED | This file |
+| `app/models/salary_analytics.py` | CREATED | Analytics engine: percentile, PPP, function benchmarks, trends |
+| `app/views/templates/salary_underpaid.html` | CREATED | "Am I Underpaid?" percentile checker |
+| `app/views/templates/salary_compare_cities.html` | CREATED | Cross-city PPP salary comparison |
+| `app/views/templates/salary_by_function.html` | CREATED | Function/team salary benchmarks |
+| `app/views/templates/salary_trends.html` | CREATED | Monthly salary trend data |
+| `app/app.py` | MODIFIED | Added 4 routes, import, 4 sitemap entries |
+| `app/views/templates/salary_report.html` | MODIFIED | Added "Salary Intelligence" cross-link section |
+| `tests/test_salary_analytics.py` | CREATED | 34 tests (unit + route smoke) |
 
 ## Routes Added
 
-| Route | Function | Method |
-|-------|----------|--------|
-| `/compare` | `compare_workspace` | GET |
-| `/tracker` | `tracker` | GET |
-
-## Sitemap Entries Added
-
-- `/tracker` — priority 0.6, weekly
-- `/compare` — priority 0.5, weekly
+| URL | Function | Method | Description |
+|-----|----------|--------|-------------|
+| `/salary/am-i-underpaid` | `salary_underpaid` | GET | Percentile calculator form + results |
+| `/salary/compare-cities` | `salary_compare_cities` | GET | Cross-city PPP comparison |
+| `/salary/by-function` | `salary_by_function` | GET | Salary by function/team category |
+| `/salary/trends` | `salary_trends` | GET | Monthly salary trend data |
 
 ## Test Results
 
 ```
-16 passed, 10 warnings in 96.11s
+34 passed, 12 warnings in 117.50s
 ```
 
-All 16 tests pass (9 unit tests for scoring engine, 3 for `compare_jobs`, 3 route smoke tests, 1 tracker route test). Warnings are pre-existing psycopg_pool deprecation notices unrelated to this branch.
+All 34 tests pass. Warnings are pre-existing (psycopg_pool deprecation, supabase gotrue deprecation).
+
+### Test Breakdown
+- 5 tests: PPP indices completeness and correctness
+- 15 tests: categorize_function with parametrized title keywords
+- 6 tests: compute_percentile shape, clamping, labels
+- 3 tests: compare_cities_salary structure
+- 6 tests: Route smoke tests (all 4 routes return 200)
 
 ## Known Issues
 
-- `/compare?ids=...` with valid real job IDs will attempt DB connections for `Job.get_by_id` and `get_salary_for_location`. In test mode with no live DB, these gracefully return empty results (empty state page).
-- The compare FAB appears at `bottom-20 md:bottom-6 right-4` to avoid overlap with the mobile bottom nav bar.
-- The ConnectionPool shutdown warnings in pytest output are a known Python 3.14 / psycopg_pool interaction, not caused by this branch.
+1. **DB-dependent functions return empty results in test env**: `get_function_benchmarks` and `get_salary_trends` require a live database with `job_salary` data to return meaningful results. They gracefully return empty lists when DB is unavailable.
+2. **PPP indices are hardcoded**: The 31-city PPP index is static. Future work could pull from an external API or allow admin updates.
+3. **Percentile is approximate**: Uses `user_salary / median * 50` rather than a true statistical percentile from the full distribution. This is by design (documented in methodology section).
+4. **Currency conversion not applied**: Raw comparisons assume same currency context. Cross-currency normalization is not in scope for this sprint.
 
 ## Merge Notes
 
-- **Conflict zone**: `components/job_card.html` actions row — both this branch and `feature/compensation-intelligence` add elements there. This branch appends the Compare button at the end of the actions div. Compensation adds a confidence badge. Low conflict risk since they target different locations.
-- **No conflicts expected**: All new files (`compare.py`, `compare.html`, `test_compare.py`) are unique to this branch per AGENT_CONTRACT.md.
-- `app/app.py` routes use unique function names (`compare_workspace`, `tracker`) per contract.
-- `main.js` changes are appended at the end of the file; no overlap with other branches.
-- No new Python dependencies. No new database tables. Read-only queries only.
-
----
-
-*Completed: April 2026*
+- **No conflicts expected** with other Sprint 2 branches (`smart-discovery-explore`, `career-decision-intelligence`) per AGENT_CONTRACT.md file-touch rules.
+- Only shared file modified: `app/app.py` — routes use unique `salary_*` prefix and `/salary/` URL prefix.
+- `salary_report.html` is exclusively owned by this branch per contract.
+- No new Python dependencies added.
+- No new database tables or migrations.
+- All templates extend `base.html` without modifying it.

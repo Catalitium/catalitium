@@ -1,60 +1,77 @@
-# Plan: Candidate Decision Tools
+# PLAN — Salary Intelligence Hub
 
-**Branch:** `feature/candidate-decision-tools`
-**Agent contract:** AGENT_CONTRACT.md (shared types, file-touch rules)
-**Scope:** Side-by-side job comparison tool + wire orphaned tracker page
+**Branch:** `feature/salary-intelligence-hub`
+**Sprint:** 2
+**Agent Contract Shape:** `SalaryPercentile`
 
 ---
 
-## Architecture
+## Goal
 
-All scoring logic is pure Python (no DB writes, no new tables).
-Compare workspace fetches jobs via `Job.get_by_id`, enriches with salary data
-using the same pattern as `job_detail`, and scores each with a deterministic
-scoring engine. The compare selection state lives in `localStorage`
-(`catalitium_compare`, max 4 items). The orphaned `tracker.html` gets a simple
-GET route.
+Transform raw salary data into actionable analytics via four new pages under `/salary/`. No new DB tables, no new Python deps. Read-only queries on `jobs`, `salary`, `salary_submissions`.
 
-## Deliverables & Files
+## Deliverables
 
-| # | Deliverable | File(s) | Action |
-|---|-------------|---------|--------|
-| A | Compare scoring engine | `app/models/compare.py` | **NEW** |
-| B | Compare workspace page | `app/app.py`, `app/views/templates/compare.html` | ADD route, **NEW** template |
-| C | Compare button on cards | `app/views/templates/components/job_card.html` | EDIT (actions row) |
-| D | Compare localStorage + nav badge | `app/static/js/main.js` | EDIT (append section) |
-| E | Wire tracker route + sitemap | `app/app.py` | ADD route, EDIT sitemap |
-| F | Tests | `tests/test_compare.py` | **NEW** |
+### A) `app/models/salary_analytics.py` — Analytics Engine
+- `compute_percentile(title, location, user_salary, currency)` → SalaryPercentile dict
+- `get_ppp_indices()` → hardcoded PPP index for ~30 tech cities
+- `compare_cities_salary(title, cities)` → raw + PPP-adjusted comparison
+- `categorize_function(title_norm)` → function category string
+- `get_function_benchmarks(location)` → aggregated salary by function
+- `get_salary_trends(title_category, city, months)` → monthly median + count
 
-## Data Flow
+### B) `/salary/am-i-underpaid` — Percentile Checker
+- Form: title, location, salary, currency
+- Visual gauge (Tailwind), market label, methodology link
+- Template: `salary_underpaid.html`
 
-```
-[Search page] → user clicks Compare btn → localStorage catalitium_compare (max 4)
-             → "Compare now" floating btn → /compare?ids=1,2,3
-             → Flask route fetches jobs, enriches salary, calls score_job()
-             → compare.html renders side-by-side grid with score bars
-```
+### C) `/salary/compare-cities` — Cross-City Comparison
+- Form: title + up to 4 cities
+- Side-by-side cards: raw median vs PPP-adjusted
+- Bar chart via Tailwind progress bars
+- Template: `salary_compare_cities.html`
 
-## Scoring Weights (score_job)
+### D) `/salary/by-function` — Function Benchmarks
+- Salary medians by category (Backend, Frontend, ML/AI, etc.)
+- Optional location filter
+- Links to filtered job search
+- Template: `salary_by_function.html`
 
-| Factor | Weight | Condition |
-|--------|--------|-----------|
-| salary_present | 25 | job has non-empty salary text |
-| salary_confidence | 20 | estimated salary range available via location lookup |
-| freshness | 20 | posted within last 14 days |
-| remote | 15 | location contains "remote" (case-insensitive) |
-| description_quality | 20 | description length > 200 chars |
+### E) `/salary/trends` — Salary Trends
+- Monthly aggregates of job_salary from jobs table
+- Filter by title category or city
+- Interpretation text
+- Template: `salary_trends.html`
 
-Total: 0–100. Deterministic, no randomness.
+### F) Route Wiring in `app/app.py`
+- 4 new routes with `salary_*` function names
+- Sitemap entries at priority 0.7
+- Cross-links added to `salary_report.html`
+
+### G) Tests in `tests/test_salary_analytics.py`
+- Unit tests for all analytics functions
+- Route smoke tests (200 status)
+- 15+ tests minimum
+
+## File Touch Plan
+
+| File | Action |
+|------|--------|
+| `app/models/salary_analytics.py` | CREATE |
+| `app/views/templates/salary_underpaid.html` | CREATE |
+| `app/views/templates/salary_compare_cities.html` | CREATE |
+| `app/views/templates/salary_by_function.html` | CREATE |
+| `app/views/templates/salary_trends.html` | CREATE |
+| `app/app.py` | ADD routes (salary_ prefix) |
+| `app/views/templates/salary_report.html` | ADD cross-links section |
+| `tests/test_salary_analytics.py` | CREATE |
+| `PLAN.md` | CREATE |
+| `HANDOFF.md` | CREATE |
 
 ## Constraints
-
-- No new Python dependencies
-- No new database tables; read-only queries
-- No modifications to `companies.html` or `job_detail.html` salary section
-- No modifications to `base.html`
-- Carl is out of scope
-
----
-
-*Created: April 2026*
+- No touch: index.html, job_card.html, main.js, companies.html, compare.html, job_detail.html, base.html
+- No new Python deps
+- No new DB tables
+- Read-only DB queries
+- All templates extend base.html
+- Tailwind CDN classes only

@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}Am I Underpaid? | Salary Checker | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Find out if you're underpaid. Enter your job title, location, and salary to see where you rank compared to the market. Free salary percentile calculator by Catalitium."/>
+<link rel="canonical" href="{{ url_for('salary_underpaid', _external=True) }}">
+<meta property="og:title" content="Am I Underpaid? | Salary Checker | Catalitium"/>
+<meta property="og:description" content="See where your salary ranks vs. the market. Free percentile calculator for tech professionals."/>
+<meta property="og:type" content="website"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+  <nav class="text-xs text-slate-400 mb-6">
+    <a href="{{ url_for('salary_tool') }}" class="hover:text-brand">Salary Tools</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-600 dark:text-slate-300">Am I Underpaid?</span>
+  </nav>
+
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Salary Intelligence</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Am I Underpaid?</h1>
+    <p class="mt-2 text-slate-500 dark:text-slate-400">
+      Enter your current compensation and see how it compares to market data.
+      We'll show your percentile rank and whether you're above, at, or below market.
+    </p>
+  </div>
+
+  <form method="get" action="{{ url_for('salary_underpaid') }}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 mb-8">
+    <div class="grid gap-4 sm:grid-cols-2 mb-6">
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Job Title</span>
+        <input type="text" name="title" value="{{ request.args.get('title', '') }}" required
+               placeholder="e.g. Senior Software Engineer"
+               class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Location / City</span>
+        <input type="text" name="location" value="{{ request.args.get('location', '') }}" required
+               placeholder="e.g. Zurich, Berlin, London"
+               class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Current Annual Salary</span>
+        <input type="number" name="salary" value="{{ request.args.get('salary', '') }}" required
+               min="1000" max="10000000" step="1000"
+               placeholder="e.g. 120000"
+               class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+      </label>
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Currency</span>
+        <select name="currency"
+                class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+          {% for c in ['CHF', 'EUR', 'USD', 'GBP'] %}
+          <option value="{{ c }}" {% if request.args.get('currency', 'CHF') == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <button type="submit"
+            class="w-full sm:w-auto rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      Check My Salary
+    </button>
+  </form>
+
+  {% if result %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 mb-8">
+    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-6">Your Market Position</h2>
+
+    <!-- Gauge -->
+    <div class="mb-8">
+      <div class="flex justify-between text-xs text-slate-400 mb-2">
+        <span>Below Market</span>
+        <span>At Market</span>
+        <span>Above Market</span>
+      </div>
+      <div class="relative h-4 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <div class="absolute inset-y-0 left-0 rounded-full transition-all duration-500
+                    {% if result.label == 'above_market' %}bg-emerald-500
+                    {% elif result.label == 'below_market' %}bg-rose-500
+                    {% else %}bg-brand{% endif %}"
+             style="width: {{ result.percentile_rank }}%"></div>
+      </div>
+      <div class="relative h-0">
+        <div class="absolute -top-1 transition-all duration-500"
+             style="left: {{ result.percentile_rank }}%; transform: translateX(-50%)">
+          <div class="w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 shadow-md
+                      {% if result.label == 'above_market' %}bg-emerald-500
+                      {% elif result.label == 'below_market' %}bg-rose-500
+                      {% else %}bg-brand{% endif %}"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+        <p class="text-xs text-slate-400 mb-1">Your Salary</p>
+        <p class="text-lg font-bold text-slate-900 dark:text-white">{{ result.currency }} {{ '{:,}'.format(result.user_salary|int) }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+        <p class="text-xs text-slate-400 mb-1">Market Median</p>
+        <p class="text-lg font-bold text-brand">
+          {% if result.median %}{{ result.currency }} {{ '{:,}'.format(result.median|int) }}{% else %}N/A{% endif %}
+        </p>
+      </div>
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+        <p class="text-xs text-slate-400 mb-1">Percentile</p>
+        <p class="text-lg font-bold
+                  {% if result.label == 'above_market' %}text-emerald-500
+                  {% elif result.label == 'below_market' %}text-rose-500
+                  {% else %}text-brand{% endif %}">P{{ result.percentile_rank }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 text-center">
+        <p class="text-xs text-slate-400 mb-1">Market Position</p>
+        <p class="text-lg font-bold
+                  {% if result.label == 'above_market' %}text-emerald-500
+                  {% elif result.label == 'below_market' %}text-rose-500
+                  {% else %}text-brand{% endif %}">
+          {% if result.label == 'above_market' %}Above Market
+          {% elif result.label == 'below_market' %}Below Market
+          {% else %}At Market{% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if result.median %}
+    {% set diff_pct = ((result.user_salary - result.median) / result.median * 100)|round(1) %}
+    <div class="rounded-xl px-4 py-3 text-sm
+                {% if diff_pct > 0 %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300
+                {% elif diff_pct < 0 %}bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300
+                {% else %}bg-brand/5 text-brand{% endif %}">
+      {% if diff_pct > 0 %}
+        Your salary is <strong>{{ diff_pct }}% above</strong> the market median for this location.
+      {% elif diff_pct < 0 %}
+        Your salary is <strong>{{ (diff_pct|abs) }}% below</strong> the market median for this location.
+      {% else %}
+        Your salary is <strong>exactly at</strong> the market median for this location.
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Cross-links -->
+  <div class="grid gap-4 sm:grid-cols-2 mb-8">
+    <a href="{{ url_for('salary_compare_cities') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">See how salaries differ across cities</p>
+    </a>
+    <a href="{{ url_for('salary_by_function') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Function</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Salary benchmarks by team / function</p>
+    </a>
+  </div>
+
+  <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-5 text-xs text-slate-500 space-y-1.5">
+    <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm">Methodology</p>
+    <p>Percentile is estimated by comparing your salary against the median from Catalitium's location-based reference data.
+       This is an approximation, not a precise statistical percentile from a full distribution. Source data: Catalitium salary reference table.</p>
+    <p><a href="{{ url_for('compensation_methodology') }}" class="text-brand hover:underline">Full methodology &rarr;</a></p>
+  </div>
+
+</div>
+{% endblock %}

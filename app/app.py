@@ -116,6 +116,14 @@ from .models.compensation import (
     confidence_color,
     source_label as compensation_source_label,
 )
+from .models.salary_analytics import (
+    compute_percentile,
+    get_ppp_indices,
+    compare_cities_salary,
+    categorize_function,
+    get_function_benchmarks,
+    get_salary_trends,
+)
 
 try:
     import stripe as _stripe
@@ -3345,6 +3353,10 @@ def create_app() -> Flask:
         _add(url_for("salary_tool", _external=True), priority="0.85", changefreq="weekly")
         _add(url_for("salary_by_title", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("salary_top_companies", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_underpaid", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_compare_cities", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_by_function", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_trends", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("compensation_methodology", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("hire", _external=True), priority="0.8", changefreq="monthly")
         _add(url_for("post_a_job", _external=True), priority="0.75", changefreq="monthly")
@@ -3664,6 +3676,78 @@ def create_app() -> Flask:
 
         percentiles = _get_salary_percentiles(job_title, location)
         return jsonify({"ok": True, "percentiles": percentiles})
+
+    # ------------------------------------------------------------------
+    # Salary Intelligence Hub (Sprint 2)
+    # ------------------------------------------------------------------
+
+    @app.get("/salary/am-i-underpaid")
+    def salary_underpaid():
+        """Am I Underpaid? — salary percentile checker."""
+        result = None
+        title = request.args.get("title", "").strip()
+        location = request.args.get("location", "").strip()
+        salary_raw = request.args.get("salary", "").strip()
+        currency = request.args.get("currency", "CHF").strip().upper()
+        if title and location and salary_raw:
+            try:
+                user_salary = float(salary_raw)
+                if user_salary > 0:
+                    result = compute_percentile(title, location, user_salary, currency)
+            except (ValueError, TypeError):
+                pass
+        return render_template("salary_underpaid.html", result=result)
+
+    @app.get("/salary/compare-cities")
+    def salary_compare_cities():
+        """Cross-city salary comparison with PPP adjustment."""
+        ppp = get_ppp_indices()
+        ppp_cities = sorted(ppp.keys())
+        title = request.args.get("title", "").strip()
+        selected_cities = request.args.getlist("cities")
+        selected_cities = [c for c in selected_cities if c in ppp][:4]
+        results = None
+        if title and selected_cities:
+            results = compare_cities_salary(title, selected_cities)
+        return render_template(
+            "salary_compare_cities.html",
+            ppp_cities=ppp_cities,
+            selected_cities=selected_cities,
+            results=results,
+        )
+
+    @app.get("/salary/by-function")
+    def salary_by_function():
+        """Salary benchmarks aggregated by function/team category."""
+        location_filter = request.args.get("location", "").strip() or None
+        benchmarks = get_function_benchmarks(location=location_filter)
+        return render_template(
+            "salary_by_function.html",
+            benchmarks=benchmarks,
+            location_filter=location_filter,
+        )
+
+    @app.get("/salary/trends")
+    def salary_trends():
+        """Monthly salary trend data."""
+        _CATEGORIES = [
+            "Backend", "Frontend", "Fullstack", "ML/AI", "Data",
+            "DevOps/Infra", "Product", "Design", "Security", "Management",
+        ]
+        selected_category = request.args.get("category", "").strip() or None
+        selected_city = request.args.get("city", "").strip() or None
+        trends = get_salary_trends(
+            title_category=selected_category,
+            city=selected_city,
+            months=12,
+        )
+        return render_template(
+            "salary_trends.html",
+            trends=trends,
+            categories=_CATEGORIES,
+            selected_category=selected_category,
+            selected_city=selected_city,
+        )
 
     # ------------------------------------------------------------------
     # Favicons / touch icons at well-known URLs (mobile browsers often

@@ -322,6 +322,37 @@
       </a>
     </div>
 
+    <!-- Salary Intelligence Hub -->
+    <section class="mb-8">
+      <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Salary Intelligence</h2>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <a href="{{ url_for('salary_underpaid') }}"
+          class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+          <p class="text-xs font-semibold uppercase tracking-widest text-brand">Am I Underpaid?</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Salary percentile checker</p>
+          <p class="text-xs text-slate-400">Enter your salary and see where you rank vs. the market</p>
+        </a>
+        <a href="{{ url_for('salary_compare_cities') }}"
+          class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+          <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Cross-city PPP comparison</p>
+          <p class="text-xs text-slate-400">Raw vs. purchasing-power-adjusted salaries across 30+ cities</p>
+        </a>
+        <a href="{{ url_for('salary_by_function') }}"
+          class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+          <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Function</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Team &amp; function benchmarks</p>
+          <p class="text-xs text-slate-400">Backend, Frontend, ML/AI, DevOps and more</p>
+        </a>
+        <a href="{{ url_for('salary_trends') }}"
+          class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+          <p class="text-xs font-semibold uppercase tracking-widest text-brand">Trends</p>
+          <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Monthly salary movements</p>
+          <p class="text-xs text-slate-400">Is the market going up or down?</p>
+        </a>
+      </div>
+    </section>
+
     <!-- Contribute CTA banner -->
     <div class="mb-8 rounded-2xl border border-brand/30 bg-gradient-to-r from-brand/8 to-sky-500/8 dark:from-brand/10 dark:to-sky-500/10 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
