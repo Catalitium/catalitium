@@ -1584,3 +1584,59 @@ document.addEventListener('change', function(e) {
 
   document.addEventListener('catalitium:results-updated',function(){ initBtns(); syncUI(); });
 })();
+
+/* --- Advanced filter persistence (feature/smart-discovery-explore) --- */
+(function(){
+  var STORE_KEY = 'catalitium_adv_filters';
+  var form = document.getElementById('advanced-filter-form');
+  if (!form) return;
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    if (saved && typeof saved === 'object') {
+      var params = new URLSearchParams(window.location.search);
+      var hasParams = params.has('remote') || params.has('has_salary') ||
+                      params.has('freshness') || params.has('function') ||
+                      params.has('salary_max');
+      if (!hasParams) {
+        if (saved.remote) {
+          var cb = form.querySelector('input[name="remote"]');
+          if (cb) cb.checked = true;
+        }
+        if (saved.has_salary) {
+          var cb2 = form.querySelector('input[name="has_salary"]');
+          if (cb2) cb2.checked = true;
+        }
+        if (saved.freshness) {
+          var sel = form.querySelector('select[name="freshness"]');
+          if (sel) sel.value = saved.freshness;
+        }
+        if (saved.function_cat) {
+          var radio = form.querySelector('input[name="function"][value="' + saved.function_cat + '"]');
+          if (radio) radio.checked = true;
+        }
+        if (saved.salary_max) {
+          var inp = form.querySelector('input[name="salary_max"]');
+          if (inp) inp.value = saved.salary_max;
+        }
+      }
+    }
+  } catch(_){}
+
+  form.addEventListener('submit', function(){
+    try {
+      var data = {};
+      var rc = form.querySelector('input[name="remote"]');
+      if (rc && rc.checked) data.remote = true;
+      var hs = form.querySelector('input[name="has_salary"]');
+      if (hs && hs.checked) data.has_salary = true;
+      var fr = form.querySelector('select[name="freshness"]');
+      if (fr && fr.value) data.freshness = fr.value;
+      var fn = form.querySelector('input[name="function"]:checked');
+      if (fn && fn.value) data.function_cat = fn.value;
+      var sm = form.querySelector('input[name="salary_max"]');
+      if (sm && sm.value) data.salary_max = sm.value;
+      localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    } catch(_){}
+  });
+})();
