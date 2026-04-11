@@ -199,5 +199,21 @@
       </svg>
       <span class="track-label">Track</span>
     </button>
+    <button
+      type="button"
+      class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 dark:border-slate-800 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 hover:border-teal-300 transition w-full sm:w-auto min-h-[44px] justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300/50"
+      data-compare-btn
+      data-job-id="{{ j.id }}"
+      data-job-title="{{ (j.title or '')|e }}"
+      data-job-company="{{ (j.company or '')|e }}"
+      data-job-location="{{ (j.location or 'Remote / Anywhere')|e }}"
+      aria-label="Compare {{ (j.title or '')|e }}"
+      aria-pressed="false"
+    >
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="compare-label">Compare</span>
+    </button>
   </div>
 </article>
