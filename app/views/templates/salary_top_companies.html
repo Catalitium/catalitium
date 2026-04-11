@@ -2,7 +2,7 @@
 {% block title %}Top Paying Tech Companies: DACH 2026 | Catalitium{% endblock %}
 {% block meta %}
 <meta name="description" content="Ranked list of top paying tech employers in Zurich, Berlin, and Munich. See median total compensation at Google, Meta, Stripe, SAP, and more.">
-<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary/top-companies"/>
+<link rel="canonical" href="{{ url_for('salary_top_companies', _external=True) }}">
 {% endblock %}
 
 {% block content %}

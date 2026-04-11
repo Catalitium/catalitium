@@ -23,6 +23,8 @@
   <meta property="og:image:height" content="630" />
   <meta property="og:site_name" content="Catalitium" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="{{ (self.title() or 'Catalitium')|striptags }}" />
+  <meta name="twitter:description" content="{{ meta_description|default('Find high-signal roles and salary insights. Mobile-first job search by Catalitium.') }}" />
   <meta name="twitter:image" content="{{ url_for('static', filename='img/logo.png', _external=True) }}" />
   <meta name="theme-color" content="#1a73e8" />
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">

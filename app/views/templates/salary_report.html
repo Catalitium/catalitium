@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
-<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/salary-tools"/>
+<link rel="canonical" href="{{ url_for('salary_tool', _external=True) }}">
 <meta property="og:title" content="DACH Salary Tools | Catalitium"/>
 <meta property="og:description" content="Benchmark tech salaries in Zurich, Berlin, Munich. Model local vs. global hire costs. Browse live roles. All in one place."/>
 <meta property="og:type" content="website"/>
