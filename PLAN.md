@@ -1,59 +1,78 @@
-# Plan: Candidate Decision Tools
+# PLAN — Career Decision Intelligence Tools
 
-**Branch:** `feature/candidate-decision-tools`
-**Agent contract:** AGENT_CONTRACT.md (shared types, file-touch rules)
-**Scope:** Side-by-side job comparison tool + wire orphaned tracker page
+**Branch:** `feature/career-decision-intelligence`
+**Sprint:** 2 — Levels.fyi Feature Sprint
+**Prefix:** `/career/` routes, `career_*` functions
 
 ---
 
-## Architecture
+## Objective
 
-All scoring logic is pure Python (no DB writes, no new tables).
-Compare workspace fetches jobs via `Job.get_by_id`, enriches with salary data
-using the same pattern as `job_detail`, and scores each with a deterministic
-scoring engine. The compare selection state lives in `localStorage`
-(`catalitium_compare`, max 4 items). The orphaned `tracker.html` gets a simple
-GET route.
+Build six career decision-intelligence tools that help professionals evaluate job offers, understand AI exposure, track hiring velocity, estimate earnings, explore career paths, and benchmark their market position. All read-only against existing schema — no new tables, no new dependencies.
 
-## Deliverables & Files
+## Deliverables
 
-| # | Deliverable | File(s) | Action |
-|---|-------------|---------|--------|
-| A | Compare scoring engine | `app/models/compare.py` | **NEW** |
-| B | Compare workspace page | `app/app.py`, `app/views/templates/compare.html` | ADD route, **NEW** template |
-| C | Compare button on cards | `app/views/templates/components/job_card.html` | EDIT (actions row) |
-| D | Compare localStorage + nav badge | `app/static/js/main.js` | EDIT (append section) |
-| E | Wire tracker route + sitemap | `app/app.py` | ADD route, EDIT sitemap |
-| F | Tests | `tests/test_compare.py` | **NEW** |
+### A. Model Layer — `app/models/career.py`
 
-## Data Flow
+| Function | Purpose |
+|----------|---------|
+| `compute_worth_it_score(job_dict, salary_ref, company_stats)` | Score a job 0-100 across 5 dimensions (salary, company signal, role quality, remote, alternatives) |
+| `find_alternatives(title, location, exclude_id, limit)` | Search for similar jobs excluding current one |
+| `compute_ai_exposure(function_category)` | Rank function categories by % of AI-mentioning job descriptions |
+| `get_hiring_velocity(location, function, limit)` | Compare company hiring last 30 days vs previous 30 days |
+| `estimate_earnings(title, location, currency)` | Build low/median/high salary range from reference + submissions |
+| `get_career_paths(title_norm)` | Derive progression, lateral moves, top employers from jobs table |
+| `compute_market_position(title, location, years_exp, current_salary, currency)` | Return percentile rank vs market |
 
-```
-[Search page] → user clicks Compare btn → localStorage catalitium_compare (max 4)
-             → "Compare now" floating btn → /compare?ids=1,2,3
-             → Flask route fetches jobs, enriches salary, calls score_job()
-             → compare.html renders side-by-side grid with score bars
-```
+### B–G. Routes & Templates
 
-## Scoring Weights (score_job)
+| Route | Template | Description |
+|-------|----------|-------------|
+| `GET /career/evaluate` | `career_evaluate.html` | "Is This Worth It?" score breakdown with gauge |
+| `GET /career/ai-exposure` | `career_ai_exposure.html` | AI exposure ranking by function category |
+| `GET /career/hiring-trends` | `career_hiring_trends.html` | Hiring velocity dashboard (hot/cooling/stable) |
+| `GET /career/earnings` | `career_earnings.html` | First-year earnings estimator with visual bar |
+| `GET /career/paths` | `career_paths.html` | Career path explorer (next steps, lateral, employers) |
+| `GET /career/market-position` | `career_market_position.html` | Market position tool with percentile gauge |
 
-| Factor | Weight | Condition |
-|--------|--------|-----------|
-| salary_present | 25 | job has non-empty salary text |
-| salary_confidence | 20 | estimated salary range available via location lookup |
-| freshness | 20 | posted within last 14 days |
-| remote | 15 | location contains "remote" (case-insensitive) |
-| description_quality | 20 | description length > 200 chars |
+### H. Integration
 
-Total: 0–100. Deterministic, no randomness.
+- `job_detail.html`: Add "Is this role worth it?" link near salary area
+- `compare.html`: Add "Evaluate" link per job in the comparison table
+- Sitemap: 6 new career URLs at priority 0.7
 
-## Constraints
+### I. Tests — `tests/test_career.py`
 
-- No new Python dependencies
-- No new database tables; read-only queries
-- No modifications to `companies.html` or `job_detail.html` salary section
-- No modifications to `base.html`
-- Carl is out of scope
+- Unit tests for each model function (structure, edge cases)
+- Route smoke tests (200 status)
+- ≥20 tests total
+
+## Architecture Decisions
+
+- **Read-only queries** on `jobs`, `salary`, `salary_submissions` tables
+- **Conservative fallbacks** via try/except — graceful degradation when DB unavailable
+- All templates extend `base.html`, use existing Tailwind CDN classes
+- `noindex` on ephemeral evaluation pages, proper SEO on reference pages
+
+## Files Touched
+
+| File | Action |
+|------|--------|
+| `app/models/career.py` | CREATE |
+| `app/views/templates/career_*.html` (×6) | CREATE |
+| `tests/test_career.py` | CREATE |
+| `app/app.py` | ADD routes + sitemap entries |
+| `app/views/templates/job_detail.html` | ADD "worth it" link |
+| `app/views/templates/compare.html` | ADD evaluate link |
+| `PLAN.md` | CREATE |
+| `HANDOFF.md` | CREATE |
+
+## Out of Scope
+
+- Carl integration
+- New Python dependencies
+- New database tables or migrations
+- Modifications to base.html, index.html, job_card.html, main.js, companies.html, salary_report.html
 
 ---
 

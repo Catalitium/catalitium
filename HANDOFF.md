@@ -1,52 +1,83 @@
-# Handoff: feature/candidate-decision-tools
+# HANDOFF — Career Decision Intelligence Tools
 
-## Files Changed
+**Branch:** `feature/career-decision-intelligence`
+**Status:** Complete — 30/30 tests passing
+**Date:** April 2026
 
-| File | Action | Description |
-|------|--------|-------------|
-| `PLAN.md` | **NEW** | Architecture plan for the feature |
-| `HANDOFF.md` | **NEW** | This file |
-| `app/models/compare.py` | **NEW** | Scoring engine: `score_job()`, `compare_jobs()` |
-| `app/views/templates/compare.html` | **NEW** | Side-by-side comparison page (extends base.html) |
-| `tests/test_compare.py` | **NEW** | 16 tests covering scoring engine + routes |
-| `app/app.py` | **EDIT** | Added `/compare` route (`compare_workspace`), `/tracker` route (`tracker`), sitemap entries |
-| `app/views/templates/components/job_card.html` | **EDIT** | Added Compare toggle button in actions row |
-| `app/static/js/main.js` | **EDIT** | Added compare localStorage logic + floating "Compare Now" FAB |
+---
 
-## Routes Added
+## What Was Built
 
-| Route | Function | Method |
-|-------|----------|--------|
-| `/compare` | `compare_workspace` | GET |
-| `/tracker` | `tracker` | GET |
+Six career decision intelligence tools accessible under the `/career/` URL prefix:
 
-## Sitemap Entries Added
+| Route | Function | Purpose |
+|-------|----------|---------|
+| `/career/evaluate` | `career_evaluate` | "Is This Worth It?" job evaluator with 0-100 score |
+| `/career/ai-exposure` | `career_ai_exposure` | AI/automation exposure ranking by job function |
+| `/career/hiring-trends` | `career_hiring_trends` | Hiring velocity dashboard (hot/cooling/stable companies) |
+| `/career/earnings` | `career_earnings` | First-year earnings estimator with comparison bar |
+| `/career/paths` | `career_paths` | Career path explorer (promotions, lateral moves, employers) |
+| `/career/market-position` | `career_market_position` | Market position benchmarking with percentile gauge |
 
-- `/tracker` — priority 0.6, weekly
-- `/compare` — priority 0.5, weekly
+## Files Created
+
+- `app/models/career.py` — All business logic (7 public functions, helpers)
+- `app/views/templates/career_evaluate.html` — Evaluation UI with score gauge
+- `app/views/templates/career_ai_exposure.html` — AI exposure table with category badges
+- `app/views/templates/career_hiring_trends.html` — Hiring velocity cards grouped by trend
+- `app/views/templates/career_earnings.html` — Earnings form with visual salary bar
+- `app/views/templates/career_paths.html` — Path explorer with next steps/lateral/employers
+- `app/views/templates/career_market_position.html` — Market position form with percentile gauge
+- `tests/test_career.py` — 30 tests (unit + route smoke)
+- `PLAN.md` — Pre-implementation plan
+- `HANDOFF.md` — This file
+
+## Files Modified
+
+- `app/app.py` — Added 6 career routes + 6 sitemap entries
+- `app/views/templates/job_detail.html` — Added "Is this role worth it?" link
+- `app/views/templates/compare.html` — Added "Evaluate →" link per job
+
+## Architecture
+
+- **No new tables** — Read-only queries on `jobs`, `salary`, `salary_submissions`
+- **No new dependencies** — Pure Python logic with existing Flask/psycopg stack
+- **Conservative guards** — All DB queries wrapped in try/except with graceful fallbacks
+- **Type shapes** — Follows `WorthItScore` and `AIExposure` from AGENT_CONTRACT.md
+
+## WorthItScore Breakdown (each 0-20, total 0-100)
+
+| Dimension | Logic |
+|-----------|-------|
+| `salary_vs_market` | 20 if posted salary ≥ median, 10 if below, 5 if estimated only, 0 if no data |
+| `company_signal` | 20 if 10+ jobs & recent (14d), 10 if 5+, 5 if 2+, 0 otherwise |
+| `role_quality` | Up to 20 based on description length + salary transparency + specific location |
+| `remote_availability` | 20 if remote, 10 if hybrid, 0 otherwise |
+| `alternatives_count` | 20 if 10+ similar roles, 10 if 5+, 5 if 2+, 0 otherwise |
 
 ## Test Results
 
 ```
-16 passed, 10 warnings in 96.11s
+30 passed, 0 failed (tests/test_career.py)
 ```
 
-All 16 tests pass (9 unit tests for scoring engine, 3 for `compare_jobs`, 3 route smoke tests, 1 tracker route test). Warnings are pre-existing psycopg_pool deprecation notices unrelated to this branch.
-
-## Known Issues
-
-- `/compare?ids=...` with valid real job IDs will attempt DB connections for `Job.get_by_id` and `get_salary_for_location`. In test mode with no live DB, these gracefully return empty results (empty state page).
-- The compare FAB appears at `bottom-20 md:bottom-6 right-4` to avoid overlap with the mobile bottom nav bar.
-- The ConnectionPool shutdown warnings in pytest output are a known Python 3.14 / psycopg_pool interaction, not caused by this branch.
+- 6 WorthItScore unit tests
+- 3 AI exposure tests
+- 2 hiring velocity tests
+- 3 earnings estimator tests
+- 2 career paths tests
+- 3 market position tests
+- 6 route smoke tests (all return 200)
+- 2 parameterized route tests (with query params)
+- 3 internal helper tests
 
 ## Merge Notes
 
-- **Conflict zone**: `components/job_card.html` actions row — both this branch and `feature/compensation-intelligence` add elements there. This branch appends the Compare button at the end of the actions div. Compensation adds a confidence badge. Low conflict risk since they target different locations.
-- **No conflicts expected**: All new files (`compare.py`, `compare.html`, `test_compare.py`) are unique to this branch per AGENT_CONTRACT.md.
-- `app/app.py` routes use unique function names (`compare_workspace`, `tracker`) per contract.
-- `main.js` changes are appended at the end of the file; no overlap with other branches.
-- No new Python dependencies. No new database tables. Read-only queries only.
+- All routes use unique `/career/*` prefix — no conflicts with other sprint branches
+- Only touched `job_detail.html` (added link) and `compare.html` (added link) per AGENT_CONTRACT
+- Sitemap entries use priority 0.7, changefreq weekly
+- No changes to: `base.html`, `index.html`, `job_card.html`, `main.js`, `companies.html`, `salary_report.html`
 
 ---
 
-*Completed: April 2026*
+*Handoff complete. Ready for integration review.*
