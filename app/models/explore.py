@@ -7,68 +7,35 @@ No new tables or dependencies required.
 from __future__ import annotations
 
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from .db import get_db, logger
+from .taxonomy import FUNCTION_CATEGORIES, categorize_function  # single source of truth
 
 # ---------------------------------------------------------------------------
-# Function-category keyword map
+# In-memory LRU cache (same pattern as jobs.py)
 # ---------------------------------------------------------------------------
 
-FUNCTION_CATEGORIES: Dict[str, List[str]] = {
-    "Backend": [
-        "backend", "server", "api", "golang", "rust",
-        "java", "python dev",
-    ],
-    "Frontend": [
-        "frontend", "react", "angular", "vue", "ui", "ux",
-    ],
-    "Fullstack": [
-        "fullstack", "full-stack", "full stack",
-    ],
-    "ML/AI": [
-        "machine learning", "ml", "ai", "deep learning",
-        "nlp", "computer vision", "llm",
-    ],
-    "Data": [
-        "data engineer", "data analyst", "data scientist",
-        "analytics", "etl", "dbt",
-    ],
-    "DevOps": [
-        "devops", "sre", "infrastructure", "platform",
-        "cloud", "kubernetes", "docker",
-    ],
-    "Product": [
-        "product manager", "product owner", "scrum master", "agile",
-    ],
-    "Design": [
-        "designer", "figma", "design system",
-    ],
-    "Security": [
-        "security", "cybersec", "penetration", "soc",
-    ],
-    "Management": [
-        "engineering manager", "vp engineer", "head of",
-        "director", "cto", "cio",
-    ],
-}
-
-_CATEGORY_INDEX: List[tuple[str, str]] = []
-for _cat, _keywords in FUNCTION_CATEGORIES.items():
-    for _kw in sorted(_keywords, key=len, reverse=True):
-        _CATEGORY_INDEX.append((_kw, _cat))
+_CACHE_TTL = 300  # 5 minutes for expensive aggregation queries
+_CACHE_MAX = 64
+_cache: Dict[tuple, tuple] = {}
 
 
-def categorize_function(title_norm: Optional[str]) -> str:
-    """Map a normalized job title to a function category string."""
-    if not title_norm:
-        return "Other"
-    t = title_norm.strip().lower()
-    for keyword, category in _CATEGORY_INDEX:
-        if keyword in t:
-            return category
-    return "Other"
+def _cache_get(key: tuple):
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < _CACHE_TTL:
+        return hit[1]
+    return None
+
+
+def _cache_set(key: tuple, value):
+    _cache[key] = (time.time(), value)
+    if len(_cache) > _CACHE_MAX:
+        oldest = sorted(_cache.items(), key=lambda kv: kv[1][0])[: len(_cache) - _CACHE_MAX]
+        for k, _ in oldest:
+            _cache.pop(k, None)
 
 
 # ---------------------------------------------------------------------------
@@ -162,10 +129,12 @@ def get_hiring_urgency(company_name: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def get_explore_data() -> Dict[str, Any]:
-    """Return top titles, locations, and companies for the Explore Hub.
+    """Return top titles, locations, and companies for the Explore Hub."""
+    cache_key = ("explore_data",)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
 
-    Each list contains dicts with ``name``, ``job_count``, and optional salary info.
-    """
     result: Dict[str, Any] = {
         "top_titles": [],
         "top_locations": [],
@@ -219,6 +188,8 @@ def get_explore_data() -> Dict[str, Any]:
             ]
     except Exception as exc:
         logger.warning("get_explore_data failed: %s", exc)
+
+    _cache_set(cache_key, result)
     return result
 
 
@@ -228,6 +199,11 @@ def get_explore_data() -> Dict[str, Any]:
 
 def get_remote_companies(limit: int = 50) -> List[Dict[str, Any]]:
     """Return companies ranked by % of remote job postings."""
+    cache_key = ("remote_companies", limit)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     try:
         db = get_db()
         with db.cursor() as cur:
@@ -257,6 +233,7 @@ def get_remote_companies(limit: int = 50) -> List[Dict[str, Any]]:
                     "remote_pct": round(remote / total * 100, 1),
                     "latest_date": str(r[3]) if r[3] else "",
                 })
+            _cache_set(cache_key, rows)
             return rows
     except Exception as exc:
         logger.warning("get_remote_companies failed: %s", exc)
@@ -269,6 +246,11 @@ def get_remote_companies(limit: int = 50) -> List[Dict[str, Any]]:
 
 def get_function_distribution(location: Optional[str] = None) -> List[Dict[str, Any]]:
     """Return job counts per function category with % having salary data."""
+    cache_key = ("fn_distribution", (location or "").lower())
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     try:
         db = get_db()
         params: list = []
@@ -299,6 +281,7 @@ def get_function_distribution(location: Optional[str] = None) -> List[Dict[str, 
                     "job_count": total,
                     "has_salary_pct": round(with_sal / total * 100, 1) if total else 0,
                 })
+            _cache_set(cache_key, result)
             return result
     except Exception as exc:
         logger.warning("get_function_distribution failed: %s", exc)

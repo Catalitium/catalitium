@@ -571,7 +571,7 @@ class Job:
             clauses_pg.append("(date >= CURRENT_DATE - INTERVAL '%s days')" % int(freshness))
 
         if function_cat:
-            from .explore import FUNCTION_CATEGORIES
+            from .taxonomy import FUNCTION_CATEGORIES
             keywords = FUNCTION_CATEGORIES.get(function_cat, [])
             if keywords:
                 kw_clauses = []

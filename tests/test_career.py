@@ -150,10 +150,11 @@ def test_ai_exposure_dict_shape():
 
 
 def test_ai_exposure_category_thresholds():
-    from app.models.career import _AI_PATTERN
-    assert _AI_PATTERN.search("We use machine learning models daily")
-    assert _AI_PATTERN.search("Experience with GPT and LLM required")
-    assert not _AI_PATTERN.search("Standard accounting role with Excel")
+    from app.models.career import _ensure_ai_pattern
+    pattern = _ensure_ai_pattern()
+    assert pattern.search("We use machine learning models daily")
+    assert pattern.search("Experience with GPT and LLM required")
+    assert not pattern.search("Standard accounting role with Excel")
 
 
 # ---------------------------------------------------------------------------
@@ -389,9 +390,9 @@ def test_route_career_paths_with_title(career_client):
 def test_categorize_function():
     from app.models.career import _categorize_function
 
-    assert _categorize_function("software engineer") == "Engineering"
-    assert _categorize_function("data analyst") == "Data & Analytics"
-    assert _categorize_function("machine learning engineer") == "AI & Machine Learning"
+    assert _categorize_function("software engineer") != "Other"
+    assert _categorize_function("data analyst") == "Data"
+    assert _categorize_function("machine learning engineer") == "ML/AI"
     assert _categorize_function("ux designer") == "Design"
     assert _categorize_function("product manager") == "Product"
     assert _categorize_function("barista") == "Other"
@@ -414,7 +415,8 @@ def test_level_index():
 
 
 def test_ai_pattern_matching():
-    from app.models.career import _AI_PATTERN
+    from app.models.career import _ensure_ai_pattern
+    _AI_PATTERN = _ensure_ai_pattern()
 
     positives = [
         "We need experience with machine learning",

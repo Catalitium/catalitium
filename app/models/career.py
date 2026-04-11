@@ -11,16 +11,24 @@ from typing import Any, Dict, List, Optional, Tuple
 from .db import get_db, logger
 from .jobs import Job
 from .salary import get_salary_for_location, parse_salary_range_string
+from .taxonomy import categorize_function as _categorize_function  # unified taxonomy
 
-# ── AI keyword list used by compute_ai_exposure ──────────────────────────
+# ── AI keyword list (lazy-compiled on first access) ──────────────────────
 _AI_KEYWORDS = [
     "artificial intelligence", "machine learning", "deep learning",
     "neural network", "llm", "gpt", "nlp", "computer vision",
     "generative ai", "ai agent", "automation", "copilot", "chatbot",
 ]
-_AI_PATTERN = re.compile(
-    "|".join(re.escape(kw) for kw in _AI_KEYWORDS), re.IGNORECASE
-)
+_AI_PATTERN: Optional[re.Pattern] = None
+
+
+def _ensure_ai_pattern() -> re.Pattern:
+    global _AI_PATTERN
+    if _AI_PATTERN is None:
+        _AI_PATTERN = re.compile(
+            "|".join(re.escape(kw) for kw in _AI_KEYWORDS), re.IGNORECASE
+        )
+    return _AI_PATTERN
 
 # ── Title progression maps ───────────────────────────────────────────────
 _IC_LADDER = ["junior", "mid", "senior", "staff", "principal", "distinguished"]
@@ -35,7 +43,7 @@ def _level_index(title_lower: str) -> Tuple[int, str]:
     for i, level in enumerate(_MGMT_LADDER):
         if level in title_lower:
             return i, "mgmt"
-    return 1, "ic"  # default to mid-level IC
+    return 1, "ic"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -54,7 +62,6 @@ def compute_worth_it_score(
     """
     breakdown: Dict[str, int] = {}
 
-    # 1. salary_vs_market
     job_salary_str = job_dict.get("job_salary_range") or job_dict.get("salary") or ""
     job_salary_val = job_dict.get("job_salary") or parse_salary_range_string(str(job_salary_str))
     has_salary = job_salary_val is not None and job_salary_val
@@ -68,7 +75,6 @@ def compute_worth_it_score(
     else:
         breakdown["salary_vs_market"] = 0
 
-    # 2. company_signal
     job_count = int(company_stats.get("job_count", 0)) if company_stats else 0
     latest_date_raw = (company_stats.get("latest_date") or "") if company_stats else ""
     recent_post = False
@@ -94,7 +100,6 @@ def compute_worth_it_score(
     else:
         breakdown["company_signal"] = 0
 
-    # 3. role_quality
     desc = job_dict.get("job_description") or job_dict.get("description") or ""
     location = job_dict.get("location") or ""
     rq = 0
@@ -108,7 +113,6 @@ def compute_worth_it_score(
         rq += 6
     breakdown["role_quality"] = min(rq, 20)
 
-    # 4. remote_availability
     loc_lower = location.lower()
     if "remote" in loc_lower:
         breakdown["remote_availability"] = 20
@@ -117,7 +121,6 @@ def compute_worth_it_score(
     else:
         breakdown["remote_availability"] = 0
 
-    # 5. alternatives_count — caller can supply or we default to 0
     alt_count = job_dict.get("_alternatives_count", 0)
     if alt_count >= 10:
         breakdown["alternatives_count"] = 20
@@ -161,6 +164,7 @@ def compute_ai_exposure(function_category: Optional[str] = None) -> List[Dict[st
 
     Returns a list of AIExposure dicts sorted by exposure_pct desc.
     """
+    ai_pattern = _ensure_ai_pattern()
     try:
         db = get_db()
         with db.cursor() as cur:
@@ -195,7 +199,7 @@ def compute_ai_exposure(function_category: Optional[str] = None) -> List[Dict[st
         if func_name not in buckets:
             buckets[func_name] = {"total": 0, "ai": 0, "salaries": []}
         buckets[func_name]["total"] += 1
-        if _AI_PATTERN.search(desc):
+        if ai_pattern.search(desc):
             buckets[func_name]["ai"] += 1
         if salary_val:
             buckets[func_name]["salaries"].append(float(salary_val))
@@ -380,13 +384,11 @@ def get_career_paths(title_norm: str) -> Dict[str, Any]:
     next_steps: List[Dict] = []
     lateral_moves: List[Dict] = []
 
-    # IC next steps
     ic_next = _IC_LADDER[level_idx + 1:level_idx + 3] if level_idx + 1 < len(_IC_LADDER) else []
     for level in ic_next:
         search_term = f"{level} {base_function}"
         _add_path_node(search_term, next_steps)
 
-    # Mgmt path if IC
     if track == "ic" and level_idx >= 2:
         for level in _MGMT_LADDER[:2]:
             search_term = f"{level} {base_function}"
@@ -397,7 +399,6 @@ def get_career_paths(title_norm: str) -> Dict[str, Any]:
             search_term = f"{level} {base_function}"
             _add_path_node(search_term, next_steps)
 
-    # Lateral moves: same level, different function
     lateral_functions = _get_lateral_functions(base_function)
     current_level = _IC_LADDER[level_idx] if track == "ic" and level_idx < len(_IC_LADDER) else (
         _MGMT_LADDER[level_idx] if track == "mgmt" and level_idx < len(_MGMT_LADDER) else ""
@@ -406,7 +407,6 @@ def get_career_paths(title_norm: str) -> Dict[str, Any]:
         search_term = f"{current_level} {func}" if current_level else func
         _add_path_node(search_term, lateral_moves)
 
-    # Top employers
     companies_hiring = _get_top_employers(title_lower)
 
     return {
@@ -466,7 +466,6 @@ def compute_market_position(
         else:
             label = "below_market"
 
-    # Adjust for experience: each year beyond 3 bumps percentile slightly
     exp_adjustment = max(0, (years_exp - 3)) * 1.5
     percentile_rank = min(99, int(percentile_rank + exp_adjustment))
 
@@ -484,29 +483,6 @@ def compute_market_position(
 # ═══════════════════════════════════════════════════════════════════════════
 # PRIVATE HELPERS
 # ═══════════════════════════════════════════════════════════════════════════
-
-
-def _categorize_function(title_lower: str) -> str:
-    """Map a normalised job title to a broad function category."""
-    categories = [
-        ("AI & Machine Learning", ["machine learning", "ml ", "ai ", "artificial intelligence", "deep learning", "nlp", "computer vision"]),
-        ("Data & Analytics", ["data", "analyst", "analytics", "business intelligence", "bi "]),
-        ("Security", ["security", "infosec", "cybersecurity", "penetration"]),
-        ("QA & Testing", ["qa ", "quality", "test ", "testing"]),
-        ("Product", ["product manager", "product owner", "product lead"]),
-        ("Design", ["design", "ux", "ui ", "creative"]),
-        ("Engineering", ["engineer", "developer", "programmer", "devops", "sre", "backend", "frontend", "fullstack", "full-stack", "software"]),
-        ("Marketing", ["marketing", "growth", "seo", "content"]),
-        ("Sales", ["sales", "account executive", "business development", "bdr", "sdr"]),
-        ("Operations", ["operations", "ops ", "logistics", "supply chain"]),
-        ("Management", ["manager", "director", "vp ", "head of", "chief"]),
-        ("Support", ["support", "customer success", "helpdesk"]),
-    ]
-    for cat_name, keywords in categories:
-        for kw in keywords:
-            if kw in title_lower:
-                return cat_name
-    return "Other"
 
 
 def _get_lateral_functions(base_function: str) -> List[str]:

@@ -8,12 +8,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from .db import get_db, logger, _is_unique_violation
+from .utils import now_iso as _now_iso
 
 JOB_POSTING_ACTIVE_DAYS = 10  # listings expire after this many days
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def insert_subscriber(

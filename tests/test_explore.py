@@ -139,7 +139,7 @@ class TestCategorizeFunction:
         assert categorize_function("machine learning engineer") == "ML/AI"
 
     def test_devops(self):
-        assert categorize_function("devops engineer") == "DevOps"
+        assert categorize_function("devops engineer") == "DevOps/Infra"
 
     def test_data_engineer(self):
         assert categorize_function("data engineer") == "Data"

@@ -4,6 +4,10 @@
 #                 upsert_profile_cv_extract, summarize_two_sentences,
 #                 parse_job_description.
 #
+# Shared taxonomy and utility helpers live in:
+#   models/taxonomy.py     — canonical categorize_function
+#   models/utils.py        — now_iso, safe_salary_context
+#
 # All model logic has been split into focused modules:
 #   models/jobs.py         — Job class, job summary cache, date/text helpers
 #   models/salary.py       — salary queries and parsing utilities
@@ -75,12 +79,6 @@ def _normalize_pg_url(url: str) -> str:
         hostport = f"{hostname}:{port}"
     parsed = parsed._replace(netloc=f"{auth}{hostport}")
     return urlunparse(parsed._replace(query=new_query))
-
-
-def _truthy(value: str | None) -> bool:
-    if value is None:
-        return False
-    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -242,59 +240,7 @@ def upsert_profile_cv_extract(
         return "error"
 
 
-# ----------------------------- Description Parsing ---------------------------
-
-# Small multilingual stopword set to keep summarizer lightweight
-_STOPWORDS = {
-    # EN
-    "a","about","above","after","again","against","all","am","an","and","any","are","as","at",
-    "be","because","been","before","being","below","between","both","but","by","can","could",
-    "did","do","does","doing","down","during","each","few","for","from","further","had","has",
-    "have","having","he","her","here","hers","herself","him","himself","his","how","i","if","in",
-    "into","is","it","its","itself","me","more","most","my","myself","no","nor","not","of","off",
-    "on","once","only","or","other","our","ours","ourselves","out","over","own","same","she","should",
-    "so","some","such","than","that","the","their","theirs","them","themselves","then","there","these",
-    "they","this","those","through","to","too","under","until","up","very","was","we","were","what",
-    "when","where","which","while","who","whom","why","with","you","your","yours","yourself","yourselves",
-    # ES/FR minimal
-    "de","la","el","en","y","los","las","que","es","un","una","con","por","para","le","et","Ã ",
-    "les","des","est","pour","dans"
-}
-
-def summarize_two_sentences(text: str) -> str:
-    """Extract two most representative sentences from text (pure stdlib)."""
-    import re
-    from collections import Counter
-    if not text:
-        return ""
-    s = text.strip()
-    sentences = re.split(r"(?<=[.!?])\s+", s)
-    if len(sentences) < 2:
-        return s
-    words = re.findall(r"\b\w+\b", s.lower())
-    freqs = Counter(w for w in words if w not in _STOPWORDS)
-    scores = {}
-    for sent in sentences:
-        tokens = re.findall(r"\b\w+\b", sent.lower())
-        if not tokens:
-            continue
-        score = sum(freqs.get(w, 0) for w in tokens if w not in _STOPWORDS) / max(len(tokens), 1)
-        scores[sent] = score
-    top = sorted(scores.items(), key=lambda x: (-x[1], sentences.index(x[0])))[:2]
-    final = sorted([t[0] for t in top], key=lambda x: sentences.index(x))
-    return " ".join(final)
-
-
 # ----------------------------- Schema Init -----------------------------------
-
-def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> None:
-    try:
-        with db.cursor() as cur:
-            for column, ddl in definitions.items():
-                cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {ddl}")
-    except Exception as exc:
-        logger.debug("Unable to ensure columns for %s: %s", table, exc)
-
 
 def init_db():
     """Connectivity check + ensure all required tables and columns exist."""

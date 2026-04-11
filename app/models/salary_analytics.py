@@ -6,11 +6,36 @@ No new tables or dependencies.
 
 from __future__ import annotations
 
-import re
+import time
 from typing import Dict, List, Optional
 
 from .db import get_db, logger
 from .salary import get_salary_for_location
+from .taxonomy import categorize_function  # single source of truth
+
+
+# ---------------------------------------------------------------------------
+# In-memory LRU cache (same pattern as jobs.py)
+# ---------------------------------------------------------------------------
+
+_CACHE_TTL = 300  # 5 minutes for expensive aggregation queries
+_CACHE_MAX = 64
+_cache: Dict[tuple, tuple] = {}
+
+
+def _cache_get(key: tuple):
+    hit = _cache.get(key)
+    if hit and time.time() - hit[0] < _CACHE_TTL:
+        return hit[1]
+    return None
+
+
+def _cache_set(key: tuple, value):
+    _cache[key] = (time.time(), value)
+    if len(_cache) > _CACHE_MAX:
+        oldest = sorted(_cache.items(), key=lambda kv: kv[1][0])[: len(_cache) - _CACHE_MAX]
+        for k, _ in oldest:
+            _cache.pop(k, None)
 
 
 # ---------------------------------------------------------------------------
@@ -137,42 +162,6 @@ def compare_cities_salary(title: str, cities: List[str]) -> List[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Function/team categorisation
-# ---------------------------------------------------------------------------
-
-_FUNCTION_MAP = [
-    ("ML/AI", {"machine learning", "ml ", "ml/", "ai ", "ai/", "artificial intelligence",
-               "deep learning", "nlp", "computer vision", "llm"}),
-    ("Data", {"data engineer", "data scientist", "data analyst", "analytics engineer",
-              "bi ", "business intelligence", "etl", "data platform"}),
-    ("Frontend", {"frontend", "front-end", "front end", "react", "angular", "vue",
-                  "ui engineer", "ui developer", "css"}),
-    ("Backend", {"backend", "back-end", "back end", "server-side", "api engineer",
-                 "systems engineer", "golang", "java ", "python developer", "ruby"}),
-    ("Fullstack", {"fullstack", "full-stack", "full stack"}),
-    ("DevOps/Infra", {"devops", "sre", "site reliability", "infrastructure", "platform engineer",
-                      "cloud engineer", "kubernetes", "terraform", "aws engineer"}),
-    ("Security", {"security", "infosec", "cybersecurity", "appsec", "penetration"}),
-    ("Product", {"product manager", "product owner", "product lead", "product director"}),
-    ("Design", {"designer", "ux ", "ui/ux", "ux/ui", "design lead", "product design"}),
-    ("Management", {"engineering manager", "vp engineering", "cto", "head of engineering",
-                    "director of engineering", "tech lead manager"}),
-]
-
-
-def categorize_function(title_norm: str) -> str:
-    """Map a normalized job title to a function category."""
-    if not title_norm:
-        return "Other"
-    low = title_norm.lower()
-    for category, keywords in _FUNCTION_MAP:
-        for kw in keywords:
-            if kw in low:
-                return category
-    return "Other"
-
-
-# ---------------------------------------------------------------------------
 # Function benchmarks (aggregate jobs.job_salary by category)
 # ---------------------------------------------------------------------------
 
@@ -181,6 +170,11 @@ def get_function_benchmarks(location: Optional[str] = None) -> List[dict]:
 
     Uses a single query, then buckets in Python to avoid dynamic SQL.
     """
+    cache_key = ("fn_benchmarks", (location or "").lower())
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     benchmarks: Dict[str, List[int]] = {}
     try:
         db = get_db()
@@ -224,6 +218,7 @@ def get_function_benchmarks(location: Optional[str] = None) -> List[dict]:
             "currency": "CHF",
         })
     results.sort(key=lambda x: x["median_salary"], reverse=True)
+    _cache_set(cache_key, results)
     return results
 
 
@@ -237,6 +232,11 @@ def get_salary_trends(
     months: int = 12,
 ) -> List[dict]:
     """Monthly median salary + job count from jobs table."""
+    cache_key = ("sal_trends", (title_category or "").lower(), (city or "").lower(), months)
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     trends: List[dict] = []
     try:
         db = get_db()
@@ -271,9 +271,7 @@ def get_salary_trends(
     except Exception as exc:
         logger.debug("get_salary_trends failed: %s", exc)
 
-    # If we got data, optionally filter by title_category in Python
     if title_category and title_category != "All":
-        # Re-run with title filter
         try:
             db = get_db()
             with db.cursor() as cur:
@@ -312,4 +310,5 @@ def get_salary_trends(
         except Exception as exc:
             logger.debug("get_salary_trends category filter failed: %s", exc)
 
+    _cache_set(cache_key, trends)
     return trends
