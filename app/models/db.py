@@ -21,7 +21,6 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
-from typing import Dict, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:

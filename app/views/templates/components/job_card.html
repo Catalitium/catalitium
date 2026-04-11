@@ -62,9 +62,9 @@
           <span>{{ (CUR.get(j.median_salary_currency) or '') }} {{ j.estimated_salary_range_compact }}</span>
         </span>
         {% endif %}
-        {% if j.salary_delta_pct is not none %}
-        <span class="inline-flex items-center gap-1 rounded-full {% if j.salary_delta_pct >= 0 %}bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">
-          {% if j.salary_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ j.salary_delta_pct | abs }}% vs median
+        {% if 'salary_delta_pct' in j and j['salary_delta_pct'] is not none %}
+        <span class="inline-flex items-center gap-1 rounded-full {% if j['salary_delta_pct'] >= 0 %}bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">
+          {% if j['salary_delta_pct'] >= 0 %}▲{% else %}▼{% endif %} {{ j['salary_delta_pct'] | abs }}% vs median
         </span>
         {% endif %}
       </div>

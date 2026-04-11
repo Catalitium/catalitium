@@ -2,14 +2,22 @@
 {% block title %}{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}{% endblock %}
 
 {% block meta %}
+{% set _jobs_page = pagination.page if pagination and pagination.page > 1 else none %}
 <meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
-<meta name="keywords" content="tech jobs, developer jobs, software engineer, remote work, {{ title_q if title_q else 'technology' }}, {{ country_q if country_q else 'remote jobs' }}">
-<link rel="canonical" href="{{ url_for('jobs', title=title_q or None, country=country_q or None, page=(pagination.page if pagination and pagination.page > 1 else None), _external=True) }}">
+{% if jobs_salary_min is defined and jobs_salary_min is not none %}
+<link rel="canonical" href="{{ url_for('jobs', title=title_q or none, country=country_q or none, salary_min=jobs_salary_min, page=_jobs_page, _external=True) }}">
+{% else %}
+<link rel="canonical" href="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
+{% endif %}
 <!-- Open Graph tags -->
 <meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
 <meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('jobs', title=title_q or None, country=country_q or None, page=(pagination.page if pagination and pagination.page > 1 else None), _external=True) }}">
+{% if jobs_salary_min is defined and jobs_salary_min is not none %}
+<meta property="og:url" content="{{ url_for('jobs', title=title_q or none, country=country_q or none, salary_min=jobs_salary_min, page=_jobs_page, _external=True) }}">
+{% else %}
+<meta property="og:url" content="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
+{% endif %}
 <!-- Twitter Card tags -->
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}{% else %}Tech Jobs & Salary Insights{% endif %}">
@@ -427,9 +435,9 @@
             {% endif %}
           </td>
           <td class="px-4 py-3 whitespace-nowrap">
-            {% if j.salary_delta_pct is not none %}
-            <span class="{% if j.salary_delta_pct >= 0 %}text-emerald-700 dark:text-emerald-400{% else %}text-slate-500{% endif %} font-medium text-[13px]">
-              {% if j.salary_delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ j.salary_delta_pct | abs }}%
+            {% if 'salary_delta_pct' in j and j['salary_delta_pct'] is not none %}
+            <span class="{% if j['salary_delta_pct'] >= 0 %}text-emerald-700 dark:text-emerald-400{% else %}text-slate-500{% endif %} font-medium text-[13px]">
+              {% if j['salary_delta_pct'] >= 0 %}▲{% else %}▼{% endif %} {{ j['salary_delta_pct'] | abs }}%
             </span>
             {% else %}
             <span class="text-slate-400">-</span>
@@ -694,28 +702,29 @@
       "position": {{ loop.index }},
       "item": {
         "@type": "JobPosting",
-        "title": "{{ j.title|e }}",
-        "description": "{{ j.description|truncate(200, True)|e }}",
-        "datePosted": "{{ j.date }}",
+        "url": {{ job_url(j, _external=True)|tojson }},
+        "title": {{ (j.title or '')|tojson }},
+        "description": {{ (j.description|truncate(200, True, '…') if j.description else '')|tojson }}{% if j.date_posted %},
+        "datePosted": {{ j.date_posted|tojson }}{% endif %},
         "employmentType": "FULL_TIME",
         "hiringOrganization": {
           "@type": "Organization",
-          "name": "{{ j.company|e if j.company else 'Company' }}"
+          "name": {{ (j.company or 'Company')|tojson }}
         },
         "jobLocation": {
           "@type": "Place",
           "address": {
             "@type": "PostalAddress",
-            "addressLocality": "{{ j.location|e }}"
+            "addressLocality": {{ (j.location or '')|tojson }}
           }
-        }{% if j.estimated_salary_range_compact %},
+        }{% if j.estimated_salary_range_numeric and j.median_salary_currency %},
         "estimatedSalary": {
           "@type": "MonetaryAmount",
-          "currency": "{{ j.median_salary_currency }}",
+          "currency": {{ j.median_salary_currency|tojson }},
           "value": {
             "@type": "QuantitativeValue",
-            "minValue": {{ j.salary_min if j.salary_min else "null" }},
-            "maxValue": {{ j.salary_max if j.salary_max else "null" }},
+            "minValue": {{ j.estimated_salary_range_numeric[0] }},
+            "maxValue": {{ j.estimated_salary_range_numeric[1] }},
             "unitText": "YEAR"
           }
         }{% endif %}

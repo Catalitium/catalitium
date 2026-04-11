@@ -35,20 +35,19 @@ It operates across four areas:
 
 ## Tech Stack
 
-- **Backend**: Flask 2.2+ (Python 3.11+)
-- **Database**: SQLite (lightweight, low-ops)
-- **Data**: CSV files (jobs.csv, salary.csv, jobs-active.csv, salary.csv)
-- **Frontend**: HTML + Tailwind CSS (CDN-based)
+- **Backend**: Flask 3.x (Python 3.11+)
+- **Database**: Supabase (PostgreSQL); SQL and pooling via `psycopg` in [app/models/db.py](app/models/db.py)
+- **Frontend**: Jinja2 + Tailwind CSS (CDN) under [app/views/templates/](app/views/templates/)
 - **Server**: Gunicorn 21.2+
-- **Observability**: Google Tag Manager (GTM) for event tracking
-- **Deployment Ready**: WSGI-compatible for cloud platforms
+- **Observability**: Google Analytics 4 (gtag.js) + Cookiebot CMP in [app/views/templates/base.html](app/views/templates/base.html); optional `window.catalitiumTrack` for events
+- **Deployment**: WSGI-compatible (e.g. Hetzner + Nginx)
 
 ### Key Architecture Decisions
 
-- **Flat file approach**: CSV data for simplicity and transparency
-- **Zero-config setup**: SQLite auto-creates schema on first run
-- **Stateless design**: Easy horizontal scaling with Gunicorn
-- **Progressive enhancement**: Works without JavaScript, enhanced with Tailwind
+- **Postgres as source of truth** for jobs, salary reference, subscribers, auth-adjacent tables
+- **Connection pool** with conservative `statement_timeout` for request safety
+- **Stateless app tier** for horizontal scaling with Gunicorn
+- **Progressive enhancement**: Works without JavaScript; Tailwind for layout
 
 ---
 
@@ -58,45 +57,24 @@ It operates across four areas:
 - 🔍 **Smart Job Search**: Title synonyms, fuzzy matching, country normalization
 - 💰 **Salary Enrichment**: City → country → global fallback lookup
 - 📊 **Delta Badges**: Visual indicators (% difference vs. reference salaries)
-- 📧 **Weekly Job Reminders**: Email subscriptions stored in SQLite
-- 📄 **Pagination**: 100 results per page for fast browsing
+- 📧 **Weekly Job Reminders**: Email subscriptions stored in PostgreSQL
+- 📄 **Pagination**: Up to 100 results per page (see `PER_PAGE_MAX` in config)
 
 ### Analytics & Growth
-- 📈 **GTM Event Tracking**: Search, views, subscriptions logged for insights
+- 📈 **GA4 (gtag)**: Page and custom events where implemented; consent-gated via Cookiebot
 - 🔐 **Minimal Data Collection**: Privacy-first approach
 
 ---
 
 ## Project Structure
 
-```
-catalitium/
-├── app/                          # Main Flask application package
-│   ├── app.py                   # Flask app factory & configuration
-│   ├── db.py                    # SQLite initialization & queries
-│   ├── models.py                # Data models (jobs, salary, subscriptions)
-│   ├── search.py                # Smart search logic (fuzzy, synonyms, filters)
-│   ├── salary_utils.py          # Salary enrichment & delta calculations
-│   ├── gtm_events.py            # Google Tag Manager event handling
-│   ├── templates/               # Jinja2 HTML templates
-│   │   ├── base.html            # Layout wrapper
-│   │   ├── index.html           # Homepage & search UI
-│   │   ├── job_detail.html      # Single job view
-│   │   └── subscription_modal.html
-│   ├── static/
-│   │   ├── css/                 # Custom styles (Tailwind overrides if any)
-│   │   ├── js/                  # Minimal JavaScript (progressive enhancement)
-│   │   └── images/              # Logos, favicons, etc.
-│   ├── migrations/              # SQLite schema migrations (if applicable)
-│   └── config.py                # Environment-based configuration
-├── jobs.csv                      # Job listings data
-├── salary.csv                    # Salary reference data
-├── requirements.txt              # Python dependencies
-├── run.py                        # Local dev entry point
-├── README.md                     # User-facing documentation
-├── LOG_EVENTS_REMOVAL_REVIEW.md  # Event logging decisions
-└── claude.md                     # This file
-```
+See [README.md](README.md) for the authoritative tree. In short:
+
+- [app/app.py](app/app.py) — routes, rate limits, auth glue
+- [app/models/](app/models/) — `db.py` (pool + re-exports), `jobs.py`, `salary.py`, `users.py`, etc.
+- [app/views/templates/](app/views/templates/) — Jinja pages and components
+- [scripts/](scripts/) — smoke tests (`smoke_db_tables.py`, `supabase_smoke_test.py`, `smoke_routes_http.py`), digest, utilities
+- [run.py](run.py) — WSGI entry and local dev server
 
 ---
 
@@ -122,11 +100,11 @@ catalitium/
 - Search result accuracy (fuzzy matching, synonyms)
 - Data sync issues (CSV parsing, salary lookups)
 - UI/UX consistency (Tailwind, responsiveness)
-- Event tracking accuracy (GTM integration)
+- Event tracking accuracy (GA4 / consent where applicable)
 
 **Performance & Reliability**
-- Query optimization (SQLite indexing)
-- CSV data pipeline improvements
+- Query optimization (PostgreSQL indexes, pool tuning)
+- Ingestion / data pipeline outside this repo or scripts
 - Job import/sync automation
 - Caching strategies for salary data
 
@@ -134,7 +112,7 @@ catalitium/
 - Unit tests for search logic, salary enrichment, filtering
 - Integration tests for job search flows
 - UI testing for subscription modals, pagination
-- GTM event verification
+- Smoke scripts under `scripts/` before release
 
 ### Approach to Code Changes
 
@@ -150,13 +128,12 @@ catalitium/
 
 | File | Purpose |
 |------|---------|
-| `app/app.py` | Flask app factory; routes for search, job detail, subscriptions |
-| `app/search.py` | Smart search engine; handles fuzzy matching, filtering, synonyms |
-| `app/salary_utils.py` | Salary lookup, delta calculations, market insights |
-| `app/models.py` | Data structures (Job, Salary, Subscriber) |
-| `app/db.py` | SQLite operations (subscriptions, search logs) |
-| `jobs.csv` | Job listings (source of truth) |
-| `salary.csv` | Salary reference data by city/country |
+| `app/app.py` | Flask app factory; routes for search, job detail, subscriptions, API |
+| `app/models/jobs.py` | `Job` model: search, counts, inserts |
+| `app/models/salary.py` | Salary table access and parsing helpers |
+| `app/models/db.py` | Connection pool, re-exports, shared utilities |
+| `app/normalization.py` | Title/country normalization for search |
+| `scripts/smoke_*.py` | DB and HTTP smoke checks before deploy |
 
 ---
 
@@ -170,15 +147,16 @@ pip install -r requirements.txt
 python run.py
 ```
 
-### Running Tests
+### Running tests and smoke checks
 ```bash
-pytest  # If test suite exists; add if not present
+python -m py_compile app/app.py app/models/db.py app/models/jobs.py run.py
+python scripts/smoke_db_tables.py
+python scripts/smoke_routes_http.py
+# Optional: pytest when a tests/ suite is added
 ```
 
-### Data Updates
-- **Jobs**: Update `jobs.csv` directly
-- **Salary**: Update `salary.csv` (city, country, salary columns required)
-- **Restart**: No restart needed; CSV is read on each request
+### Data updates
+- **Jobs / salary**: Production data lives in PostgreSQL; bulk updates via your ingestion pipeline or controlled SQL — not CSV-at-runtime in this codebase.
 
 ### Commits
 - Branch: `claude/catalitium-*` branches
@@ -193,7 +171,7 @@ pytest  # If test suite exists; add if not present
 - Search results are accurate and fast (<200ms)
 - Salary enrichment works across 90%+ of jobs
 - No broken links or 404s in job details
-- GTM events fire correctly for analytics
+- GA4 receives expected events where instrumented
 
 ✅ **User Experience**
 - Job search is intuitive (minimal clicks to find matches)
@@ -202,10 +180,10 @@ pytest  # If test suite exists; add if not present
 - Error messages are helpful, not scary
 
 ✅ **Reliability**
-- CSV imports don't break existing data
+- Migrations / imports do not break existing job or salary data
 - Subscriptions are reliable (no lost emails)
 - No data loss during deployments
-- Search works offline-first (no external API dependency)
+- Core search works without third-party APIs at request time (DB-backed)
 
 ---
 
@@ -247,17 +225,16 @@ pytest  # If test suite exists; add if not present
 ## Extending Catalitium
 
 ### Adding a New Filter (Example)
-1. Update CSV data to include new field
-2. Add filter UI in `templates/index.html`
-3. Implement filter logic in `app/search.py`
-4. Add tests for edge cases
-5. Update GTM to track new filter usage
+1. Add filter UI in `app/views/templates/index.html`
+2. Implement filter logic in `app/models/jobs.py` (`Job._where` / search) and route in `app/app.py`
+3. Add smoke or unit coverage for edge cases
+4. Instrument GA4 only if product needs the signal (consent-aware)
 
 ### Adding a New Data Source
-1. Create a new CSV (e.g., `salaries_2024.csv`)
-2. Add loader in `app/models.py`
-3. Merge data with existing salary lookup in `app/salary_utils.py`
-4. Test fallback behavior if new source is incomplete
+1. Extend the `salary` or `jobs` schema in Supabase as needed
+2. Update loaders / ETL outside or inside repo scripts
+3. Wire lookups in `app/models/salary.py` or `app/models/jobs.py`
+4. Test fallback behavior when the new source is incomplete
 
 ---
 
@@ -276,5 +253,5 @@ MIT © 2025 Catalitium
 
 ---
 
-*Last updated: February 2025*
+*Last updated: April 2026*
 *This document is the source of truth for Catalitium's vision and technical direction.*
