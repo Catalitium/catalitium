@@ -216,19 +216,26 @@ class Job:
         return patterns, sorted(equals)
 
     @staticmethod
-    def count(title: Optional[str] = None, country: Optional[str] = None, salary_min: Optional[int] = None) -> int:
+    def count(
+        title: Optional[str] = None,
+        country: Optional[str] = None,
+        salary_min: Optional[int] = None,
+        **filter_kw,
+    ) -> int:
         """Return number of jobs matching optional filters."""
         key = ((title or "").strip().lower(), (country or "").strip().lower(), salary_min or 0)
-        cached = Job._cache_get_count(key)
-        if cached is not None:
-            return cached
-        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
+        if not filter_kw:
+            cached = Job._cache_get_count(key)
+            if cached is not None:
+                return cached
+        where_sql, params_pg = Job._where(title, country, salary_min=salary_min, **filter_kw)
         db = get_db()
         with db.cursor() as cur:
             cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql}", params_pg)
             row = cur.fetchone()
             value = int(row[0] if row else 0)
-            Job._cache_set_count(key, value)
+            if not filter_kw:
+                Job._cache_set_count(key, value)
             return value
 
     @staticmethod
@@ -238,6 +245,7 @@ class Job:
         limit: int = 50,
         offset: int = 0,
         salary_min: Optional[int] = None,
+        **filter_kw,
     ) -> List[Dict]:
         """Return matching jobs ordered by recency."""
         key = (
@@ -247,10 +255,11 @@ class Job:
             int(offset),
             salary_min or 0,
         )
-        cached = Job._cache_get_search(key)
-        if cached is not None:
-            return cached
-        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
+        if not filter_kw:
+            cached = Job._cache_get_search(key)
+            if cached is not None:
+                return cached
+        where_sql, params_pg = Job._where(title, country, salary_min=salary_min, **filter_kw)
         db = get_db()
         params = list(params_pg)
         sql = f"""
@@ -276,7 +285,8 @@ class Job:
             cur.execute(sql, params)
             cols = [desc[0] for desc in cur.description]
             rows = [dict(zip(cols, row)) for row in cur.fetchall()]
-            Job._cache_set_search(key, rows)
+            if not filter_kw:
+                Job._cache_set_search(key, rows)
             return rows
 
     @staticmethod
@@ -405,7 +415,17 @@ class Job:
         return link.strip() if isinstance(link, str) else None
 
     @staticmethod
-    def _where(title: Optional[str], country: Optional[str], salary_min: Optional[int] = None) -> Tuple[str, Tuple]:
+    def _where(
+        title: Optional[str],
+        country: Optional[str],
+        salary_min: Optional[int] = None,
+        *,
+        remote: bool = False,
+        has_salary: bool = False,
+        freshness: Optional[int] = None,
+        function_cat: Optional[str] = None,
+        salary_max: Optional[int] = None,
+    ) -> Tuple[str, Tuple]:
         clauses_pg: List[str] = []
         params_pg: List = []
 
@@ -540,6 +560,31 @@ class Job:
         if salary_min and salary_min > 0:
             clauses_pg.append("job_salary >= %s")
             params_pg.append(salary_min)
+
+        if remote:
+            clauses_pg.append("(LOWER(COALESCE(location, '')) LIKE '%%remote%%')")
+
+        if has_salary:
+            clauses_pg.append("(salary IS NOT NULL AND salary != '')")
+
+        if freshness and freshness in (7, 14, 30):
+            clauses_pg.append("(date >= CURRENT_DATE - INTERVAL '%s days')" % int(freshness))
+
+        if function_cat:
+            from .explore import FUNCTION_CATEGORIES
+            keywords = FUNCTION_CATEGORIES.get(function_cat, [])
+            if keywords:
+                kw_clauses = []
+                for kw in keywords:
+                    kw_clauses.append(
+                        "LOWER(COALESCE(job_title_norm, LOWER(job_title))) LIKE %s ESCAPE '\\'"
+                    )
+                    params_pg.append(f"%{Job._escape_like(kw)}%")
+                clauses_pg.append("(" + " OR ".join(kw_clauses) + ")")
+
+        if salary_max and salary_max > 0:
+            clauses_pg.append("(job_salary > 0 AND job_salary <= %s)")
+            params_pg.append(salary_max)
 
         where_pg = f"WHERE {' AND '.join(clauses_pg)}" if clauses_pg else ""
         return where_pg, tuple(params_pg)

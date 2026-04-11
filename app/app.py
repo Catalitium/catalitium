@@ -124,6 +124,12 @@ from .models.salary_analytics import (
     get_function_benchmarks,
     get_salary_trends,
 )
+from .models.explore import (
+    compute_quality_score,
+    get_explore_data,
+    get_remote_companies,
+    get_function_distribution,
+)
 
 try:
     import stripe as _stripe
@@ -1366,12 +1372,30 @@ def create_app() -> Flask:
             except ValueError:
                 pass
 
+        adv_filters: Dict[str, Any] = {}
+        if request.args.get("remote"):
+            adv_filters["remote"] = True
+        if request.args.get("has_salary"):
+            adv_filters["has_salary"] = True
+        raw_freshness = (request.args.get("freshness") or "").strip()
+        if raw_freshness in ("7", "14", "30"):
+            adv_filters["freshness"] = int(raw_freshness)
+        raw_function = (request.args.get("function") or "").strip()
+        if raw_function:
+            adv_filters["function_cat"] = raw_function
+        raw_salary_max = (request.args.get("salary_max") or "").strip()
+        if raw_salary_max:
+            try:
+                adv_filters["salary_max"] = max(0, int(raw_salary_max))
+            except ValueError:
+                pass
+
         total = 0
         rows = []
         try:
-            total = Job.count(q_title, q_country, salary_min=salary_min_filter)
+            total = Job.count(q_title, q_country, salary_min=salary_min_filter, **adv_filters)
             offset = (max(1, page) - 1) * per_page
-            rows = Job.search(q_title, q_country, limit=per_page, offset=offset, salary_min=salary_min_filter)
+            rows = Job.search(q_title, q_country, limit=per_page, offset=offset, salary_min=salary_min_filter, **adv_filters)
         except Exception:
             logger.exception("Job lookup failed during index rendering")
             rows = []
@@ -1512,6 +1536,12 @@ def create_app() -> Flask:
                 item_payload["comp_confidence"] = _comp["confidence"]
             except Exception:
                 item_payload["comp_confidence"] = None
+
+            try:
+                _qs = compute_quality_score(row)
+                item_payload["quality_score"] = _qs["total"]
+            except Exception:
+                item_payload["quality_score"] = None
 
             # If a salary floor is present (e.g., >100k filter), drop jobs whose estimated top end is below the floor.
             if sal_floor and sal_floor >= 100000:
@@ -3313,6 +3343,45 @@ def create_app() -> Flask:
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
 
+    # ------------------------------------------------------------------
+    # Explore routes (feature/smart-discovery-explore)
+    # ------------------------------------------------------------------
+
+    @app.get("/explore")
+    def explore_hub():
+        """Render the Explore Hub with top titles, locations, and companies."""
+        try:
+            data = get_explore_data()
+        except Exception:
+            logger.exception("explore_hub data fetch failed")
+            data = {"top_titles": [], "top_locations": [], "top_companies": []}
+        return render_template(
+            "explore.html",
+            top_titles=data.get("top_titles", []),
+            top_locations=data.get("top_locations", []),
+            top_companies=data.get("top_companies", []),
+        )
+
+    @app.get("/explore/remote-companies")
+    def explore_remote():
+        """Render the remote-friendliness leaderboard."""
+        try:
+            companies = get_remote_companies(limit=50)
+        except Exception:
+            logger.exception("explore_remote data fetch failed")
+            companies = []
+        return render_template("explore_remote.html", companies=companies)
+
+    @app.get("/explore/functions")
+    def explore_functions():
+        """Render the function category browser."""
+        try:
+            functions = get_function_distribution()
+        except Exception:
+            logger.exception("explore_functions data fetch failed")
+            functions = []
+        return render_template("explore_functions.html", functions=functions)
+
     @app.get("/sitemap.xml")
     def sitemap():
         """Generate a lightweight XML sitemap for primary surfaces."""
@@ -3332,6 +3401,9 @@ def create_app() -> Flask:
         _add(url_for("pricing", _external=True), priority="0.75", changefreq="weekly")
         _add(url_for("developers", _external=True), priority="0.65", changefreq="monthly")
         _add(url_for("companies", _external=True), priority="0.8", changefreq="weekly")
+        _add(url_for("explore_hub", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("explore_remote", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("explore_functions", _external=True), priority="0.7", changefreq="weekly")
 
         # Top company profile pages
         try:

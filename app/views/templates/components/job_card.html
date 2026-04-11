@@ -35,6 +35,19 @@
       </div>
 
       <div class="mt-1 flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-slate-700 dark:text-slate-300" data-job-meta="true">
+        {% if j.quality_score is defined and j.quality_score is not none %}
+        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border
+          {% if j.quality_score >= 70 %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800
+          {% elif j.quality_score >= 40 %}bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800
+          {% else %}bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700{% endif %}"
+          title="Quality: {{ j.quality_score }}/100">
+          <span class="w-1.5 h-1.5 rounded-full
+            {% if j.quality_score >= 70 %}bg-emerald-500
+            {% elif j.quality_score >= 40 %}bg-amber-500
+            {% else %}bg-slate-400{% endif %}"></span>
+          Q{{ j.quality_score }}
+        </span>
+        {% endif %}
         {% if j.match_score %}
         <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 px-2 py-1 text-emerald-800 dark:text-emerald-300 font-semibold" title="Relevance + trust score">
           Match {{ j.match_score }}%

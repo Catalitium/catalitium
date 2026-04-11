@@ -1,55 +1,74 @@
-# Handoff: feature/salary-intelligence-hub
-
-**Branch:** `feature/salary-intelligence-hub`
-**Date:** 2026-04-11
-
----
+# Handoff: feature/smart-discovery-explore
 
 ## Files Changed
 
 | File | Action | Description |
 |------|--------|-------------|
-| `PLAN.md` | **NEW** | Architecture plan |
-| `HANDOFF.md` | **NEW** | This file |
-| `app/models/salary_analytics.py` | **NEW** | Salary intelligence engine: percentile calculator, PPP indices, city comparison, function categorization, benchmarks, trends |
-| `app/views/templates/salary_underpaid.html` | **NEW** | "Am I Underpaid?" calculator page |
-| `app/views/templates/salary_compare_cities.html` | **NEW** | Cross-city salary comparison with PPP adjustment |
-| `app/views/templates/salary_by_function.html` | **NEW** | Function/team salary benchmarks page |
-| `app/views/templates/salary_trends.html` | **NEW** | Salary trends visualization page |
-| `tests/test_salary_analytics.py` | **NEW** | 34 tests covering analytics engine + routes |
-| `app/app.py` | **EDIT** | Added 4 salary intelligence routes, imports, sitemap entries |
-| `app/views/templates/salary_report.html` | **EDIT** | Added cross-links to new salary intelligence pages |
+| `PLAN.md` | **EDIT** | Architecture plan for the explore feature |
+| `HANDOFF.md` | **EDIT** | This file |
+| `app/models/explore.py` | **NEW** | Quality scoring (`compute_quality_score`), function categorization (`categorize_function`), explore aggregations (`get_explore_data`, `get_remote_companies`, `get_function_distribution`) |
+| `app/views/templates/explore.html` | **NEW** | Explore Hub page — top titles, locations, companies |
+| `app/views/templates/explore_remote.html` | **NEW** | Remote-friendliness company leaderboard |
+| `app/views/templates/explore_functions.html` | **NEW** | Function category browser with salary data coverage |
+| `tests/test_explore.py` | **NEW** | 32 tests covering quality scoring, function categorization, routes, and filters |
+| `app/app.py` | **EDIT** | Added explore imports, `/explore` + `/explore/remote-companies` + `/explore/functions` routes, sitemap entries, `compute_quality_score` wired into `/jobs` item loop, advanced filter params (`remote`, `has_salary`, `freshness`, `function`, `salary_max`) in jobs route |
+| `app/models/jobs.py` | **EDIT** | Added `remote`, `has_salary`, `freshness`, `function_cat`, `salary_max` keyword params to `Job._where()` with corresponding SQL clause generation |
+| `app/views/templates/components/job_card.html` | **EDIT** | Added quality score badge display |
+| `app/views/templates/index.html` | **EDIT** | Added advanced filter panel (remote, has salary, freshness, function category) |
+| `app/static/js/main.js` | **EDIT** | Added filter panel state persistence |
 
 ## Routes Added
 
-| Method | Path | Function | Description |
-|--------|------|----------|-------------|
-| GET | `/salary/am-i-underpaid` | `salary_underpaid` | Salary percentile calculator |
-| GET | `/salary/compare-cities` | `salary_compare_cities` | Cross-city PPP-adjusted comparison |
-| GET | `/salary/by-function` | `salary_by_function` | Function/team salary benchmarks |
-| GET | `/salary/trends` | `salary_trends` | Salary trend visualization |
+| Route | Function | Method |
+|-------|----------|--------|
+| `/explore` | `explore_hub` | GET |
+| `/explore/remote-companies` | `explore_remote` | GET |
+| `/explore/functions` | `explore_functions` | GET |
+
+## Sitemap Entries Added
+
+- `/explore` — priority 0.7, weekly
+- `/explore/remote-companies` — priority 0.7, weekly
+- `/explore/functions` — priority 0.7, weekly
 
 ## Test Results
 
 ```
-34 passed, 12 warnings in 113.69s
+32 passed, 25 warnings in 245.73s (0:04:05)
 ```
 
-All 34 tests pass: PPP indices (5), function categorization (14), percentile computation (6), city comparison (3), route smoke tests (6).
+All 32 tests pass:
+- 10 unit tests for `compute_quality_score` (complete, empty, partial, numeric salary, date formats, cap, whitespace)
+- 13 unit tests for `categorize_function` (Backend, Frontend, Fullstack, ML/AI, DevOps, Data, Product, Security, Other, None, empty, case-insensitive, categories have keywords)
+- 3 explore route smoke tests (`/explore`, `/explore/remote-companies`, `/explore/functions`)
+- 5 advanced filter smoke tests (`remote=1`, `has_salary=1`, `freshness=7`, `function=Backend`, combined filters)
+- 1 sitemap verification (all three explore URLs present)
+
+Warnings are pre-existing `psycopg_pool` deprecation notices and `gotrue` package warnings, unrelated to this branch.
 
 ## Known Issues
 
-- Salary trends and function benchmarks depend on jobs having `job_salary` (integer) populated. Jobs without numeric salary are excluded from these aggregations.
-- PPP indices are hardcoded for ~30 cities; cities not in the list default to 0.75.
-- Percentile computation is approximate (based on median comparison, not actual distribution).
+- Explore aggregation queries (`get_explore_data`, `get_remote_companies`, `get_function_distribution`) hit the live DB. In test mode with no live DB, they gracefully return empty results and render empty-state pages.
+- The `freshness` filter uses string interpolation for the interval (`%s days`); the value is validated to `{7, 14, 30}` only, so SQL injection is not possible.
+- `ConnectionPool` shutdown warnings in pytest output are a known Python 3.14 / psycopg_pool interaction, not caused by this branch.
 
-## Merge Notes
+## Merge Conflict Zones
 
-- All routes under `/salary/` prefix with `salary_*` function names per AGENT_CONTRACT.md.
-- Only edits `salary_report.html` (no other branch touches this).
-- Only edits `app.py` (different section from other branches).
-- No new dependencies, no new tables.
+Per AGENT_CONTRACT.md:
+
+- **`app/app.py`**: This branch adds routes under `/explore/` prefix with `explore_*` function names. Other Sprint 2 branches use `/salary/` and `/career/` prefixes. The jobs route edit (advanced filter params) is in the `jobs()` function body — only this branch touches that section per contract. Low conflict risk.
+- **`app/models/jobs.py`**: Only this branch extends `_where()` with new filter kwargs. Other branches use READ only. No conflict expected.
+- **`app/views/templates/index.html`**: Only this branch adds the advanced filter panel per contract. No conflict expected.
+- **`app/views/templates/components/job_card.html`**: This branch adds quality/urgency badges. Sprint 1's compare branch added a Compare button (different location in the template). Low conflict risk.
+- **`app/static/js/main.js`**: Filter persistence code appended to end of file. Sprint 1's compare branch also appended code. May need trivial merge resolution at file end.
+- All new files (`explore.py`, `explore.html`, `explore_remote.html`, `explore_functions.html`, `test_explore.py`) are unique to this branch per contract.
+
+## No New Dependencies
+
+- No new Python packages in `requirements.txt`
+- No new database tables or migrations
+- Read-only queries on existing `jobs` table only
 
 ---
 
-*Completed: April 2026 | Sprint 2: Levels.fyi Feature Sprint*
+*Completed: April 2026*

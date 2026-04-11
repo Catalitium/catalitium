@@ -1,77 +1,82 @@
-# PLAN — Salary Intelligence Hub
+# PLAN — Smart Discovery & Explore Hub
 
-**Branch:** `feature/salary-intelligence-hub`
-**Sprint:** 2
-**Agent Contract Shape:** `SalaryPercentile`
+**Branch:** `feature/smart-discovery-explore`
+**Sprint:** 2 — Levels.fyi Feature Sprint
+**Status:** In progress
 
 ---
 
 ## Goal
 
-Transform raw salary data into actionable analytics via four new pages under `/salary/`. No new DB tables, no new Python deps. Read-only queries on `jobs`, `salary`, `salary_submissions`.
+Build a smart discovery layer that helps users explore the job market beyond
+keyword search: an Explore Hub with top titles/locations/companies, advanced
+filters on the existing /jobs page, quality scoring on every card, a
+remote-friendliness leaderboard, and a function-category browser.
+
+No new database tables. Read-only queries on existing `jobs` schema.
+
+---
 
 ## Deliverables
 
-### A) `app/models/salary_analytics.py` — Analytics Engine
-- `compute_percentile(title, location, user_salary, currency)` → SalaryPercentile dict
-- `get_ppp_indices()` → hardcoded PPP index for ~30 tech cities
-- `compare_cities_salary(title, cities)` → raw + PPP-adjusted comparison
-- `categorize_function(title_norm)` → function category string
-- `get_function_benchmarks(location)` → aggregated salary by function
-- `get_salary_trends(title_category, city, months)` → monthly median + count
+| # | Deliverable | Route / File | Status |
+|---|-------------|-------------|--------|
+| A | `app/models/explore.py` — quality score, categorize, explore data, remote companies, function distribution, hiring urgency | New file | Pending |
+| B | Explore Hub page | `GET /explore` → `explore.html` | Pending |
+| C | Advanced Filter Panel on /jobs | Edit `index.html`, `jobs.py._where()`, `app.py.jobs()` | Pending |
+| D | Quality Score badge on job cards | Edit `job_card.html`, `app.py.jobs()` | Pending |
+| E | Remote-Friendliness page | `GET /explore/remote-companies` → `explore_remote.html` | Pending |
+| F | Function Browse page | `GET /explore/functions` → `explore_functions.html` | Pending |
+| G | Route wiring + sitemap | Edit `app.py` | Pending |
+| H | Tests (15+) | `tests/test_explore.py` | Pending |
 
-### B) `/salary/am-i-underpaid` — Percentile Checker
-- Form: title, location, salary, currency
-- Visual gauge (Tailwind), market label, methodology link
-- Template: `salary_underpaid.html`
+---
 
-### C) `/salary/compare-cities` — Cross-City Comparison
-- Form: title + up to 4 cities
-- Side-by-side cards: raw median vs PPP-adjusted
-- Bar chart via Tailwind progress bars
-- Template: `salary_compare_cities.html`
+## Architecture Decisions
 
-### D) `/salary/by-function` — Function Benchmarks
-- Salary medians by category (Backend, Frontend, ML/AI, etc.)
-- Optional location filter
-- Links to filtered job search
-- Template: `salary_by_function.html`
+1. **Quality score is computed in Python at render time** — no DB column needed.
+   `compute_quality_score(job_dict)` returns a `QualityScore` dict per contract.
 
-### E) `/salary/trends` — Salary Trends
-- Monthly aggregates of job_salary from jobs table
-- Filter by title category or city
-- Interpretation text
-- Template: `salary_trends.html`
+2. **Function categorization uses keyword matching on `job_title_norm`** — maps
+   to 10 categories + "Other". Pure function, no DB.
 
-### F) Route Wiring in `app/app.py`
-- 4 new routes with `salary_*` function names
-- Sitemap entries at priority 0.7
-- Cross-links added to `salary_report.html`
+3. **Explore data aggregation uses GROUP BY on existing `jobs` table** — three
+   queries (top titles, top locations, top companies), cached for the request.
 
-### G) Tests in `tests/test_salary_analytics.py`
-- Unit tests for all analytics functions
-- Route smoke tests (200 status)
-- 15+ tests minimum
+4. **Advanced filters extend `Job._where()`** with optional kwargs:
+   `remote`, `has_salary`, `freshness`, `function_cat`, `salary_max`.
 
-## File Touch Plan
+5. **No new dependencies** — uses only stdlib + existing Flask/psycopg stack.
+
+---
+
+## File Touch Map
 
 | File | Action |
 |------|--------|
-| `app/models/salary_analytics.py` | CREATE |
-| `app/views/templates/salary_underpaid.html` | CREATE |
-| `app/views/templates/salary_compare_cities.html` | CREATE |
-| `app/views/templates/salary_by_function.html` | CREATE |
-| `app/views/templates/salary_trends.html` | CREATE |
-| `app/app.py` | ADD routes (salary_ prefix) |
-| `app/views/templates/salary_report.html` | ADD cross-links section |
-| `tests/test_salary_analytics.py` | CREATE |
-| `PLAN.md` | CREATE |
-| `HANDOFF.md` | CREATE |
+| `app/models/explore.py` | CREATE |
+| `app/models/jobs.py` | EDIT — extend `_where()` with new filter params |
+| `app/app.py` | EDIT — add 3 explore routes, edit jobs() for filters + quality |
+| `app/views/templates/index.html` | EDIT — add collapsible advanced filter panel |
+| `app/views/templates/components/job_card.html` | EDIT — add quality dot |
+| `app/views/templates/explore.html` | CREATE |
+| `app/views/templates/explore_remote.html` | CREATE |
+| `app/views/templates/explore_functions.html` | CREATE |
+| `app/static/js/main.js` | EDIT — add filter localStorage persistence |
+| `tests/test_explore.py` | CREATE |
+| `PLAN.md` | CREATE (this file) |
+| `HANDOFF.md` | CREATE (after implementation) |
 
-## Constraints
-- No touch: index.html, job_card.html, main.js, companies.html, compare.html, job_detail.html, base.html
-- No new Python deps
-- No new DB tables
-- Read-only DB queries
-- All templates extend base.html
-- Tailwind CDN classes only
+---
+
+## Risks & Mitigations
+
+- **Slow aggregation queries:** Use LIMIT and simple GROUP BY; no JOINs.
+- **Merge conflicts with other Sprint 2 branches:** Following AGENT_CONTRACT.md
+  touch rules strictly — only editing files assigned to this branch.
+- **Empty data on fresh installs:** All explore queries use `try/except` with
+  empty-list fallbacks.
+
+---
+
+*Created: April 2026*
