@@ -6,21 +6,9 @@ function trackEvent(name, params){
   } catch(_){}
 }
 
-function sendAnalyticsPayload(payload){
-  try {
-    var body = JSON.stringify(payload || {});
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon('/events/apply', new Blob([body], { type: 'application/json' }));
-      return;
-    }
-    fetch('/events/apply', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: body,
-      keepalive: true,
-      credentials: 'same-origin'
-    }).catch(function(){});
-  } catch(_){}
+function sendAnalyticsPayload(_payload){
+  /* Intentionally empty: server /events/apply was removed to cut noise/egress.
+     Call sites remain so optional window.catalitiumTrack / trackEvent still work. */
 }
 
 function getCsrfToken(){
@@ -350,7 +338,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
           'X-CSRF-Token': getCsrfToken()
         },
         credentials: 'same-origin',
-        body: JSON.stringify({ email: email, name: name, message: message })
+        body: JSON.stringify({ email: email, name: name, message: message, hp_company_url: '' })
       })
         .then(function(resp){
           return resp.json().catch(function(){ return {}; }).then(function(data){
@@ -376,6 +364,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
           if (err && err.message === 'invalid_email') msg = 'Please enter a valid email.';
           if (err && err.message === 'invalid_name') msg = 'Please add your name or company.';
           if (err && err.message === 'invalid_message') msg = 'Please add a short message.';
+          if (err && err.message === 'invalid_request') msg = 'Please refresh the page and try again.';
           ctx.setError(msg);
           trackEvent('contact_submit', { status: 'error', error: (err && err.message) || 'unknown' });
         });
@@ -676,7 +665,8 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
     setLoading(true);
     var payload = {
       email: email,
-      job_id: jobDetail.jobId || ''
+      job_id: jobDetail.jobId || '',
+      hp_company_url: ''
     };
     if (jobDetail.jobLink) {
       payload.job_link = jobDetail.jobLink;
@@ -735,6 +725,8 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
           message = 'You are already on the list. Try again shortly.';
         } else if (err && err.message === 'subscribe_failed') {
           message = 'We could not subscribe you. Please try again.';
+        } else if (err && err.message === 'invalid_request') {
+          message = 'Please refresh the page and try again.';
         }
         setError(message);
       });

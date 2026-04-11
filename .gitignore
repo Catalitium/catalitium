@@ -74,7 +74,6 @@ logs/
 htmlcov/
 .pytest_cache/
 .tox/.env
-tests/
 
 .claude/
 app/ads.txt

@@ -63,6 +63,12 @@ from .mailer import (
     send_job_posting_confirmation,
 )
 from .normalization import normalize_country, normalize_title
+from .subscriber_fields import sanitize_subscriber_search_fields
+from .spam_guards import (
+    disposable_email_domain,
+    honeypot_triggered,
+    prepare_contact_submission,
+)
 from .models.db import (
     SECRET_KEY,
     SUPABASE_URL,
@@ -1767,11 +1773,19 @@ def create_app() -> Flask:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
             return redirect(url_for("jobs"))
+        if honeypot_triggered(payload):
+            if is_json:
+                return jsonify({"error": "invalid_request"}), 400
+            flash("Unable to complete that request. Please refresh the page and try again.", "error")
+            return redirect(url_for("jobs"))
         email = (payload.get("email") or "").strip()
         job_id_raw = (payload.get("job_id") or "").strip()
         search_title = (payload.get("search_title") or "").strip()
         search_country = (payload.get("search_country") or "").strip()
         search_salary_band = (payload.get("search_salary_band") or "").strip()
+        search_title, search_country, search_salary_band = sanitize_subscriber_search_fields(
+            search_title, search_country, search_salary_band
+        )
         digest_label_parts = [p for p in [search_title, search_country, search_salary_band] if p]
         digest_label = " / ".join(digest_label_parts[:3])
 
@@ -1781,6 +1795,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
+            return redirect(url_for("jobs"))
+
+        if disposable_email_domain(email):
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please use a permanent email address.", "error")
             return redirect(url_for("jobs"))
 
         job_link = Job.get_link(job_id_raw)
@@ -2133,6 +2153,11 @@ def create_app() -> Flask:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
             return redirect(url_for("jobs"))
+        if honeypot_triggered(payload):
+            if is_json:
+                return jsonify({"error": "invalid_request"}), 400
+            flash("Unable to complete that request. Please refresh the page and try again.", "error")
+            return redirect(url_for("jobs"))
         email_raw = (payload.get("email") or "").strip()
         name_raw = (payload.get("name") or payload.get("name_company") or payload.get("company") or "").strip()
         message_raw = (payload.get("message") or "").strip()
@@ -2143,6 +2168,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
+            return redirect(url_for("jobs"))
+
+        if disposable_email_domain(email):
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please use a permanent email address.", "error")
             return redirect(url_for("jobs"))
 
         if not name_raw or len(name_raw) < 2:
@@ -2157,7 +2188,15 @@ def create_app() -> Flask:
             flash("Please add a short message.", "error")
             return redirect(url_for("jobs"))
 
-        status = insert_contact(email=email, name_company=name_raw, message=message_raw)
+        prepared = prepare_contact_submission(name_raw, message_raw)
+        if prepared is None:
+            if is_json:
+                return jsonify({"error": "invalid_message"}), 400
+            flash("Your message could not be sent. Please shorten links or remove unusual text and try again.", "error")
+            return redirect(url_for("jobs"))
+        name_clean, msg_clean = prepared
+
+        status = insert_contact(email=email, name_company=name_clean, message=msg_clean)
 
         if status != "ok":
             if is_json:
@@ -2293,58 +2332,6 @@ def create_app() -> Flask:
         return redirect(url_for("hire"))
 
     # /job-posting.json removed — POST /job-posting detects request.is_json automatically
-
-    @app.post("/events/apply")
-    @_limit("120 per minute")
-    def events_apply():
-        """Record analytics events (apply/filter/etc.)."""
-        payload = request.get_json(silent=True) or {}
-        event_type = (payload.get("event_type") or "apply").strip().lower() or "apply"
-        status = (payload.get("status") or "").strip()
-        source = (payload.get("source") or "web").strip() or "web"
-        email_hash = (payload.get("email_hash") or "").strip()
-        meta_dict: Dict[str, str] = {}
-        payload_meta = payload.get("meta")
-        if isinstance(payload_meta, dict):
-            for key, value in payload_meta.items():
-                if key is None or value is None:
-                    continue
-                meta_dict[str(key)] = str(value)
-
-        if event_type == "filter":
-            filter_type = (payload.get("filter_type") or "").strip()
-            filter_value = (payload.get("filter_value") or "").strip()
-            raw_title = filter_type or "filter"
-            raw_country = filter_value
-            norm_title = filter_type.lower() if filter_type else ""
-            norm_country = ""
-            status = status or "selected"
-            if filter_type:
-                meta_dict["filter_type"] = filter_type
-            if filter_value:
-                meta_dict["filter_value"] = filter_value
-            job_id = ""
-            job_title = ""
-            job_company = ""
-            job_location = ""
-            job_link = ""
-            job_summary = ""
-        else:
-            job_id = (payload.get("job_id") or payload.get("jobId") or "").strip()
-            job_title = (payload.get("job_title") or payload.get("jobTitle") or "").strip()
-            job_company = (payload.get("job_company") or payload.get("jobCompany") or "").strip()
-            job_location = (payload.get("job_location") or payload.get("jobLocation") or "").strip()
-            job_link = (payload.get("job_link") or payload.get("jobLink") or "").strip()
-            job_summary = (payload.get("job_summary") or payload.get("jobSummary") or "").strip()
-            raw_title = job_title or "N/A"
-            raw_country = job_location or "N/A"
-            norm_title = ""
-            norm_country = ""
-            status = status or "unknown"
-            if job_link:
-                meta_dict.setdefault("job_link", job_link)
-
-        return jsonify({"status": "ok"}), 200
 
     @app.get("/api/salary-insights")
     def api_salary_insights():

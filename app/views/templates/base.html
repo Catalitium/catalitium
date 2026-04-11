@@ -402,6 +402,7 @@
     </div>
   </footer>
 
+  {% from "snippets/_honeypot_field.html" import honeypot_field %}
   <!-- Global Subscribe dialog -->
   <dialog id="subscribeDialog" class="rounded-2xl p-0 bg-white dark:bg-slate-900 backdrop:bg-slate-900/40"
           aria-labelledby="subscribe-title">
@@ -417,8 +418,9 @@
       <p class="mt-2 text-slate-600 dark:text-slate-400 text-sm">One email per week with your best-matching roles and salary signals. No spam, unsubscribe anytime.</p>
 
       <form action="{{ url_for('subscribe') }}" method="post"
-            class="mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
+            class="relative mt-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ honeypot_field('subscribe-hp-url') }}
         <input type="hidden" name="search_title" id="subscribe-search-title" value="">
         <input type="hidden" name="search_country" id="subscribe-search-country" value="">
         <input type="hidden" name="search_salary_band" id="subscribe-search-salary-band" value="">
@@ -456,8 +458,9 @@
         Thanks for reaching out. We received your message.
       </div>
 
-      <form id="contactForm" method="post" action="{{ url_for('contact') }}" class="mt-5 space-y-3">
+      <form id="contactForm" method="post" action="{{ url_for('contact') }}" class="relative mt-5 space-y-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ honeypot_field('contact-hp-url') }}
         <div class="space-y-1">
           <label class="block text-sm text-slate-700 dark:text-slate-300" for="contact-email">Email</label>
           <input id="contact-email"

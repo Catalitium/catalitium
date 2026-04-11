@@ -620,7 +620,9 @@
     <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10 no-print">
       <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Get the next Catalitium report in your inbox</h3>
       <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">One weekly email with market signal and the best tech jobs. No spam. Unsubscribe anytime.</p>
-      <form action="{{ url_for('subscribe') }}" method="post" class="flex flex-col sm:flex-row gap-3">
+      <form action="{{ url_for('subscribe') }}" method="post" class="relative flex flex-col sm:flex-row gap-3">
+{% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
+{{ subscribe_security('r05') }}
         <input type="hidden" name="search_title" value="market-research-r05">
         <label for="r05-subscribe-email" class="sr-only">Your email</label>
         <input id="r05-subscribe-email" name="email" type="email" required autocomplete="email"

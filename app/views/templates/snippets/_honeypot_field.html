@@ -1,0 +1,13 @@
+{# Macro: unique id per form; name stays `hp_company_url` for the server. Parent <form> should be `relative`. #}
+{% macro honeypot_field(field_id) %}
+<div class="absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
+     aria-hidden="true">
+  <label for="{{ field_id }}">Company website</label>
+  <input id="{{ field_id }}"
+         type="text"
+         name="hp_company_url"
+         value=""
+         tabindex="-1"
+         autocomplete="off">
+</div>
+{% endmacro %}
