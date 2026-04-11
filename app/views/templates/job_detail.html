@@ -40,7 +40,7 @@
         {% if job.company %}
         <p class="mt-1 text-lg text-slate-600 dark:text-slate-400 font-medium">
           {% if company_slug %}
-          <a href="{{ url_for('company_detail_page', slug=company_slug) }}" class="hover:text-brand transition-colors hover:underline">{{ job.company }}</a>
+          <a href="{{ url_for('companies.company_detail_page', slug=company_slug) }}" class="hover:text-brand transition-colors hover:underline">{{ job.company }}</a>
           {% else %}
           {{ job.company }}
           {% endif %}
@@ -123,13 +123,13 @@
         <a href="{{ comp_display.methodology_url }}" class="text-brand hover:underline font-medium">How we estimate this →</a>
         {% endif %}
       </div>
-      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Is this salary fair? <a href="{{ url_for('salary_contribute') }}" class="text-brand hover:underline font-medium">Check your market percentile →</a></p>
+      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Is this salary fair? <a href="{{ url_for('salary.salary_contribute') }}" class="text-brand hover:underline font-medium">Check your market percentile →</a></p>
     </div>
     {% endif %}
 
     <!-- Career evaluate link -->
     <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-      <a href="{{ url_for('career_evaluate', job_id=job.id) }}"
+      <a href="{{ url_for('career.career_evaluate', job_id=job.id) }}"
          class="inline-flex items-center gap-2 text-sm font-medium text-brand hover:underline transition">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Is this role worth it? →

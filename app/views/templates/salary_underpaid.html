@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="Find out if you're underpaid. Enter your job title, location, and salary to see where you rank compared to the market. Free salary percentile calculator by Catalitium."/>
-<link rel="canonical" href="{{ url_for('salary_underpaid', _external=True) }}">
+<link rel="canonical" href="{{ url_for('salary.salary_underpaid', _external=True) }}">
 <meta property="og:title" content="Am I Underpaid? | Salary Checker | Catalitium"/>
 <meta property="og:description" content="See where your salary ranks vs. the market. Free percentile calculator for tech professionals."/>
 <meta property="og:type" content="website"/>
@@ -13,7 +13,7 @@
 <div class="max-w-3xl mx-auto px-4 py-8">
 
   <nav class="text-xs text-slate-400 mb-6">
-    <a href="{{ url_for('salary_tool') }}" class="hover:text-brand">Salary Tools</a>
+    <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand">Salary Tools</a>
     <span class="mx-1">/</span>
     <span class="text-slate-600 dark:text-slate-300">Am I Underpaid?</span>
   </nav>
@@ -27,7 +27,7 @@
     </p>
   </div>
 
-  <form method="get" action="{{ url_for('salary_underpaid') }}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 mb-8">
+  <form method="get" action="{{ url_for('salary.salary_underpaid') }}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 mb-8">
     <div class="grid gap-4 sm:grid-cols-2 mb-6">
       <label class="flex flex-col gap-1.5">
         <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Job Title</span>
@@ -145,11 +145,11 @@
 
   <!-- Cross-links -->
   <div class="grid gap-4 sm:grid-cols-2 mb-8">
-    <a href="{{ url_for('salary_compare_cities') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+    <a href="{{ url_for('salary.salary_compare_cities') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
       <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
       <p class="text-sm font-medium text-slate-800 dark:text-slate-200">See how salaries differ across cities</p>
     </a>
-    <a href="{{ url_for('salary_by_function') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+    <a href="{{ url_for('salary.salary_by_function') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
       <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Function</p>
       <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Salary benchmarks by team / function</p>
     </a>
@@ -159,7 +159,7 @@
     <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm">Methodology</p>
     <p>Percentile is estimated by comparing your salary against the median from Catalitium's location-based reference data.
        This is an approximation, not a precise statistical percentile from a full distribution. Source data: Catalitium salary reference table.</p>
-    <p><a href="{{ url_for('compensation_methodology') }}" class="text-brand hover:underline">Full methodology &rarr;</a></p>
+    <p><a href="{{ url_for('salary.compensation_methodology') }}" class="text-brand hover:underline">Full methodology &rarr;</a></p>
   </div>
 
 </div>
