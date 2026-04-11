@@ -3350,6 +3350,8 @@ def create_app() -> Flask:
         _add(url_for("post_a_job", _external=True), priority="0.75", changefreq="monthly")
         _add(url_for("docs_api", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
+        _add(url_for("tracker", _external=True), priority="0.6", changefreq="weekly")
+        _add(url_for("compare_workspace", _external=True), priority="0.5", changefreq="weekly")
 
         filter_targets = [
             {"title": "ai"},
@@ -4365,6 +4367,97 @@ def create_app() -> Flask:
             pass
 
         return _api_success({"bullets": bullets, "skills": skills})
+
+    # ------------------------------------------------------------------
+    # Compare workspace (candidate-decision-tools)
+    # ------------------------------------------------------------------
+    @app.get("/compare")
+    def compare_workspace():
+        """Side-by-side comparison of up to 4 jobs."""
+        from .models.compare import score_job
+
+        ids_raw = (request.args.get("ids") or "").strip()
+        id_list = [x.strip() for x in ids_raw.split(",") if x.strip()][:4]
+
+        jobs = []
+        for jid in id_list:
+            row = Job.get_by_id(jid)
+            if not row:
+                continue
+            title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
+            company = (row.get("company_name") or "").strip()
+            loc = row.get("location") or "Remote / Anywhere"
+            description = row.get("job_description") or ""
+            date_raw = row.get("date")
+            date_str = str(date_raw).strip() if date_raw is not None else ""
+            date_posted = format_job_date_string(date_str) if date_str else ""
+            salary_range = row.get("job_salary_range") or ""
+
+            median = None
+            currency = None
+            try:
+                rec = get_salary_for_location(loc)
+                if rec:
+                    median, currency = rec[0], rec[1]
+            except Exception:
+                pass
+
+            estimated_display = None
+            salary_min = salary_max = None
+            if median is not None:
+                try:
+                    title_lc = title.lower()
+                    uplift = 1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else (
+                        1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else 1.0)
+                    base_rng = salary_range_around(float(median), pct=0.2)
+                    if base_rng:
+                        base_low, base_high, base_low_s, base_high_s = base_rng
+                        if uplift > 1.0:
+                            amt = float(median) * (uplift - 1.0)
+                            low_s = _compact_salary_number(base_low + amt)
+                            high_s = _compact_salary_number(base_high + amt)
+                            estimated_display = f"{low_s}\u2013{high_s}"
+                            salary_min, salary_max = int(base_low + amt), int(base_high + amt)
+                        else:
+                            estimated_display = f"{base_low_s}\u2013{base_high_s}"
+                            salary_min, salary_max = base_low, base_high
+                except Exception:
+                    pass
+
+            job_data = {
+                "id": row.get("id"),
+                "title": title,
+                "company": company,
+                "location": loc,
+                "salary_range": salary_range,
+                "estimated_display": estimated_display,
+                "salary_min": salary_min,
+                "salary_max": salary_max,
+                "currency": currency,
+                "date_posted": date_posted,
+                "date": date_raw,
+                "job_description": description,
+                "desc_length": len(description),
+                "is_remote": "remote" in loc.lower(),
+                "estimated_salary": bool(estimated_display),
+                "job_salary_range": salary_range,
+            }
+            score_result = score_job(job_data)
+            job_data["_score"] = score_result
+            jobs.append(job_data)
+
+        jobs.sort(key=lambda j: j["_score"]["total"], reverse=True)
+        best_score = jobs[0]["_score"]["total"] if jobs else 0
+
+        return render_template("compare.html", jobs=jobs, best_score=best_score)
+
+    # ------------------------------------------------------------------
+    # Tracker (wire orphaned template)
+    # ------------------------------------------------------------------
+    @app.get("/tracker")
+    def tracker():
+        """Render the job application tracker page."""
+        return render_template("tracker.html")
 
     return app
 
