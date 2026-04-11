@@ -623,8 +623,10 @@
     <p class="font-semibold text-slate-900 dark:text-white text-base">You've seen 5,000 jobs today</p>
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Subscribe free for unlimited access, no account, no credit card needed.</p>
   </div>
-  <form action="{{ url_for('subscribe') }}" method="POST" class="shrink-0 flex flex-col sm:flex-row items-center gap-2">
+  {% from "snippets/_honeypot_field.html" import honeypot_field %}
+  <form action="{{ url_for('subscribe') }}" method="POST" class="relative shrink-0 flex flex-col sm:flex-row items-center gap-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ honeypot_field('index-gate-hp-url') }}
     <input type="hidden" name="next" value="{{ request.url }}">
     <input type="email" name="email" placeholder="your@email.com" required
            class="px-3 py-2.5 rounded-xl border border-brand/30 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40 w-44">

@@ -20,6 +20,17 @@
 
 {% block content %}
 <div class="mx-auto max-w-4xl px-4 py-10">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="mb-6 rounded-xl px-4 py-3 text-sm font-medium
+        {% if category == 'error' %}bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800
+        {% elif category == 'info' %}bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600
+        {% else %}bg-green-50 dark:bg-green-950/40 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endwith %}
+
   <div class="flex items-center justify-between mb-8">
     <div>
       <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Your dashboard</p>
@@ -34,6 +45,79 @@
       </button>
     </form>
   </div>
+
+  {# --- Developer API: primary hub for API Access subscribers --- #}
+  <section id="api-access" class="mb-8 scroll-mt-24 rounded-2xl border border-brand/25 bg-gradient-to-br from-brand/5 via-white to-slate-50 dark:from-brand/10 dark:via-slate-900 dark:to-slate-800 px-6 py-7 shadow-sm ring-1 ring-brand/10">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-widest text-brand">Developer API</p>
+        <h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">Jobs &amp; salary data in JSON</h2>
+        {% if api_access_sub and api_access_sub.status == 'active' %}
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Your <strong class="text-slate-900 dark:text-white">API Access</strong> subscription is active.
+          {% if api_key_panel and api_key_panel.is_active %}
+          Key <code class="rounded bg-slate-200/80 dark:bg-slate-700 px-1.5 py-0.5 text-xs font-mono">{{ api_key_panel.key_prefix }}…</code>
+          · up to <strong class="text-slate-800 dark:text-slate-200">{{ api_key_panel.monthly_limit or 10000 }}</strong> calls/month.
+          {% elif api_key_panel and not api_key_panel.is_active %}
+          <span class="text-amber-700 dark:text-amber-400 font-medium">Confirm the key from your email</span> to start calling the API.
+          {% else %}
+          We emailed you a new key — check your inbox (and spam). It can take a minute after checkout.
+          {% endif %}
+        </p>
+        {% elif api_access_sub and api_access_sub.status == 'past_due' %}
+        <p class="mt-2 text-sm text-amber-800 dark:text-amber-300">
+          Billing needs attention. Update your payment method in
+          <a href="{{ url_for('subscription_manage') }}" class="font-medium underline hover:no-underline">My Subscriptions</a>
+          — API quotas may be limited until payment succeeds.
+        </p>
+        {% else %}
+        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+          Integrate Catalitium job search and salary endpoints into your product.
+          <a href="{{ url_for('pricing') }}" class="font-medium text-brand hover:underline">API Access</a> includes 10,000 calls/month.
+        </p>
+        {% endif %}
+      </div>
+      <div class="flex flex-shrink-0 flex-col gap-2 sm:items-end">
+        <a href="{{ url_for('docs_api') }}"
+           class="inline-flex items-center justify-center rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand/90 transition-colors">
+          API reference
+        </a>
+        {% if api_access_sub and api_access_sub.status in ('active', 'past_due') %}
+        <a href="{{ url_for('subscription_manage') }}"
+           class="text-center text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-brand">
+          Manage billing →
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <ol class="mt-6 grid gap-3 sm:grid-cols-3 text-sm">
+      <li class="rounded-xl border border-slate-200/80 dark:border-slate-600 bg-white/80 dark:bg-slate-800/60 px-4 py-3">
+        <span class="text-xs font-bold text-brand">1</span>
+        <p class="mt-1 font-medium text-slate-900 dark:text-white">Get your key</p>
+        <p class="mt-0.5 text-slate-500 dark:text-slate-400">Sent by email after checkout, or register a free key below.</p>
+      </li>
+      <li class="rounded-xl border border-slate-200/80 dark:border-slate-600 bg-white/80 dark:bg-slate-800/60 px-4 py-3">
+        <span class="text-xs font-bold text-brand">2</span>
+        <p class="mt-1 font-medium text-slate-900 dark:text-white">Confirm</p>
+        <p class="mt-0.5 text-slate-500 dark:text-slate-400">Open the link in the email once — keys stay the same after you subscribe.</p>
+      </li>
+      <li class="rounded-xl border border-slate-200/80 dark:border-slate-600 bg-white/80 dark:bg-slate-800/60 px-4 py-3">
+        <span class="text-xs font-bold text-brand">3</span>
+        <p class="mt-1 font-medium text-slate-900 dark:text-white">Call the API</p>
+        <p class="mt-0.5 text-slate-500 dark:text-slate-400">Send header <code class="text-xs">X-API-Key: cat_…</code> on <code class="text-xs">/v1/*</code> routes.</p>
+      </li>
+    </ol>
+
+    <div class="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-200/80 dark:border-slate-600 pt-5">
+      <button type="button" id="api-register-btn"
+              class="inline-flex items-center rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-brand hover:text-brand transition-colors">
+        Register free API key
+      </button>
+      <span id="api-register-status" class="text-sm text-slate-500 dark:text-slate-400 hidden"></span>
+    </div>
+    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">Free tier: 50/day &amp; 500/month after confirmation. Paid API Access raises monthly quota automatically.</p>
+  </section>
 
   <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-6 py-8 text-center">
     <p class="text-base font-medium text-slate-700 dark:text-slate-200">Saved searches</p>
@@ -82,4 +166,46 @@
     </div>
   </div>
 </div>
+<script>
+(function () {
+  if (/[?&]api_welcome=1(?:&|$)/.test(window.location.search)) {
+    var hub = document.getElementById("api-access");
+    if (hub) {
+      hub.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    try {
+      if (window.history && window.history.replaceState) {
+        var u = new URL(window.location.href);
+        u.searchParams.delete("api_welcome");
+        var qs = u.searchParams.toString();
+        window.history.replaceState({}, "", u.pathname + (qs ? "?" + qs : "") + u.hash);
+      }
+    } catch (e) {}
+  }
+})();
+(function () {
+  var btn = document.getElementById("api-register-btn");
+  var statusEl = document.getElementById("api-register-status");
+  if (!btn || !statusEl) return;
+  btn.addEventListener("click", function () {
+    statusEl.classList.remove("hidden");
+    statusEl.textContent = "Sending…";
+    fetch("{{ url_for('api_keys_register') }}", {
+      method: "POST",
+      headers: { Accept: "application/json" },
+      credentials: "same-origin",
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; });
+      })
+      .then(function (x) {
+        var j = x.j || {};
+        statusEl.textContent = j.message || j.detail || j.error || (x.ok ? "Done." : "Something went wrong.");
+      })
+      .catch(function () {
+        statusEl.textContent = "Network error — try again.";
+      });
+  });
+})();
+</script>
 {% endblock %}

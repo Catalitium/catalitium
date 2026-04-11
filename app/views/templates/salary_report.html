@@ -213,8 +213,10 @@
       <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4">
         <form method="post"
               action="{{ url_for('subscribe') }}"
-              class="space-y-2"
+              class="relative space-y-2"
               data-gtm-salary-capture="inline">
+{% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
+{{ subscribe_security('salary-report') }}
           <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Stay on top of salary moves</p>
           <p class="text-xs text-slate-600">
             Get one monthly snapshot of market moves for your saved roles and regions. No spam, just a digest you can

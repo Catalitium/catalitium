@@ -23,18 +23,60 @@ from flask import (
     after_this_request,
     session,
 )
-from email_validator import validate_email, EmailNotValidError
+# email-validator removed — replaced with stdlib (no deliverability check needed;
+# Supabase validates on auth). Drop-in shim keeps all except/catch clauses unchanged.
+_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+class EmailNotValidError(ValueError):
+    """Raised when an email address fails basic format validation."""
+
+
+def validate_email(email: str, *, check_deliverability: bool = False):  # noqa: ARG001
+    """Lightweight format-only email validator. Returns an object with .normalized."""
+    class _Result:
+        normalized: str
+
+    r = _Result()
+    r.normalized = email.strip().lower()
+    if not _EMAIL_RE.match(r.normalized):
+        raise EmailNotValidError(f"Invalid email: {email!r}")
+    return r
+from .config import (
+    PER_PAGE_MAX,
+    GHOST_JOB_DAYS,
+    GUEST_DAILY_LIMIT,
+    SUMMARY_CACHE_TTL,
+    SUMMARY_CACHE_MAX,
+    AUTOCOMPLETE_CACHE_TTL,
+    AUTOCOMPLETE_CACHE_MAX,
+    SALARY_INSIGHTS_CACHE_TTL,
+    SALARY_INSIGHTS_CACHE_MAX,
+)
+from .mailer import (
+    send_subscribe_welcome,
+    send_api_key_activation,
+    send_api_access_key_provisioned,
+    send_api_access_payment_confirmed,
+    send_api_key_activation_reminder,
+    send_job_posting_admin_notification,
+    send_job_posting_confirmation,
+)
+from .normalization import normalize_country, normalize_title
+from .subscriber_fields import sanitize_subscriber_search_fields
+from .spam_guards import (
+    disposable_email_domain,
+    honeypot_triggered,
+    prepare_contact_submission,
+)
 from .models.db import (
     SECRET_KEY,
     SUPABASE_URL,
-    PER_PAGE_MAX,
     logger,
     close_db,
     init_db,
     get_db,
     get_salary_for_location,
-    normalize_country,
-    normalize_title,
     parse_salary_query,
     parse_salary_range_string,
     parse_job_description,
@@ -60,7 +102,7 @@ from .models.db import (
     upsert_user_subscription,
     get_user_subscriptions,
     get_subscription_by_stripe_id,
-    update_api_key_limit_by_email,
+    sync_api_key_quota_for_api_access,
 )
 
 try:
@@ -72,8 +114,6 @@ import urllib.request as _urllib_req
 import hashlib
 import secrets
 import functools
-import smtplib
-from email.mime.text import MIMEText
 from werkzeug.middleware.proxy_fix import ProxyFix
 from .api_utils import (
     TTLCache,
@@ -110,8 +150,8 @@ try:
 except ImportError:
     _sb_create_client = None
 
-_supabase_client = None        # used for sign_in / sign_up
-_supabase_admin_client = None  # used only for admin.* calls; never stores a user session
+_supabase_clients: dict = {}  # keyed "user" and "admin" — kept separate intentionally
+                              # (mixing user-auth and admin clients overwrites session state)
 
 _PROFILE_FIELDS = ("full_name", "headline", "location", "bio", "website")
 _ACCOUNT_TYPES = {"candidate", "recruiter", "company"}
@@ -135,45 +175,34 @@ def _derive_supabase_project_url() -> str:
     return ""
 
 
-def _get_supabase():
-    """Return the shared Supabase client for **end-user auth** (sign_in, sign_up).
+def _get_supabase_client(admin: bool = False) -> Optional[Any]:
+    """Return a cached Supabase client.
 
-    Kept separate from `_get_supabase_admin` so user-facing auth never shares the
-    same client instance as `auth.admin.*` calls; mixing them can overwrite
-    internal session state and break admin metadata updates."""
-    global _supabase_client
-    if _supabase_client is None and _sb_create_client:
+    admin=False → user-auth client (sign_in, sign_up, sign_out).
+    admin=True  → admin client (auth.admin.* only).
+    Two separate instances are intentional: mixing them overwrites session state."""
+    key_name = "admin" if admin else "user"
+    if key_name not in _supabase_clients and _sb_create_client:
         project_url = _derive_supabase_project_url()
-        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
-        if not project_url or not key:
-            logger.warning("Supabase auth client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
+        secret_key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+        if not project_url or not secret_key:
+            logger.warning("Supabase client unavailable (admin=%s): missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY", admin)
             return None
         try:
-            _supabase_client = _sb_create_client(project_url, key)
+            _supabase_clients[key_name] = _sb_create_client(project_url, secret_key)
         except Exception as exc:
-            logger.warning("Supabase auth client init failed: %s", exc)
+            logger.warning("Supabase client init failed (admin=%s): %s", admin, exc)
             return None
-    return _supabase_client
+    return _supabase_clients.get(key_name)
 
 
-def _get_supabase_admin():
-    """Return a dedicated client for **auth.admin** only (profiles, metadata).
+# Convenience aliases so callsites stay readable
+def _get_supabase() -> Optional[Any]:
+    return _get_supabase_client(admin=False)
 
-    Never use this for sign_in/sign_up; use `_get_supabase()` so admin JWT
-    handling does not clobber the user session used for login flows."""
-    global _supabase_admin_client
-    if _supabase_admin_client is None and _sb_create_client:
-        project_url = _derive_supabase_project_url()
-        key = os.getenv("SUPABASE_SECRET_KEY", "").strip()
-        if not project_url or not key:
-            logger.warning("Supabase admin client unavailable: missing SUPABASE_PROJECT_URL or SUPABASE_SECRET_KEY")
-            return None
-        try:
-            _supabase_admin_client = _sb_create_client(project_url, key)
-        except Exception as exc:
-            logger.warning("Supabase admin client init failed: %s", exc)
-            return None
-    return _supabase_admin_client
+
+def _get_supabase_admin() -> Optional[Any]:
+    return _get_supabase_client(admin=True)
 
 
 def _clean_profile_data(raw: Dict[str, Any]) -> Dict[str, str]:
@@ -547,7 +576,6 @@ TITLE_BUCKET1_KEYWORDS = (
 )
 
 ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
-GHOST_JOB_DAYS = 30  # jobs older than this are considered potentially filled
 
 _DEMO_JOBS_CSV = Path(__file__).parent / "data" / "demo_jobs.csv"
 
@@ -775,55 +803,14 @@ REPORTS = [
 ]
 
 
-def _send_mail(to: str, subject: str, body: str) -> None:
-    """Send a plain-text email via SMTP. Best-effort; logs on failure, never raises."""
-    host = os.getenv("SMTP_HOST", "").strip()
-    port = int(os.getenv("SMTP_PORT", "587"))
-    user = os.getenv("SMTP_USER", "").strip()
-    pw = os.getenv("SMTP_PASS", "").strip()
-    frm = os.getenv("SMTP_FROM", "noreply@catalitium.com").strip()
-    if not host:
-        logger.warning("_send_mail: SMTP_HOST not configured, skipping email to %s", to)
-        return
-    try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = frm
-        msg["To"] = to
-        with smtplib.SMTP(host, port, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.ehlo()
-            if user:
-                s.login(user, pw)
-            s.send_message(msg)
-    except Exception as exc:
-        logger.warning("_send_mail failed (to=%s): %s", to, exc)
-
-
-def _send_subscribe_confirmation(email: str, focus: str = "") -> None:
-    """Send a welcome confirmation email to a new subscriber."""
-    focus_line = f"\nYour focus: {focus}\n" if focus else ""
-    body = f"""Welcome to Catalitium.
-
-You're now on the weekly high-match digest.{focus_line}
-Every week we send you the highest-signal tech jobs with real salary data: no noise, no spam.
-
-Browse jobs now: {os.getenv("BASE_URL", "https://catalitium.com")}
-
---
-Catalitium | info@catalitium.com
-Unsubscribe: {os.getenv("BASE_URL", "https://catalitium.com")}/unsubscribe
-"""
-    _send_mail(email, "You're on the Catalitium weekly digest", body)
+# Email functions live in app/mailer.py — imported at the top of this file.
 
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
 # ---------------------------------------------------------------------------
-# Guest daily job view limit
+# Guest daily job view limit  (threshold defined in app/config.py)
 # ---------------------------------------------------------------------------
-GUEST_DAILY_LIMIT = 5_000
 
 
 def _guest_daily_remaining() -> int:
@@ -951,9 +938,9 @@ def create_app() -> Flask:
             return fn
         return limiter.exempt(fn)
 
-    summary_cache = TTLCache(ttl_seconds=90, max_size=400)
-    autocomplete_cache = TTLCache(ttl_seconds=120, max_size=400)
-    salary_insights_cache = TTLCache(ttl_seconds=120, max_size=250)
+    summary_cache = TTLCache(ttl_seconds=SUMMARY_CACHE_TTL, max_size=SUMMARY_CACHE_MAX)
+    autocomplete_cache = TTLCache(ttl_seconds=AUTOCOMPLETE_CACHE_TTL, max_size=AUTOCOMPLETE_CACHE_MAX)
+    salary_insights_cache = TTLCache(ttl_seconds=SALARY_INSIGHTS_CACHE_TTL, max_size=SALARY_INSIGHTS_CACHE_MAX)
 
     @app.before_request
     def assign_request_id():
@@ -1055,7 +1042,10 @@ def create_app() -> Flask:
             if usage is None:
                 return jsonify({"error": "invalid_key"}), 401
             if isinstance(usage, dict) and usage.get("error") == "quota_exceeded":
-                return jsonify({"error": "quota_exceeded"}), 429
+                return jsonify({
+                    "error": "quota_exceeded",
+                    "window": usage.get("window", "daily"),
+                }), 429
             g.api_key_record = usage
 
             @after_this_request
@@ -1785,11 +1775,19 @@ def create_app() -> Flask:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
             return redirect(url_for("jobs"))
+        if honeypot_triggered(payload):
+            if is_json:
+                return jsonify({"error": "invalid_request"}), 400
+            flash("Unable to complete that request. Please refresh the page and try again.", "error")
+            return redirect(url_for("jobs"))
         email = (payload.get("email") or "").strip()
         job_id_raw = (payload.get("job_id") or "").strip()
         search_title = (payload.get("search_title") or "").strip()
         search_country = (payload.get("search_country") or "").strip()
         search_salary_band = (payload.get("search_salary_band") or "").strip()
+        search_title, search_country, search_salary_band = sanitize_subscriber_search_fields(
+            search_title, search_country, search_salary_band
+        )
         digest_label_parts = [p for p in [search_title, search_country, search_salary_band] if p]
         digest_label = " / ".join(digest_label_parts[:3])
 
@@ -1799,6 +1797,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
+            return redirect(url_for("jobs"))
+
+        if disposable_email_domain(email):
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please use a permanent email address.", "error")
             return redirect(url_for("jobs"))
 
         job_link = Job.get_link(job_id_raw)
@@ -1830,7 +1834,7 @@ def create_app() -> Flask:
             return redirect(job_link)
 
         if status == "ok":
-            _send_subscribe_confirmation(email, digest_label)
+            send_subscribe_welcome(email, digest_label)
             message = "You're subscribed to the weekly high-match digest."
             if digest_label:
                 message = f"{message} Focus: {digest_label}."
@@ -1874,11 +1878,7 @@ def create_app() -> Flask:
             return jsonify(body), 200
         return redirect(url_for("jobs"))
 
-    @app.post("/subscribe.json")
-    @_limit("20 per minute")
-    def subscribe_json():
-        """Alias JSON endpoint for compatibility."""
-        return subscribe()
+    # /subscribe.json removed — POST /subscribe detects request.is_json automatically
 
     @app.route("/register", methods=["GET", "POST"])
     @_limit("10 per minute")
@@ -2004,7 +2004,33 @@ def create_app() -> Flask:
         user = session.get("user")
         if not user:
             return redirect(url_for("register"))
-        return render_template("studio.html", user=user)
+        user_id = str(user.get("id") or "").strip()
+        email = (user.get("email") or "").strip()
+        subs = get_user_subscriptions(user_id) if user_id else {}
+        api_access_sub = subs.get("api_access")
+        api_key_panel = None
+        if email:
+            key_rec = get_api_key_by_email(email)
+            if key_rec:
+                api_key_panel = {
+                    "key_prefix": key_rec.get("key_prefix"),
+                    "is_active": bool(key_rec.get("is_active")),
+                    "tier": key_rec.get("tier") or "",
+                    "monthly_limit": key_rec.get("monthly_limit"),
+                    "daily_limit": key_rec.get("daily_limit"),
+                }
+        return render_template(
+            "studio.html",
+            user=user,
+            subs=subs,
+            api_access_sub=api_access_sub,
+            api_key_panel=api_key_panel,
+        )
+
+    @app.get("/docs/api")
+    def docs_api():
+        """Public developer reference for the Catalitium HTTP API."""
+        return render_template("docs_api.html")
 
     @app.route("/profile", methods=["GET", "POST"])
     @_limit("10 per minute")
@@ -2129,6 +2155,11 @@ def create_app() -> Flask:
                 return jsonify({"error": "invalid_csrf"}), 400
             flash("Session expired. Please try again.", "error")
             return redirect(url_for("jobs"))
+        if honeypot_triggered(payload):
+            if is_json:
+                return jsonify({"error": "invalid_request"}), 400
+            flash("Unable to complete that request. Please refresh the page and try again.", "error")
+            return redirect(url_for("jobs"))
         email_raw = (payload.get("email") or "").strip()
         name_raw = (payload.get("name") or payload.get("name_company") or payload.get("company") or "").strip()
         message_raw = (payload.get("message") or "").strip()
@@ -2139,6 +2170,12 @@ def create_app() -> Flask:
             if is_json:
                 return jsonify({"error": "invalid_email"}), 400
             flash("Please enter a valid email.", "error")
+            return redirect(url_for("jobs"))
+
+        if disposable_email_domain(email):
+            if is_json:
+                return jsonify({"error": "invalid_email"}), 400
+            flash("Please use a permanent email address.", "error")
             return redirect(url_for("jobs"))
 
         if not name_raw or len(name_raw) < 2:
@@ -2153,7 +2190,15 @@ def create_app() -> Flask:
             flash("Please add a short message.", "error")
             return redirect(url_for("jobs"))
 
-        status = insert_contact(email=email, name_company=name_raw, message=message_raw)
+        prepared = prepare_contact_submission(name_raw, message_raw)
+        if prepared is None:
+            if is_json:
+                return jsonify({"error": "invalid_message"}), 400
+            flash("Your message could not be sent. Please shorten links or remove unusual text and try again.", "error")
+            return redirect(url_for("jobs"))
+        name_clean, msg_clean = prepared
+
+        status = insert_contact(email=email, name_company=name_clean, message=msg_clean)
 
         if status != "ok":
             if is_json:
@@ -2166,11 +2211,7 @@ def create_app() -> Flask:
         flash("Thanks! We received your message.", "success")
         return redirect(url_for("jobs"))
 
-    @app.post("/contact.json")
-    @_limit("12 per minute")
-    def contact_json():
-        """Alias JSON endpoint for compatibility."""
-        return contact()
+    # /contact.json removed — POST /contact detects request.is_json automatically
 
     @app.post("/job-posting")
     @_limit("10 per minute")
@@ -2292,63 +2333,7 @@ def create_app() -> Flask:
         flash("Your job has been submitted and will go live within 24 hours.", "success")
         return redirect(url_for("hire"))
 
-    @app.post("/job-posting.json")
-    @_limit("10 per minute")
-    def job_posting_json():
-        """Alias JSON endpoint for compatibility."""
-        return job_posting()
-
-    @app.post("/events/apply")
-    @_limit("120 per minute")
-    def events_apply():
-        """Record analytics events (apply/filter/etc.)."""
-        payload = request.get_json(silent=True) or {}
-        event_type = (payload.get("event_type") or "apply").strip().lower() or "apply"
-        status = (payload.get("status") or "").strip()
-        source = (payload.get("source") or "web").strip() or "web"
-        email_hash = (payload.get("email_hash") or "").strip()
-        meta_dict: Dict[str, str] = {}
-        payload_meta = payload.get("meta")
-        if isinstance(payload_meta, dict):
-            for key, value in payload_meta.items():
-                if key is None or value is None:
-                    continue
-                meta_dict[str(key)] = str(value)
-
-        if event_type == "filter":
-            filter_type = (payload.get("filter_type") or "").strip()
-            filter_value = (payload.get("filter_value") or "").strip()
-            raw_title = filter_type or "filter"
-            raw_country = filter_value
-            norm_title = filter_type.lower() if filter_type else ""
-            norm_country = ""
-            status = status or "selected"
-            if filter_type:
-                meta_dict["filter_type"] = filter_type
-            if filter_value:
-                meta_dict["filter_value"] = filter_value
-            job_id = ""
-            job_title = ""
-            job_company = ""
-            job_location = ""
-            job_link = ""
-            job_summary = ""
-        else:
-            job_id = (payload.get("job_id") or payload.get("jobId") or "").strip()
-            job_title = (payload.get("job_title") or payload.get("jobTitle") or "").strip()
-            job_company = (payload.get("job_company") or payload.get("jobCompany") or "").strip()
-            job_location = (payload.get("job_location") or payload.get("jobLocation") or "").strip()
-            job_link = (payload.get("job_link") or payload.get("jobLink") or "").strip()
-            job_summary = (payload.get("job_summary") or payload.get("jobSummary") or "").strip()
-            raw_title = job_title or "N/A"
-            raw_country = job_location or "N/A"
-            norm_title = ""
-            norm_country = ""
-            status = status or "unknown"
-            if job_link:
-                meta_dict.setdefault("job_link", job_link)
-
-        return jsonify({"status": "ok"}), 200
+    # /job-posting.json removed — POST /job-posting detects request.is_json automatically
 
     @app.get("/api/salary-insights")
     def api_salary_insights():
@@ -2589,22 +2574,86 @@ def create_app() -> Flask:
         p["price_id"]: k for k, p in _STRIPE_B2C_PRODUCTS.items() if p["price_id"]
     }
 
-    def _handle_b2c_subscription_event(sub_obj: Dict) -> None:
-        """Sync a Stripe subscription object to user_subscriptions."""
-        sub_id = sub_obj.get("id", "")
-        metadata = sub_obj.get("metadata") or {}
-        user_id = metadata.get("user_id", "")
-        user_email = metadata.get("user_email", "")
-        product_line = metadata.get("product_line", "")
-        tier = metadata.get("tier", "")
+    def _stripe_subscription_to_dict(sub_obj: Any) -> Dict[str, Any]:
+        """Normalize Stripe SDK objects to plain dicts for webhook handlers."""
+        if isinstance(sub_obj, dict):
+            return sub_obj
+        to_dict = getattr(sub_obj, "to_dict", None)
+        if callable(to_dict):
+            return to_dict()
+        try:
+            return dict(sub_obj)
+        except Exception:
+            return {}
+
+    def _ensure_api_access_key_from_subscription(
+        *,
+        user_id: str,
+        user_email: str,
+        base_url: str,
+    ) -> None:
+        """Create an api_keys row + email raw key when none exists (paid API Access)."""
+        user_email = (user_email or "").strip()
+        if not user_email:
+            return
+        base = (base_url or os.getenv("BASE_URL", "https://catalitium.com")).rstrip("/")
+
+        existing = get_api_key_by_email(user_email)
+        if existing:
+            return
+
+        raw_key = "cat_" + secrets.token_hex(22)
+        key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
+        key_prefix = raw_key[:12]
+        confirm_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        ok = create_api_key(
+            email=user_email,
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            confirm_token=confirm_token,
+            confirm_token_expires_at=expires_at,
+            created_from_ip="stripe_webhook",
+            user_id=str(user_id or ""),
+        )
+        if not ok:
+            logger.warning("api_access: create_api_key failed email=%s", user_email)
+            return
+        sync_api_key_quota_for_api_access(user_email, True)
+        confirm_url = f"{base}/api/keys/confirm?token={confirm_token}"
+        send_api_access_key_provisioned(user_email, raw_key, confirm_url)
+        logger.info("api_access: key provisioned prefix=%s email=%s", key_prefix, user_email)
+
+    def _checkout_api_access_confirmation_email(user_email: str, had_active_key_before: bool) -> None:
+        """Short receipt when checkout completes; skip if we already emailed a new key."""
+        user_email = (user_email or "").strip()
+        if not user_email or not had_active_key_before:
+            return
+        send_api_access_payment_confirmed(user_email)
+
+    def _handle_b2c_subscription_event(sub_obj: Any) -> None:
+        """Sync a Stripe subscription object to user_subscriptions and API keys."""
+        sub_d = _stripe_subscription_to_dict(sub_obj)
+        sub_id = sub_d.get("id", "")
+        metadata = dict(sub_d.get("metadata") or {})
+        user_id = (metadata.get("user_id") or "").strip()
+        user_email = (metadata.get("user_email") or "").strip()
+        product_line = (metadata.get("product_line") or "").strip()
+        tier = (metadata.get("tier") or "").strip()
 
         if not user_id or not product_line:
             logger.warning("_handle_b2c_subscription_event: missing metadata sub=%s", sub_id)
             return
 
         # Resolve tier from live price (handles plan changes mid-subscription)
-        items = (sub_obj.get("items") or {}).get("data") or []
-        price_id = items[0]["price"]["id"] if items else None
+        items = (sub_d.get("items") or {}).get("data") or []
+        price_id = None
+        if items and isinstance(items[0], dict):
+            price_obj = items[0].get("price")
+            if isinstance(price_obj, dict):
+                price_id = price_obj.get("id")
+            elif isinstance(price_obj, str):
+                price_id = price_obj
         if price_id and price_id in _B2C_PRICE_TO_KEY:
             matched = _STRIPE_B2C_PRODUCTS[_B2C_PRICE_TO_KEY[price_id]]
             tier = matched["tier"]
@@ -2615,24 +2664,29 @@ def create_app() -> Flask:
             "past_due": "past_due", "unpaid": "past_due",
             "incomplete": "past_due", "canceled": "cancelled",
         }
-        status = _STATUS_MAP.get(sub_obj.get("status", ""), "past_due")
+        status = _STATUS_MAP.get(sub_d.get("status", ""), "past_due")
         upsert_user_subscription(
             user_id=user_id,
             user_email=user_email,
             product_line=product_line,
             tier=tier,
-            stripe_customer_id=sub_obj.get("customer"),
+            stripe_customer_id=sub_d.get("customer"),
             stripe_subscription_id=sub_id,
             stripe_price_id=price_id,
             status=status,
-            current_period_end=sub_obj.get("current_period_end"),
-            cancel_at_period_end=bool(sub_obj.get("cancel_at_period_end")),
+            current_period_end=sub_d.get("current_period_end"),
+            cancel_at_period_end=bool(sub_d.get("cancel_at_period_end")),
         )
 
-        # Keep API key quota in sync with api_access subscription tier
         if product_line == "api_access" and user_email:
-            new_limit = 10_000 if status == "active" else 500
-            update_api_key_limit_by_email(user_email, new_limit)
+            paid_active = status == "active"
+            sync_api_key_quota_for_api_access(user_email, paid_active)
+            if paid_active:
+                _ensure_api_access_key_from_subscription(
+                    user_id=user_id,
+                    user_email=user_email,
+                    base_url=os.getenv("BASE_URL", "https://catalitium.com"),
+                )
 
     @app.get("/pricing")
     def pricing():
@@ -2730,6 +2784,13 @@ def create_app() -> Flask:
             return redirect(url_for("register"))
         plan_key = request.args.get("plan_key", "")
         product = _STRIPE_B2C_PRODUCTS.get(plan_key)
+        if plan_key == "api_access":
+            flash(
+                "API Access is active. Check your email for your key, then open Studio (Account) "
+                "to see setup steps and documentation.",
+                "success",
+            )
+            return redirect(url_for("studio", api_welcome="1"))
         return render_template("subscription_success.html", user=user, product=product)
 
     @app.get("/account/subscription")
@@ -2984,32 +3045,23 @@ def create_app() -> Flask:
 
         admin_email = os.getenv("ADMIN_EMAIL", "").strip()
         if admin_email:
-            _send_mail(
-                admin_email,
-                f"[New Job Posting] {job_title} at {company} ({order['plan_name']})",
-                (
-                    f"Plan: {order['plan_name']}\n"
-                    f"Paid by: {order['user_email']}\n"
-                    f"Session: {session_id}\n\n"
-                    f"Title: {job_title}\n"
-                    f"Company: {company}\n"
-                    f"Location: {location or 'Not specified'}\n"
-                    f"Salary: {salary_range or 'Not specified'}\n"
-                    f"Apply URL: {apply_url or 'Not specified'}\n\n"
-                    f"Description:\n{description}"
-                ),
+            send_job_posting_admin_notification(
+                admin_email=admin_email,
+                job_title=job_title,
+                company=company,
+                plan_name=order["plan_name"],
+                user_email=order["user_email"],
+                session_id=session_id,
+                location=location,
+                salary_range=salary_range,
+                apply_url=apply_url,
+                description=description,
             )
-        _send_mail(
-            order["user_email"],
-            f"Job posting confirmed: {job_title} at {company}",
-            (
-                f"Hi,\n\nYour job posting has been received and will go live shortly.\n\n"
-                f"Plan: {order['plan_name']}\n"
-                f"Job title: {job_title}\n"
-                f"Company: {company}\n\n"
-                f"We'll review and publish it within 24 hours.\n\n"
-                f"Thanks,\nThe Catalitium Team\nhttps://catalitium.com"
-            ),
+        send_job_posting_confirmation(
+            user_email=order["user_email"],
+            job_title=job_title,
+            company=company,
+            plan_name=order["plan_name"],
         )
 
         flash("Job submitted! It will go live within 24 hours. Check your email for confirmation.", "success")
@@ -3056,6 +3108,36 @@ def create_app() -> Flask:
             )
             logger.info("stripe_webhook: order paid session=%s", cs_id)
 
+            if subscription_id and data_obj.get("mode") == "subscription":
+                try:
+                    _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+                    sub_raw = _stripe.Subscription.retrieve(subscription_id)
+                    sub_d = _stripe_subscription_to_dict(sub_raw)
+                    sess_meta = data_obj.get("metadata") or {}
+                    sub_meta = dict(sub_d.get("metadata") or {})
+                    merged_meta = {**sub_meta}
+                    for k, v in sess_meta.items():
+                        if v is not None and str(v).strip() != "":
+                            merged_meta.setdefault(k, str(v).strip())
+                    sub_d["metadata"] = merged_meta
+                    uemail = (sess_meta.get("user_email") or merged_meta.get("user_email") or "").strip()
+                    uid = (sess_meta.get("user_id") or merged_meta.get("user_id") or "").strip()
+                    plan_key = (sess_meta.get("plan_key") or "").strip()
+                    prior = get_api_key_by_email(uemail) if uemail else None
+                    had_active = bool(prior and prior.get("is_active"))
+                    was_pending = bool(prior and not prior.get("is_active"))
+                    _handle_b2c_subscription_event(sub_d)
+                    if plan_key == "api_access" and uemail:
+                        base = os.getenv("BASE_URL", "https://catalitium.com").rstrip("/")
+                        after = get_api_key_by_email(uemail)
+                        if was_pending and after and not after.get("is_active"):
+                            tok = after.get("confirm_token")
+                            if tok:
+                                send_api_key_activation_reminder(uemail, f"{base}/api/keys/confirm?token={tok}")
+                        _checkout_api_access_confirmation_email(uemail, had_active)
+                except Exception as exc:
+                    logger.warning("stripe_webhook: checkout subscription sync failed %s", exc)
+
         elif event_type in ("customer.subscription.created", "customer.subscription.updated"):
             _handle_b2c_subscription_event(data_obj)
             logger.info("stripe_webhook: subscription synced sub=%s type=%s", data_obj.get("id"), event_type)
@@ -3072,6 +3154,8 @@ def create_app() -> Flask:
                     stripe_subscription_id=sub_id,
                     status="cancelled",
                 )
+                if existing.get("product_line") == "api_access" and existing.get("user_email"):
+                    sync_api_key_quota_for_api_access(existing["user_email"], False)
             logger.info("stripe_webhook: subscription cancelled sub=%s", sub_id)
 
         elif event_type == "invoice.payment_succeeded":
@@ -3098,6 +3182,8 @@ def create_app() -> Flask:
                         stripe_subscription_id=sub_id,
                         status="past_due",
                     )
+                    if existing.get("product_line") == "api_access" and existing.get("user_email"):
+                        sync_api_key_quota_for_api_access(existing["user_email"], False)
             logger.warning("stripe_webhook: payment failed customer=%s sub=%s", customer_id, sub_id)
 
         return jsonify({"status": "ok"}), 200
@@ -3481,10 +3567,10 @@ def create_app() -> Flask:
     # ------------------------------------------------------------------
     @app.get("/sw.js")
     def service_worker():
-        """Serve the PWA service worker from root so it controls all pages."""
-        resp = send_from_directory(
-            os.path.join(os.path.dirname(__file__), "static", "js"),
-            "sw.js",
+        """Render the PWA service worker with ASSET_VERSION injected so cache busts on deploy."""
+        asset_version = app.config.get("ASSET_VERSION", "v1")
+        resp = Response(
+            render_template("sw.js", asset_version=asset_version),
             mimetype="application/javascript",
         )
         resp.headers["Service-Worker-Allowed"] = "/"
@@ -3702,18 +3788,7 @@ def create_app() -> Flask:
 
         base_url = request.host_url.rstrip("/")
         confirm_url = f"{base_url}/api/keys/confirm?token={confirm_token}"
-        body = (
-            f"Hello,\n\n"
-            f"Your Catalitium API key is:\n\n"
-            f"  {raw_key}\n\n"
-            f"To activate it, visit the link below (valid 24 hours):\n\n"
-            f"  {confirm_url}\n\n"
-            f"Once activated, include it in API requests with the header:\n"
-            f"  X-API-Key: {raw_key}\n\n"
-            f"Free tier: 50 requests/day.\n\n"
-            f"-- Catalitium Team"
-        )
-        _send_mail(email, "Activate your Catalitium API key", body)
+        send_api_key_activation(email, raw_key, confirm_url)
         logger.info("API key created prefix=%s ip=%s email=%s user_id=%s", key_prefix, ip, email, user_id)
         return jsonify({"message": "Check your email to activate your key."}), 200
 
@@ -3741,6 +3816,8 @@ def create_app() -> Flask:
             "tier": rec.get("tier"),
             "daily_limit": rec.get("daily_limit", 50),
             "requests_today": rec.get("requests_today", 0),
+            "monthly_limit": rec.get("monthly_limit", 500),
+            "requests_this_month": rec.get("requests_this_month", 0),
             "reset_date": reset_dt.isoformat(),
         }), 200
 

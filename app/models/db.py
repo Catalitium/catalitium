@@ -1,13 +1,27 @@
-# app/models/db.py - Database connection and utility functions
+# app/models/db.py - Database connection infrastructure + re-exports
+#
+# This file owns: connection pool, get_db, close_db, init_db, _is_unique_violation,
+#                 summarize_two_sentences, parse_job_description.
+#
+# All model logic has been split into focused modules:
+#   models/jobs.py         — Job class, job summary cache, date/text helpers
+#   models/salary.py       — salary queries and parsing utilities
+#   models/subscriptions.py — Stripe orders and user subscriptions
+#   models/api_keys.py     — API key CRUD and quota management
+#   models/users.py        — subscribers, contacts, job postings
+#
+# Re-exports from those modules are at the bottom of this file so that
+# all existing `from .models.db import X` calls in app.py continue to work.
 
+import json
 import os
 import re
 import logging
-import json
-import time
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:
@@ -26,24 +40,21 @@ try:
 except ImportError:
     pass
 
-# ------------------------- Config --------------------------------------------
+# ----------------------------- Config ----------------------------------------
 
 def _normalize_pg_url(url: str) -> str:
     """Normalize Postgres URLs for psycopg3.
 
     Supabase pooler URLs often include ``pgbouncer=true``; libpq/psycopg reject that
     param for direct connections, so we strip it and add ``sslmode=require`` plus a
-    short ``connect_timeout`` when missing. Regression test: paste a typical
-    ``postgresql://postgres.<ref>:...@aws-0-...pooler.supabase.com:6543/postgres?pgbouncer=true`` string.
+    short ``connect_timeout`` when missing.
     """
     if not url or not url.startswith(("postgres://", "postgresql://")):
         return url
     parsed = urlparse(url)
     hostname = parsed.hostname or ""
     port = parsed.port
-    # Keep existing params and add safe defaults.
     query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)]
-    # Drop params psycopg/libpq will reject (Supabase adds pgbouncer=true for pooled URLs).
     query_pairs = [(k, v) for k, v in query_pairs if k.lower() != "pgbouncer"]
     has_ssl = any(k.lower() == "sslmode" for k, _ in query_pairs)
     if not has_ssl:
@@ -66,29 +77,31 @@ def _normalize_pg_url(url: str) -> str:
     parsed = parsed._replace(netloc=f"{auth}{hostport}")
     return urlunparse(parsed._replace(query=new_query))
 
+
 def _truthy(value: str | None) -> bool:
     if value is None:
         return False
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-# Prefer DATABASE_URL for Postgres; fallback to SUPABASE_URL for backwards-compat
 _SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
 SUPABASE_URL = _normalize_pg_url(_SUPABASE_RAW)
 SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
-PER_PAGE_MAX = 100  # safety cap
-DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "4"))  # tune vs Gunicorn workers × expected concurrency
+from ..config import PER_PAGE_MAX, DB_POOL_MAX_DEFAULT  # noqa: E402
+DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", str(DB_POOL_MAX_DEFAULT)))
 
-# ------------------------- Logging -------------------------------------------
+# ----------------------------- Logging ---------------------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("catalitium")
 
-# ------------------------- Database Connection Functions ----------------------
+# ----------------------------- Connection Pool --------------------------------
 _PG_POOL = None
+
 
 def _setup_connection(conn):
     """Apply session settings and ensure autocommit."""
@@ -98,12 +111,12 @@ def _setup_connection(conn):
         pass
     try:
         with conn.cursor() as cur:
-            # Keep queries snappy and fail fast; units in ms
             cur.execute("SET statement_timeout TO 8000")
             cur.execute("SET idle_in_transaction_session_timeout TO 5000")
             cur.execute("SET application_name TO 'catalitium'")
     except Exception:
         pass
+
 
 def _init_pg_pool():
     """Initialize a small connection pool when psycopg_pool is available."""
@@ -126,6 +139,7 @@ def _init_pg_pool():
         logger.warning("ConnectionPool init failed, falling back to direct connects: %s", exc)
         _PG_POOL = None
 
+
 def _acquire_connection():
     """Get a connection from the pool or open a new one."""
     global _PG_POOL
@@ -143,7 +157,6 @@ def _acquire_connection():
         except Exception as exc:
             logger.warning("Pool connection failed, retrying direct connect: %s", exc)
             _PG_POOL = None
-    # Fallback: direct connection
     import psycopg
     conn = psycopg.connect(SUPABASE_URL, autocommit=True)
     _setup_connection(conn)
@@ -160,9 +173,10 @@ def _pg_connect():
         raise RuntimeError("SUPABASE_URL not set")
     return _acquire_connection()
 
+
 def get_db():
     """Get database connection from Flask g object."""
-    from flask import g, current_app
+    from flask import g
 
     if "db" not in g:
         try:
@@ -171,6 +185,7 @@ def get_db():
             logger.error("Postgres connection failed: %s", e)
             raise
     return g.db
+
 
 def close_db(_e=None):
     """Close database connection."""
@@ -188,7 +203,6 @@ def close_db(_e=None):
             except Exception:
                 pass
 
-# ------------------------- Subscriber & Analytics Helpers --------------------
 
 def _is_unique_violation(exc: Exception) -> bool:
     if UniqueViolation is not None and isinstance(exc, UniqueViolation):
@@ -625,10 +639,7 @@ def summarize_two_sentences(text: str) -> str:
     return " ".join(final)
 
 
-def parse_job_description(text: str) -> str:
-    """Clean and summarize a raw job description to a short, readable preview."""
-    t = clean_job_description_text(text or "")
-    return summarize_two_sentences(t)
+# ----------------------------- Schema Init -----------------------------------
 
 def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> None:
     try:
@@ -640,7 +651,7 @@ def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> Non
 
 
 def init_db():
-    """Connectivity check + ensure job_summaries and api_keys tables exist."""
+    """Connectivity check + ensure all required tables and columns exist."""
     try:
         db = get_db()
         with db.cursor() as cur:
@@ -675,18 +686,15 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS uq_api_keys_active_email
                     ON api_keys (email) WHERE is_active = TRUE
             """)
-            # Ensure subscribers has salary_band column
             cur.execute(
                 "ALTER TABLE subscribers ADD COLUMN IF NOT EXISTS search_salary_band TEXT"
             )
-            # Ensure job_posting has recruiter tracking columns
             cur.execute(
                 "ALTER TABLE job_posting ADD COLUMN IF NOT EXISTS user_id TEXT"
             )
             cur.execute(
                 "ALTER TABLE job_posting ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ"
             )
-            # Developer API: daily quota columns (migrate existing rows safely)
             cur.execute(
                 "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS daily_limit INT DEFAULT 50"
             )
@@ -699,7 +707,6 @@ def init_db():
             cur.execute(
                 "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT"
             )
-            # Salary flywheel: crowd-sourced contributions
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS salary_submissions (
                     id          SERIAL PRIMARY KEY,
@@ -714,7 +721,6 @@ def init_db():
                     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 )
             """)
-            # Jobs search indexes (safe on existing table)
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_title_norm ON jobs(job_title_norm)"
             )
@@ -727,7 +733,6 @@ def init_db():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_jobs_company_name ON jobs(LOWER(company_name))"
             )
-            # Salary table indexes for fast city/region/country lookups
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_salary_city ON salary(LOWER(city))"
             )
@@ -737,7 +742,6 @@ def init_db():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_salary_country ON salary(LOWER(country))"
             )
-            # Numeric salary column on jobs for direct filter queries
             cur.execute(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_salary INTEGER"
             )
@@ -779,7 +783,6 @@ def init_db():
                 CREATE UNIQUE INDEX IF NOT EXISTS idx_user_subs_user_product
                 ON user_subscriptions(user_id, product_line)
             """)
-            # Align free API key quotas with pricing page (500, not 100)
             cur.execute(
                 "UPDATE api_keys SET monthly_limit = 500 "
                 "WHERE monthly_limit = 100 AND tier IN ('free_pending', 'free')"
@@ -789,1191 +792,94 @@ def init_db():
         logger.warning("init_db connectivity check failed: %s", exc)
 
 
-def get_job_summary(job_id: int) -> Optional[Dict]:
-    """Return cached AI summary for job_id, or None if not yet generated."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                "SELECT bullets, skills FROM job_summaries WHERE job_id = %s",
-                [job_id],
-            )
-            row = cur.fetchone()
-            if row:
-                return {"bullets": list(row[0] or []), "skills": list(row[1] or [])}
-    except Exception as exc:
-        logger.debug("get_job_summary error: %s", exc)
-    return None
+# ----------------------------- Description Parsing ---------------------------
 
-
-def save_job_summary(job_id: int, bullets: list, skills: list) -> None:
-    """Upsert AI summary for job_id into the cache table."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO job_summaries (job_id, bullets, skills, created_at)
-                VALUES (%s, %s::jsonb, %s::jsonb, NOW())
-                ON CONFLICT (job_id) DO UPDATE
-                  SET bullets    = EXCLUDED.bullets,
-                      skills     = EXCLUDED.skills,
-                      created_at = NOW()
-                """,
-                [job_id, json.dumps(bullets), json.dumps(skills)],
-            )
-            db.commit()
-    except Exception as exc:
-        logger.warning("save_job_summary error: %s", exc)
-
-# ------------------------- Analytics Helpers ---------------------------------
-
-def _now_iso():
-    """Get current timestamp in ISO format."""
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-# ------------------------- Helper Functions ----------------------------------
-
-# ------------------------- Normalization Functions ---------------------------
-
-def _load_country_norm() -> Dict[str, str]:
-    _path = Path(__file__).parent / "country_norm.json"
-    try:
-        with open(_path, encoding="utf-8") as _fh:
-            return json.load(_fh)
-    except Exception as _exc:
-        logger.warning("country_norm.json load failed: %s", _exc)
-        return {}
-
-COUNTRY_NORM: Dict[str, str] = _load_country_norm()
-
-LOCATION_COUNTRY_HINTS = {
-    "amsterdam": "NL",
-    "atlanta": "US",
-    "austin": "US",
-    "barcelona": "ES",
-    "belgium": "BE",
-    "berlin": "DE",
-    "berlin, de": "DE",
-    "boston": "US",
-    "brussels": "BE",
-    "budapest": "HU",
-    "charlotte": "US",
-    "chicago": "US",
-    "copenhagen": "DK",
-    "dallas": "US",
-    "denmark": "DK",
-    "denver": "US",
-    "dublin": "IE",
-    "france": "FR",
-    "frankfurt": "DE",
-    "germany": "DE",
-    "hamburg": "DE",
-    "houston": "US",
-    "italy": "IT",
-    "lisbon": "PT",
-    "london": "UK",
-    "los angeles": "US",
-    "los": "US",
-    "madrid": "ES",
-    "miami": "US",
-    "milan": "IT",
-    "minneapolis": "US",
-    "munich": "DE",
-    "netherlands": "NL",
-    "new york": "US",
-    "oslo": "NO",
-    "paris": "FR",
-    "philadelphia": "US",
-    "phoenix": "US",
-    "pittsburgh": "US",
-    "portland": "US",
-    "porto": "PT",
-    "portugal": "PT",
-    "prague": "CZ",
-    "raleigh": "US",
-    "salt lake city": "US",
-    "salt": "US",
-    "san francisco": "US",
-    "seattle": "US",
-    "spain": "ES",
-    "stockholm": "SE",
-    "switzerland": "CH",
-    "tallinn": "EE",
-    "uk": "UK",
-    "vienna": "AT",
-    "washington": "US",
-    "zurich": "CH",
-    # India hubs
-    "bangalore": "IN",
-    "bengaluru": "IN",
-    "mumbai": "IN",
-    "pune": "IN",
-    "delhi": "IN",
-    "new delhi": "IN",
-    "gurgaon": "IN",
-    "gurugram": "IN",
-    "noida": "IN",
-    "hyderabad": "IN",
-    "chennai": "IN",
-    "kolkata": "IN",
-    "ahmedabad": "IN",
+# Small multilingual stopword set to keep summarizer lightweight
+_STOPWORDS = {
+    # EN
+    "a","about","above","after","again","against","all","am","an","and","any","are","as","at",
+    "be","because","been","before","being","below","between","both","but","by","can","could",
+    "did","do","does","doing","down","during","each","few","for","from","further","had","has",
+    "have","having","he","her","here","hers","herself","him","himself","his","how","i","if","in",
+    "into","is","it","its","itself","me","more","most","my","myself","no","nor","not","of","off",
+    "on","once","only","or","other","our","ours","ourselves","out","over","own","same","she","should",
+    "so","some","such","than","that","the","their","theirs","them","themselves","then","there","these",
+    "they","this","those","through","to","too","under","until","up","very","was","we","were","what",
+    "when","where","which","while","who","whom","why","with","you","your","yours","yourself","yourselves",
+    # ES/FR minimal
+    "de","la","el","en","y","los","las","que","es","un","una","con","por","para","le","et","Ã ",
+    "les","des","est","pour","dans"
 }
 
-SWISS_LOCATION_TERMS = [
-    "switzerland",
-    "schweiz",
-    "suisse",
-    "svizzera",
-    "swiss",
-    "zurich",
-    "geneva",
-    "geneve",
-    "lausanne",
-    "lausane",
-    "basel",
-    "bern",
-    "zug",
-    "lucerne",
-    "luzern",
-    "winterthur",
-    "ticino",
-    "st gallen",
-    "st. gallen",
-]
 
-TITLE_SYNONYMS = {
-    "swe":"software engineer","software eng":"software engineer","sw eng":"software engineer",
-    "frontend":"front end","front-end":"front end","backend":"back end","back-end":"back end",
-    "fullstack":"full stack","full-stack":"full stack",
-    "pm":"product manager","prod mgr":"product manager","product owner":"product manager",
-    "ds":"data scientist","ml":"machine learning","mle":"machine learning engineer",
-    "sre":"site reliability engineer","devops":"devops","sec eng":"security engineer","infosec":"security",
-    "programmer":"developer","coder":"developer",
-}
-
-def normalize_country(q: str) -> str:
-    """Return normalized country code if possible."""
-    if not q:
-        return ""
-    t = q.strip().lower()
-    if t in COUNTRY_NORM:
-        return COUNTRY_NORM[t]
-    if len(t) == 2 and t.isalpha():
-        return t.upper()
-    for token, code in COUNTRY_NORM.items():
-        if re.search(rf"\b{re.escape(token)}\b", t):
-            return code
-    return q.strip()
-
-def normalize_title(q: str) -> str:
-    """Normalize job title query."""
-    if not q:
-        return ""
-    s = q.lower()
-    for k, v in TITLE_SYNONYMS.items():
-        if k in s:
-            s = s.replace(k, v)
-    s = re.sub(r"[^\w\s\-\/]", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
-
-# ------------------------- Job Model ----------------------------------------
-
-class Job:
-    table = "jobs"
-    _EU_CODES: Set[str] = {
-        "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE",
-        "IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"
-    }
-    # Use full EU set for filter matching so EU queries return broad results.
-    _EU_FILTER_CODES: Set[str] = set(_EU_CODES)
-    _CACHE_TTL = 120  # seconds
-    _CACHE_MAX = 128
-    _cache_count: Dict[Tuple[str, str], Tuple[float, int]] = {}
-    _cache_search: Dict[Tuple[str, str, int, int], Tuple[float, List[Dict]]] = {}
-
-    @staticmethod
-    def _cache_prune(target: Dict):
-        if len(target) <= Job._CACHE_MAX:
-            return
-        # Drop oldest entries to keep memory bounded
-        oldest = sorted(target.items(), key=lambda kv: kv[1][0])[: len(target) - Job._CACHE_MAX]
-        for key, _ in oldest:
-            target.pop(key, None)
-
-    @staticmethod
-    def _cache_get_count(key: Tuple[str, str]) -> Optional[int]:
-        now = time.time()
-        hit = Job._cache_count.get(key)
-        if hit and now - hit[0] < Job._CACHE_TTL:
-            return hit[1]
-        return None
-
-    @staticmethod
-    def _cache_set_count(key: Tuple[str, str], value: int) -> None:
-        Job._cache_count[key] = (time.time(), int(value))
-        Job._cache_prune(Job._cache_count)
-
-    @staticmethod
-    def _cache_get_search(key: Tuple[str, str, int, int]) -> Optional[List[Dict]]:
-        now = time.time()
-        hit = Job._cache_search.get(key)
-        if hit and now - hit[0] < Job._CACHE_TTL:
-            return hit[1]
-        return None
-
-    @staticmethod
-    def _cache_set_search(key: Tuple[str, str, int, int], value: List[Dict]) -> None:
-        Job._cache_search[key] = (time.time(), value)
-        Job._cache_prune(Job._cache_search)
-
-    @staticmethod
-    def _normalize_title(value: Optional[str]) -> str:
-        return (value or "").strip().lower()
-
-    @staticmethod
-    def _escape_like(value: str) -> str:
-        value = value.replace("\\", "\\\\")
-        value = value.replace("%", r"\%")
-        value = value.replace("_", r"\_")
-        return value
-
-    @staticmethod
-    def _country_patterns(codes: Iterable[str]) -> Tuple[List[str], List[str]]:
-        seps_before = [" ", "(", ",", "/", "-"]
-        seps_after = [" ", ")", ",", "/", "-"]
-        patterns: List[str] = []
-        equals: Set[str] = set()
-        seen_like: Set[str] = set()
-
-        def add_like(pattern: str) -> None:
-            if pattern not in seen_like:
-                patterns.append(pattern)
-                seen_like.add(pattern)
-
-        normalized_codes = {code.upper() for code in codes if code}
-        for code in normalized_codes:
-            if code == "IN":
-                equals.update({"in", "india"})
-                india_aliases = {
-                    "india","bharat","bangalore","bengaluru","mumbai","pune","delhi","new delhi",
-                    "gurgaon","gurugram","noida","hyderabad","chennai","kolkata","ahmedabad"
-                }
-                for alias in india_aliases:
-                    add_like(f"%{Job._escape_like(alias)}%")
-                continue
-
-            token = Job._escape_like(code.lower())
-            equals.add(code.lower())
-            for before in seps_before:
-                for after in seps_after:
-                    add_like(f"%{before}{token}{after}%")
-                add_like(f"%{before}{token}")
-            if len(code) > 2:
-                add_like(f"%{token}%")
-
-        if "EU" in normalized_codes:
-            add_like(f"%{Job._escape_like('eu')}%")
-
-        aliases: Set[str] = set()
-        for alias, mapped in COUNTRY_NORM.items():
-            if mapped.upper() in normalized_codes and len(alias) > 2:
-                aliases.add(alias.lower())
-        for alias in sorted(aliases):
-            add_like(f"%{Job._escape_like(alias)}%")
-
-        for hint, mapped in LOCATION_COUNTRY_HINTS.items():
-            if mapped.upper() in normalized_codes:
-                add_like(f"%{Job._escape_like(hint)}%")
-                if len(hint) <= 3:
-                    equals.add(hint)
-
-        return patterns, sorted(equals)
-
-    @staticmethod
-    def count(title: Optional[str] = None, country: Optional[str] = None, salary_min: Optional[int] = None) -> int:
-        """Return number of jobs matching optional filters."""
-        key = ((title or "").strip().lower(), (country or "").strip().lower(), salary_min or 0)
-        cached = Job._cache_get_count(key)
-        if cached is not None:
-            return cached
-        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(f"SELECT COUNT(1) FROM jobs {where_sql}", params_pg)
-            row = cur.fetchone()
-            value = int(row[0] if row else 0)
-            Job._cache_set_count(key, value)
-            return value
-
-    @staticmethod
-    def search(
-        title: Optional[str] = None,
-        country: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
-        salary_min: Optional[int] = None,
-    ) -> List[Dict]:
-        """Return matching jobs ordered by recency."""
-        key = (
-            (title or "").strip().lower(),
-            (country or "").strip().lower(),
-            int(limit),
-            int(offset),
-            salary_min or 0,
-        )
-        cached = Job._cache_get_search(key)
-        if cached is not None:
-            return cached
-        where_sql, params_pg = Job._where(title, country, salary_min=salary_min)
-        db = get_db()
-        where_clause = where_sql
-        params = list(params_pg)
-        # Use the existing textual salary column and expose it to callers
-        # as job_salary_range for compatibility with API consumers.
-        sql = f"""
-            SELECT
-                id,
-                job_title,
-                job_title_norm,
-                company_name,
-                job_description,
-                location,
-                city,
-                region,
-                country,
-                link,
-                date,
-                COALESCE(salary, '') AS job_salary_range
-            FROM jobs {where_clause}
-            {Job._order_by(country)}
-            LIMIT %s OFFSET %s
-        """
-        params.extend([int(limit), int(offset)])
-        with db.cursor() as cur:
-            cur.execute(sql, params)
-            cols = [desc[0] for desc in cur.description]
-            rows = [dict(zip(cols, row)) for row in cur.fetchall()]
-            Job._cache_set_search(key, rows)
-            return rows
-
-    @staticmethod
-    def insert_many(rows: List[Dict]) -> int:
-        """Bulk insert jobs, ignoring duplicates by link."""
-        if not rows:
-            return 0
-        cols = [
-            "job_id",
-            "job_title",
-            "job_title_norm",
-            "normalized_job",
-            "company_name",
-            "job_description",
-            "location",
-            "city",
-            "region",
-            "country",
-            "geo_id",
-            "robot_code",
-            "link",
-            "salary",
-            "date",
-        ]
-        placeholders = ", ".join(["%s"] * len(cols))
-        sql = f"INSERT INTO jobs ({', '.join(cols)}) VALUES ({placeholders}) ON CONFLICT (link) DO NOTHING"
-
-        payload = []
-        for row in rows:
-            title = row.get("job_title") or row.get("title") or ""
-            job_id = (
-                row.get("job_id")
-                or row.get("jobId")
-                or row.get("id")
-                or row.get("external_id")
-                or row.get("externalId")
-            )
-            job_title_norm = Job._normalize_title(row.get("job_title_norm") or title)
-            normalized_job = row.get("normalized_job") or job_title_norm
-            company_name = (
-                row.get("company_name")
-                or row.get("company")
-                or row.get("employer")
-                or row.get("job_company")
-                or ""
-            )
-            location = row.get("location") or row.get("job_location") or ""
-            city = row.get("city") or ""
-            region = row.get("region") or ""
-            country = row.get("country") or row.get("country_code") or ""
-            geo_id = row.get("geo_id") or row.get("geo") or ""
-            robot_code = row.get("robot_code") or row.get("robotCode") or row.get("robot") or 0
-            try:
-                robot_code_int = int(robot_code)
-            except Exception:
-                robot_code_int = 0
-            link = row.get("link") or row.get("job_link") or row.get("url") or ""
-            salary = row.get("salary") or row.get("compensation") or ""
-            date_value = (
-                row.get("date")
-                or row.get("job_date")
-                or row.get("date_posted")
-                or row.get("posted_at")
-                or ""
-            )
-            payload.append(
-                (
-                    job_id,
-                    title,
-                    job_title_norm,
-                    normalized_job,
-                    company_name,
-                    row.get("job_description") or row.get("description") or "",
-                    location,
-                    city,
-                    region,
-                    country,
-                    geo_id,
-                    robot_code_int,
-                    link,
-                    salary,
-                    date_value,
-                )
-            )
-
-        db = None
-        close_after = False
-        try:
-            try:
-                db = get_db()
-            except RuntimeError:
-                db = _pg_connect()
-                close_after = True
-            with db.cursor() as cur:
-                cur.executemany(sql, payload)
-                return cur.rowcount or 0
-        finally:
-            if close_after and db:
-                try:
-                    db.close()
-                except Exception:
-                    pass
-
-    @staticmethod
-    def get_by_id(job_id: str) -> Optional[Dict]:
-        """Return a single job row by primary key id."""
-        try:
-            pk = int(str(job_id).strip())
-        except (TypeError, ValueError):
-            return None
-        try:
-            db = get_db()
-            with db.cursor() as cur:
-                cur.execute(
-                    """SELECT id, job_title, company_name, job_description,
-                              location, city, region, country, link, date,
-                              COALESCE(salary, '') AS job_salary_range
-                       FROM jobs WHERE id = %s LIMIT 1""",
-                    [pk],
-                )
-                cols = [d[0] for d in cur.description]
-                row = cur.fetchone()
-                return dict(zip(cols, row)) if row else None
-        except Exception:
-            return None
-
-    @staticmethod
-    def get_link(job_id: Optional[str]) -> Optional[str]:
-        """Return the outbound link for a job id if available."""
-        if job_id is None:
-            return None
-        value = str(job_id).strip()
-        if not value:
-            return None
-        try:
-            value_param = int(value)
-        except (TypeError, ValueError):
-            return None
-
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute("SELECT link FROM jobs WHERE id = %s", [value_param])
-            row = cur.fetchone()
-        if not row:
-            return None
-
-        link = None
-        try:
-            if isinstance(row, dict):
-                link = row.get("link")
-            elif hasattr(row, "keys"):
-                link = row["link"]
-            elif hasattr(row, "link"):
-                link = row.link
-            elif hasattr(row, "__getitem__"):
-                link = row[0]
-        except Exception:
-            link = None
-        return link.strip() if isinstance(link, str) else None
-
-    @staticmethod
-    def _where(title: Optional[str], country: Optional[str], salary_min: Optional[int] = None) -> Tuple[str, Tuple[str, ...]]:
-        clauses_pg: List[str] = []
-        params_pg: List[str] = []
-
-        if title:
-            t_norm = Job._normalize_title(title)
-            if t_norm:
-                tokens = [tok for tok in t_norm.split() if tok]
-                specials = {"remote", "developer"}
-                remote_flag = "remote" in tokens
-                developer_flag = "developer" in tokens
-                core_tokens = [tok for tok in tokens if tok not in specials]
-                core_query = " ".join(core_tokens).strip()
-
-                # Core title query: keep this cheap and index-friendly by
-                # only searching title fields, not full descriptions.
-                if core_query:
-                    like = f"%{Job._escape_like(core_query)}%"
-                    clause_pg = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\')"
-                    clauses_pg.append(clause_pg)
-                    params_pg.extend([like, like])
-
-                # Remote flag: look for 'remote' in title or location, but
-                # avoid scanning job_description.
-                if remote_flag:
-                    remote_like = f"%{Job._escape_like('remote')}%"
-                    clause_pg_remote = "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\' OR LOWER(location) LIKE %s ESCAPE '\\')"
-                    clauses_pg.append(clause_pg_remote)
-                    params_pg.extend([remote_like, remote_like, remote_like])
-
-                # Developer-style queries: bias towards software/dev titles,
-                # but again restrict to title fields only.
-                if developer_flag:
-                    dev_terms = ["developer", "programmer", "coder", "software developer", "software engineer"]
-                    patterns = [f"%{Job._escape_like(term)}%" for term in dev_terms]
-                    clause_pg_terms: List[str] = []
-                    for _ in dev_terms:
-                        clause_pg_terms.extend(
-                            [
-                                "job_title_norm ILIKE %s ESCAPE '\\'",
-                                "LOWER(job_title) LIKE %s ESCAPE '\\'",
-                            ]
-                        )
-                    clause_pg_dev = "(" + " OR ".join(clause_pg_terms) + ")"
-                    clauses_pg.append(clause_pg_dev)
-                    for pattern in patterns:
-                        params_pg.extend([pattern, pattern])
-
-        if country:
-            c_raw = (country or "").strip().lower()
-            if c_raw:
-                upper = c_raw.upper()
-                code = upper if len(upper) == 2 and upper.isalpha() else None
-
-                # City hubs for EU and India to tighten matching.
-                eu_hubs = ["madrid", "paris", "berlin", "barcelona", "milan", "milano"]
-                india_hubs = [
-                    "bangalore",
-                    "bengaluru",
-                    "mumbai",
-                    "pune",
-                    "delhi",
-                    "new delhi",
-                    "gurgaon",
-                    "gurugram",
-                    "noida",
-                    "hyderabad",
-                    "chennai",
-                    "kolkata",
-                    "ahmedabad",
-                ]
-
-                subclauses_pg: List[str] = []
-                columns_to_search = ("location", "city", "region", "country")
-
-                if upper == "UK":
-                    stop_terms = ("tukums", "latvia")
-                    block_pg: List[str] = []
-                    for term in stop_terms:
-                        pattern = f"%{Job._escape_like(term)}%"
-                        for column in ("location", "city", "region"):
-                            block_pg.append(f"LOWER(COALESCE({column}, '')) NOT LIKE %s ESCAPE '\\'")
-                            params_pg.append(pattern)
-                    if block_pg:
-                        clauses_pg.append("(" + " AND ".join(block_pg) + ")")
-
-                if upper == "HIGH_PAY":
-                    high_pay_cities = [
-                        "san francisco",
-                        "new york",
-                        "zurich",
-                        "berlin",
-                        "paris",
-                        "madrid",
-                        "london",
-                    ]
-                    placeholders_pg = ", ".join(["%s"] * len(high_pay_cities))
-                    city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({placeholders_pg})"
-                    params_pg.extend([c.lower() for c in high_pay_cities])
-                    subclauses_pg.append(city_clause_pg)
-                elif upper == "EU":
-                    # Exact country codes + key hubs; avoid wide LIKE scans.
-                    eu_codes = sorted(Job._EU_FILTER_CODES)
-                    placeholders_pg = ", ".join(["%s"] * len(eu_codes))
-                    country_clause_pg = f"LOWER(COALESCE(country, '')) IN ({placeholders_pg})"
-                    params_pg.extend([c.lower() for c in eu_codes])
-                    subclauses_pg.append(country_clause_pg)
-
-                    if eu_hubs:
-                        hub_placeholders_pg = ", ".join(["%s"] * len(eu_hubs))
-                        city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
-                        params_pg.extend([h.lower() for h in eu_hubs])
-                        subclauses_pg.append(city_clause_pg)
-                elif code == "IN":
-                    # Strict match on country plus key Indian cities.
-                    subclauses_pg.append("LOWER(COALESCE(country, '')) = %s")
-                    params_pg.append("in")
-
-                    hub_placeholders_pg = ", ".join(["%s"] * len(india_hubs))
-                    city_clause_pg = f"LOWER(COALESCE(city, '')) IN ({hub_placeholders_pg})"
-                    params_pg.extend([h.lower() for h in india_hubs])
-                    subclauses_pg.append(city_clause_pg)
-                elif upper == "CH":
-                    swiss_like_pg: List[str] = []
-                    for term in SWISS_LOCATION_TERMS:
-                        pattern = f"%{Job._escape_like(term)}%"
-                        swiss_like_pg.append("LOWER(COALESCE(location, '')) LIKE %s ESCAPE '\\'")
-                        params_pg.append(pattern)
-                    if swiss_like_pg:
-                        subclauses_pg.append("(" + " OR ".join(swiss_like_pg) + ")")
-                elif code:
-                    patterns_like, equals_exact = Job._country_patterns({code})
-                    if equals_exact:
-                        eq_pg = []
-                        for value in equals_exact:
-                            value_lower = value.lower()
-                            for column in columns_to_search:
-                                eq_pg.append(f"LOWER(COALESCE({column}, '')) = %s")
-                                params_pg.append(value_lower)
-                        if eq_pg:
-                            subclauses_pg.append("(" + " OR ".join(eq_pg) + ")")
-                    if patterns_like:
-                        like_pg = []
-                        for pattern in patterns_like:
-                            for column in columns_to_search:
-                                like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
-                                params_pg.append(pattern)
-                        if like_pg:
-                            subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
-                else:
-                    pattern = f"%{Job._escape_like(c_raw)}%"
-                    like_pg = []
-                    for column in columns_to_search:
-                        like_pg.append(f"LOWER(COALESCE({column}, '')) LIKE %s ESCAPE '\\'")
-                        params_pg.append(pattern)
-                    if like_pg:
-                        subclauses_pg.append("(" + " OR ".join(like_pg) + ")")
-
-                if subclauses_pg:
-                    clause_pg = "(" + " OR ".join(subclauses_pg) + ")"
-                    clauses_pg.append(clause_pg)
-
-        if salary_min and salary_min > 0:
-            clauses_pg.append("job_salary >= %s")
-            params_pg.append(salary_min)
-
-        where_pg = f"WHERE {' AND '.join(clauses_pg)}" if clauses_pg else ""
-        return where_pg, tuple(params_pg)
-
-    @staticmethod
-    def _order_by(country: Optional[str]) -> str:
-        if not country:
-            return "ORDER BY (date IS NULL) ASC, date DESC, id DESC"
-        code = country.strip().upper()
-        if code == "EU":
-            # Favor key EU hubs without forcing a full-table shuffle.
-            return (
-                "ORDER BY CASE "
-                "WHEN LOWER(location) LIKE '%%madrid%%' THEN 0 "
-                "WHEN LOWER(location) LIKE '%%paris%%' THEN 1 "
-                "WHEN LOWER(location) LIKE '%%berlin%%' THEN 2 "
-                "WHEN LOWER(location) LIKE '%%barcelona%%' THEN 3 "
-                "WHEN LOWER(location) LIKE '%%milan%%' THEN 4 "
-                "WHEN LOWER(location) LIKE '%%milano%%' THEN 5 "
-                "ELSE 6 END, "
-                "(date IS NULL) ASC, date DESC, id DESC"
-            )
-        if code == "HIGH_PAY":
-            return (
-                "ORDER BY CASE "
-                "WHEN LOWER(location) LIKE '%%san francisco%%' THEN 0 "
-                "WHEN LOWER(location) LIKE '%%new york%%' THEN 1 "
-                "WHEN LOWER(location) LIKE '%%zurich%%' THEN 2 "
-                "WHEN LOWER(location) LIKE '%%berlin%%' THEN 3 "
-                "WHEN LOWER(location) LIKE '%%paris%%' THEN 4 "
-                "WHEN LOWER(location) LIKE '%%madrid%%' THEN 5 "
-                "WHEN LOWER(location) LIKE '%%london%%' THEN 6 "
-                "ELSE 7 END, "
-                "(date IS NULL) ASC, date DESC, id DESC"
-            )
-        return "ORDER BY (date IS NULL) ASC, date DESC, id DESC"
-
-# ------------------------- Salary Parsing Functions --------------------------
-
-def parse_money_numbers(text: str):
-    """Parse money numbers from text."""
-    if not text:
-        return []
-    nums = []
-    for raw in re.findall(r'(?i)\d[\d,.\s]*k?', text):
-        clean = raw.lower().replace(",", "").replace(" ", "")
-        mult = 1000 if clean.endswith("k") else 1
-        clean = clean.rstrip("k").replace(".", "")
-        if clean.isdigit():
-            nums.append(int(clean) * mult)
-    return nums
-
-def parse_salary_query(q: str):
-    """Parse inline salary filters like '80k-120k', '>100k', '<=90k', '120k'."""
-    if not q:
-        return ("", None, None)
-    s = q.strip()
-
-    range_match = re.search(r'(?i)(\d[\d,.\s]*k?)\s*[-\u2013]\s*(\d[\d,.\s]*k?)', s)
-    if range_match:
-        low_vals = parse_money_numbers(range_match.group(1))
-        high_vals = parse_money_numbers(range_match.group(2))
-        cleaned = (s[:range_match.start()] + s[range_match.end():]).strip()
-        return cleaned, low_vals[0] if low_vals else None, high_vals[-1] if high_vals else None
-
-    greater_match = re.search(r'(?i)>\s*=?\s*(\d[\d,.\s]*k?)', s)
-    if greater_match:
-        vals = parse_money_numbers(greater_match.group(1))
-        cleaned = (s[:greater_match.start()] + s[greater_match.end():]).strip()
-        return cleaned, vals[0] if vals else None, None
-
-    less_match = re.search(r'(?i)<\s*=?\s*(\d[\d,.\s]*k?)', s)
-    if less_match:
-        vals = parse_money_numbers(less_match.group(1))
-        cleaned = (s[:less_match.start()] + s[less_match.end():]).strip()
-        return cleaned, None, vals[0] if vals else None
-
-    single_match = re.search(r'(?i)(\d[\d,.\s]*k?)', s)
-    if single_match:
-        vals = parse_money_numbers(single_match.group(1))
-        cleaned = (s[:single_match.start()] + s[single_match.end():]).strip()
-        return cleaned, vals[0] if vals else None, None
-
-    # No inline salary filter found; return cleaned query and no bounds
-    return s, None, None
-
-
-def get_salary_for_location(location: str):
-    """Best-effort: return median_salary (float) for a location string.
-
-    Matching strategy (in order):
-    - exact city match
-    - exact region match
-    - exact country match
-    - fallback: location contained in salary.location / salary.city / salary.region
-    Returns None when no reasonable match found.
-    """
-    if not location:
-        return None
-    loc = str(location).strip()
-    if not loc:
-        return None
-    db = get_db()
-    # Supabase Postgres schema: median_salary, min_salary, currency
-    median_col = "median_salary"
-    currency_col = "currency"
-    # normalize pieces
-    pieces = [p.strip() for p in re.split(r"[,;/\\-]|\\(|\\)", loc) if p and p.strip()]
-    # try city, region, country in that order
-    candidates: List[str] = []
-    if pieces:
-        candidates.extend(pieces)
-    # also try the full string
-    candidates.append(loc)
-
-    try:
-        with db.cursor() as cur:
-            # Single UNION query: city (priority 1) → region (2) → country (3)
-            lower_cands = [c.lower() for c in candidates if c]
-            if lower_cands:
-                cur.execute(
-                    f"""
-                    SELECT {median_col}, {currency_col}, 1 AS priority FROM salary
-                      WHERE LOWER(city) = ANY(%s) AND {median_col} IS NOT NULL
-                    UNION ALL
-                    SELECT {median_col}, {currency_col}, 2 FROM salary
-                      WHERE LOWER(region) = ANY(%s) AND {median_col} IS NOT NULL
-                    UNION ALL
-                    SELECT {median_col}, {currency_col}, 3 FROM salary
-                      WHERE LOWER(country) = ANY(%s) AND {median_col} IS NOT NULL
-                    ORDER BY 3
-                    LIMIT 1
-                    """,
-                    (lower_cands, lower_cands, lower_cands),
-                )
-                row = cur.fetchone()
-                if row and row[0] is not None:
-                    return float(row[0]), (row[1] or None)
-
-            # fallback: LIKE search in combined fields
-            like_term = f"%{loc.lower()}%"
-            cur.execute(
-                f"""
-                SELECT {median_col}, {currency_col}
-                FROM salary
-                WHERE (
-                    lower(location) LIKE %s
-                    OR lower(city) LIKE %s
-                    OR lower(region) LIKE %s
-                )
-                AND {median_col} IS NOT NULL
-                LIMIT 1
-                """,
-                (like_term, like_term, like_term),
-            )
-            row = cur.fetchone()
-            if row and row[0] is not None:
-                return float(row[0]), (row[1] or None)
-    except Exception as exc:
-        logger.warning("get_salary_for_location(%r) failed: %s", loc, exc)
-        return None
-    return None
-
-
-def _compact_salary_number(n: float) -> str:
-    """Return a compact string like '110k' or '1.2M' for a numeric salary.
-
-    Uses thousands (k) and millions (M). Rounds to a sensible 10k grid for
-    thousands (so ranges look tidy).
-    """
-    if n is None:
-        return ""
-    try:
-        v = float(n)
-    except Exception:
-        return str(n)
-    if v < 1000:
-        return str(int(round(v)))
-    # work in thousands
-    k = int(round(v / 1000.0))
-    if k < 1000:
-        # round to nearest 10 (10k granularity)
-        k_rounded = int(round(k / 10.0) * 10)
-        if k_rounded <= 0:
-            k_rounded = max(1, k)
-        return f"{k_rounded}k"
-    # millions
-    m = v / 1_000_000.0
-    # one decimal for millions
-    m_rounded = round(m, 1)
-    # drop .0 when integer
-    if m_rounded.is_integer():
-        return f"{int(m_rounded)}M"
-    return f"{m_rounded}M"
-
-
-def salary_range_around(median: float, pct: float = 0.2):
-    """Return (low, high) numeric range around median using pct (default 20%).
-
-    Also provide compact display strings (rounded to 10k grid for thousands).
-    """
-    if median is None:
-        return None
-    try:
-        m = float(median)
-    except Exception:
-        return None
-    low = m * (1.0 - pct)
-    high = m * (1.0 + pct)
-    # round: floor low to nearest 10k, ceil high to nearest 10k when in thousands
-    def _round_floor_10k(x):
-        if x < 1000:
-            return int(x)
-        k = int(x // 1000)
-        k_floor = (k // 10) * 10
-        if k_floor <= 0:
-            k_floor = max(1, k)
-        return k_floor * 1000
-
-    def _round_ceil_10k(x):
-        if x < 1000:
-            return int(x)
-        k = int((x + 999) // 1000)
-        k_ceil = ((k + 9) // 10) * 10
-        if k_ceil <= 0:
-            k_ceil = max(1, k)
-        return k_ceil * 1000
-
-    low_r = _round_floor_10k(low)
-    high_r = _round_ceil_10k(high)
-    return (low_r, high_r, _compact_salary_number(low_r), _compact_salary_number(high_r))
-
-
-def parse_salary_range_string(s: str) -> Optional[float]:
-    """Parse a salary range string and return the midpoint as a float.
-    
-    Handles formats like:
-    - "110k-120k" or "110k–120k" (en dash)
-    - "$110,000 - $120,000"
-    - "120000" or "120k" (single value)
-    - "CHF 120k-150k" or "USD 100k-120k" (with currency prefix)
-    
-    Returns None if unparseable.
-    """
-    if not s or not isinstance(s, str):
-        return None
-    
-    s = s.strip()
-    if not s:
-        return None
-    
-    # Remove common currency prefixes (case-insensitive)
-    s_clean = re.sub(r'^(USD|CHF|EUR|GBP|USD\$|\$)\s*', '', s, flags=re.IGNORECASE)
-    
-    # Try to match range pattern: "110k-120k" or "110,000 - 120,000"
-    range_match = re.search(r'(\d[\d,.\s]*k?)\s*[-–—]\s*(\d[\d,.\s]*k?)', s_clean)
-    if range_match:
-        low_vals = parse_money_numbers(range_match.group(1))
-        high_vals = parse_money_numbers(range_match.group(2))
-        if low_vals and high_vals:
-            midpoint = (low_vals[0] + high_vals[-1]) / 2.0
-            return float(midpoint)
-        elif low_vals:
-            return float(low_vals[0])
-        elif high_vals:
-            return float(high_vals[-1])
-    
-    # Try single value: "120k" or "120000"
-    single_vals = parse_money_numbers(s_clean)
-    if single_vals:
-        return float(single_vals[0])
-    
-    return None
-
-
-# ------------------------- Formatting Helpers ------------------------------
-
-def format_job_date_string(s: str) -> str:
-    """Normalize job date strings for display.
-    - If 'YYYYMMDD' -> 'YYYY.MM.DD'
-    - If 'YYYY-MM-DD' -> 'YYYY.MM.DD'
-    - Otherwise return original trimmed string
-    """
-    if not s:
-        return ""
-    s = str(s).strip()
-    m = re.match(r"^(\d{4})(\d{2})(\d{2})$", s)
-    if m:
-        y, mo, d = m.groups()
-        return f"{y}-{mo}-{d}"
-    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})$", s)
-    if m:
-        y, mo, d = m.groups()
-        return f"{y}-{mo}-{d}"
-    iso_candidate = s.replace("Z", "+00:00")
-    try:
-        dt = datetime.fromisoformat(iso_candidate)
-        return dt.date().isoformat()
-    except ValueError:
-        pass
-    prefix_match = re.match(r"^(\d{4}-\d{2}-\d{2})", s)
-    if prefix_match:
-        return prefix_match.group(1)
-    return s
-
-def clean_job_description_text(text: str) -> str:
-    """Clean description by removing leading relative-age prefixes and stray labels."""
+def summarize_two_sentences(text: str) -> str:
+    """Extract two most representative sentences from text (pure stdlib)."""
     if not text:
         return ""
-    t = str(text)
-    # Strip any leading non-word characters followed by an 8 digit date (e.g., 20251009)
-    t = re.sub(r"^\s*\W*\d{8}\s*\n?", "", t)
-    # Strip leading relative age prefixes like "11 hours ago - "
-    t = re.sub(r"^\s*\d+\s*(minutes?|hours?|days?|weeks?)\s+ago\s+[^\w\s]\s*", "", t, flags=re.IGNORECASE)
-    # Remove a standalone leading 'Details' line
-    t = re.sub(r"^\s*Details\s*\n+", "", t, flags=re.IGNORECASE)
-    return t.strip()
+    s = text.strip()
+    sentences = re.split(r"(?<=[.!?])\s+", s)
+    if len(sentences) < 2:
+        return s
+    words = re.findall(r"\b\w+\b", s.lower())
+    freqs = Counter(w for w in words if w not in _STOPWORDS)
+    scores = {}
+    for sent in sentences:
+        tokens = re.findall(r"\b\w+\b", sent.lower())
+        if not tokens:
+            continue
+        score = sum(freqs.get(w, 0) for w in tokens if w not in _STOPWORDS) / max(len(tokens), 1)
+        scores[sent] = score
+    top = sorted(scores.items(), key=lambda x: (-x[1], sentences.index(x[0])))[:2]
+    final = sorted([t[0] for t in top], key=lambda x: sentences.index(x))
+    return " ".join(final)
 
 
-# ------------------------- API Key Helpers -----------------------------------
-
-def create_api_key(
-    email: str,
-    key_hash: str,
-    key_prefix: str,
-    confirm_token: str,
-    confirm_token_expires_at: datetime,
-    created_from_ip: Optional[str],
-    user_id: Optional[str] = None,
-) -> bool:
-    """Insert a new inactive API key record. Returns True on success."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO api_keys (
-                    email, key_hash, key_prefix, tier, is_active,
-                    monthly_limit, requests_this_month,
-                    daily_limit, requests_today, day_window,
-                    user_id, confirm_token, confirm_token_expires_at, created_from_ip, created_at
-                ) VALUES (%s, %s, %s, 'free_pending', FALSE, 500, 0, 50, 0, '', %s, %s, %s, %s, NOW())
-                """,
-                (email, key_hash, key_prefix, user_id, confirm_token, confirm_token_expires_at, created_from_ip),
-            )
-        return True
-    except Exception as exc:
-        logger.warning("create_api_key failed: %s", exc, exc_info=True)
-        return False
+def parse_job_description(text: str) -> str:
+    """Clean and summarize a raw job description to a short, readable preview."""
+    from .jobs import clean_job_description_text
+    t = clean_job_description_text(text or "")
+    return summarize_two_sentences(t)
 
 
-def get_api_key_by_email(email: str) -> Optional[Dict]:
-    """Return the most recent key record for this email (active or pending), or None."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                """
-                SELECT id, email, key_prefix, tier, is_active, monthly_limit,
-                       requests_this_month, month_window,
-                       daily_limit, requests_today, day_window, user_id,
-                       confirm_token, confirm_token_expires_at, created_from_ip, created_at
-                FROM api_keys
-                WHERE email = %s
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                (email,),
-            )
-            row = cur.fetchone()
-            if not row:
-                return None
-            cols = [
-                "id", "email", "key_prefix", "tier", "is_active", "monthly_limit",
-                "requests_this_month", "month_window",
-                "daily_limit", "requests_today", "day_window", "user_id",
-                "confirm_token", "confirm_token_expires_at", "created_from_ip", "created_at",
-            ]
-            return dict(zip(cols, row))
-    except Exception as exc:
-        logger.warning("get_api_key_by_email failed: %s", exc)
-        return None
+# ----------------------------- Normalization (re-export) ---------------------
+# Single source of truth lives in app/normalization.py
+from ..normalization import (  # noqa: E402
+    COUNTRY_NORM,
+    LOCATION_COUNTRY_HINTS,
+    SWISS_LOCATION_TERMS,
+    TITLE_SYNONYMS,
+    normalize_country,
+    normalize_title,
+)
 
+# ----------------------------- Model re-exports ------------------------------
+# All imports from `from .models.db import X` in app.py continue to work.
 
-def confirm_api_key_by_token(token: str, now: datetime) -> bool:
-    """Activate the key matching token if not yet expired. Returns True on success."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE api_keys
-                SET is_active = TRUE,
-                    tier = 'free',
-                    confirm_token = NULL,
-                    confirm_token_expires_at = NULL
-                WHERE confirm_token = %s
-                  AND confirm_token_expires_at > %s
-                  AND is_active = FALSE
-                """,
-                (token, now),
-            )
-            return cur.rowcount > 0
-    except Exception as exc:
-        logger.warning("confirm_api_key_by_token failed: %s", exc)
-        return False
-
-
-def revoke_api_key(key_hash: str) -> bool:
-    """Deactivate the key with this hash. Returns True if a row was updated."""
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                "UPDATE api_keys SET is_active = FALSE WHERE key_hash = %s AND is_active = TRUE",
-                (key_hash,),
-            )
-            return cur.rowcount > 0
-    except Exception as exc:
-        logger.warning("revoke_api_key failed: %s", exc)
-        return False
-
-
-def check_and_increment_api_key(key_hash: str, now: datetime) -> Optional[Dict]:
-    """Validate key, reset daily counter if it's a new day, enforce quota, then increment.
-
-    Returns:
-        dict with daily_limit/requests_today/tier on success,
-        {"error": "quota_exceeded"} when over daily quota,
-        None when key is not found or inactive.
-    """
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                """
-                SELECT id, tier, is_active, daily_limit, requests_today, day_window
-                FROM api_keys
-                WHERE key_hash = %s
-                """,
-                (key_hash,),
-            )
-            row = cur.fetchone()
-            if not row:
-                return None
-            rec_id, tier, is_active, daily_limit, requests_today, day_window = row
-            if not is_active:
-                return None
-            # Fall back to 50 if the column is NULL (pre-migration rows)
-            if daily_limit is None:
-                daily_limit = 50
-            today = now.strftime("%Y-%m-%d")
-            if day_window != today:
-                cur.execute(
-                    "UPDATE api_keys SET requests_today = 0, day_window = %s WHERE id = %s",
-                    (today, rec_id),
-                )
-                requests_today = 0
-            if requests_today >= daily_limit:
-                return {"error": "quota_exceeded"}
-            cur.execute(
-                "UPDATE api_keys SET requests_today = requests_today + 1 "
-                "WHERE id = %s RETURNING requests_today",
-                (rec_id,),
-            )
-            new_row = cur.fetchone()
-            new_count = new_row[0] if new_row else requests_today + 1
-            return {
-                "daily_limit": daily_limit,
-                "requests_today": new_count,
-                "tier": tier,
-            }
-    except Exception as exc:
-        logger.warning("check_and_increment_api_key error: %s", exc)
-        return None
-
-
-def update_api_key_limit_by_email(email: str, new_limit: int) -> bool:
-    """Update monthly_limit for the active API key belonging to this email.
-
-    Called when user subscribes to / cancels the api_access product so their
-    quota reflects the current tier (500 free, 10 000 paid).
-    """
-    try:
-        db = get_db()
-        with db.cursor() as cur:
-            cur.execute(
-                "UPDATE api_keys SET monthly_limit = %s WHERE email = %s AND is_active = TRUE",
-                (new_limit, email),
-            )
-            db.commit()
-        return True
-    except Exception as exc:
-        logger.warning("update_api_key_limit_by_email error: %s", exc)
-        return False
+from .jobs import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
+from .salary import (  # noqa: E402,F401
+    insert_salary_submission,
+    get_salary_for_location,
+    parse_money_numbers,
+    parse_salary_query,
+    _compact_salary_number,
+    salary_range_around,
+    parse_salary_range_string,
+)
+from .subscriptions import (  # noqa: E402,F401
+    insert_stripe_order,
+    mark_stripe_order_paid,
+    mark_stripe_order_job_submitted,
+    get_stripe_order,
+    upsert_user_subscription,
+    get_user_subscriptions,
+    get_subscription_by_stripe_id,
+)
+from .api_keys import (  # noqa: E402,F401
+    create_api_key,
+    get_api_key_by_email,
+    confirm_api_key_by_token,
+    revoke_api_key,
+    check_and_increment_api_key,
+    sync_api_key_quota_for_api_access,
+)
+from .users import insert_subscriber, insert_contact, insert_job_posting, JOB_POSTING_ACTIVE_DAYS  # noqa: E402,F401
