@@ -42,7 +42,7 @@
            class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-6 py-3.5 text-base font-semibold shadow-lg shadow-brand/20 hover:bg-brand/90 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           Browse jobs
         </a>
-        <a href="{{ url_for('pricing') }}"
+        <a href="{{ url_for('stripe_routes.pricing') }}"
            class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-6 py-3.5 text-base font-semibold text-slate-800 dark:text-slate-200 hover:border-brand dark:hover:border-brand hover:text-brand dark:hover:text-brand hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           Try AI Agent (Free)
         </a>
@@ -399,8 +399,8 @@
 
   <!-- Contribute micro-CTA, sits directly under salary explorer -->
   <div class="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1">
-    <p class="text-xs text-slate-400">Data from <strong class="text-slate-600 dark:text-slate-300">{{ count|default(0) }}</strong> live listings · <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">Full salary tools →</a></p>
-    <a href="{{ url_for('salary_contribute') }}" class="text-xs font-semibold text-brand hover:underline whitespace-nowrap">+ Add your salary &amp; see your percentile</a>
+    <p class="text-xs text-slate-400">Data from <strong class="text-slate-600 dark:text-slate-300">{{ count|default(0) }}</strong> live listings · <a href="{{ url_for('salary.salary_tool') }}" class="text-brand hover:underline">Full salary tools →</a></p>
+    <a href="{{ url_for('salary.salary_contribute') }}" class="text-xs font-semibold text-brand hover:underline whitespace-nowrap">+ Add your salary &amp; see your percentile</a>
   </div>
 </section>
 

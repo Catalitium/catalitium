@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Submit your job listing details after checkout on Catalitium.">
-<link rel="canonical" href="{{ url_for('stripe_success', _external=True) }}">
+<link rel="canonical" href="{{ url_for('stripe_routes.stripe_success', _external=True) }}">
 <meta property="og:title" content="Submit Job Details | Catalitium">
 <meta property="og:description" content="Complete your Catalitium job post after payment.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_success', _external=True) }}">
+<meta property="og:url" content="{{ url_for('stripe_routes.stripe_success', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Submit Job Details | Catalitium">
@@ -44,7 +44,7 @@
   {% endwith %}
 
   <div class="mt-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-    <form method="post" action="{{ url_for('stripe_submit_job') }}" class="space-y-5">
+    <form method="post" action="{{ url_for('stripe_routes.stripe_submit_job') }}" class="space-y-5">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="stripe_session_id" value="{{ order.stripe_session_id }}">
 

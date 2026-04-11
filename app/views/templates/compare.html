@@ -72,7 +72,7 @@
           {% for j in jobs %}
           <td class="py-3 px-2">
             <a href="/jobs/{{ j.id }}" class="font-semibold text-brand hover:underline">{{ j.title }}</a>
-            <a href="{{ url_for('career_evaluate', job_id=j.id) }}" class="block text-xs text-brand/70 hover:text-brand hover:underline mt-0.5">Evaluate →</a>
+            <a href="{{ url_for('career.career_evaluate', job_id=j.id) }}" class="block text-xs text-brand/70 hover:text-brand hover:underline mt-0.5">Evaluate →</a>
           </td>
           {% endfor %}
         </tr>

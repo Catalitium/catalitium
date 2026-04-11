@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="Free DACH salary benchmarks, talent arbitrage calculator, and live tech job search. See what Senior SWEs, PMs, and Data Scientists earn in Zurich, Berlin, and Munich. Updated {{ generated }}."/>
-<link rel="canonical" href="{{ url_for('salary_tool', _external=True) }}">
+<link rel="canonical" href="{{ url_for('salary.salary_tool', _external=True) }}">
 <meta property="og:title" content="DACH Salary Tools | Catalitium"/>
 <meta property="og:description" content="Benchmark tech salaries in Zurich, Berlin, Munich. Model local vs. global hire costs. Browse live roles. All in one place."/>
 <meta property="og:type" content="website"/>
@@ -115,7 +115,7 @@
 
     <!-- Contribute nudge -->
     <p class="text-right text-xs mb-3 text-slate-500 dark:text-slate-400">
-      Know your salary? <a href="{{ url_for('salary_contribute') }}" class="text-brand font-semibold hover:underline">Add it and see your percentile →</a>
+      Know your salary? <a href="{{ url_for('salary.salary_contribute') }}" class="text-brand font-semibold hover:underline">Add it and see your percentile →</a>
     </p>
 
     <!-- DACH Salary Calculator -->
@@ -308,13 +308,13 @@
 
     <!-- More salary data links -->
     <div class="mb-5 grid gap-4 sm:grid-cols-2">
-      <a href="{{ url_for('salary_by_title') }}"
+      <a href="{{ url_for('salary.salary_by_title') }}"
         class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
         <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Title</p>
         <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Ranked salary list</p>
         <p class="text-xs text-slate-400">SWE, PM, Data Scientist sorted by median CHF</p>
       </a>
-      <a href="{{ url_for('salary_top_companies') }}"
+      <a href="{{ url_for('salary.salary_top_companies') }}"
         class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
         <p class="text-xs font-semibold uppercase tracking-widest text-brand">Top Companies</p>
         <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Best-paying DACH employers</p>
@@ -326,25 +326,25 @@
     <section class="mb-8">
       <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Salary Intelligence</h2>
       <div class="grid gap-4 sm:grid-cols-2">
-        <a href="{{ url_for('salary_underpaid') }}"
+        <a href="{{ url_for('salary.salary_underpaid') }}"
           class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand">Am I Underpaid?</p>
           <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Salary percentile checker</p>
           <p class="text-xs text-slate-400">Enter your salary and see where you rank vs. the market</p>
         </a>
-        <a href="{{ url_for('salary_compare_cities') }}"
+        <a href="{{ url_for('salary.salary_compare_cities') }}"
           class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
           <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Cross-city PPP comparison</p>
           <p class="text-xs text-slate-400">Raw vs. purchasing-power-adjusted salaries across 30+ cities</p>
         </a>
-        <a href="{{ url_for('salary_by_function') }}"
+        <a href="{{ url_for('salary.salary_by_function') }}"
           class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Function</p>
           <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Team &amp; function benchmarks</p>
           <p class="text-xs text-slate-400">Backend, Frontend, ML/AI, DevOps and more</p>
         </a>
-        <a href="{{ url_for('salary_trends') }}"
+        <a href="{{ url_for('salary.salary_trends') }}"
           class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
           <p class="text-xs font-semibold uppercase tracking-widest text-brand">Trends</p>
           <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Monthly salary movements</p>
@@ -360,7 +360,7 @@
         <p class="text-base font-semibold text-slate-900 dark:text-white">Share your salary, unlock your market percentile</p>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Anonymous. Takes 60 seconds. See instantly where you stand vs. P25 / P50 / P75 in DACH.</p>
       </div>
-      <a href="{{ url_for('salary_contribute') }}"
+      <a href="{{ url_for('salary.salary_contribute') }}"
          class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
         Add Your Salary →
       </a>
