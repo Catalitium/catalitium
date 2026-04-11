@@ -42,6 +42,7 @@ from .models.db import (
     clean_job_description_text,
     insert_subscriber,
     insert_contact,
+    upsert_profile_cv_extract,
     insert_job_posting,
     insert_salary_submission,
     get_job_summary,
@@ -87,7 +88,7 @@ from .services.cv_extract import (
     extract_cv_from_upload,
     normalize_cv_text,
 )
-from .services.troy_mock_analysis import (
+from .services.carl_mock_analysis import (
     build_mock_analysis,
     generate_chat_reply,
 )
@@ -915,7 +916,8 @@ def create_app() -> Flask:
         PER_PAGE_MAX=PER_PAGE_MAX,
         SUPABASE_URL=SUPABASE_URL,
         ASSET_VERSION=asset_version,
-        MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", "1048576")),  # 1MB default
+        # Default 5MB so CV uploads match ``cv_extract`` (4MB) without extra .env tuning.
+        MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", str(5 * 1024 * 1024))),
         # Keep secure cookies in production, but allow local HTTP dev
         # (127.0.0.1/localhost) so session + CSRF flows work on /register.
         SESSION_COOKIE_SECURE=(env == "production"),
@@ -3533,13 +3535,18 @@ def create_app() -> Flask:
         )
 
     @app.get("/troy")
-    def troy_dashboard():
-        """Render TROY CV dashboard demo page."""
-        return render_template("troy.html", wide_layout=True)
+    def troy_redirect_carl():
+        """Legacy path; Carl lives at ``/carl``."""
+        return redirect(url_for("carl_dashboard"), code=301)
 
-    @app.post("/troy/analyze")
+    @app.get("/carl")
+    def carl_dashboard():
+        """Render Carl CV dashboard demo page."""
+        return render_template("carl.html", wide_layout=True)
+
+    @app.post("/carl/analyze")
     @_limit("20 per minute")
-    def troy_analyze():
+    def carl_analyze():
         """Accept CV upload/text fallback and return deterministic mock analysis."""
         if not _csrf_valid():
             return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
@@ -3574,33 +3581,60 @@ def create_app() -> Flask:
             return _api_error(exc.code, exc.message, exc.status)
 
         analysis = build_mock_analysis(cv_text, file_label=source.get("filename", "uploaded_cv"))
-        session["troy_chat_context"] = {
+        user = session.get("user") or {}
+        user_id = user.get("id")
+        if user_id and SUPABASE_URL:
+            try:
+                saved = upsert_profile_cv_extract(
+                    str(user_id),
+                    cv_text,
+                    source,
+                    email=str(user.get("email") or "").strip() or None,
+                )
+                if saved == "ok":
+                    logger.info("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
+                else:
+                    logger.warning("Carl: profile CV not persisted (status=%s)", saved)
+            except Exception as exc:
+                logger.warning("profile cv upsert skipped: %s", exc, exc_info=True)
+        overview = analysis.get("overview") or {}
+        skills_radar = analysis.get("skillsRadar") or []
+        session["carl_chat_context"] = {
             "summary": (analysis.get("chatContext") or {}).get("summary", ""),
             "missingKeywords": (analysis.get("atsScore") or {}).get("missingKeywords", []),
-            "persona": (analysis.get("overview") or {}).get("persona", ""),
+            "persona": overview.get("persona", ""),
+            "level": overview.get("level", ""),
+            "headline": overview.get("headline", ""),
+            "fileLabel": str(source.get("filename") or "uploaded_cv"),
+            "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:5] if s.get("skill")],
         }
         session.modified = True
         return _api_success({"analysis": analysis, "source": source})
 
-    @app.post("/troy/chat")
+    @app.post("/carl/chat")
     @_limit("40 per minute")
-    def troy_chat():
-        """Return a rule-based mock chat reply for TROY dashboard."""
+    def carl_chat():
+        """Return a rule-based mock chat reply for Carl dashboard."""
         if not _csrf_valid():
             return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
         payload = request.get_json(silent=True) or {}
         message = str(payload.get("message") or "").strip()
         if not message:
-            return _api_error("invalid_message", "Please write a message for TROY chat.", 400)
+            return _api_error("invalid_message", "Please write a message for Carl chat.", 400)
 
-        session_ctx = session.get("troy_chat_context") or {}
+        session_ctx = session.get("carl_chat_context") or {}
         chat_context = payload.get("chat_context") or {}
         merged_context = {
             "summary": str(chat_context.get("summary") or session_ctx.get("summary") or ""),
             "missingKeywords": payload.get("missing_keywords")
             or session_ctx.get("missingKeywords")
             or [],
+            "persona": str(chat_context.get("persona") or session_ctx.get("persona") or ""),
+            "level": str(chat_context.get("level") or session_ctx.get("level") or ""),
+            "headline": str(chat_context.get("headline") or session_ctx.get("headline") or ""),
+            "fileLabel": str(chat_context.get("fileLabel") or session_ctx.get("fileLabel") or ""),
+            "topSkillNames": chat_context.get("topSkillNames") or session_ctx.get("topSkillNames") or [],
         }
         reply = generate_chat_reply(message, merged_context)
         return _api_success({"reply": reply})

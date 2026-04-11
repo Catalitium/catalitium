@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}TROY CV Dashboard | Catalitium{% endblock %}
+{% block title %}Carl CV Dashboard | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Upload a CV and preview the TROY analysis dashboard demo.">
-<link rel="canonical" href="{{ url_for('troy_dashboard', _external=True) }}">
-<meta property="og:title" content="TROY CV Dashboard | Catalitium">
+<meta name="description" content="Upload a CV and preview the Carl analysis dashboard demo.">
+<link rel="canonical" href="{{ url_for('carl_dashboard', _external=True) }}">
+<meta property="og:title" content="Carl CV Dashboard | Catalitium">
 <meta property="og:description" content="UI-first CV analysis demo with terminal feed, analytics cards, and chat.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('troy_dashboard', _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl_dashboard', _external=True) }}">
 {% endblock %}
 
 {% block head_extra %}
 <style>
-  /* Okara-style TROY: full-bleed dashboard, hide site chrome when active */
+  /* Okara-style Carl: full-bleed dashboard, hide site chrome when active */
   body.troy-dashboard-active header { display: none !important; }
   body.troy-dashboard-active footer { display: none !important; }
   body.troy-dashboard-active #troy-shell,
@@ -48,7 +48,7 @@
   <!-- Landing: upload -->
   <div id="troy-upload-hero" class="mx-auto max-w-xl px-4 py-10 sm:py-14">
     <div class="troy-card p-6 sm:p-8">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF7A00]">TROY · Demo</p>
+      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF7A00]">Carl · Demo</p>
       <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">CV intelligence workspace</h1>
       <p class="mt-2 text-sm text-[#9CA3AF] leading-relaxed">
         Upload a PDF or DOCX. You’ll get an Okara-style dashboard: terminal feed, analytics, actions, and chat.
@@ -77,7 +77,7 @@
     <div class="troy-card mx-3 mt-2 shrink-0 p-4 sm:mx-4">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-3 mb-3">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-white">TROY Terminal</span>
+          <span class="text-sm font-semibold text-white">Carl Terminal</span>
           <span class="rounded-full border border-white/10 bg-[#111] px-2 py-0.5 text-[11px] text-[#9CA3AF]">Live parse</span>
         </div>
         <div class="flex items-center gap-2">
@@ -223,7 +223,7 @@
 
       <!-- Chat -->
       <aside class="troy-card flex flex-col p-4 xl:col-span-3 min-h-[420px] xl:min-h-0 xl:max-h-[calc(100dvh-14rem)]">
-        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to TROY</p>
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
         <div id="troy-chat-log" class="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto rounded-xl bg-[#111] p-3 min-h-[200px]"></div>
         <form id="troy-chat-form" class="mt-3">
           <div class="flex items-center gap-2 rounded-full border border-white/10 bg-[#111] px-3 py-1.5">
@@ -244,5 +244,5 @@
 {% endblock %}
 
 {% block body_extra %}
-<script defer src="{{ url_for('static', filename='js/troy.js', v=asset_version) }}"></script>
+<script defer src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}"></script>
 {% endblock %}

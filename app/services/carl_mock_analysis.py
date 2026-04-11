@@ -1,11 +1,11 @@
-"""Deterministic mock analyzer powering the TROY demo dashboard."""
+"""Deterministic mock analyzer powering the Carl CV dashboard."""
 
 from __future__ import annotations
 
 import hashlib
 import random
 import re
-from typing import Any
+from typing import Any, Sequence
 
 DEFAULT_TARGET_KEYWORDS = [
     "python",
@@ -17,6 +17,134 @@ DEFAULT_TARGET_KEYWORDS = [
     "analytics",
     "machine learning",
 ]
+
+_MAX_LINE = 140
+_MAX_SUMMARY = 350
+_MAX_SNIPPET = 120
+
+
+def _truncate(text: str, max_len: int) -> str:
+    s = (text or "").strip()
+    if len(s) <= max_len:
+        return s
+    return s[: max(0, max_len - 1)].rstrip() + "…"
+
+
+def _cv_snippet(normalized: str, max_len: int = _MAX_SNIPPET) -> str:
+    """Single-line excerpt from CV body for terminal (no raw dumps)."""
+    line = re.sub(r"\s+", " ", str(normalized or "")).strip()
+    return _truncate(line, max_len)
+
+
+def _kw_join(words: Sequence[str], limit: int, empty: str = "none") -> str:
+    if not words:
+        return empty
+    return ", ".join(words[:limit])
+
+
+def _build_terminal_logs(
+    *,
+    file_label: str,
+    ats_score: int,
+    strengths: list[str],
+    risk_flags: list[str],
+    word_count: int,
+    unique_count: int,
+    persona: str,
+    level: str,
+    years: int,
+    top_skills: list[dict[str, Any]],
+    matched_keywords: list[str],
+    missing_keywords: list[str],
+    structure_score: int,
+    impact_score: int,
+    narrative_score: int,
+    narrative_confidence: int,
+    normalized: str,
+    headline: str,
+) -> list[str]:
+    """Longer, CV-grounded terminal feed (existing UI streams these lines)."""
+    excerpt = _cv_snippet(normalized, _MAX_SNIPPET)
+    top3 = top_skills[:3]
+    skill_bits = [
+        f"{s.get('skill', '?')}={int(s.get('score') or 0)}" for s in top3
+    ]
+    matched_s = _kw_join(matched_keywords, 8, "none")
+    missing_s = _kw_join(missing_keywords, 8, "none")
+    logs: list[str] = [
+        _truncate(f"[Carl] ingest: {file_label}", _MAX_LINE),
+        "[Carl] parser: extracting CV text blocks",
+        _truncate(f"[Carl] tokenizer: {word_count} tokens, {unique_count} distinct roots", _MAX_LINE),
+        _truncate(f"[Carl] excerpt: {excerpt}", _MAX_LINE),
+        _truncate(f"[Carl] role-detect: {level} · {persona}", _MAX_LINE),
+        _truncate(f"[Carl] tenure-signal: ~{years}y trajectory (heuristic)", _MAX_LINE),
+        _truncate(f"[Carl] skills-ranked: {', '.join(skill_bits)}", _MAX_LINE),
+        _truncate(f"[Carl] ats-keywords-hit: {matched_s}", _MAX_LINE),
+        _truncate(f"[Carl] ats-keywords-miss: {missing_s}", _MAX_LINE),
+        _truncate(f"[Carl] ats-estimator: score={ats_score}", _MAX_LINE),
+        _truncate(
+            f"[Carl] scorecard: structure={structure_score} impact={impact_score} narrative={narrative_score}",
+            _MAX_LINE,
+        ),
+        _truncate(f"[Carl] confidence: model={narrative_confidence}% (demo)", _MAX_LINE),
+        _truncate(f"[Carl] strengths: {strengths[0]}", _MAX_LINE),
+    ]
+    if len(strengths) > 1:
+        logs.append(_truncate(f"[Carl] strengths+: {strengths[1]}", _MAX_LINE))
+    if risk_flags:
+        logs.append(_truncate(f"[Carl] risk: {risk_flags[0]}", _MAX_LINE))
+    logs.append(_truncate(f"[Carl] synthesis: {_truncate(headline, 100)}", _MAX_LINE))
+    logs.append("[Carl] ready: dashboard payload assembled")
+    return logs
+
+
+def _build_chat_summary(
+    *,
+    headline: str,
+    persona: str,
+    level: str,
+    file_label: str,
+    matched_keywords: list[str],
+    missing_keywords: list[str],
+) -> str:
+    m2 = _kw_join(matched_keywords, 2, "")
+    x2 = _kw_join(missing_keywords, 2, "")
+    parts = [
+        f"You uploaded {_truncate(file_label, 60)}.",
+        f"I read you as a {level} {persona}: {headline}",
+    ]
+    if m2 and m2 not in ("", "none"):
+        parts.append(f"Strong ATS matches already present: {m2}.")
+    if x2 and x2 not in ("", "none"):
+        parts.append(f"Next leverage: weave {x2} into real project outcomes (metrics + scope).")
+    else:
+        parts.append("Next leverage: add measurable outcomes (%, $, latency) beside each major role.")
+    raw = " ".join(parts)
+    return _truncate(raw, _MAX_SUMMARY)
+
+
+def _build_suggested_prompts(
+    missing_keywords: list[str],
+    keyword_coverage: int,
+) -> list[str]:
+    if missing_keywords:
+        gap = ", ".join(missing_keywords[:3])
+        return [
+            f"Where should I add {gap} without keyword stuffing?",
+            "Rewrite one experience block for hiring managers in 4 bullets.",
+            "What metrics would make my impact undeniable on a first skim?",
+        ]
+    if keyword_coverage >= 75:
+        return [
+            "How do I tighten my story so impact reads above the fold?",
+            "Which bullets should I cut to reduce noise for recruiters?",
+            "What quantified wins should sit in my summary line?",
+        ]
+    return [
+        "How can I increase my ATS score quickly?",
+        "Rewrite my profile summary for hiring managers.",
+        "What bullet points should I add for impact?",
+    ]
 
 
 def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dict[str, Any]:
@@ -45,7 +173,6 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
     risk_flags = _build_risk_flags(text_lower, missing_keywords)
     quick_wins = _build_quick_wins(missing_keywords, text_lower)
     timeline = _build_timeline(level, years, rng)
-    terminal_logs = _build_terminal_logs(file_label, ats_score, strengths, risk_flags)
 
     structure_score = min(100, 48 + min(len(words) // 25, 28))
     impact_score = min(
@@ -59,11 +186,17 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
     headline = f"{level} {persona} profile with {keyword_coverage}% ATS keyword coverage"
     fit_summary = (
         f"CV shows {years}+ years of relevant signal with strongest evidence in "
-        f"{', '.join(s['skill'] for s in top_skills[:3])}."
+        f"{', '.join(s['skill'] for s in top_skills[:3])}. "
+        f"Pulled from {_truncate(file_label, 80)}."
     )
+    fit_summary = _truncate(fit_summary, 280)
 
     documents = [
-        {"title": "CV intelligence", "subtitle": f"Source · {file_label}", "badge": "New"},
+        {
+            "title": "CV intelligence",
+            "subtitle": _truncate(f"Source · {file_label} · Indexed · {len(words)} words", 95),
+            "badge": "New",
+        },
         {"title": "Skills evidence", "subtitle": f"{len(top_skills)} ranked signals", "badge": "New"},
         {"title": "ATS keyword map", "subtitle": f"{keyword_coverage}% coverage", "badge": None},
         {"title": "Experience arc", "subtitle": f"~{years}y trajectory", "badge": None},
@@ -86,6 +219,37 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
             "detail": strengths[1] if len(strengths) > 1 else fit_summary[:120],
         },
     ]
+
+    terminal_logs = _build_terminal_logs(
+        file_label=file_label,
+        ats_score=ats_score,
+        strengths=strengths,
+        risk_flags=risk_flags,
+        word_count=len(words),
+        unique_count=len(unique_words),
+        persona=persona,
+        level=level,
+        years=years,
+        top_skills=top_skills,
+        matched_keywords=matched_keywords,
+        missing_keywords=missing_keywords,
+        structure_score=structure_score,
+        impact_score=impact_score,
+        narrative_score=narrative_score,
+        narrative_confidence=confidence,
+        normalized=normalized,
+        headline=headline,
+    )
+
+    chat_summary = _build_chat_summary(
+        headline=headline,
+        persona=persona,
+        level=level,
+        file_label=file_label,
+        matched_keywords=matched_keywords,
+        missing_keywords=missing_keywords,
+    )
+    suggested_prompts = _build_suggested_prompts(missing_keywords, keyword_coverage)
 
     return {
         "overview": {
@@ -117,12 +281,8 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
         "quickWins": quick_wins,
         "terminalLogs": terminal_logs,
         "chatContext": {
-            "summary": f"{headline}. Focus next revision on measurable outcomes and missing ATS terms.",
-            "suggestedPrompts": [
-                "How can I increase my ATS score quickly?",
-                "Rewrite my profile summary for hiring managers.",
-                "What bullet points should I add for impact?",
-            ],
+            "summary": chat_summary,
+            "suggestedPrompts": suggested_prompts,
         },
     }
 
@@ -135,6 +295,11 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
 
     missing_keywords = chat_context.get("missingKeywords") or []
     summary = str(chat_context.get("summary") or "").strip()
+    headline = str(chat_context.get("headline") or "").strip()
+    persona = str(chat_context.get("persona") or "").strip()
+    level = str(chat_context.get("level") or "").strip()
+    file_label = str(chat_context.get("fileLabel") or "").strip()
+    top_skill_names = chat_context.get("topSkillNames") or []
 
     if "ats" in prompt or "score" in prompt:
         if missing_keywords:
@@ -153,6 +318,35 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
         if missing_keywords:
             return "Main risk is keyword coverage gaps in: " + ", ".join(missing_keywords[:3]) + "."
         return "Main risk is low quantified impact. Add metrics, percentages, or revenue/cost outcomes per role."
+
+    if any(k in prompt for k in ("who am i", "who am i?", "headline", "positioning", "how do i read")):
+        if headline and persona and level:
+            return _truncate(
+                f"Based on this CV pass: you are signaling {level} {persona}. Headline read: {headline}",
+                320,
+            )
+        if persona and level:
+            return _truncate(f"Based on this CV pass: you are signaling {level} {persona}.", 280)
+
+    if "file" in prompt or "upload" in prompt or "pdf" in prompt or "docx" in prompt:
+        if file_label:
+            return _truncate(
+                f"I anchored this pass on {file_label} - ask about ATS gaps or bullet rewrites tied to that version.",
+                280,
+            )
+
+    if any(
+        prompt.startswith(h)
+        for h in ("hi", "hello", "hey", "help", "thanks", "thank you")
+    ) or prompt in ("help", "help me", "?", "what can you do"):
+        tail = ""
+        if missing_keywords:
+            tail = f" Start with missing terms: {', '.join(missing_keywords[:3])}."
+        elif headline:
+            tail = f" {headline}"
+        base = "I am Carl on this CV snapshot - ask about ATS, gaps, or a rewrite."
+        return _truncate(base + tail, 320)
+
     return summary or "I analyzed your CV. Ask about ATS, bullet rewriting, or risk flags for concrete guidance."
 
 
@@ -255,22 +449,3 @@ def _build_timeline(level: str, years: int, rng: random.Random) -> list[dict[str
         {"period": f"{max(2018, 2026 - years)}-2023", "role": "Execution Role", "impact": "Expanded ownership and shipped cross-team initiatives."},
         {"period": "2023-Now", "role": f"{level} Role", "impact": f"Driving higher-complexity outcomes and decision quality."},
     ]
-
-
-def _build_terminal_logs(
-    file_label: str,
-    ats_score: int,
-    strengths: list[str],
-    risk_flags: list[str],
-) -> list[str]:
-    logs = [
-        f"[TROY] ingest: {file_label}",
-        "[TROY] parser: extracting CV text blocks",
-        "[TROY] feature-map: computing skills and timeline vectors",
-        f"[TROY] ats-estimator: score={ats_score}",
-        f"[TROY] strengths: {strengths[0]}",
-    ]
-    if risk_flags:
-        logs.append(f"[TROY] risk: {risk_flags[0]}")
-    logs.append("[TROY] ready: dashboard payload assembled")
-    return logs

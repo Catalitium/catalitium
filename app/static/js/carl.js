@@ -225,7 +225,7 @@
       terminalTimer = null;
     }
     terminal.innerHTML = "";
-    var lines = safeList(logs, ["> [TROY] no terminal lines"]);
+    var lines = safeList(logs, ["> [Carl] no terminal lines"]);
     var index = 0;
     if (terminalStatus) terminalStatus.textContent = "Streaming";
     terminalTimer = setInterval(function () {
@@ -335,7 +335,7 @@
     setUploadLoading(true);
 
     var payload = new FormData(form);
-    fetch("/troy/analyze", {
+    fetch("/carl/analyze", {
       method: "POST",
       body: payload,
       credentials: "same-origin",
@@ -379,7 +379,7 @@
       addChatMessage("user", message);
       if (chatInput) chatInput.value = "";
 
-      fetch("/troy/chat", {
+      fetch("/carl/chat", {
         method: "POST",
         credentials: "same-origin",
         headers: {

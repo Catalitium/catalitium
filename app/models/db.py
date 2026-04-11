@@ -7,7 +7,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:
@@ -239,6 +239,40 @@ def insert_contact(email: str, name_company: str, message: str) -> str:
     except Exception as exc:
         logger.warning("insert_contact failed: %s", exc, exc_info=True)
         return "error"
+
+
+def upsert_profile_cv_extract(
+    user_id: str,
+    cv_text: str,
+    meta: Optional[Dict[str, Any]] = None,
+    *,
+    email: Optional[str] = None,
+) -> str:
+    """Insert or update ``profiles`` with parsed CV (handles missing profile row). Returns ``ok`` or ``error``."""
+    uid = (user_id or "").strip()
+    if not uid or not SUPABASE_URL:
+        return "error"
+    email_val = (email or "").strip() or None
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO profiles (id, email, cv_extracted_text, cv_meta, cv_extracted_at, updated_at)
+                VALUES (%s::uuid, %s, %s, %s::jsonb, NOW(), NOW())
+                ON CONFLICT (id) DO UPDATE SET
+                    cv_extracted_text = EXCLUDED.cv_extracted_text,
+                    cv_meta = EXCLUDED.cv_meta,
+                    cv_extracted_at = EXCLUDED.cv_extracted_at,
+                    updated_at = NOW()
+                """,
+                (uid, email_val, cv_text, json.dumps(meta or {})),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("upsert_profile_cv_extract failed: %s", exc, exc_info=True)
+        return "error"
+
 
 JOB_POSTING_ACTIVE_DAYS = 10  # listings expire after this many days
 
