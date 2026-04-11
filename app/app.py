@@ -3,6 +3,7 @@
 import csv
 import os
 import re
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, List
@@ -1126,6 +1127,9 @@ def create_app() -> Flask:
         except Exception:
             pass
         # Baseline security headers for all responses.
+        response.headers.setdefault(
+            "X-Request-ID", str(getattr(g, "request_id", "") or "")
+        )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -3193,6 +3197,7 @@ def create_app() -> Flask:
         """Expose a readiness probe indicating the database is reachable."""
         rid = getattr(g, "request_id", "")
         deep = (request.args.get("deep") or "").strip().lower() in {"1", "true", "yes", "on"}
+        t0 = time.perf_counter()
         try:
             db = get_db()
             with db.cursor() as cur:
@@ -3204,7 +3209,12 @@ def create_app() -> Flask:
         except Exception:
             logger.warning("health check failed request_id=%s deep=%s", rid, deep)
             return _api_error("db_unavailable", "Database connection failed", 503)
-        payload: Dict[str, Any] = {"status": "ok", "db": "connected"}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 3)
+        payload: Dict[str, Any] = {
+            "status": "ok",
+            "db": "connected",
+            "db_latency_ms": latency_ms,
+        }
         if deep:
             payload["deep"] = True
         logger.info("health ok request_id=%s deep=%s", rid, deep)
