@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import random
 import re
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
+
+from ..config import CARL_CHAT_MAX_REPLY_CHARS
 
 DEFAULT_TARGET_KEYWORDS = [
     "python",
@@ -287,11 +289,105 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
     }
 
 
+def normalize_carl_user_message(text: str) -> str:
+    """Collapse whitespace for stable comparisons (chip text vs freeform)."""
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+
+def is_carl_message_grounded(
+    message: str,
+    snapshot: dict[str, Any],
+    *,
+    prompt_id: Optional[int] = None,
+) -> bool:
+    """Return True when the user may spend a Carl chat turn on this input.
+
+    Rules (server-side; document in tests):
+    1. ``prompt_id`` is an int in ``[0, len(suggestedPrompts))`` (chip / guided path).
+    2. Normalized ``message`` equals one of ``suggestedPrompts`` (case-insensitive).
+    3. A ``missingKeywords`` or ``matchedKeywords`` entry appears as a substring of
+       ``message.lower()`` (supports multi-word keywords like "machine learning").
+    4. A ``topSkillNames`` entry appears in ``message.lower()`` (case-insensitive).
+    5. ``level`` or full ``persona`` appears as a substring in ``message.lower()``.
+    6. ``fileLabel`` appears as a substring in ``message.lower()``.
+    7. Any alphanumeric token of length >= 4 from ``headline`` appears in ``message.lower()``.
+    """
+    prompts_raw = snapshot.get("suggestedPrompts") or []
+    prompts = [str(p) for p in prompts_raw if str(p).strip()]
+    if prompt_id is not None:
+        if isinstance(prompt_id, int) and 0 <= prompt_id < len(prompts):
+            return True
+        return False
+
+    msg_norm = normalize_carl_user_message(message)
+    if not msg_norm:
+        return False
+    msg_key = msg_norm.casefold()
+    for p in prompts:
+        if msg_key == normalize_carl_user_message(p).casefold():
+            return True
+
+    ml = msg_norm.lower()
+
+    def _kw_hits(keys: Sequence[str]) -> bool:
+        for k in keys:
+            kk = str(k).strip().lower()
+            if len(kk) >= 2 and kk in ml:
+                return True
+        return False
+
+    if _kw_hits(snapshot.get("missingKeywords") or []):
+        return True
+    if _kw_hits(snapshot.get("matchedKeywords") or []):
+        return True
+    if _kw_hits(snapshot.get("topSkillNames") or []):
+        return True
+
+    level = str(snapshot.get("level") or "").strip().lower()
+    if level and level in ml:
+        return True
+    persona = str(snapshot.get("persona") or "").strip().lower()
+    if persona and persona in ml:
+        return True
+
+    file_label = str(snapshot.get("fileLabel") or "").strip().lower()
+    if file_label and file_label in ml:
+        return True
+
+    headline = str(snapshot.get("headline") or "")
+    for tok in re.findall(r"[a-z0-9]+", headline.lower()):
+        if len(tok) >= 4 and tok in ml:
+            return True
+
+    return False
+
+
+def carl_effective_user_message(
+    message: str,
+    snapshot: dict[str, Any],
+    *,
+    prompt_id: Optional[int] = None,
+) -> tuple[str, Optional[str]]:
+    """Return (effective_message, error_code). error_code set when prompt_id is invalid."""
+    prompts_raw = snapshot.get("suggestedPrompts") or []
+    prompts = [str(p) for p in prompts_raw if str(p).strip()]
+    if prompt_id is not None:
+        if not isinstance(prompt_id, int) or not (0 <= prompt_id < len(prompts)):
+            return "", "invalid_prompt_id"
+        return prompts[prompt_id], None
+    return normalize_carl_user_message(message), None
+
+
 def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
     """Generate a deterministic rule-based chat reply."""
+    cap = CARL_CHAT_MAX_REPLY_CHARS
+
+    def _out(s: str) -> str:
+        return _truncate(s, cap)
+
     prompt = (message or "").strip().lower()
     if not prompt:
-        return "Share one question about your CV and I will suggest specific improvements."
+        return _out("Share one question about your CV and I will suggest specific improvements.")
 
     missing_keywords = chat_context.get("missingKeywords") or []
     summary = str(chat_context.get("summary") or "").strip()
@@ -303,36 +399,34 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
 
     if "ats" in prompt or "score" in prompt:
         if missing_keywords:
-            return (
+            return _out(
                 "Fast ATS win: include these missing keywords in context-based bullet points: "
                 + ", ".join(missing_keywords[:4])
                 + "."
             )
-        return "Your ATS signal is strong. Next gain comes from quantifying outcomes in each experience bullet."
+        return _out("Your ATS signal is strong. Next gain comes from quantifying outcomes in each experience bullet.")
     if "rewrite" in prompt or "summary" in prompt:
-        return (
+        return _out(
             "Suggested summary: Results-driven professional with a track record of delivering measurable impact, "
             "cross-functional execution, and strong ownership across complex initiatives."
         )
     if "risk" in prompt or "weak" in prompt or "gap" in prompt:
         if missing_keywords:
-            return "Main risk is keyword coverage gaps in: " + ", ".join(missing_keywords[:3]) + "."
-        return "Main risk is low quantified impact. Add metrics, percentages, or revenue/cost outcomes per role."
+            return _out("Main risk is keyword coverage gaps in: " + ", ".join(missing_keywords[:3]) + ".")
+        return _out("Main risk is low quantified impact. Add metrics, percentages, or revenue/cost outcomes per role.")
 
     if any(k in prompt for k in ("who am i", "who am i?", "headline", "positioning", "how do i read")):
         if headline and persona and level:
-            return _truncate(
+            return _out(
                 f"Based on this CV pass: you are signaling {level} {persona}. Headline read: {headline}",
-                320,
             )
         if persona and level:
-            return _truncate(f"Based on this CV pass: you are signaling {level} {persona}.", 280)
+            return _out(f"Based on this CV pass: you are signaling {level} {persona}.")
 
     if "file" in prompt or "upload" in prompt or "pdf" in prompt or "docx" in prompt:
         if file_label:
-            return _truncate(
+            return _out(
                 f"I anchored this pass on {file_label} - ask about ATS gaps or bullet rewrites tied to that version.",
-                280,
             )
 
     if any(
@@ -349,9 +443,10 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
         elif headline:
             tail = f" {headline}"
         base = "I am Carl on this CV snapshot - ask about ATS, gaps, or a rewrite."
-        return _truncate(base + tail, 320)
+        return _out(base + tail)
 
-    return summary or "I analyzed your CV. Ask about ATS, bullet rewriting, or risk flags for concrete guidance."
+    out = summary or "I analyzed your CV. Ask about ATS, bullet rewriting, or risk flags for concrete guidance."
+    return _out(out)
 
 
 def _normalize(text: str) -> str:
