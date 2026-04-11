@@ -345,19 +345,6 @@
             const jobTitle = link.getAttribute("data-job-title");
             const jobCompany = link.getAttribute("data-job-company");
             sendBrowserAnalytics("click", 1, "job_browser_click");
-            if (typeof fetch === "function") {
-              fetch("/events/apply", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  event_type: "apply",
-                  job_id: jobId,
-                  job_title: jobTitle,
-                  job_company: jobCompany,
-                  source: "web",
-                }),
-              }).catch(() => {});
-            }
           });
         });
       }
