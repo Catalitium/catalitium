@@ -55,10 +55,17 @@ Thumbs.db
 # Project specific
 data/archive/
 docs/
+!docs/sprints/
 app/**/__pycache__/
 app/models/__pycache__/
 app/controllers/__pycache__/
 app/views/__pycache__/
+
+# Sprint artifacts at repo root (should live in docs/sprints/)
+/PLAN.md
+/HANDOFF.md
+/AGENT_CONTRACT.md
+/NEXT_STEPS_PROPOSAL.md
 
 # Local scratch at repo root (tracked tasks live under tasks/)
 /todo.md
