@@ -98,7 +98,6 @@ def save_job_summary(job_id: int, bullets: list, skills: list) -> None:
                 """,
                 [job_id, json.dumps(bullets), json.dumps(skills)],
             )
-            db.commit()
     except Exception as exc:
         logger.warning("save_job_summary error: %s", exc)
 

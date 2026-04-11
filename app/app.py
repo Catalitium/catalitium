@@ -3,6 +3,7 @@
 import csv
 import os
 import re
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any, List
@@ -52,6 +53,7 @@ from .config import (
     AUTOCOMPLETE_CACHE_MAX,
     SALARY_INSIGHTS_CACHE_TTL,
     SALARY_INSIGHTS_CACHE_MAX,
+    SITEMAP_CACHE_TTL,
 )
 from .mailer import (
     send_subscribe_welcome,
@@ -79,6 +81,8 @@ from .models.db import (
     get_salary_for_location,
     parse_salary_query,
     parse_salary_range_string,
+    salary_range_around,
+    _compact_salary_number,
     parse_job_description,
     format_job_date_string,
     clean_job_description_text,
@@ -593,8 +597,19 @@ def _get_demo_jobs():
                     "location": row.get("location", ""),
                     "description": row.get("description", ""),
                     "date_posted": row.get("date_posted", ""),
+                    "date_raw": "",
                     "link": "",
                     "is_new": False,
+                    "is_ghost": False,
+                    "match_score": None,
+                    "match_reasons": [],
+                    "median_salary": None,
+                    "median_salary_currency": None,
+                    "median_salary_compact": None,
+                    "estimated_salary_range_compact": None,
+                    "estimated_salary_range_numeric": None,
+                    "salary_delta_pct": None,
+                    "salary_uplift_factor": None,
                 })
     except Exception as exc:
         logger.warning("_get_demo_jobs: could not load %s: %s", _DEMO_JOBS_CSV, exc)
@@ -1126,6 +1141,9 @@ def create_app() -> Flask:
         except Exception:
             pass
         # Baseline security headers for all responses.
+        response.headers.setdefault(
+            "X-Request-ID", str(getattr(g, "request_id", "") or "")
+        )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -1389,24 +1407,23 @@ def create_app() -> Flask:
             uplift_factor = 1.0
             if median is not None:
                 try:
-                    from .models import db as _db_helpers
                     title_lc = title.lower()
                     if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS):
                         uplift_factor = 1.10
                     elif any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS):
                         uplift_factor = 1.05
 
-                    base_rng = _db_helpers.salary_range_around(float(median), pct=0.2)
+                    base_rng = salary_range_around(float(median), pct=0.2)
                     if base_rng:
                         base_low, base_high, base_low_s, base_high_s = base_rng
-                        base_median_compact = _db_helpers._compact_salary_number(float(median))
+                        base_median_compact = _compact_salary_number(float(median))
 
                         if uplift_factor > 1.0:
                             uplift_amount = float(median) * (uplift_factor - 1.0)
                             adj_low = base_low + uplift_amount
                             adj_high = base_high + uplift_amount
-                            low_s = _db_helpers._compact_salary_number(adj_low)
-                            high_s = _db_helpers._compact_salary_number(adj_high)
+                            low_s = _compact_salary_number(adj_low)
+                            high_s = _compact_salary_number(adj_high)
                             range_compact = (int(adj_low), int(adj_high))
                             estimated_display = f"{low_s}\u2013{high_s}"
                         else:
@@ -1487,10 +1504,22 @@ def create_app() -> Flask:
             "per_page": per_page_display,
             "has_prev": page > 1,
             "has_next": page < pages_display,
-            "prev_url": url_for("jobs", title=title_q or None, country=(raw_country or None), page=page - 1)
+            "prev_url": url_for(
+                "jobs",
+                title=title_q or None,
+                country=(raw_country or None),
+                salary_min=salary_min_filter,
+                page=page - 1,
+            )
             if page > 1
             else None,
-            "next_url": url_for("jobs", title=title_q or None, country=(raw_country or None), page=page + 1)
+            "next_url": url_for(
+                "jobs",
+                title=title_q or None,
+                country=(raw_country or None),
+                salary_min=salary_min_filter,
+                page=page + 1,
+            )
             if page < pages_display
             else None,
         }
@@ -1518,6 +1547,7 @@ def create_app() -> Flask:
             cat_ctx=cat_ctx,
             remote_count=remote_count,
             subscribe_gate=subscribe_gate,
+            jobs_salary_min=salary_min_filter,
         )
 
     @app.get("/remote")
@@ -3193,6 +3223,7 @@ def create_app() -> Flask:
         """Expose a readiness probe indicating the database is reachable."""
         rid = getattr(g, "request_id", "")
         deep = (request.args.get("deep") or "").strip().lower() in {"1", "true", "yes", "on"}
+        t0 = time.perf_counter()
         try:
             db = get_db()
             with db.cursor() as cur:
@@ -3204,7 +3235,12 @@ def create_app() -> Flask:
         except Exception:
             logger.warning("health check failed request_id=%s deep=%s", rid, deep)
             return _api_error("db_unavailable", "Database connection failed", 503)
-        payload: Dict[str, Any] = {"status": "ok", "db": "connected"}
+        latency_ms = round((time.perf_counter() - t0) * 1000, 3)
+        payload: Dict[str, Any] = {
+            "status": "ok",
+            "db": "connected",
+            "db_latency_ms": latency_ms,
+        }
         if deep:
             payload["deep"] = True
         logger.info("health ok request_id=%s deep=%s", rid, deep)
@@ -3243,7 +3279,7 @@ def create_app() -> Flask:
     def sitemap():
         """Generate a lightweight XML sitemap for primary surfaces."""
         import time as _time
-        if _sitemap_cache["data"] and _time.time() - _sitemap_cache["ts"] < 3600:
+        if _sitemap_cache["data"] and _time.time() - _sitemap_cache["ts"] < SITEMAP_CACHE_TTL:
             return _sitemap_cache["data"]
         today = datetime.utcnow().date().isoformat()
         urls = []
@@ -3316,7 +3352,7 @@ def create_app() -> Flask:
             xml_lines.append("  </url>")
         xml_lines.append("</urlset>")
         resp = Response("\n".join(xml_lines), mimetype="application/xml")
-        resp.headers["Cache-Control"] = "public, max-age=3600"
+        resp.headers["Cache-Control"] = f"public, max-age={SITEMAP_CACHE_TTL}"
         if most_recent_date:
             resp.headers["Last-Modified"] = most_recent_date
         _sitemap_cache["data"] = resp
