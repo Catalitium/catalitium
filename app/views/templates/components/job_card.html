@@ -61,6 +61,15 @@
           <span class="text-amber-700">Est.</span>
           <span>{{ (CUR.get(j.median_salary_currency) or '') }} {{ j.estimated_salary_range_compact }}</span>
         </span>
+        {% if j.comp_confidence is defined and j.comp_confidence is not none %}
+        <span class="inline-flex items-center gap-0.5 text-[10px] font-semibold rounded-full px-1.5 py-0.5
+          {% if j.comp_confidence >= 70 %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800
+          {% elif j.comp_confidence >= 40 %}bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800
+          {% else %}bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700{% endif %}"
+          title="Salary confidence: {{ j.comp_confidence }}%">
+          {{ j.comp_confidence }}%
+        </span>
+        {% endif %}
         {% endif %}
         {% if 'salary_delta_pct' in j and j['salary_delta_pct'] is not none %}
         <span class="inline-flex items-center gap-1 rounded-full {% if j['salary_delta_pct'] >= 0 %}bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300{% else %}bg-slate-100 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300{% endif %} px-2 py-1 text-[11px] font-semibold" title="Midpoint of Est. range vs location median (rough market signal)">

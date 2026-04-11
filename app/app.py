@@ -111,6 +111,12 @@ from .models.db import (
     sync_api_key_quota_for_api_access,
 )
 
+from .models.compensation import (
+    compute_compensation_confidence,
+    confidence_color,
+    source_label as compensation_source_label,
+)
+
 try:
     import stripe as _stripe
 except ImportError:
@@ -1479,6 +1485,25 @@ def create_app() -> Flask:
             )
             item_payload["match_score"] = match_score
             item_payload["match_reasons"] = match_reasons
+
+            try:
+                _sal_ref = (median, currency) if median is not None else None
+                _ref_lvl = "city" if median is not None else "none"
+                _comp = compute_compensation_confidence(
+                    {
+                        "salary": row.get("salary") or "",
+                        "job_salary": row.get("job_salary"),
+                        "salary_min": range_compact[0] if range_compact else None,
+                        "salary_max": range_compact[1] if range_compact else None,
+                        "median_salary_currency": currency,
+                    },
+                    _sal_ref,
+                    has_crowd_data=False,
+                    ref_match_level=_ref_lvl,
+                )
+                item_payload["comp_confidence"] = _comp["confidence"]
+            except Exception:
+                item_payload["comp_confidence"] = None
 
             # If a salary floor is present (e.g., >100k filter), drop jobs whose estimated top end is below the floor.
             if sal_floor and sal_floor >= 100000:
@@ -3308,6 +3333,7 @@ def create_app() -> Flask:
         _add(url_for("salary_tool", _external=True), priority="0.85", changefreq="weekly")
         _add(url_for("salary_by_title", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("salary_top_companies", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("compensation_methodology", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("hire", _external=True), priority="0.8", changefreq="monthly")
         _add(url_for("post_a_job", _external=True), priority="0.75", changefreq="monthly")
         _add(url_for("docs_api", _external=True), priority="0.6", changefreq="monthly")
@@ -3480,17 +3506,48 @@ def create_app() -> Flask:
         except Exception:
             ai_summary = None
 
+        # Compensation confidence scoring
+        comp_display = None
+        try:
+            salary_ref = (median, currency) if median is not None else None
+            ref_level = "city" if median is not None else "none"
+            comp_display = compute_compensation_confidence(
+                {
+                    "salary": salary_range,
+                    "job_salary": row.get("job_salary"),
+                    "salary_min": salary_min,
+                    "salary_max": salary_max,
+                    "median_salary_currency": currency,
+                },
+                salary_ref,
+                has_crowd_data=False,
+                ref_match_level=ref_level,
+                methodology_url=url_for("compensation_methodology"),
+            )
+            comp_display["source_label"] = compensation_source_label(comp_display["source"])
+        except Exception:
+            comp_display = None
+
         return render_template(
             "job_detail.html",
             job=job,
             related=related,
             ai_summary=ai_summary,
+            comp_display=comp_display,
             subscribe_ctx={
                 "title": title,
                 "country": loc,
                 "salary_band": detail_salary_band,
             },
         )
+
+    # ------------------------------------------------------------------
+    # Compensation Intelligence
+    # ------------------------------------------------------------------
+    @app.get("/compensation/methodology")
+    def compensation_methodology():
+        """Static page explaining how salary estimates and confidence scores work."""
+        return render_template("compensation_methodology.html")
 
     # ------------------------------------------------------------------
     # Salary Tools: live DACH calculator + role/region report
