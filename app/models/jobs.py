@@ -544,6 +544,141 @@ class Job:
         where_pg = f"WHERE {' AND '.join(clauses_pg)}" if clauses_pg else ""
         return where_pg, tuple(params_pg)
 
+    # ------------------------------------------------------------------
+    # Company aggregation (read-only, from existing jobs table)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def company_list(search: Optional[str] = None, limit: int = 50, offset: int = 0) -> List[Dict]:
+        """Return companies with >= 2 jobs, ordered by job count descending."""
+        where = ""
+        params: List = []
+        if search:
+            where = "WHERE company_name ILIKE %s ESCAPE '\\'"
+            params.append(f"%{Job._escape_like(search.strip())}%")
+        sql = f"""
+            SELECT company_name,
+                   COUNT(*) AS job_count,
+                   array_agg(DISTINCT country) AS countries,
+                   MAX(date) AS latest_date,
+                   COUNT(CASE WHEN salary IS NOT NULL AND salary != '' THEN 1 END) AS salary_count
+            FROM jobs
+            {where}
+            GROUP BY company_name
+            HAVING COUNT(*) >= 2
+            ORDER BY COUNT(*) DESC
+            LIMIT %s OFFSET %s
+        """
+        params.extend([int(limit), int(offset)])
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(sql, params)
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+        except Exception as exc:
+            logger.warning("Job.company_list failed: %s", exc)
+            return []
+
+    @staticmethod
+    def company_count(search: Optional[str] = None) -> int:
+        """Count distinct companies with >= 2 jobs."""
+        where = ""
+        params: List = []
+        if search:
+            where = "WHERE company_name ILIKE %s ESCAPE '\\'"
+            params.append(f"%{Job._escape_like(search.strip())}%")
+        sql = f"""
+            SELECT COUNT(*) FROM (
+                SELECT company_name FROM jobs {where}
+                GROUP BY company_name HAVING COUNT(*) >= 2
+            ) sub
+        """
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(sql, params)
+                row = cur.fetchone()
+                return int(row[0]) if row else 0
+        except Exception as exc:
+            logger.warning("Job.company_count failed: %s", exc)
+            return 0
+
+    @staticmethod
+    def company_name_by_slug(slug: str, slugify_fn=None) -> Optional[str]:
+        """Reverse a slug to the original company_name, or None if not found.
+
+        slugify_fn must be the same _slugify used in app.py to ensure consistency.
+        """
+        if not slug or not slugify_fn:
+            return None
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT DISTINCT company_name FROM jobs "
+                    "GROUP BY company_name HAVING COUNT(*) >= 2"
+                )
+                for row in cur.fetchall():
+                    cn = row[0] if row else ""
+                    if cn and slugify_fn(cn) == slug:
+                        return cn
+        except Exception as exc:
+            logger.warning("Job.company_name_by_slug(%s) failed: %s", slug, exc)
+        return None
+
+    @staticmethod
+    def company_detail(company_name: str) -> Optional[Dict]:
+        """Return aggregated stats for a single company, or None if < 2 jobs."""
+        if not company_name:
+            return None
+        sql = """
+            SELECT company_name,
+                   COUNT(*) AS job_count,
+                   array_agg(DISTINCT country) AS countries,
+                   array_agg(DISTINCT COALESCE(NULLIF(job_title_norm, ''), LOWER(job_title))) AS titles_norm,
+                   MAX(date) AS latest_date,
+                   COUNT(CASE WHEN salary IS NOT NULL AND salary != '' THEN 1 END) AS salary_count
+            FROM jobs
+            WHERE company_name = %s
+            GROUP BY company_name
+            HAVING COUNT(*) >= 2
+        """
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(sql, [company_name])
+                row = cur.fetchone()
+                if not row:
+                    return None
+                cols = [d[0] for d in cur.description]
+                return dict(zip(cols, row))
+        except Exception as exc:
+            logger.warning("Job.company_detail(%s) failed: %s", company_name, exc)
+            return None
+
+    @staticmethod
+    def company_jobs(company_name: str, limit: int = 50, offset: int = 0) -> List[Dict]:
+        """Return job rows for a specific company, ordered by recency."""
+        sql = """
+            SELECT id, job_title, job_title_norm, company_name,
+                   job_description, location, city, region, country,
+                   link, date, COALESCE(salary, '') AS job_salary_range
+            FROM jobs
+            WHERE company_name = %s
+            ORDER BY (date IS NULL) ASC, date DESC, id DESC
+            LIMIT %s OFFSET %s
+        """
+        try:
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute(sql, [company_name, int(limit), int(offset)])
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row)) for row in cur.fetchall()]
+        except Exception as exc:
+            logger.warning("Job.company_jobs(%s) failed: %s", company_name, exc)
+            return []
+
     @staticmethod
     def _order_by(country: Optional[str]) -> str:
         if not country:

@@ -1,59 +1,72 @@
-# Compensation Intelligence — Handoff
+# Handoff: Company Intelligence Pages
 
-**Branch:** `feature/compensation-intelligence`
-**Status:** Complete, ready for merge
+**Branch:** `feature/company-intelligence-pages`
+**Date:** 2026-04-11
 
 ---
 
 ## Files Changed
 
-### New files
-| File | Purpose |
-|------|---------|
-| `app/models/compensation.py` | Confidence scoring engine (`compute_compensation_confidence`, `confidence_color`, `source_label`) |
-| `app/views/templates/compensation_methodology.html` | Static methodology page explaining estimation approach |
-| `tests/test_compensation.py` | 22 tests covering scoring, labels, colors, and route |
-| `PLAN.md` | Architecture plan |
-| `HANDOFF.md` | This file |
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `PLAN.md` | NEW | Architecture plan for the feature |
+| `HANDOFF.md` | NEW | This file |
+| `app/models/jobs.py` | EDITED | Added `company_list()`, `company_count()`, `company_detail()`, `company_jobs()`, `company_name_by_slug()` static methods on `Job` class |
+| `app/app.py` | EDITED | Rewrote `companies()` route (DB-driven with search + pagination), added `company_detail_page()` route at `/companies/<slug>`, added `company_slug` to `job_detail` context, added top 50 company pages to sitemap, bumped `/companies` sitemap priority to 0.8 |
+| `app/views/templates/companies.html` | REWRITTEN | DB-driven company listing with search input, card grid, pagination, empty state, SEO meta |
+| `app/views/templates/company_detail.html` | NEW | Individual company profile page with stats, title distribution, job listings, breadcrumbs, JSON-LD Organization schema |
+| `app/views/templates/job_detail.html` | EDITED | Company name is now a link to `/companies/<slug>` (only the `<p>` tag wrapping company name, salary section untouched) |
+| `tests/test_companies.py` | NEW | 13 tests covering model helpers and routes |
 
-### Modified files
-| File | Change |
-|------|--------|
-| `app/app.py` | Import compensation module; wire into `job_detail` and `jobs` routes; add `compensation_methodology` route; add to sitemap |
-| `app/views/templates/job_detail.html` | Confidence badge (green/amber/gray) + source provenance label + "How we estimate this" link in salary section |
-| `app/views/templates/components/job_card.html` | Small confidence percentage indicator next to estimated salary badge |
+---
 
 ## Routes Added
 
-| Path | Function | Method | Description |
-|------|----------|--------|-------------|
-| `/compensation/methodology` | `compensation_methodology` | GET | Static page explaining salary estimation methodology |
+| Method | Path | Function | Description |
+|--------|------|----------|-------------|
+| GET | `/companies` | `companies()` | Company discovery hub (rewritten from static mock) |
+| GET | `/companies/<slug>` | `company_detail_page()` | Individual company profile |
+
+---
 
 ## Test Results
 
 ```
-22 passed, 0 failed
+tests/test_companies.py: 13 passed, 0 failed
 ```
 
-### Test coverage
-- `TestConfidenceScoring` (11 tests): employer salary, city/country/fallback reference levels, crowd data, no data, combined signals, clamping, methodology URL
-- `TestSourceLabel` (5 tests): all source types + unknown fallback
-- `TestConfidenceColor` (3 tests): green/amber/gray thresholds
-- `TestMethodologyRoute` (3 tests): 200 status, title present, confidence explanation present
+All 13 company tests pass:
+- `test_company_list_returns_list` — model shape validation
+- `test_company_list_with_search` — ILIKE search filter
+- `test_company_list_handles_db_error` — graceful fallback
+- `test_company_count_returns_int` — count query
+- `test_company_count_handles_db_error` — graceful fallback
+- `test_company_detail_returns_dict` — detail shape
+- `test_company_detail_returns_none_for_empty` — not found case
+- `test_company_detail_empty_name` — guard clause
+- `test_companies_route_200` — listing page renders
+- `test_companies_route_with_search` — search param works
+- `test_companies_route_with_data` — renders company cards
+- `test_company_detail_route_404_unknown` — unknown slug returns 404
+- `test_company_detail_route_200` — full mock renders profile
 
-## Known Issues
-
-- `ref_match_level` is heuristically set to `"city"` when salary reference data exists; the existing `get_salary_for_location` function doesn't expose which tier matched (city vs region vs country). A future enhancement could have `get_salary_for_location` return the match tier for more precise confidence scoring.
-- `has_crowd_data` is always `False` in the current wiring — querying `salary_submissions` per job would add latency. This can be enabled later with a batch query approach.
-- Pre-existing test `test_http_health_ok` fails independently of this branch (DB health check issue). Pre-existing `test_http_security_headers_on_homepage` hangs due to connection pool timeout — unrelated to compensation changes.
-
-## Merge Notes
-
-- **Conflict zones per AGENT_CONTRACT.md**: `job_card.html` is the primary conflict zone (both compensation and candidate-decision-tools branches add to card actions area). The compensation badge is added next to the salary badge in the meta badges area, while the candidate branch adds a compare button in the actions area — these should merge cleanly.
-- **app.py**: The compensation route block is inserted before the salary tools section. Import is added at the top-level imports. Both are in distinct sections from other branches.
-- **No new dependencies, no new tables, no migrations.**
-- **Template changes**: All new templates extend `base.html`. No changes to `base.html` itself.
+Pre-existing test `test_http_health_ok` fails due to DB connectivity (not related to this branch).
 
 ---
 
-*Completed: April 2026 | Sprint: Three-Worktree Overnight*
+## Known Issues
+
+1. **Slug collision risk**: If two different companies slugify to the same value, only the first match is returned. This is unlikely with real company names but possible for very short names. A future fix could add a slug column or use a deterministic tiebreaker.
+
+2. **Performance at scale**: `company_name_by_slug()` scans all companies with >= 2 jobs and compares slugs in Python. For large datasets (10k+ companies), consider adding a materialized view or caching slug→name mappings.
+
+3. **No company logos/descriptions**: Cards show the first letter of the company name as a placeholder. Logos would require a separate data source.
+
+---
+
+## Merge Notes
+
+- This branch touches `app/app.py` (adds routes in the companies section + sitemap update + minor edit in job_detail render call). Check for conflicts with `feature/compensation-intelligence` and `feature/candidate-decision-tools` per AGENT_CONTRACT.md.
+- The `job_detail.html` edit is minimal (only the company name `<p>` tag, not the salary section), so conflicts with compensation branch should be low.
+- `app/models/jobs.py` only has additions (new static methods at the end of the class), no modifications to existing methods.
+- `components/job_card.html` was NOT touched per contract rules.

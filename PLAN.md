@@ -1,75 +1,97 @@
-# Compensation Intelligence — Architecture Plan
+# Plan: Company Intelligence Pages
 
-**Branch:** `feature/compensation-intelligence`
-**URL prefix:** `/compensation/`
-**Route function prefix:** `compensation_*`
+**Branch:** `feature/company-intelligence-pages`
+**Scope:** Turn static mock `/companies` into DB-driven company discovery hub + individual company profiles.
+**Constraint:** Read-only queries on existing `jobs` table. No new tables, no new Python deps.
 
 ---
-
-## Goal
-
-Upgrade flat salary numbers into transparent, trust-building compensation views.
-No new tables, no new dependencies. Read-only queries on existing schema.
-
-## Data Sources (read-only)
-
-| Table | Fields used |
-|-------|-------------|
-| `jobs` | `salary` (text range), `job_salary` (int), `location`, `city`, `country` |
-| `salary` | `median_salary`, `currency`, `city`, `region`, `country` |
-| `salary_submissions` | `job_title`, `company`, `location`, `base_salary`, `currency` |
 
 ## Architecture
 
-### Compensation confidence scoring
+### Data Source
+All company data is aggregated from the `jobs` table via `GROUP BY company_name`.
+Companies must have **>= 2 jobs** to appear (filters out noise/one-off postings).
 
-Pure Python function: `compute_compensation_confidence(job_row, salary_ref_result, has_crowd_data) -> CompensationDisplay`
-
-Scoring (0-100):
-- Employer salary text present: **+40**
-- Estimated from city-level reference: **+30**, country-level: **+15**, global/fallback: **+5**
-- Crowd-sourced match exists: **+15**
-- Location match specificity bonus: **+10** (city match) / **+5** (region)
-
-Source label: `"employer"` > `"estimated"` > `"crowd"` > `"unavailable"`
-
-### Integration
-
-- `job_detail` route: call engine after salary enrichment, pass `CompensationDisplay` to template
-- `jobs` listing route: compute confidence per job (using cached salary data), attach to item payload
-- Templates consume `comp_display` dict for badge color + source label
-
-## Files
-
-### New files
-| File | Purpose |
-|------|---------|
-| `app/models/compensation.py` | Confidence scoring engine |
-| `app/views/templates/compensation_methodology.html` | Static methodology page |
-| `tests/test_compensation.py` | Unit + route tests |
-| `PLAN.md` | This file |
-| `HANDOFF.md` | Post-implementation handoff |
-
-### Modified files
-| File | Change |
-|------|--------|
-| `app/app.py` | Import engine, wire into `job_detail` and `jobs`, add `/compensation/methodology` route, add to sitemap |
-| `app/views/templates/job_detail.html` | Confidence badge + source label in salary section |
-| `app/views/templates/components/job_card.html` | Small confidence indicator next to estimated salary |
-
-### Untouched (per contract)
-- `app/static/js/main.js`
-- `app/views/templates/base.html`
-- `app/views/templates/companies.html`
-- `app/models/jobs.py` (read-only)
-- `app/models/salary.py` (read-only)
-
-## Route
-
-| Path | Function | Method |
-|------|----------|--------|
-| `/compensation/methodology` | `compensation_methodology` | GET |
+### Type Shape (from AGENT_CONTRACT.md)
+```python
+CompanyAggregate = {
+    "slug": str,                  # url-safe slugified company_name
+    "name": str,                  # original company_name
+    "job_count": int,
+    "locations": list[str],       # distinct country values
+    "titles_normalized": list[str],
+    "has_salary_data": bool,
+    "latest_posting_date": str,   # ISO date string or ""
+    "salary_range_display": str | None,
+}
+```
 
 ---
 
-*Created: April 2026 | Sprint: Three-Worktree Overnight*
+## Files Changed
+
+| File | Action | Description |
+|------|--------|-------------|
+| `app/models/jobs.py` | EDIT | Add `company_list()`, `company_detail()`, `company_count()` static methods |
+| `app/app.py` | EDIT | Rewrite `companies()` route, add `company_detail_page()` route, update `job_detail()` to pass `company_slug`, add companies to sitemap |
+| `app/views/templates/companies.html` | REWRITE | DB-driven company listing with search, pagination, cards |
+| `app/views/templates/company_detail.html` | NEW | Individual company profile page |
+| `app/views/templates/job_detail.html` | EDIT | Make company name a link to `/companies/<slug>` |
+| `tests/test_companies.py` | NEW | Unit + route tests for company features |
+
+### Files NOT Touched
+- `app/static/js/main.js`
+- `app/views/templates/components/job_card.html`
+- `app/views/templates/base.html`
+- `requirements.txt`
+- Any salary section in `job_detail.html`
+
+---
+
+## Routes
+
+| Method | Path | Function | Description |
+|--------|------|----------|-------------|
+| GET | `/companies` | `companies()` | Company listing with search + pagination |
+| GET | `/companies/<slug>` | `company_detail_page()` | Individual company profile |
+
+---
+
+## SQL Queries
+
+### company_list
+```sql
+SELECT company_name, COUNT(*) as job_count,
+       array_agg(DISTINCT country) as countries,
+       MAX(date) as latest_date,
+       COUNT(CASE WHEN salary IS NOT NULL AND salary != '' THEN 1 END) as salary_count
+FROM jobs
+GROUP BY company_name
+HAVING COUNT(*) >= 2
+ORDER BY COUNT(*) DESC
+LIMIT %s OFFSET %s
+```
+
+### company_count
+```sql
+SELECT COUNT(*) FROM (
+    SELECT company_name FROM jobs GROUP BY company_name HAVING COUNT(*) >= 2
+) sub
+```
+
+### company_detail
+Aggregated stats for one company: job_count, locations, title distribution, salary %, latest date.
+Plus job listing via existing `Job.search`-like pattern filtered by `company_name`.
+
+---
+
+## Implementation Order
+1. `app/models/jobs.py` — aggregation helpers
+2. `app/app.py` — routes
+3. `app/views/templates/companies.html` — listing page
+4. `app/views/templates/company_detail.html` — detail page
+5. `app/views/templates/job_detail.html` — company link
+6. `app/app.py` — sitemap entries
+7. `tests/test_companies.py` — tests
+8. Run pytest, fix issues
+9. HANDOFF.md + commit

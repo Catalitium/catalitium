@@ -38,7 +38,13 @@
         </div>
         <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-snug">{{ job.title }}</h1>
         {% if job.company %}
-        <p class="mt-1 text-lg text-slate-600 dark:text-slate-400 font-medium">{{ job.company }}</p>
+        <p class="mt-1 text-lg text-slate-600 dark:text-slate-400 font-medium">
+          {% if company_slug %}
+          <a href="{{ url_for('company_detail_page', slug=company_slug) }}" class="hover:text-brand transition-colors hover:underline">{{ job.company }}</a>
+          {% else %}
+          {{ job.company }}
+          {% endif %}
+        </p>
         {% endif %}
 
         <!-- Meta badges -->
