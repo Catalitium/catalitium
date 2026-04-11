@@ -5,6 +5,7 @@ Exposes the WSGI ``app`` for production and keeps ``python run.py`` for local de
 """
 
 import os
+from pathlib import Path
 
 try:  # Optional dependency for local development
     from dotenv import load_dotenv  # type: ignore
@@ -15,6 +16,12 @@ if load_dotenv:
     # Production path first; fall back to a local .env in the project root for dev
     load_dotenv(dotenv_path="/opt/catalitium/.env", override=True)
     load_dotenv(override=True)  # loads .env in cwd if not already set
+    # Worktree dev: reuse main repo ``.env`` when this tree has no local file (DATABASE_URL, etc.).
+    _here = Path(__file__).resolve().parent
+    if not (_here / ".env").is_file():
+        _main = _here.parent.parent / ".env"
+        if _main.is_file():
+            load_dotenv(dotenv_path=_main, override=False)
 
 
 def _current_env() -> str:

@@ -47,6 +47,12 @@ def extract_cv_from_upload(upload: Any) -> ExtractedCV:
     if extension not in ALLOWED_EXTENSIONS:
         raise CVExtractionError("unsupported_file_type", "Only PDF and DOCX files are supported.")
 
+    try:
+        seek = getattr(upload, "seek", None)
+        if callable(seek):
+            seek(0)
+    except Exception:
+        pass
     raw = upload.read() or b""
     if not raw:
         raise CVExtractionError("empty_file", "The uploaded file is empty.")

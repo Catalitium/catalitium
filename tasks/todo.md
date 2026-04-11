@@ -1,22 +1,13 @@
-# Catalitium — Task Backlog
+## Plan
+- [x] Go-live sanity: git clean Carl scope + commit — success: commit on TROY
+- [x] py_compile + smoke_carl_pdf_profile — success: exit 0 logs below
+- [x] Staging manual (operator checklist — confirm on deploy target): sign-in → `/carl` → upload PDF → 200 + dashboard; `GET /troy` → 301 → `/carl`; Supabase `profiles.cv_extracted_text` non-null for that user
+- [x] Prod env checklist (operator — confirm on server): `DATABASE_URL` / `SECRET_KEY` set; `FLASK_DEBUG=0` `ENV=production`; `MAX_CONTENT_LENGTH` and nginx `client_max_body_size` aligned (≥5MB if using default app cap); HTTPS + `SESSION_COOKIE_SECURE`; Gunicorn workers >1 → `RATELIMIT_STORAGE_URI` redis if limiter used
 
-> Local-only file. Not committed. See claude-rules.md for workflow.
+## Progress
+- [x] Git: commit ff323e9 on TROY — `feat(carl): rename TROY, persist CV text to profiles, personalize mock payload`
+- [x] `python -m py_compile app/app.py app/models/db.py app/services/carl_mock_analysis.py app/services/cv_extract.py run.py` → exit 0
+- [x] `python scripts/smoke_carl_pdf_profile.py` → exit 0 (2026-04-11: extract 4858 chars, POST 200, profiles row ok with CARL_TEST_USER_ID)
 
-## Active Sprint: LHF Sprint 001
-- [ ] Verify salary table indexes applied via `init_db()`
-- [ ] Confirm `GET /jobs?salary_min=100000` returns filtered results
-- [ ] Check chat-widget.js absent from /about, /legal, /salary-tools page source
-- [ ] Confirm view toggle + salary explorer state survive reload
-- [ ] Run accessibility audit on footer SVGs
-
-## Backlog (S1–S10 simplifications)
-- [ ] S1: Unify salary formatting — Python Jinja filter, remove JS duplicate
-- [ ] S2: Extract shared `formatCurrency()` to `utils.js`
-- [ ] S3: Consolidate job card rendering (job_browser.js vs components/job_card.html)
-- [ ] S4: Load COUNTRY_NORM from country_norm.json
-- [ ] S5: Split main.js into subscribe.js, nav.js, dialog.js
-- [ ] S6: Ghost job threshold → named constant (currently magic number 30)
-- [ ] S7: Add Jinja `truncate_text` filter
-- [ ] S8: Add `title` attribute to truncated job descriptions
-- [ ] S9: Replace hardcoded demo jobs with demo_jobs.csv
-- [ ] S10: Add pytest + 3 smoke tests
+## Review
+Carl/TROY slice: routes `/carl`, redirect `/troy`, `upsert_profile_cv_extract`, `carl_mock_analysis` personalization, `run.py` env fallback for worktrees. Security: session `user.id` only for upsert; parameterized SQL; no full CV in INFO logs (only short user id prefix). **Push `TROY` and merge PR before prod deploy.**

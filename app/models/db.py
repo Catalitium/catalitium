@@ -20,6 +20,7 @@ import logging
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from typing import Dict, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
@@ -209,9 +210,433 @@ def _is_unique_violation(exc: Exception) -> bool:
     return False
 
 
-def _now_iso():
-    """Get current timestamp in ISO format."""
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+def insert_subscriber(
+    email: str,
+    search_title: str = "",
+    search_country: str = "",
+    search_salary_band: str = "",
+) -> str:
+    """Insert a subscriber record; return 'ok', 'duplicate', or 'error'."""
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO subscribers(email, created_at, search_title, search_country, search_salary_band)
+                VALUES(%s, %s, %s, %s, %s)
+                """,
+                (email, _now_iso(), search_title or None, search_country or None, search_salary_band or None),
+            )
+        return "ok"
+    except Exception as exc:
+        if _is_unique_violation(exc):
+            return "duplicate"
+        logger.warning("insert_subscriber failed: %s", exc, exc_info=True)
+        return "error"
+
+def insert_contact(email: str, name_company: str, message: str) -> str:
+    """Insert a contact form submission; return 'ok' or 'error'."""
+    db = get_db()
+    email_clean = (email or "").strip()
+    name_clean = (name_company or "").strip()
+    msg_clean = (message or "").strip()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO contact_form(email, name_company, message, created_at)
+                VALUES(%s, %s, %s, %s)
+                """,
+                (email_clean, name_clean, msg_clean, _now_iso()),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_contact failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def upsert_profile_cv_extract(
+    user_id: str,
+    cv_text: str,
+    meta: Optional[Dict[str, Any]] = None,
+    *,
+    email: Optional[str] = None,
+) -> str:
+    """Insert or update ``profiles`` with parsed CV (handles missing profile row). Returns ``ok`` or ``error``."""
+    uid = (user_id or "").strip()
+    if not uid or not SUPABASE_URL:
+        return "error"
+    email_val = (email or "").strip() or None
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO profiles (id, email, cv_extracted_text, cv_meta, cv_extracted_at, updated_at)
+                VALUES (%s::uuid, %s, %s, %s::jsonb, NOW(), NOW())
+                ON CONFLICT (id) DO UPDATE SET
+                    cv_extracted_text = EXCLUDED.cv_extracted_text,
+                    cv_meta = EXCLUDED.cv_meta,
+                    cv_extracted_at = EXCLUDED.cv_extracted_at,
+                    updated_at = NOW()
+                """,
+                (uid, email_val, cv_text, json.dumps(meta or {})),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("upsert_profile_cv_extract failed: %s", exc, exc_info=True)
+        return "error"
+
+
+JOB_POSTING_ACTIVE_DAYS = 10  # listings expire after this many days
+
+
+def insert_salary_submission(
+    *,
+    job_title: str,
+    company: str = "",
+    location: str,
+    seniority: str,
+    base_salary: int,
+    currency: str,
+    years_exp: Optional[int] = None,
+    email: Optional[str] = None,
+) -> str:
+    """Insert a crowd-sourced salary data point; return 'ok' or 'error'."""
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO salary_submissions(
+                    job_title, company, location, seniority,
+                    base_salary, currency, years_exp, email, created_at
+                )
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    (job_title or "").strip(),
+                    (company or "").strip() or None,
+                    (location or "").strip(),
+                    (seniority or "").strip(),
+                    int(base_salary),
+                    (currency or "CHF").strip().upper(),
+                    years_exp,
+                    (email or "").strip() or None,
+                    _now_iso(),
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_salary_submission failed: %s", exc, exc_info=True)
+        return "error"
+
+def insert_job_posting(
+    *,
+    contact_email: str,
+    job_title: str,
+    company: str,
+    description: str,
+    salary_range: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> str:
+    """Insert a recruiter job posting; return 'ok' or 'error'.
+
+    Listings are active for JOB_POSTING_ACTIVE_DAYS days from creation.
+    """
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    expires_at = now + timedelta(days=JOB_POSTING_ACTIVE_DAYS)
+    db = get_db()
+    try:
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO job_posting(
+                    contact_email, job_title, company, description,
+                    salary_range, user_id, expires_at, created_at
+                )
+                VALUES(%s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    (contact_email or "").strip(),
+                    (job_title or "").strip(),
+                    (company or "").strip(),
+                    (description or "").strip(),
+                    (salary_range or "").strip() or None,
+                    user_id or None,
+                    expires_at,
+                    now,
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_job_posting failed: %s", exc, exc_info=True)
+        return "error"
+
+
+# ------------------------- Stripe Orders ------------------------------------
+
+def insert_stripe_order(
+    *,
+    stripe_session_id: str,
+    user_id: str,
+    user_email: str,
+    price_id: str,
+    plan_key: str,
+    plan_name: str,
+) -> str:
+    """Insert a pending stripe order; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO stripe_orders
+                    (stripe_session_id, user_id, user_email, price_id, plan_key, plan_name, status, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, 'pending', NOW())
+                ON CONFLICT (stripe_session_id) DO NOTHING
+                """,
+                (stripe_session_id, user_id, user_email, price_id, plan_key, plan_name),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_stripe_order failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def mark_stripe_order_paid(
+    *,
+    stripe_session_id: str,
+    stripe_customer_id: Optional[str] = None,
+    stripe_subscription_id: Optional[str] = None,
+) -> str:
+    """Mark a stripe order as paid; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE stripe_orders
+                SET status = 'paid',
+                    stripe_customer_id = COALESCE(%s, stripe_customer_id),
+                    stripe_subscription_id = COALESCE(%s, stripe_subscription_id),
+                    paid_at = NOW()
+                WHERE stripe_session_id = %s
+                """,
+                (stripe_customer_id, stripe_subscription_id, stripe_session_id),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("mark_stripe_order_paid failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def mark_stripe_order_job_submitted(*, stripe_session_id: str) -> str:
+    """Mark a stripe order as having a job submitted; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE stripe_orders SET job_submitted_at = NOW() WHERE stripe_session_id = %s",
+                (stripe_session_id,),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("mark_stripe_order_job_submitted failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def get_stripe_order(stripe_session_id: str) -> Optional[Dict]:
+    """Return stripe order dict or None."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT stripe_session_id, user_id, user_email, price_id,
+                       plan_key, plan_name, status, paid_at, job_submitted_at
+                FROM stripe_orders WHERE stripe_session_id = %s
+                """,
+                (stripe_session_id,),
+            )
+            row = cur.fetchone()
+            if row:
+                return {
+                    "stripe_session_id": row[0],
+                    "user_id": row[1],
+                    "user_email": row[2],
+                    "price_id": row[3],
+                    "plan_key": row[4],
+                    "plan_name": row[5],
+                    "status": row[6],
+                    "paid_at": row[7],
+                    "job_submitted_at": row[8],
+                }
+    except Exception as exc:
+        logger.warning("get_stripe_order failed: %s", exc, exc_info=True)
+    return None
+
+
+# ------------------------- B2C User Subscriptions ---------------------------
+
+def upsert_user_subscription(
+    *,
+    user_id: str,
+    user_email: str,
+    product_line: str,
+    tier: str,
+    stripe_customer_id: Optional[str] = None,
+    stripe_subscription_id: Optional[str] = None,
+    stripe_price_id: Optional[str] = None,
+    status: str = "active",
+    current_period_end: Optional[int] = None,
+    cancel_at_period_end: bool = False,
+) -> str:
+    """Upsert a B2C subscription row; return 'ok' or 'error'."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO user_subscriptions
+                    (user_id, user_email, product_line, tier,
+                     stripe_customer_id, stripe_subscription_id, stripe_price_id,
+                     status, current_period_end, cancel_at_period_end,
+                     created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                        to_timestamp(%s), %s, NOW(), NOW())
+                ON CONFLICT (user_id, product_line) DO UPDATE SET
+                    tier                   = EXCLUDED.tier,
+                    stripe_customer_id     = COALESCE(EXCLUDED.stripe_customer_id,     user_subscriptions.stripe_customer_id),
+                    stripe_subscription_id = COALESCE(EXCLUDED.stripe_subscription_id, user_subscriptions.stripe_subscription_id),
+                    stripe_price_id        = COALESCE(EXCLUDED.stripe_price_id,        user_subscriptions.stripe_price_id),
+                    status                 = EXCLUDED.status,
+                    current_period_end     = COALESCE(EXCLUDED.current_period_end,     user_subscriptions.current_period_end),
+                    cancel_at_period_end   = EXCLUDED.cancel_at_period_end,
+                    updated_at             = NOW()
+                """,
+                (
+                    user_id, user_email, product_line, tier,
+                    stripe_customer_id, stripe_subscription_id, stripe_price_id,
+                    status, current_period_end, cancel_at_period_end,
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("upsert_user_subscription failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def get_user_subscriptions(user_id: str) -> Dict[str, Dict]:
+    """Return {product_line: subscription_dict} for a user (all statuses)."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT user_id, user_email, product_line, tier,
+                       stripe_customer_id, stripe_subscription_id, stripe_price_id,
+                       status, current_period_end, cancel_at_period_end
+                FROM user_subscriptions WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+            result: Dict[str, Dict] = {}
+            for row in cur.fetchall():
+                pl = row[2]
+                result[pl] = {
+                    "user_id": row[0],
+                    "user_email": row[1],
+                    "product_line": pl,
+                    "tier": row[3],
+                    "stripe_customer_id": row[4],
+                    "stripe_subscription_id": row[5],
+                    "stripe_price_id": row[6],
+                    "status": row[7],
+                    "current_period_end": row[8],
+                    "cancel_at_period_end": bool(row[9]),
+                }
+            return result
+    except Exception as exc:
+        logger.warning("get_user_subscriptions failed: %s", exc, exc_info=True)
+        return {}
+
+
+def get_subscription_by_stripe_id(stripe_subscription_id: str) -> Optional[Dict]:
+    """Return subscription dict by stripe_subscription_id, or None."""
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                SELECT user_id, user_email, product_line, tier,
+                       stripe_customer_id, stripe_subscription_id, stripe_price_id,
+                       status, current_period_end, cancel_at_period_end
+                FROM user_subscriptions WHERE stripe_subscription_id = %s
+                """,
+                (stripe_subscription_id,),
+            )
+            row = cur.fetchone()
+            if row:
+                return {
+                    "user_id": row[0],
+                    "user_email": row[1],
+                    "product_line": row[2],
+                    "tier": row[3],
+                    "stripe_customer_id": row[4],
+                    "stripe_subscription_id": row[5],
+                    "stripe_price_id": row[6],
+                    "status": row[7],
+                    "current_period_end": row[8],
+                    "cancel_at_period_end": bool(row[9]),
+                }
+    except Exception as exc:
+        logger.warning("get_subscription_by_stripe_id failed: %s", exc, exc_info=True)
+    return None
+
+
+# ------------------------- Description Parsing ------------------------------
+
+# Small multilingual stopword set to keep summarizer lightweight
+_STOPWORDS = {
+    # EN
+    "a","about","above","after","again","against","all","am","an","and","any","are","as","at",
+    "be","because","been","before","being","below","between","both","but","by","can","could",
+    "did","do","does","doing","down","during","each","few","for","from","further","had","has",
+    "have","having","he","her","here","hers","herself","him","himself","his","how","i","if","in",
+    "into","is","it","its","itself","me","more","most","my","myself","no","nor","not","of","off",
+    "on","once","only","or","other","our","ours","ourselves","out","over","own","same","she","should",
+    "so","some","such","than","that","the","their","theirs","them","themselves","then","there","these",
+    "they","this","those","through","to","too","under","until","up","very","was","we","were","what",
+    "when","where","which","while","who","whom","why","with","you","your","yours","yourself","yourselves",
+    # ES/FR minimal
+    "de","la","el","en","y","los","las","que","es","un","una","con","por","para","le","et","Ã ",
+    "les","des","est","pour","dans"
+}
+
+def summarize_two_sentences(text: str) -> str:
+    """Extract two most representative sentences from text (pure stdlib)."""
+    import re
+    from collections import Counter
+    if not text:
+        return ""
+    s = text.strip()
+    sentences = re.split(r"(?<=[.!?])\s+", s)
+    if len(sentences) < 2:
+        return s
+    words = re.findall(r"\b\w+\b", s.lower())
+    freqs = Counter(w for w in words if w not in _STOPWORDS)
+    scores = {}
+    for sent in sentences:
+        tokens = re.findall(r"\b\w+\b", sent.lower())
+        if not tokens:
+            continue
+        score = sum(freqs.get(w, 0) for w in tokens if w not in _STOPWORDS) / max(len(tokens), 1)
+        scores[sent] = score
+    top = sorted(scores.items(), key=lambda x: (-x[1], sentences.index(x[0])))[:2]
+    final = sorted([t[0] for t in top], key=lambda x: sentences.index(x))
+    return " ".join(final)
 
 
 # ----------------------------- Schema Init -----------------------------------
