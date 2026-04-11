@@ -14,6 +14,11 @@ try:
 
     _repo_root = Path(__file__).resolve().parents[1]
     load_dotenv(_repo_root / ".env", override=False)
+    # Worktree dev: reuse main repo .env when this tree has no local file
+    if not (_repo_root / ".env").is_file():
+        _main_env = _repo_root.parent.parent / ".env"
+        if _main_env.is_file():
+            load_dotenv(dotenv_path=_main_env, override=False)
 except ImportError:
     pass
 

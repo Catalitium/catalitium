@@ -4,22 +4,12 @@
 {% block meta %}
 {% set _jobs_page = pagination.page if pagination and pagination.page > 1 else none %}
 <meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
-{% if jobs_salary_min is defined and jobs_salary_min is not none %}
-<link rel="canonical" href="{{ url_for('jobs', title=title_q or none, country=country_q or none, salary_min=jobs_salary_min, page=_jobs_page, _external=True) }}">
-{% else %}
 <link rel="canonical" href="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
-{% endif %}
 <!-- Open Graph tags -->
 <meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
 <meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 <meta property="og:type" content="website">
-{% if jobs_salary_min is defined and jobs_salary_min is not none %}
-<meta property="og:url" content="{{ url_for('jobs', title=title_q or none, country=country_q or none, salary_min=jobs_salary_min, page=_jobs_page, _external=True) }}">
-{% else %}
 <meta property="og:url" content="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
-{% endif %}
-<!-- Twitter Card tags -->
-<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}{% else %}Tech Jobs & Salary Insights{% endif %}">
 <meta name="twitter:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 {% if pagination %}
@@ -718,7 +708,7 @@
             "addressLocality": {{ (j.location or '')|tojson }}
           }
         }{% if j.estimated_salary_range_numeric and j.median_salary_currency %},
-        "estimatedSalary": {
+        "baseSalary": {
           "@type": "MonetaryAmount",
           "currency": {{ j.median_salary_currency|tojson }},
           "value": {

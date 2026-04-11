@@ -122,7 +122,7 @@ def get_salary_for_location(location: str):
             if row and row[0] is not None:
                 return float(row[0]), (row[1] or None)
     except Exception as exc:
-        logger.warning("get_salary_for_location(%r) failed: %s", loc, exc)
+        logger.debug("get_salary_for_location(%r) failed: %s", loc, exc)
         return None
     return None
 

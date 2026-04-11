@@ -900,7 +900,7 @@ def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str
         country_q = normalize_country(raw_country or "")
         return title_q, country_q, sal_floor, sal_ceiling
     except Exception as e:
-        logger.warning(f"Search parameter parsing failed: {e}")
+        logger.debug("Search parameter parsing failed: %s", e)
         return "", "", None, None
 
 
@@ -3247,7 +3247,7 @@ def create_app() -> Flask:
         }
         if deep:
             payload["deep"] = True
-        logger.info("health ok request_id=%s deep=%s", rid, deep)
+        logger.debug("health ok request_id=%s deep=%s", rid, deep)
         return _api_success(payload)
 
     @app.get("/legal")
@@ -3264,7 +3264,8 @@ def create_app() -> Flask:
                 "Allow: /",
                 "Disallow: /api/",
                 "Disallow: /health",
-                "Disallow: /events/",
+                "Disallow: /profile",
+                "Disallow: /subscription/",
                 "",
                 "User-agent: AdsBot-Google",
                 "Allow: /",
@@ -3304,6 +3305,12 @@ def create_app() -> Flask:
         for _r in REPORTS:
             _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85", changefreq="monthly")
         _add(url_for("recruiter_salary_board", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_tool", _external=True), priority="0.85", changefreq="weekly")
+        _add(url_for("salary_by_title", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("salary_top_companies", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("hire", _external=True), priority="0.8", changefreq="monthly")
+        _add(url_for("post_a_job", _external=True), priority="0.75", changefreq="monthly")
+        _add(url_for("docs_api", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
 
         filter_targets = [
@@ -3408,17 +3415,16 @@ def create_app() -> Flask:
         salary_min = salary_max = None
         if median is not None:
             try:
-                from .models import db as _db_helpers
                 title_lc = title.lower()
                 uplift = 1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else (
                     1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else 1.0)
-                base_rng = _db_helpers.salary_range_around(float(median), pct=0.2)
+                base_rng = salary_range_around(float(median), pct=0.2)
                 if base_rng:
                     base_low, base_high, base_low_s, base_high_s = base_rng
                     if uplift > 1.0:
                         amt = float(median) * (uplift - 1.0)
-                        low_s = _db_helpers._compact_salary_number(base_low + amt)
-                        high_s = _db_helpers._compact_salary_number(base_high + amt)
+                        low_s = _compact_salary_number(base_low + amt)
+                        high_s = _compact_salary_number(base_high + amt)
                         estimated_display = f"{low_s}\u2013{high_s}"
                         salary_min, salary_max = int(base_low + amt), int(base_high + amt)
                     else:
@@ -3744,7 +3750,7 @@ def create_app() -> Flask:
                     email=str(user.get("email") or "").strip() or None,
                 )
                 if saved == "ok":
-                    logger.info("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
+                    logger.debug("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
                     profile_sync = {"status": "saved", "message": None, "saved_at": saved_at_iso}
                 else:
                     logger.warning("Carl: profile CV not persisted (status=%s)", saved)

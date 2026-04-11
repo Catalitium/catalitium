@@ -366,7 +366,8 @@ class Job:
                 cols = [d[0] for d in cur.description]
                 row = cur.fetchone()
                 return dict(zip(cols, row)) if row else None
-        except Exception:
+        except Exception as exc:
+            logger.warning("Job.get_by_id(%s) failed: %s", pk, exc)
             return None
 
     @staticmethod

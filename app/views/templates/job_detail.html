@@ -272,12 +272,14 @@
       "@type": "PostalAddress",
       "addressLocality": "{{ job.location|e }}"
     }
-  }{% if job.link %},
-  "applicationContact": {
-    "@type": "ContactPoint",
-    "url": "{{ job.link|e }}"
-  }{% endif %}{% if job.salary_min and job.salary_max %},
-  "estimatedSalary": {
+  }{% if 'remote' in (job.location or '')|lower %},
+  "jobLocationType": "TELECOMMUTE",
+  "applicantLocationRequirements": {
+    "@type": "Country",
+    "name": "Worldwide"
+  }{% endif %}{% if job.link %},
+  "url": "{{ job.link|e }}"{% endif %}{% if job.salary_min and job.salary_max %},
+  "baseSalary": {
     "@type": "MonetaryAmount",
     "currency": "{{ job.median_salary_currency }}",
     "value": {
