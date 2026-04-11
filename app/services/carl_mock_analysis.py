@@ -342,6 +342,10 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
         tail = ""
         if missing_keywords:
             tail = f" Start with missing terms: {', '.join(missing_keywords[:3])}."
+        elif top_skill_names:
+            names = ", ".join(str(n) for n in top_skill_names[:3] if n)
+            if names:
+                tail = f" Strongest ranked signals on this pass: {names}."
         elif headline:
             tail = f" {headline}"
         base = "I am Carl on this CV snapshot - ask about ATS, gaps, or a rewrite."
