@@ -27,7 +27,7 @@ AUTOCOMPLETE_CACHE_MAX: int = 400
 SALARY_INSIGHTS_CACHE_TTL: int = 120
 SALARY_INSIGHTS_CACHE_MAX: int = 250
 
-SITEMAP_CACHE_TTL: int = 86_400     # 24 hours
+SITEMAP_CACHE_TTL: int = 3600       # sitemap.xml in-process cache + Cache-Control (seconds)
 
 # ---------------------------------------------------------------------------
 # Database pool
