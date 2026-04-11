@@ -30,6 +30,11 @@ SALARY_INSIGHTS_CACHE_MAX: int = 250
 SITEMAP_CACHE_TTL: int = 3600       # sitemap.xml in-process cache + Cache-Control (seconds)
 
 # ---------------------------------------------------------------------------
+# Carl CV demo (Talk to Carl)
+# ---------------------------------------------------------------------------
+CARL_DEMO_CHAT_TURNS: int = 3       # free mock chat turns per session after each analyze; then API CTA only
+
+# ---------------------------------------------------------------------------
 # Database pool
 # ---------------------------------------------------------------------------
 DB_POOL_MIN: int = 1

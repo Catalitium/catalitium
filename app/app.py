@@ -54,6 +54,7 @@ from .config import (
     SALARY_INSIGHTS_CACHE_TTL,
     SALARY_INSIGHTS_CACHE_MAX,
     SITEMAP_CACHE_TTL,
+    CARL_DEMO_CHAT_TURNS,
 )
 from .mailer import (
     send_subscribe_welcome,
@@ -3730,6 +3731,7 @@ def create_app() -> Flask:
             "fileLabel": str(source.get("filename") or "uploaded_cv"),
             "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:5] if s.get("skill")],
         }
+        session["carl_chat_turns"] = 0
         session.modified = True
         return _api_success({"analysis": analysis, "source": source})
 
@@ -3745,6 +3747,25 @@ def create_app() -> Flask:
         if not message:
             return _api_error("invalid_message", "Please write a message for Carl chat.", 400)
 
+        turns_done = int(session.get("carl_chat_turns") or 0)
+        if turns_done >= CARL_DEMO_CHAT_TURNS:
+            cta = {
+                "primary": {"label": "API documentation", "href": url_for("docs_api")},
+                "secondary": {"label": "Developer hub", "href": url_for("developers")},
+                "tertiary": {"label": "Pricing", "href": url_for("pricing")},
+            }
+            return _api_success(
+                {
+                    "reply": (
+                        "You have used the free Carl demo chat for this CV. "
+                        "For programmatic job search, salary lookups, and higher limits, use the Catalitium API."
+                    ),
+                    "chat_turns_used": turns_done,
+                    "chat_limit_reached": True,
+                    "cta": cta,
+                }
+            )
+
         session_ctx = session.get("carl_chat_context") or {}
         chat_context = payload.get("chat_context") or {}
         merged_context = {
@@ -3759,7 +3780,27 @@ def create_app() -> Flask:
             "topSkillNames": chat_context.get("topSkillNames") or session_ctx.get("topSkillNames") or [],
         }
         reply = generate_chat_reply(message, merged_context)
-        return _api_success({"reply": reply})
+        turns_done = int(session.get("carl_chat_turns") or 0)
+        turns_next = turns_done + 1
+        session["carl_chat_turns"] = turns_next
+        session.modified = True
+        limit = CARL_DEMO_CHAT_TURNS
+        at_limit = turns_next >= limit
+        cta = None
+        if at_limit:
+            cta = {
+                "primary": {"label": "API documentation", "href": url_for("docs_api")},
+                "secondary": {"label": "Developer hub", "href": url_for("developers")},
+                "tertiary": {"label": "Pricing", "href": url_for("pricing")},
+            }
+        return _api_success(
+            {
+                "reply": reply,
+                "chat_turns_used": turns_next,
+                "chat_limit_reached": at_limit,
+                "cta": cta,
+            }
+        )
 
     @app.get("/market-research/<slug>")
     def market_research_report(slug):

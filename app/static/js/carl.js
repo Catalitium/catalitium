@@ -255,6 +255,55 @@
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 
+  function resetCarlChatGate() {
+    var cta = document.getElementById("carl-api-cta");
+    if (cta) cta.classList.add("hidden");
+    var actions = document.getElementById("carl-api-cta-actions");
+    if (actions) actions.innerHTML = "";
+    if (chatInput) {
+      chatInput.disabled = false;
+      chatInput.placeholder = "Ask me anything…";
+    }
+    if (chatForm) {
+      var btn = chatForm.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function setCarlChatLocked(locked) {
+    if (chatInput) {
+      chatInput.disabled = !!locked;
+      if (locked) chatInput.placeholder = "Demo chat limit — use the API links below.";
+    }
+    if (chatForm) {
+      var btn = chatForm.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = !!locked;
+    }
+  }
+
+  function applyCarlApiCta(cta) {
+    var wrap = document.getElementById("carl-api-cta");
+    if (!wrap) return;
+    var actions = document.getElementById("carl-api-cta-actions");
+    if (!actions) return;
+    actions.innerHTML = "";
+    if (!cta) {
+      wrap.classList.add("hidden");
+      return;
+    }
+    ["primary", "secondary", "tertiary"].forEach(function (key) {
+      var item = cta[key];
+      if (!item || !item.href) return;
+      var a = document.createElement("a");
+      a.href = item.href;
+      a.textContent = item.label || item.href;
+      a.className =
+        "inline-flex items-center justify-center rounded-full border border-[#FF7A00]/50 bg-[#FF7A00]/15 px-3 py-1.5 text-xs font-semibold text-[#FF7A00] hover:bg-[#FF7A00]/25 transition-colors";
+      actions.appendChild(a);
+    });
+    wrap.classList.remove("hidden");
+  }
+
   var troyTabsBound = false;
 
   function initTabs() {
@@ -288,6 +337,7 @@
 
   function hydrateDashboard(analysis) {
     analysisState = analysis || {};
+    resetCarlChatGate();
     document.body.classList.add("troy-dashboard-active");
     if (uploadHero) uploadHero.classList.add("hidden");
     if (workspace) {
@@ -373,6 +423,7 @@
     chatForm.addEventListener("submit", function (event) {
       event.preventDefault();
       if (!analysisState) return;
+      if (chatInput && chatInput.disabled) return;
       var message = (chatInput && chatInput.value) || "";
       message = message.trim();
       if (!message) return;
@@ -406,8 +457,15 @@
           if (!result.ok || !result.data || result.data.ok === false) {
             throw new Error((result.data && result.data.message) || "Unable to send chat message.");
           }
-          var reply = result.data.data && result.data.data.reply;
+          var inner = (result.data && result.data.data) || {};
+          var reply = inner.reply;
           addChatMessage("assistant", reply || "I can help with ATS, strengths, or rewrite suggestions.");
+          if (inner.chat_limit_reached) {
+            applyCarlApiCta(inner.cta || null);
+            setCarlChatLocked(true);
+          } else {
+            setCarlChatLocked(false);
+          }
         })
         .catch(function () {
           addChatMessage("assistant", "Temporary chat issue. Ask again in a moment.");
