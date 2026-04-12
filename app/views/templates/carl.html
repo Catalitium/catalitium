@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Upload a CV and preview the Carl analysis dashboard demo.">
-<link rel="canonical" href="{{ url_for('carl_dashboard', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.carl_dashboard', _external=True) }}">
 <meta property="og:title" content="Carl CV Dashboard | Catalitium">
 <meta property="og:description" content="UI-first CV analysis demo with terminal feed, analytics cards, and chat.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('carl_dashboard', _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl.carl_dashboard', _external=True) }}">
 {% endblock %}
 
 {% block head_extra %}

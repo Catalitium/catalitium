@@ -126,9 +126,9 @@
       <!-- Center: inline nav from md+; icon-only wordmark md–lg saves space in split panes -->
       <nav class="hidden md:flex md:min-w-0 w-full items-center justify-center gap-0.5 text-sm [&>a]:px-1.5 lg:[&>a]:px-2.5">
         <a href="{{ url_for('jobs') }}" {% if request.endpoint == 'jobs' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'jobs' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Jobs</a>
-        <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
+        <a href="{{ url_for('carl.market_research_index') }}" {% if request.endpoint == 'carl.market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'carl.market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
         <a href="{{ url_for('salary.salary_tool') }}" {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
-        <a href="{{ url_for('carl_dashboard') }}" {% if request.endpoint == 'carl_dashboard' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'carl_dashboard' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Carl</a>
+        <a href="{{ url_for('carl.carl_dashboard') }}" {% if request.endpoint == 'carl.carl_dashboard' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'carl.carl_dashboard' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Carl</a>
         <a href="{{ url_for('payments.pricing') }}" {% if request.endpoint == 'payments.pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'payments.pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
       </nav>
 
@@ -189,7 +189,7 @@
         <a href="{{ url_for('salary.salary_tool') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <span class="font-semibold text-brand">Salaries</span>
         </a>
-        <a href="{{ url_for('market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('carl.market_research_index') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-3 py-3 text-sm hover:border-brand dark:hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           <span>Research</span>
         </a>
@@ -220,9 +220,9 @@
       <ul class="mt-3 space-y-1 text-base text-slate-700 dark:text-slate-200">
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('about') }}">About Us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('jobs') }}">Jobs</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold" href="{{ url_for('market_research_index') }}">Market Research</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold" href="{{ url_for('carl.market_research_index') }}">Market Research</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('salary.salary_tool') }}">Salaries</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('carl_dashboard') }}">Carl CV Dashboard</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('carl.carl_dashboard') }}">Carl CV Dashboard</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand text-brand font-medium" href="{{ url_for('salary.salary_contribute') }}">+ Add Your Salary</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
@@ -344,7 +344,7 @@
         <div class="flex flex-col gap-2">
           <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Explore</p>
           <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Jobs</a>
-          <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+          <a href="{{ url_for('carl.market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
           <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand transition-colors">Salaries</a>
           <a href="{{ url_for('salary.salary_contribute') }}" class="hover:text-brand transition-colors">Add Your Salary</a>
           <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>

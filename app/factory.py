@@ -29,8 +29,6 @@ from .config import (
     PER_PAGE_MAX,
     GUEST_DAILY_LIMIT,
     SITEMAP_CACHE_TTL,
-    CARL_CHAT_MAX_TURNS,
-    CARL_CHAT_MAX_MESSAGE_CHARS,
 )
 
 from .utils import (
@@ -73,7 +71,6 @@ from .models.db import (
     close_db,
     init_db,
     get_db,
-    upsert_profile_cv_extract,
     parse_job_description,
 )
 from .models.identity import (
@@ -133,17 +130,7 @@ import hashlib
 import secrets
 import functools
 from werkzeug.middleware.proxy_fix import ProxyFix
-from .integrations.cv_extract import (
-    CVExtractionError,
-    extract_cv_from_upload,
-    normalize_cv_text,
-)
-from .integrations.carl_mock_analysis import (
-    build_mock_analysis,
-    carl_effective_user_message,
-    generate_chat_reply,
-    is_carl_message_grounded,
-)
+from .market_reports_data import REPORTS
 
 try:
     from flask_limiter import Limiter
@@ -268,17 +255,6 @@ def _normalize_account_type(value: str) -> str:
 
 def _is_hire_eligible(account_type: str, hire_access: bool) -> bool:
     return account_type in _HIRE_ACCOUNT_TYPES and bool(hire_access)
-
-
-def _get_mi_tier(user: Optional[Dict]) -> str:
-    """Return the user's active Market Intelligence tier: 'pro', 'premium', or 'free'."""
-    if not user:
-        return "free"
-    subs = get_user_subscriptions(user.get("id", ""))
-    mi = subs.get("market_intelligence")
-    if mi and mi.get("status") == "active" and mi.get("tier") in ("premium", "pro"):
-        return mi["tier"]
-    return "free"
 
 
 def _clean_hire_data(raw: Dict[str, Any]) -> Dict[str, str]:
@@ -614,207 +590,6 @@ def _get_demo_jobs():
         logger.warning("_get_demo_jobs: could not load %s: %s", _DEMO_JOBS_CSV, exc)
     return jobs
 
-REPORTS = [
-    {
-        "slug": "global-tech-ai-careers-report-2026",
-        "title": "Catalitium Global Tech & AI Careers Report - 2026 Edition",
-        "short_title": "Global Tech & AI Careers Report 2026",
-        "description": (
-            "Data-driven analysis of AI's impact on tech jobs, skills in demand, "
-            "salaries by region (US, Europe, India), and the fastest growing roles for 2025-2026."
-        ),
-        "published": "2025-11-01",
-        "published_display": "November 2025",
-        "pdf_path": "reports/R01- Catalitium Global Tech & AI Careers Report  November 2025 Edition.pdf",
-        "read_time": "12 min read",
-        "keywords": [
-            "global tech and AI jobs report 2026",
-            "AI careers report 2026",
-            "tech skills in demand 2025",
-            "AI job market trends",
-            "2025 tech salaries US Europe India",
-            "remote and hybrid work trends in tech",
-            "fastest growing AI jobs 2025 2026",
-        ],
-    },
-    {
-        "slug": "aaas-tipping-point-saas-economics-2026",
-        "title": "The AaaS Tipping Point: Why AI Agents Are Killing SaaS Economics in 2026",
-        "short_title": "The AaaS Tipping Point Report 2026",
-        "description": (
-            "Whether Agents as a Service can capture 30%+ of enterprise software spend by 2028: "
-            "Gartner, IDC, McKinsey, and workflow-level TCO evidence on agentic AI vs. seat-based SaaS. "
-            "37 sources, April 2026."
-        ),
-        "published": "2026-03-01",
-        "published_display": "March 2026",
-        "pdf_path": "",
-        "read_time": "22 min read",
-        "gated": True,
-        "template": "reports/aaas_tipping_point.html",
-        "keywords": [
-            "AaaS agents as a service 2026",
-            "AI agents vs SaaS economics",
-            "enterprise software spend agentic AI",
-            "Gartner agentic AI enterprise applications",
-            "SaaS TCO vs AI agents",
-            "Automation Anywhere AI service agents",
-            "LangGraph pricing per action",
-            "Fortune 500 AI agents production 2026",
-        ],
-    },
-    {
-        "slug": "ai-skill-premium-index-2026",
-        "title": "The AI Skill Premium Index 2026: Which AI Skills Command the Highest Salary Premiums",
-        "short_title": "AI Skill Premium Index 2026",
-        "description": (
-            "Lightcast, Levels.fyi, Pave, and SignalFire data on AI vs SWE pay: ~28% posting premium, "
-            "43% with 2+ AI skills, LLM and safety specializations, myths vs reality. February 2026."
-        ),
-        "published": "2026-02-15",
-        "published_display": "February 2026",
-        "pdf_path": "",
-        "read_time": "18 min read",
-        "gated": True,
-        "template": "reports/ai_skill_premium_index_2026.html",
-        "keywords": [
-            "AI skill salary premium 2026",
-            "LLM engineer compensation vs ML engineer",
-            "Lightcast AI job postings premium",
-            "Levels.fyi AI engineer salary 2025",
-            "MLOps salary premium",
-            "AI safety alignment salary growth",
-            "tech compensation Big Tech AI vs SWE",
-        ],
-    },
-    {
-        "slug": "european-llm-build-vs-buy-2026",
-        "title": "From Build to Buy: How the LLM Platform Era Is Rewriting Software Economics (Europe)",
-        "short_title": "European LLM Build vs Buy Report 2026",
-        "description": (
-            "Europe enterprise LLM market ~$1.09B, 76% of AI now purchased vs built, EU AI Act compliance costs, "
-            "API pricing tiers, and talent benchmarks. 20+ sources, February 2026."
-        ),
-        "published": "2026-02-01",
-        "published_display": "February 2026",
-        "pdf_path": "",
-        "read_time": "24 min read",
-        "gated": True,
-        "template": "reports/european_llm_build_buy_2026.html",
-        "keywords": [
-            "Europe LLM market 2026",
-            "build vs buy enterprise AI Europe",
-            "EU AI Act compliance cost SME",
-            "Menlo Ventures AI purchased vs built",
-            "European SaaS LLM API economics",
-            "AI engineer salary Europe Switzerland Spain",
-            "LLM API pricing comparison 2025",
-        ],
-    },
-    {
-        "slug": "200k-engineer-ai-reshaping-software-salaries-2026",
-        "title": "The $200K Engineer: How AI Productivity Is Reshaping Software Salaries",
-        "short_title": "The $200K Engineer Report 2026",
-        "description": (
-            "Staff engineers saw 7.52% comp growth while junior hiring collapsed 73%. "
-            "A data-driven investigation into who wins, who loses, and what drives the split "
-            "in software engineering compensation in 2025\u20132026. 69 sources."
-        ),
-        "published": "2026-02-01",
-        "published_display": "February 2026",
-        "pdf_path": "",
-        "read_time": "18 min read",
-        "gated": True,
-        "template": "reports/200k_engineer.html",
-        "keywords": [
-            "software engineer salary 2026",
-            "AI skills salary premium",
-            "staff engineer compensation growth",
-            "junior developer hiring collapse 2025",
-            "AI productivity compensation bifurcation",
-            "Anthropic OpenAI engineer salary",
-            "revenue per employee software companies",
-            "software engineering salary trends 2026",
-        ],
-    },
-    {
-        "slug": "from-saas-to-agents-ai-native-workforce-2026",
-        "title": "From SaaS to Agents: How AI Native Software Is Reshaping the Tech Workforce",
-        "short_title": "From SaaS to Agents Report 2026",
-        "description": (
-            "A data-driven investigation into team economics, revenue per employee, AI-agent adoption, "
-            "and the structural transformation of software work. 74 sources, February 2026."
-        ),
-        "published": "2026-02-01",
-        "published_display": "February 2026",
-        "pdf_path": "",
-        "read_time": "20 min read",
-        "gated": True,
-        "template": "reports/saas_to_agents.html",
-        "keywords": [
-            "AI native software workforce 2026",
-            "revenue per employee AI companies",
-            "SaaS to agents transition",
-            "AI engineer hiring demand 2026",
-            "software developer job market decline",
-            "GitHub Copilot productivity study",
-            "enterprise AI adoption transformation gap",
-            "Klarna AI workforce case study",
-        ],
-    },
-    {
-        "slug": "ai-productivity-paradox-junior-roles-2026",
-        "title": "AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles",
-        "short_title": "AI Productivity Paradox Report 2026",
-        "description": (
-            "Entry-level tech job postings dropped 35% since 2023 while AI engineers earn $206K on average. "
-            "Data-driven analysis of how AI productivity tools are reshaping the tech labor market, "
-            "collapsing junior demand, and creating an unprecedented senior skill premium."
-        ),
-        "published": "2025-12-01",
-        "published_display": "December 2025",
-        "pdf_path": "reports/R02- AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles.pdf",
-        "read_time": "15 min read",
-        "gated": True,
-        "template": "reports/junior_roles.html",
-        "keywords": [
-            "entry level tech jobs 2026",
-            "AI productivity paradox",
-            "junior developer jobs decline",
-            "AI skill salary premium 2025",
-            "tech hiring trends 2026",
-            "github copilot adoption stats",
-            "series A team size decline",
-            "CS degree unemployment 2025",
-        ],
-    },
-    {
-        "slug": "death-of-saas-vibecoding-2026",
-        "title": "The Death of SaaS: How Vibecoding Is Killing a $315 Billion Industry",
-        "short_title": "The Death of SaaS Report 2026",
-        "description": (
-            "A data-driven market report analyzing how AI-assisted development is structurally "
-            "disrupting the $315 billion SaaS industry, with sourced data from a16z, Gartner, "
-            "YC, Retool, Deloitte, and Emergence Capital."
-        ),
-        "published": "2026-02-01",
-        "published_display": "February 2026",
-        "pdf_path": "reports/R03- The Death of SaaS How Vibecoding Is Killing a 315 Billion Industry.pdf",
-        "read_time": "18 min read",
-        "gated": True,
-        "template": "reports/saas_vibecoding.html",
-        "keywords": [
-            "death of saas 2026",
-            "vibecoding saas disruption",
-            "ai coding tools market report",
-            "build vs buy saas 2026",
-            "saas market size 2026",
-            "cursor ai growth",
-            "ai native saas vs traditional saas",
-            "software as labor business model",
-        ],
-    },
-]
 
 
 # Email functions live in app/mailer.py — imported at the top of this file.
@@ -914,6 +689,12 @@ def create_app() -> Flask:
     from .controllers import ALL_BLUEPRINTS
     for _bp in ALL_BLUEPRINTS:
         app.register_blueprint(_bp)
+
+    if limiter is not None:
+        for _ep, _rule in (("carl.carl_analyze", "20 per minute"), ("carl.carl_chat", "40 per minute")):
+            _vf = app.view_functions.get(_ep)
+            if _vf is not None:
+                app.view_functions[_ep] = limiter.limit(_rule)(_vf)
 
     def _exempt_public_jobs(fn):
         """Do not apply default rate limits to public GET /jobs (SEO + search UX)."""
@@ -2743,10 +2524,10 @@ def create_app() -> Flask:
         except Exception as _exc:
             logger.debug("sitemap company entries failed: %s", _exc)
         _add(url_for("about", _external=True), priority="0.8", changefreq="monthly")
-        _add(url_for("resources", _external=True), priority="0.9", changefreq="weekly")
-        _add(url_for("market_research_index", _external=True), priority="0.9", changefreq="weekly")
+        _add(url_for("carl.resources", _external=True), priority="0.9", changefreq="weekly")
+        _add(url_for("carl.market_research_index", _external=True), priority="0.9", changefreq="weekly")
         for _r in REPORTS:
-            _add(url_for("market_research_report", slug=_r["slug"], _external=True), priority="0.85", changefreq="monthly")
+            _add(url_for("carl.market_research_report", slug=_r["slug"], _external=True), priority="0.85", changefreq="monthly")
         _add(url_for("recruiter_salary_board", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("salary.salary_tool", _external=True), priority="0.85", changefreq="weekly")
         _add(url_for("salary.salary_by_title", _external=True), priority="0.7", changefreq="weekly")
@@ -3017,270 +2798,11 @@ def create_app() -> Flask:
 
     # Companies routes → app.routes.companies blueprint
 
-    # ------------------------------------------------------------------
-    # Resources hub: 301 redirect to Market Research
-    # ------------------------------------------------------------------
-    @app.get("/resources")
-    def resources():
-        """Redirect legacy /resources to the unified Market Research hub."""
-        return redirect(url_for("market_research_index"), 301)
-
-    # ------------------------------------------------------------------
-    # Market Research hub + individual report pages
-    # ------------------------------------------------------------------
-    @app.get("/market-research")
-    def market_research_index():
-        """Market Research hub: lists all published reports."""
-        user = session.get("user")
-        mi_tier = _get_mi_tier(user)
-        return render_template(
-            "market_research_index.html",
-            reports=REPORTS,
-            mi_tier=mi_tier,
-            user=user,
-        )
-
     @app.get("/developers")
     def developers():
         """Simple, human-facing overview of the v1 JSON API."""
         return render_template(
             "developers.html",
-        )
-
-    @app.get("/troy")
-    def troy_redirect_carl():
-        """Legacy path; Carl lives at ``/carl``."""
-        return redirect(url_for("carl_dashboard"), code=301)
-
-    @app.get("/carl")
-    def carl_dashboard():
-        """Render Carl CV dashboard demo page."""
-        if not session.get("user"):
-            session["redirect_after_login"] = url_for("carl_dashboard")
-            flash("Sign in to use Carl.", "info")
-            return redirect(url_for("register"))
-        return render_template("carl.html", wide_layout=True)
-
-    @app.post("/carl/analyze")
-    @_limit("20 per minute")
-    def carl_analyze():
-        """Accept CV upload/text fallback and return deterministic mock analysis."""
-        if not session.get("user"):
-            return _api_error("login_required", "Sign in to analyze your CV in Carl.", 401)
-        if not _csrf_valid():
-            return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
-
-        upload = request.files.get("cv_file")
-        text_fallback = (request.form.get("cv_text") or "").strip()
-        if not upload and not text_fallback:
-            return _api_error("missing_cv_input", "Upload a PDF/DOCX file or paste CV text.", 400)
-
-        source: Dict[str, Any] = {}
-        try:
-            if upload and (upload.filename or "").strip():
-                extracted = extract_cv_from_upload(upload)
-                cv_text = extracted.text
-                source = {
-                    "inputType": "file",
-                    "filename": extracted.filename,
-                    "extension": extracted.extension,
-                    "byteSize": extracted.byte_size,
-                    "truncated": extracted.truncated,
-                }
-            else:
-                cv_text = normalize_cv_text(text_fallback)
-                source = {
-                    "inputType": "text",
-                    "filename": "pasted_cv_text",
-                    "extension": "txt",
-                    "byteSize": len(cv_text.encode("utf-8")),
-                    "truncated": len(cv_text) >= 50_000,
-                }
-        except CVExtractionError as exc:
-            return _api_error(exc.code, exc.message, exc.status)
-
-        analysis = build_mock_analysis(cv_text, file_label=source.get("filename", "uploaded_cv"))
-        overview = analysis.get("overview") or {}
-        skills_radar = analysis.get("skillsRadar") or []
-        ats_block = analysis.get("atsScore") or {}
-        chat_ctx = analysis.get("chatContext") or {}
-
-        saved_at_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        carl_snapshot = {
-            "headline": str(overview.get("headline") or ""),
-            "persona": str(overview.get("persona") or ""),
-            "level": str(overview.get("level") or ""),
-            "atsScore": int(ats_block.get("score") or 0),
-            "keywordCoverage": int(ats_block.get("keywordCoverage") or 0),
-            "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:3] if s.get("skill")],
-            "saved_at": saved_at_iso,
-        }
-        persist_meta: Dict[str, Any] = {**source, "carl": carl_snapshot}
-
-        user = session.get("user") or {}
-        user_id = user.get("id")
-        profile_sync: Dict[str, Any] = {"status": "skipped", "message": None, "saved_at": None}
-        if not user_id or not SUPABASE_URL:
-            profile_sync["message"] = "Database not configured or missing user."
-        else:
-            try:
-                saved = upsert_profile_cv_extract(
-                    str(user_id),
-                    cv_text,
-                    persist_meta,
-                    email=str(user.get("email") or "").strip() or None,
-                )
-                if saved == "ok":
-                    logger.debug("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
-                    profile_sync = {"status": "saved", "message": None, "saved_at": saved_at_iso}
-                else:
-                    logger.warning("Carl: profile CV not persisted (status=%s)", saved)
-                    profile_sync = {
-                        "status": "error",
-                        "message": "Could not write to your profile row.",
-                        "saved_at": None,
-                    }
-            except Exception as exc:
-                logger.warning("profile cv upsert skipped: %s", exc, exc_info=True)
-                profile_sync = {
-                    "status": "error",
-                    "message": "Profile sync failed unexpectedly.",
-                    "saved_at": None,
-                }
-
-        terminal_logs = list(analysis.get("terminalLogs") or [])
-        if profile_sync.get("status") == "saved":
-            terminal_logs.append("[Carl] supabase: profile cv_meta updated (cv + carl snapshot).")
-        elif profile_sync.get("status") == "error":
-            terminal_logs.append("[Carl] supabase: profile sync failed (see server logs).")
-        else:
-            terminal_logs.append("[Carl] supabase: profile sync skipped (no database or user).")
-        analysis["terminalLogs"] = terminal_logs
-
-        session["carl_chat_context"] = {
-            "summary": chat_ctx.get("summary", ""),
-            "missingKeywords": ats_block.get("missingKeywords", []),
-            "matchedKeywords": ats_block.get("matchedKeywords", []),
-            "suggestedPrompts": chat_ctx.get("suggestedPrompts", []),
-            "persona": overview.get("persona", ""),
-            "level": overview.get("level", ""),
-            "headline": overview.get("headline", ""),
-            "fileLabel": str(source.get("filename") or "uploaded_cv"),
-            "topSkillNames": [str(s.get("skill") or "") for s in skills_radar[:5] if s.get("skill")],
-        }
-        session["carl_chat_turns"] = 0
-        session.modified = True
-        return _api_success(
-            {
-                "analysis": analysis,
-                "source": source,
-                "profile_sync": profile_sync,
-            }
-        )
-
-    @app.post("/carl/chat")
-    @_limit("40 per minute")
-    def carl_chat():
-        """Return a rule-based mock chat reply for Carl dashboard."""
-        if not session.get("user"):
-            return _api_error("login_required", "Sign in to use Talk to Carl.", 401)
-        if not _csrf_valid():
-            return _api_error("invalid_csrf", "Session expired. Please refresh and try again.", 400)
-
-        session_ctx = session.get("carl_chat_context") or {}
-        if not session_ctx:
-            return _api_error("carl_session_stale", "Analyze a CV first, then chat about that pass.", 400)
-
-        turns = int(session.get("carl_chat_turns") or 0)
-        if turns >= CARL_CHAT_MAX_TURNS:
-            return _api_success(
-                {
-                    "reply": (
-                        "You have used all free Talk to Carl prompts for this CV pass. "
-                        "Unlock the Jobs API on Pricing or review integration on Developers."
-                    ),
-                    "chat_limit_reached": True,
-                    "cta": {
-                        "developers": url_for("developers"),
-                        "pricing": url_for("payments.pricing"),
-                    },
-                }
-            )
-
-        payload = request.get_json(silent=True) or {}
-        raw_message = str(payload.get("message") or "").strip()
-        has_prompt_id = "prompt_id" in payload
-        prompt_id: Optional[int] = None
-        if has_prompt_id:
-            try:
-                prompt_id = int(payload.get("prompt_id"))
-            except (TypeError, ValueError):
-                return _api_error("invalid_prompt_id", "Invalid prompt selection.", 400)
-
-        effective_message, pe_err = carl_effective_user_message(
-            raw_message, session_ctx, prompt_id=prompt_id if has_prompt_id else None
-        )
-        if pe_err == "invalid_prompt_id":
-            return _api_error("invalid_prompt_id", "Invalid prompt selection.", 400)
-        if not effective_message:
-            return _api_error("invalid_message", "Please write a message for Carl chat.", 400)
-        if len(effective_message) > CARL_CHAT_MAX_MESSAGE_CHARS:
-            return _api_error(
-                "message_too_long",
-                f"Keep messages under {CARL_CHAT_MAX_MESSAGE_CHARS} characters for this demo.",
-                400,
-            )
-
-        if not is_carl_message_grounded(
-            effective_message,
-            session_ctx,
-            prompt_id=prompt_id if has_prompt_id else None,
-        ):
-            return _api_error(
-                "chat_not_grounded",
-                "Ask about this CV pass using a suggested chip or words from your analysis (keywords, role, file name).",
-                400,
-            )
-
-        merged_context = {
-            "summary": str(session_ctx.get("summary") or ""),
-            "missingKeywords": session_ctx.get("missingKeywords") or [],
-            "persona": str(session_ctx.get("persona") or ""),
-            "level": str(session_ctx.get("level") or ""),
-            "headline": str(session_ctx.get("headline") or ""),
-            "fileLabel": str(session_ctx.get("fileLabel") or ""),
-            "topSkillNames": session_ctx.get("topSkillNames") or [],
-        }
-        reply = generate_chat_reply(effective_message, merged_context)
-        new_turns = turns + 1
-        session["carl_chat_turns"] = new_turns
-        session.modified = True
-        out: Dict[str, Any] = {"reply": reply}
-        if new_turns >= CARL_CHAT_MAX_TURNS:
-            out["chat_limit_reached"] = True
-            out["cta"] = {
-                "developers": url_for("developers"),
-                "pricing": url_for("payments.pricing"),
-            }
-        return _api_success(out)
-
-    @app.get("/market-research/<slug>")
-    def market_research_report(slug):
-        """Individual report landing page (fully SSR'd for SEO)."""
-        report = next((r for r in REPORTS if r["slug"] == slug), None)
-        if not report:
-            abort(404)
-        user = session.get("user")
-        if not user:
-            session["redirect_after_login"] = request.path
-            flash("Sign in to read this report.", "info")
-            return redirect(url_for("register"))
-        mi_tier = _get_mi_tier(user)
-        return render_template(
-            report.get("template", "reports/report.html"),
-            report=report,
-            mi_tier=mi_tier,
-            user=user,
         )
 
     # ------------------------------------------------------------------

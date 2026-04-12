@@ -51,7 +51,7 @@ def main() -> int:
 
     from werkzeug.datastructures import FileStorage
 
-    from app.integrations.cv_extract import CVExtractionError, extract_cv_from_upload
+    from app.models.cv import CVExtractionError, extract_cv_from_upload
 
     raw = pdf.read_bytes()
     fs = FileStorage(stream=io.BytesIO(raw), filename=pdf.name, content_type="application/pdf")

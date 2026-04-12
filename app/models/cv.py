@@ -1,4 +1,4 @@
-"""CV extraction helpers for PDF and DOCX uploads."""
+"""CV extraction helpers for PDF and DOCX uploads (DB-adjacent parsing)."""
 
 from __future__ import annotations
 

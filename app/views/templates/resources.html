@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="Free tech career resources: salary guides by role and region, hiring market trends, interview prep, remote work data, and job search strategy, all backed by Catalitium's live job database.">
-<link rel="canonical" href="{{ url_for('resources', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.resources', _external=True) }}">
 <meta property="og:title" content="Tech Career Resources, Salary Guides & Market Research | Catalitium">
 <meta property="og:description" content="Salary benchmarks, hiring trend reports, and job search guides built from real tech job data. Free, no signup required.">
 <meta property="og:type" content="website">
@@ -235,7 +235,7 @@
   "@type": "CollectionPage",
   "name": "Tech Career Resources",
   "description": "Free tech career resources: salary guides by role and region, hiring market trends, interview prep, remote work data, and job search strategy.",
-  "url": "{{ url_for('resources', _external=True) }}",
+  "url": "{{ url_for('carl.resources', _external=True) }}",
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",

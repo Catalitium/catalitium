@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Market Research report quality requirements.
 
-Checks each report declared in app/factory.py for:
+Checks each report declared in app/market_reports_data.py for:
 - template file exists
 - methodology section present
 - sources section present
@@ -57,9 +57,10 @@ def _has_visuals(text: str) -> bool:
 
 
 def main() -> int:
-    app_source = APP_FILE.read_text(encoding="utf-8")
-    reports_literal = _extract_reports_literal(app_source)
-    reports = ast.literal_eval(reports_literal)
+    sys.path.insert(0, str(ROOT))
+    from app.market_reports_data import REPORTS  # noqa: PLC0415
+
+    reports = REPORTS
 
     failures: list[str] = []
 

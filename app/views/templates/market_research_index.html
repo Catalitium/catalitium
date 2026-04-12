@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Tech career resources, salary guides, and original market research on AI jobs and hiring trends, built from real job data. Sign in to read reports; Market Intelligence unlocks premium research.">
-<link rel="canonical" href="{{ url_for('market_research_index', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.market_research_index', _external=True) }}">
 <meta property="og:title" content="Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends | Catalitium">
 <meta property="og:description" content="Salary benchmarks, AI market reports, hiring trend data, and job search guides. Sign in to read full reports; Market Intelligence unlocks premium research. Published by Catalitium.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('market_research_index', _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl.market_research_index', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Market Research & Resources | Catalitium">
@@ -37,7 +37,7 @@
     </h2>
     <!-- Featured: first/latest report, full width spotlight -->
     {% set featured = reports[0] %}
-    <a href="{% if user %}{{ url_for('market_research_report', slug=featured.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
+    <a href="{% if user %}{{ url_for('carl.market_research_report', slug=featured.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
        class="group block rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 hover:shadow-lg motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-start gap-5">
         <div class="w-14 h-14 rounded-2xl bg-brand text-white flex items-center justify-center flex-shrink-0">
@@ -81,7 +81,7 @@
     <!-- Remaining reports + Coming Soon in 2-col grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {% for report in reports[1:] %}
-      <a href="{% if user %}{{ url_for('market_research_report', slug=report.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
+      <a href="{% if user %}{{ url_for('carl.market_research_report', slug=report.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
          class="group rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 hover:shadow-md motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <div class="flex items-start justify-between gap-3 mb-4">
           <div class="w-12 h-12 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0">
@@ -342,7 +342,7 @@
   "@type": "CollectionPage",
   "name": "Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends",
   "description": "Free tech career resources, salary guides, and original market research on AI jobs, hiring trends, and the future of work. Built from real job data by Catalitium.",
-  "url": "{{ url_for('market_research_index', _external=True) }}",
+  "url": "{{ url_for('carl.market_research_index', _external=True) }}",
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
