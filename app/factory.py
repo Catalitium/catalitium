@@ -2026,7 +2026,10 @@ def create_app() -> Flask:
             return redirect(url_for("studio"))
         if request.method == "GET":
             from_source = request.args.get("from", "")
-            return render_template("register.html", tab="signup", account_type="candidate", from_source=from_source)
+            tab = request.args.get("tab", "signup")
+            if tab not in {"signup", "login"}:
+                tab = "signup"
+            return render_template("register.html", tab=tab, account_type="candidate", from_source=from_source)
 
         action = request.form.get("action", "signup")
         if action not in {"signup", "login"}:
@@ -2101,6 +2104,88 @@ def create_app() -> Flask:
                 else:
                     flash("Create account failed. Please try again.", "error")
             return render_template("register.html", tab=action, account_type=account_type), 400
+
+    @app.post("/auth/forgot")
+    @_limit("5 per minute")
+    def auth_forgot_password():
+        """Request Supabase password recovery email (no email enumeration in UI copy)."""
+        if session.get("user"):
+            return redirect(url_for("studio"))
+        if not _csrf_valid():
+            flash("Session expired. Please try again.", "error")
+            return redirect(url_for("register", tab="login"))
+        email = (request.form.get("email") or "").strip()
+        try:
+            email = validate_email(email, check_deliverability=False).normalized
+        except Exception:
+            flash(
+                "If an account exists for that address, we sent password reset instructions.",
+                "info",
+            )
+            return redirect(url_for("register", tab="login"))
+        sb = _get_supabase()
+        if sb:
+            try:
+                redirect_url = url_for("auth_confirm", _external=True)
+                sb.auth.reset_password_for_email(email, {"redirect_to": redirect_url})
+            except Exception as exc:
+                logger.warning("auth forgot email=%s: %s", email, exc)
+        flash(
+            "If an account exists for that address, we sent password reset instructions.",
+            "info",
+        )
+        return redirect(url_for("register", tab="login"))
+
+    @app.get("/auth/confirm")
+    def auth_confirm():
+        """Landing page after Supabase redirects with tokens in the URL fragment (implicit flow)."""
+        if session.get("user"):
+            return redirect(url_for("studio"))
+        return render_template("auth_confirm.html")
+
+    @app.post("/auth/session")
+    @_limit("30 per minute")
+    def auth_session_from_tokens():
+        """Exchange Supabase access_token for a Flask session (used after email recovery link)."""
+        if not _csrf_valid():
+            return jsonify({"ok": False, "error": "csrf"}), 403
+        if not request.is_json:
+            return jsonify({"ok": False, "error": "bad_request"}), 400
+        data = request.get_json(silent=True) or {}
+        access_token = (data.get("access_token") or "").strip()
+        if not access_token:
+            return jsonify({"ok": False, "error": "missing_token"}), 400
+        sb = _get_supabase()
+        if not sb:
+            return jsonify({"ok": False, "error": "unavailable"}), 503
+        try:
+            ures = sb.auth.get_user(access_token)
+            user = getattr(ures, "user", None)
+            if not user:
+                return jsonify({"ok": False, "error": "invalid_token"}), 401
+            user_id = str(user.id)
+            user_metadata = getattr(user, "user_metadata", None) or {}
+            existing_type = _normalize_account_type(str(user_metadata.get("account_type") or "candidate"))
+            existing_hire_access = bool(user_metadata.get("hire_access"))
+            session["user"] = {
+                "id": user_id,
+                "email": user.email,
+                "account_type": existing_type,
+                "hire_access": existing_hire_access,
+            }
+            next_path = session.pop("redirect_after_login", None)
+            if (
+                isinstance(next_path, str)
+                and next_path.startswith("/market-research/")
+                and (not next_path.startswith("//"))
+                and "\n" not in next_path
+                and "\r" not in next_path
+            ):
+                return jsonify({"ok": True, "redirect": next_path})
+            return jsonify({"ok": True, "redirect": url_for("studio")})
+        except Exception as exc:
+            logger.warning("auth session from tokens: %s", exc)
+            return jsonify({"ok": False, "error": "invalid_token"}), 401
 
     @app.route("/logout", methods=["GET", "POST"])
     def logout():
@@ -2774,7 +2859,6 @@ def create_app() -> Flask:
         _add(url_for("docs_api", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
         _add(url_for("tracker", _external=True), priority="0.6", changefreq="weekly")
-        _add(url_for("compare_workspace", _external=True), priority="0.5", changefreq="weekly")
         _add(url_for("career.career_evaluate", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("career.career_ai_exposure", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("career.career_hiring_trends", _external=True), priority="0.7", changefreq="weekly")
@@ -3299,88 +3383,6 @@ def create_app() -> Flask:
 
     # ------------------------------------------------------------------
     # API key + v1 routes + summary → app.routes.api_v1 blueprint
-
-    # Compare workspace (candidate-decision-tools)
-    # ------------------------------------------------------------------
-    @app.get("/compare")
-    def compare_workspace():
-        """Side-by-side comparison of up to 4 jobs."""
-        from .models.catalog import score_job
-
-        ids_raw = (request.args.get("ids") or "").strip()
-        id_list = [x.strip() for x in ids_raw.split(",") if x.strip()][:4]
-
-        jobs = []
-        for jid in id_list:
-            row = Job.get_by_id(jid)
-            if not row:
-                continue
-            title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
-            company = (row.get("company_name") or "").strip()
-            loc = row.get("location") or "Remote / Anywhere"
-            description = row.get("job_description") or ""
-            date_raw = row.get("date")
-            date_str = str(date_raw).strip() if date_raw is not None else ""
-            date_posted = format_job_date_string(date_str) if date_str else ""
-            salary_range = row.get("job_salary_range") or ""
-
-            median = None
-            currency = None
-            try:
-                rec = get_salary_for_location(loc)
-                if rec:
-                    median, currency = rec[0], rec[1]
-            except Exception:
-                pass
-
-            estimated_display = None
-            salary_min = salary_max = None
-            if median is not None:
-                try:
-                    title_lc = title.lower()
-                    uplift = 1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else (
-                        1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else 1.0)
-                    base_rng = salary_range_around(float(median), pct=0.2)
-                    if base_rng:
-                        base_low, base_high, base_low_s, base_high_s = base_rng
-                        if uplift > 1.0:
-                            amt = float(median) * (uplift - 1.0)
-                            low_s = _compact_salary_number(base_low + amt)
-                            high_s = _compact_salary_number(base_high + amt)
-                            estimated_display = f"{low_s}\u2013{high_s}"
-                            salary_min, salary_max = int(base_low + amt), int(base_high + amt)
-                        else:
-                            estimated_display = f"{base_low_s}\u2013{base_high_s}"
-                            salary_min, salary_max = base_low, base_high
-                except Exception:
-                    pass
-
-            job_data = {
-                "id": row.get("id"),
-                "title": title,
-                "company": company,
-                "location": loc,
-                "salary_range": salary_range,
-                "estimated_display": estimated_display,
-                "salary_min": salary_min,
-                "salary_max": salary_max,
-                "currency": currency,
-                "date_posted": date_posted,
-                "date": date_raw,
-                "job_description": description,
-                "desc_length": len(description),
-                "is_remote": "remote" in loc.lower(),
-                "estimated_salary": bool(estimated_display),
-                "job_salary_range": salary_range,
-            }
-            score_result = score_job(job_data)
-            job_data["_score"] = score_result
-            jobs.append(job_data)
-
-        jobs.sort(key=lambda j: j["_score"]["total"], reverse=True)
-        best_score = jobs[0]["_score"]["total"] if jobs else 0
-
-        return render_template("compare.html", jobs=jobs, best_score=best_score)
 
     # ------------------------------------------------------------------
     # Tracker (wire orphaned template)

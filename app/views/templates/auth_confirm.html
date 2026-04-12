@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Sign in | Catalitium{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-md mt-16 px-4 text-center">
+  <p id="auth-confirm-status" class="text-slate-600 dark:text-slate-300 text-sm">Completing sign-in…</p>
+</div>
+<script>
+(function(){
+  var statusEl = document.getElementById('auth-confirm-status');
+  var csrf = {{ csrf_token()|tojson }};
+  if (typeof csrf !== 'string' || !csrf) {
+    if (statusEl) statusEl.textContent = 'Session error. Open this link in the same browser you used to request the reset, or request a new link from Sign in.';
+    return;
+  }
+  var raw = (window.location.hash || '').replace(/^#/, '');
+  var params = new URLSearchParams(raw);
+  var access = params.get('access_token') || '';
+  var refresh = params.get('refresh_token') || '';
+  if (!access) {
+    if (statusEl) statusEl.textContent = 'This link is invalid or has expired. Request a new reset email from the Sign in page.';
+    return;
+  }
+  fetch({{ url_for('auth_session_from_tokens')|tojson }}, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': csrf
+    },
+    body: JSON.stringify({ access_token: access, refresh_token: refresh })
+  })
+    .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+    .then(function(x){
+      if (!x.ok || !x.j || !x.j.ok) {
+        if (statusEl) statusEl.textContent = 'Could not complete sign-in. Request a new reset link from Sign in.';
+        return;
+      }
+      var dest = x.j.redirect || {{ url_for('studio')|tojson }};
+      window.location.href = dest;
+    })
+    .catch(function(){
+      if (statusEl) statusEl.textContent = 'Network error. Try again in a moment.';
+    });
+})();
+</script>
+{% endblock %}
