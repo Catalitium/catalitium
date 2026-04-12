@@ -1,5 +1,17 @@
 # Lessons — monolith consolidation
 
+## BASELINE — resurrection pre-flight (2026-04-12)
+
+- **Branch:** `feat/monolith-consolidation`
+- **app/factory.py:** 2537 lines (PowerShell line count)
+- **Route count (locked):** 88 routes (`create_app().url_map`)
+- **app/data/:** retained — contains `demo_jobs.csv` (used by `_get_demo_jobs` in factory)
+- **app/routes/, app/services/:** remove if empty during ALPHA_1 scaffold cleanup
+
+## 2026-04-12 | BETA_1 | models/db.py re-export audit | line delta 0
+
+- Confirmed [app/models/db.py](app/models/db.py) ends at `parse_job_description` with **no** trailing re-export hub; consumers already import `catalog` / `money` / `identity` from true owners. No `factory.py` edits per stream rules.
+
 ## Patterns to keep
 
 - **Re-export hubs** (`models/db` importing four domains) make the import graph opaque; prefer explicit imports from `catalog` / `money` / `identity` / `utils` when stripping `db.py`.
