@@ -197,6 +197,18 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
         + min(years * 2, 20),
     )
     narrative_score = min(100, 44 + min(len(unique_words) // 12, 30))
+    leadership_score = min(
+        100,
+        46
+        + (18 if any(token in text_lower for token in ("lead", "managed", "owner", "director")) else 0)
+        + min(years * 2, 18),
+    )
+    role_match_score = min(
+        100,
+        52 + int(ats_score * 0.35) + (10 if persona.lower() in text_lower else 0),
+    )
+    quantified_hits = len(re.findall(r"\d+(?:\.\d+)?%|\$\d+|\d+\s*(?:ms|sec|minutes|hours|days|x)\b", text_lower))
+    evidence_density = min(100, 42 + min(quantified_hits * 8, 42) + min(years, 10))
 
     headline = f"{level} {persona} profile with {keyword_coverage}% ATS keyword coverage"
     fit_summary = (
@@ -279,6 +291,11 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
                 "keywords": keyword_coverage,
                 "impact": impact_score,
                 "narrative": narrative_score,
+            },
+            "premiumSignals": {
+                "leadership": leadership_score,
+                "roleMatch": role_match_score,
+                "evidenceDensity": evidence_density,
             },
         },
         "documents": documents,
