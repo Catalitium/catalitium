@@ -12,6 +12,8 @@
 
 - Confirmed [app/models/db.py](app/models/db.py) ends at `parse_job_description` with **no** trailing re-export hub; consumers already import `catalog` / `money` / `identity` from true owners. No `factory.py` edits per stream rules.
 
+## 2026-04-12 | ALPHA_1 | inlined carl_mock into controllers/carl.py; removed app/integrations/ | carl.py +~540 lines, integrations -2 files
+
 ## Patterns to keep
 
 - **Re-export hubs** (`models/db` importing four domains) make the import graph opaque; prefer explicit imports from `catalog` / `money` / `identity` / `utils` when stripping `db.py`.

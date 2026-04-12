@@ -23,7 +23,7 @@ import app.controllers.carl as carl_ctrl
 import app.factory as app_factory
 from app.factory import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
-from app.integrations.carl_mock_analysis import (
+from app.controllers.carl import (
     generate_chat_reply,
     is_carl_message_grounded,
     normalize_carl_user_message,
