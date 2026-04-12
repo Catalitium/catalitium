@@ -367,6 +367,9 @@ TITLE_SYNONYMS: Dict[str, str] = {
     "sre": "site reliability engineer", "devops": "devops",
     "sec eng": "security engineer", "infosec": "security",
     "programmer": "developer", "coder": "developer",
+    # Spanish (and similar) — curated titles are mostly English; map to shared tokens.
+    "ingenieros": "engineer", "ingeniero": "engineer", "ingeniera": "engineer",
+    "desarrolladores": "developer", "desarrollador": "developer", "desarrolladora": "developer",
 }
 
 
@@ -389,10 +392,13 @@ def normalize_title(q: str) -> str:
     """Normalize a job title query string."""
     if not q:
         return ""
-    s = q.lower()
-    for k, v in TITLE_SYNONYMS.items():
-        if k in s:
-            s = s.replace(k, v)
+    s = q.lower().strip()
+    # Longest keys first; word-boundary replace so e.g. "software eng" does not corrupt "software engineer".
+    for k, v in sorted(TITLE_SYNONYMS.items(), key=lambda kv: -len(kv[0])):
+        if not k.strip():
+            continue
+        pat = r"\b" + re.escape(k) + r"\b"
+        s = re.sub(pat, v, s, flags=re.IGNORECASE)
     s = re.sub(r"[^\w\s\-\/]", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
