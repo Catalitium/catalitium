@@ -2,30 +2,49 @@
 
 Branch: `feat/monolith-consolidation` (do not merge to `main` without PR review).
 
-Workflow contract: [claude-rules.md](../claude-rules.md) — use as `@claude-rules.md` before long runs.
+## SPRINT COMPLETE — 2026-04-12
 
-## Done this session
+**Baseline locked:** factory.py = 2821 lines, 88 routes, integrations/ existed.
 
-- [x] Phase 0 / Item 1 alignment: single import surface `app.utils` for controllers, `factory`, `models/db` normalization re-exports, `catalog`, tests.
-- [x] Item 2d (partial): removed `app/app.py`; `run.py`, tests, and scripts import `create_app` from `app.factory`.
-- [x] Named TTL caches from `app.utils` wired in `factory.create_app` (`SUMMARY_CACHE`, `AUTOCOMPLETE_CACHE`, `SALARY_CACHE`).
-- [x] Removed duplicate inline support block from `factory` (email, datetime, slugify, spam, api envelope) in favor of `app.utils`.
-- [x] `scripts/validate_market_reports.py` reads `REPORTS` from `app/factory.py`.
-- [x] Verification: `python -m compileall app`, `pytest tests/` — 186 passed, 2 skipped (2026-04-12).
-- [x] `docs/sprints/claude-rules.md` — sprint agent contract; `scripts/smoke.py` unified runner (see README).
+## All tasks done
 
-## Deferred (follow-up PRs)
+- [x] Phase 0 / Item 1 — `app/utils.py` unified (5 modules merged); `app/app.py` removed; named caches wired.
+- [x] BETA_1 — `app/models/db.py` re-export audit confirmed clean; no re-export hub existed.
+- [x] ALPHA_1 — `carl_mock_analysis.py` inlined into `carl.py`; `app/integrations/` deleted; `app/routes/` and `app/services/` cleaned; test imports fixed.
+- [x] ALPHA_2 — `app/controllers/auth.py` extracted from `factory.py` (~780 lines moved); `auth_bp` first in `ALL_BLUEPRINTS`; url_for → `auth.*` sweep; limiter wraps applied.
+- [x] ALPHA_3 — `app/controllers/jobs.py` extracted from `factory.py` (~1600 lines moved); `jobs_bp` second; url_for → `jobs.*` sweep; limiter on jobs endpoints; `_query_jobs_payload` un-nested; Jinja global `job_url` updated to `jobs.job_detail`.
+- [x] ALPHA_4 — `factory.py` verified wiring-only: **364 lines**, zero `@app.get/post/route`, stale comment removed.
+- [x] PR gate: `pytest tests/` → 186 passed, 2 skipped; `compileall` clean; 88 routes; smoke routes OK.
 
-- [x] **Item 3 (2026-04-12):** `browse.py` (explore+companies), `insights.py` (career), `payments.py` (stripe), `api.py` (api_v1); `ALL_BLUEPRINTS` updated; **88 routes** unchanged; `pytest` green.
-- [x] **O1 partial:** Removed `db.py` model/normalization re-exports; `factory` + controllers + `models/__init__.py` import `catalog` / `money` / `identity` directly.
-- [ ] Extract blueprints: `auth.py`, `jobs.py`, `carl.py` from `factory.py`.
-- [ ] Move `integrations/cv_extract.py` → `models/cv.py`; fold carl mock into blueprint; delete `integrations/`.
-- [ ] Strip `models/db.py` re-exports (O1); direct imports across codebase.
-- [ ] Controller merges (`browse`, `insights`), renames (`payments`, `api`), R5 internal vs external API split.
-- [x] `scripts/smoke.py --section …` unified runner (`db`, `routes`, `carl`, `supabase`, `smtp`, `reports`, `all`).
-- [ ] `scripts/digest.py` rename from weekly digest script; E3 magic numbers audit.
-- [ ] Route baseline: capture `flask --app run.py routes` output after next large refactor for diffing.
+## Final architecture
 
-## Review
+```
+app/
+  factory.py          364 lines  — wiring only (extensions, hooks, filters, errors)
+  utils.py                       — all shared helpers
+  market_reports_data.py         — REPORTS catalog (data module)
+  config.py                      — all constants + env vars
+  controllers/
+    __init__.py        ALL_BLUEPRINTS = (auth, jobs, carl, browse, insights, salary, payments, api)
+    auth.py            auth, profile, hire, studio, docs routes + supabase helpers
+    jobs.py            search, job detail, API, subscribe, sitemap, static utils
+    carl.py            carl + market research (carl_mock_analysis inlined)
+    browse.py          explore + companies
+    insights.py        career tools
+    salary.py          salary analytics
+    payments.py        stripe routes
+    api.py             external API v1
+  models/
+    catalog.py         jobs, taxonomy, explore
+    db.py              pool, get_db/init_db/close_db, logger
+    identity.py        API keys, subscriptions, auth
+    money.py           salary data
+    cv.py              CV extraction (moved from integrations/)
+  data/
+    demo_jobs.csv      used by _get_demo_jobs() in jobs.py
+```
 
-Consolidation focused on restoring a **green** tree after the merged `utils` module: fixed broken `helpers` / missing `normalization` imports, eliminated the `app.py` shim, and centralized caches. Large factory splits remain intentionally unblocked for smaller commits.
+## Next step
+
+Open PR from `feat/monolith-consolidation` → `main`.
+Run `pytest tests/ -q` one final time before merge per `claude-rules.md`.

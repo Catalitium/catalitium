@@ -360,7 +360,4 @@ def create_app() -> Flask:
         years = max(1, days // 365)
         return _fmt(years, "year")
 
-
-    # Career routes → app.routes.career blueprint
-
     return app

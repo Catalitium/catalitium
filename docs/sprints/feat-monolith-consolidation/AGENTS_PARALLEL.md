@@ -23,32 +23,26 @@ Read [@docs/sprints/claude-rules.md](../claude-rules.md) first. Branch: **`feat/
 
 **Follow-up for next agent:** grep stale blueprint names; run `pytest` + `python scripts/smoke.py --section routes`.
 
-## Stream S2 (scripts)
+## Stream S2 (scripts) — DEFERRED
 
-- Owner: `scripts/smoke.py` — either keep subprocess wrapper or inline `main()` from legacy scripts per [PLAN_ITEMS_2_4.md](PLAN_ITEMS_2_4.md).
-- Owner: `send_weekly_digest.py` → `digest.py` + doc/cron references.
-- **Do not delete** `smoke_prod.ps1` without ops sign-off.
+Not executed in this sprint. Optional follow-up:
+- `send_weekly_digest.py` → rename to `digest.py`
+- `smoke_prod.ps1` — keep until explicit ops sign-off
 
-## Stream S3 (factory extraction) — single owner
+## Stream S3 (factory extraction) — DONE 2026-04-12
 
-Slice order from plan: **2a auth** → **2b jobs** → **2c carl** → **2d slim factory**.
+All slices complete:
+- **ALPHA_1 (2c):** `carl_mock_analysis.py` inlined into `carl.py`; `app/integrations/` deleted
+- **ALPHA_2 (2a):** `app/controllers/auth.py` extracted; `auth_bp` registered first
+- **ALPHA_3 (2b):** `app/controllers/jobs.py` extracted; `jobs_bp` registered second
+- **ALPHA_4 (2d):** `factory.py` = 364 lines, zero domain routes
 
-After each slice:
+Final `ALL_BLUEPRINTS` order: `(auth_bp, jobs_bp, carl_bp, browse_bp, insights_bp, salary_bp, payments_bp, api_bp)`
 
-```bash
-python -c "from app.factory import create_app; app=create_app(); print(len(list(app.url_map.iter_rules())), 'routes')"
-python -m pytest tests/ -q
-```
+## Stream S4 (O1 `db.py`) — CONFIRMED CLEAN
 
-Baseline route count must match pre-slice (record in `todo.md`).
+Audit confirmed `db.py` had no re-export hub to strip. Controllers import directly from `catalog`, `money`, `identity` — only `logger`, `get_db`, `parse_job_description`, `upsert_profile_cv_extract`, `SECRET_KEY`, `SUPABASE_URL` imported via `db.py` (all correctly owned there).
 
-## Stream S4 (O1 `db.py`)
+## Sprint status: READY FOR PR
 
-- Mechanical: replace `from app.models.db import Job` → `from app.models.catalog import Job`, etc.
-- Remove re-export blocks at end of `db.py`.
-- Run full test suite; watch **circular imports** (`utils` ↔ `models`).
-
-## Communication
-
-- Append progress + route count to [todo.md](todo.md).
-- On failure or scope creep: append [lessons.md](lessons.md) and stop.
+Run `pytest tests/ -q` once before merging to `main`.
