@@ -653,7 +653,7 @@ class Job:
     def company_name_by_slug(slug: str, slugify_fn=None) -> Optional[str]:
         """Reverse a slug to the original company_name, or None if not found.
 
-        slugify_fn must be the same _slugify used in app.py to ensure consistency.
+        slugify_fn must be the same slugify as ``app.support.text_norm.slugify`` for consistency.
         """
         if not slug or not slugify_fn:
             return None
