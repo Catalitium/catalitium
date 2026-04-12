@@ -1,18 +1,8 @@
-"""Public model surface (prefer ``from app.models import Job, get_db`` in new code)."""
+"""Public model surface — import domain symbols from their owning modules."""
 
-from .db import (
-    Job,
-    close_db,
-    get_db,
-    init_db,
-    logger,
-    parse_job_description,
-    parse_salary_query,
-    parse_salary_range_string,
-    salary_range_around,
-    SUPABASE_URL,
-)
-from .catalog import FUNCTION_CATEGORIES, categorize_function
+from .catalog import FUNCTION_CATEGORIES, Job, categorize_function
+from .db import close_db, get_db, init_db, logger, parse_job_description, SUPABASE_URL
+from .money import parse_salary_query, parse_salary_range_string, salary_range_around
 
 __all__ = [
     "FUNCTION_CATEGORIES",

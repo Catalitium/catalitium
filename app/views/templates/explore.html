@@ -2,12 +2,12 @@
 {% block title %}Explore Tech Jobs by Title, Location & Company | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Discover trending tech roles, top hiring locations, and leading companies. Explore curated job market data with salary insights.">
-<link rel="canonical" href="{{ url_for('explore.explore_hub', _external=True) }}">
+<meta name="description" content="Discover trending tech roles, top hiring locations, and leading browse. Explore curated job market data with salary insights.">
+<link rel="canonical" href="{{ url_for('browse.explore_hub', _external=True) }}">
 <meta property="og:title" content="Explore Tech Jobs | Catalitium">
-<meta property="og:description" content="Discover trending tech roles, top hiring locations, and leading companies.">
+<meta property="og:description" content="Discover trending tech roles, top hiring locations, and leading browse.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('explore.explore_hub', _external=True) }}">
+<meta property="og:url" content="{{ url_for('browse.explore_hub', _external=True) }}">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -47,11 +47,11 @@
       Discover trending roles, top hiring locations, and the companies posting the most jobs right now.
     </p>
     <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-      <a href="{{ url_for('explore.explore_remote') }}" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors">
+      <a href="{{ url_for('browse.explore_remote') }}" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke-linecap="round"/></svg>
         Remote-Friendly Companies
       </a>
-      <a href="{{ url_for('explore.explore_functions') }}" class="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/30 px-4 py-2 text-sm font-medium text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors">
+      <a href="{{ url_for('browse.explore_functions') }}" class="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/30 px-4 py-2 text-sm font-medium text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M9 12h6M11 17h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Browse by Function
       </a>

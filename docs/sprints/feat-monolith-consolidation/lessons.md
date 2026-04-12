@@ -13,3 +13,8 @@
 ## 2026-04-12 (smoke + rules)
 
 - One **`scripts/smoke.py --section`** entry point reduces “which script did we run?” drift; document it in README and `.env.example` so operators find it.
+
+## 2026-04-12 (parallel agents + Item 3 + O1)
+
+- **`app/models/__init__.py`** still re-exported `Job` from `db` after stripping `db.py` — tests import `app.models` first and exploded. After O1, re-export hub must be updated **the same commit** as `db.py` cuts.
+- Blueprint rename (`stripe_routes` → `payments`) requires **`request.endpoint`** fixes (`payments.pricing`), not bare `pricing`.

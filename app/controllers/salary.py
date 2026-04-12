@@ -13,11 +13,8 @@ from ..utils import (
     parse_int_arg,
     parse_str_arg,
 )
-from ..models.db import (
-    get_salary_for_location,
-    insert_salary_submission,
-    logger,
-)
+from ..models.db import logger
+from ..models.money import get_salary_for_location, insert_salary_submission
 from ..models.money import (
     compare_cities_salary,
     compute_percentile,

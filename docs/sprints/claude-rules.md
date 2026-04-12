@@ -2,6 +2,8 @@
 
 Use this file as **`@claude-rules.md`** before long or risky work. It complements `CLAUDE.md` (product/architecture) with **how** to change the repo.
 
+**Multi-agent splits:** [feat-monolith-consolidation/AGENTS_PARALLEL.md](feat-monolith-consolidation/AGENTS_PARALLEL.md) — who owns which files and merge order.
+
 ## Before you ship
 
 1. **Plan first** for any non-trivial change (3+ steps or structural impact). If something breaks tests or routes, **stop and replan** that slice.

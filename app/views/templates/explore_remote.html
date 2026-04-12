@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Discover companies with the highest percentage of remote job postings. Find your next remote-first employer.">
-<link rel="canonical" href="{{ url_for('explore.explore_remote', _external=True) }}">
+<link rel="canonical" href="{{ url_for('browse.explore_remote', _external=True) }}">
 <meta property="og:title" content="Remote-Friendly Companies | Catalitium">
 <meta property="og:description" content="Companies ranked by remote job availability.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('explore.explore_remote', _external=True) }}">
+<meta property="og:url" content="{{ url_for('browse.explore_remote', _external=True) }}">
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
       Companies ranked by the percentage of their job postings that are remote.
     </p>
     <div class="mt-4">
-      <a href="{{ url_for('explore.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
+      <a href="{{ url_for('browse.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
     </div>
   </div>
 </section>

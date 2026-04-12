@@ -648,7 +648,7 @@ def estimate_salary_display(
     Returns (display_string, sal_min, sal_max) or (None, None, None) on failure.
     """
     try:
-        from .models.db import _compact_salary_number, salary_range_around  # noqa: PLC0415
+        from .models.money import _compact_salary_number, salary_range_around  # noqa: PLC0415
         title_lc = title.lower()
         uplift = (
             1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else

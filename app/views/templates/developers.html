@@ -50,7 +50,7 @@
       <li><strong>Job detail API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/jobs/&lt;id&gt;</code> with apply URL.</li>
       <li><strong>Salary lookup API</strong>, <code class="text-xs bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded">GET /v1/salary</code> by title / country.</li>
       <li><strong>Free tier</strong> (after email confirmation): 50 requests/day and 500/month, with rate-limit headers on every response.</li>
-      <li><strong>API Access</strong> (paid): 10,000 calls/month — manage in <a href="{{ url_for('stripe_routes.pricing') }}" class="text-brand font-medium hover:underline">Pricing</a>.</li>
+      <li><strong>API Access</strong> (paid): 10,000 calls/month — manage in <a href="{{ url_for('payments.pricing') }}" class="text-brand font-medium hover:underline">Pricing</a>.</li>
     </ul>
   </section>
 

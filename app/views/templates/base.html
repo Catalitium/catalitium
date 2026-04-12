@@ -129,7 +129,7 @@
         <a href="{{ url_for('market_research_index') }}" {% if request.endpoint == 'market_research_index' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'market_research_index' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Market Research</a>
         <a href="{{ url_for('salary.salary_tool') }}" {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-brand dark:hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint in ('salary_tool','salary_by_title','salary_top_companies','salary_contribute') %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% endif %}">Salaries</a>
         <a href="{{ url_for('carl_dashboard') }}" {% if request.endpoint == 'carl_dashboard' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'carl_dashboard' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Carl</a>
-        <a href="{{ url_for('stripe_routes.pricing') }}" {% if request.endpoint == 'pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
+        <a href="{{ url_for('payments.pricing') }}" {% if request.endpoint == 'payments.pricing' %}aria-current="page"{% endif %} class="whitespace-nowrap py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors {% if request.endpoint == 'payments.pricing' %}text-brand bg-slate-50 dark:bg-slate-800 font-medium{% else %}text-slate-600 dark:text-slate-300 hover:text-brand hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">Pricing</a>
       </nav>
 
       <!-- Right: action buttons from md+; tighter gaps until lg -->
@@ -182,7 +182,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 4 4L21 4l0 0"/></svg>
           <span>Jobs</span>
         </a>
-        <a href="{{ url_for('stripe_routes.pricing') }}" class="flex items-center justify-center gap-2 rounded-xl border {% if request.endpoint == 'pricing' %}border-brand text-brand{% else %}border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200{% endif %} bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('payments.pricing') }}" class="flex items-center justify-center gap-2 rounded-xl border {% if request.endpoint == 'payments.pricing' %}border-brand text-brand{% else %}border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200{% endif %} bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand hover:text-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 12h6m-6 4h10M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
           <span>Pricing</span>
         </a>
@@ -350,8 +350,8 @@
           <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
           <a href="{{ url_for('docs_api') }}" class="hover:text-brand transition-colors">API reference</a>
           <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
-          <a href="{{ url_for('stripe_routes.pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
-          <a href="{{ url_for('companies.companies') }}" class="hover:text-brand transition-colors">Companies</a>
+          <a href="{{ url_for('payments.pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
+          <a href="{{ url_for('browse.companies') }}" class="hover:text-brand transition-colors">Companies</a>
         </div>
 
         <!-- Company -->

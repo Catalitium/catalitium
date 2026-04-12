@@ -16,6 +16,8 @@ Workflow contract: [claude-rules.md](../claude-rules.md) — use as `@claude-rul
 
 ## Deferred (follow-up PRs)
 
+- [x] **Item 3 (2026-04-12):** `browse.py` (explore+companies), `insights.py` (career), `payments.py` (stripe), `api.py` (api_v1); `ALL_BLUEPRINTS` updated; **88 routes** unchanged; `pytest` green.
+- [x] **O1 partial:** Removed `db.py` model/normalization re-exports; `factory` + controllers + `models/__init__.py` import `catalog` / `money` / `identity` directly.
 - [ ] Extract blueprints: `auth.py`, `jobs.py`, `carl.py` from `factory.py`.
 - [ ] Move `integrations/cv_extract.py` → `models/cv.py`; fold carl mock into blueprint; delete `integrations/`.
 - [ ] Strip `models/db.py` re-exports (O1); direct imports across codebase.

@@ -73,53 +73,54 @@ from .models.db import (
     close_db,
     init_db,
     get_db,
+    upsert_profile_cv_extract,
+    parse_job_description,
+)
+from .models.identity import (
+    check_and_increment_api_key,
+    confirm_api_key_by_token,
+    create_api_key,
+    get_api_key_by_email,
+    get_stripe_order,
+    get_subscription_by_stripe_id,
+    get_user_subscriptions,
+    insert_contact,
+    insert_job_posting,
+    insert_stripe_order,
+    insert_subscriber,
+    mark_stripe_order_job_submitted,
+    mark_stripe_order_paid,
+    revoke_api_key,
+    sync_api_key_quota_for_api_access,
+    upsert_user_subscription,
+)
+from .models.money import (
+    _compact_salary_number,
+    compare_cities_salary,
+    compute_compensation_confidence,
+    compute_percentile,
+    confidence_color,
+    get_function_benchmarks,
+    get_ppp_indices,
     get_salary_for_location,
+    get_salary_trends,
+    insert_salary_submission,
     parse_salary_query,
     parse_salary_range_string,
     salary_range_around,
-    _compact_salary_number,
-    parse_job_description,
-    format_job_date_string,
-    clean_job_description_text,
-    insert_subscriber,
-    insert_contact,
-    upsert_profile_cv_extract,
-    insert_job_posting,
-    insert_salary_submission,
-    get_job_summary,
-    save_job_summary,
-    create_api_key,
-    get_api_key_by_email,
-    confirm_api_key_by_token,
-    revoke_api_key,
-    check_and_increment_api_key,
-    Job,
-    insert_stripe_order,
-    mark_stripe_order_paid,
-    mark_stripe_order_job_submitted,
-    get_stripe_order,
-    upsert_user_subscription,
-    get_user_subscriptions,
-    get_subscription_by_stripe_id,
-    sync_api_key_quota_for_api_access,
-)
-
-from .models.money import (
-    compute_compensation_confidence,
-    confidence_color,
     source_label as compensation_source_label,
-    compute_percentile,
-    get_ppp_indices,
-    compare_cities_salary,
-    get_function_benchmarks,
-    get_salary_trends,
 )
 from .models.catalog import (
+    Job,
     categorize_function,
+    clean_job_description_text,
     compute_quality_score,
+    format_job_date_string,
     get_explore_data,
-    get_remote_companies,
     get_function_distribution,
+    get_job_summary,
+    get_remote_companies,
+    save_job_summary,
 )
 
 try:
@@ -2370,7 +2371,7 @@ def create_app() -> Flask:
         #     if is_json:
         #         return jsonify({"error": "plan_upgrade_required"}), 403
         #     flash("Upgrade to Elite or Premium to post jobs.", "error")
-        #     return redirect(url_for("stripe_routes.pricing"))
+        #     return redirect(url_for("payments.pricing"))
 
         user_id = str(user.get("id") or "").strip() or None
 
@@ -2723,12 +2724,12 @@ def create_app() -> Flask:
 
         _add(url_for("jobs", _external=True), priority="1.0", changefreq="daily")
         _add(url_for("landing", _external=True), priority="0.95", changefreq="weekly")
-        _add(url_for("stripe_routes.pricing", _external=True), priority="0.75", changefreq="weekly")
+        _add(url_for("payments.pricing", _external=True), priority="0.75", changefreq="weekly")
         _add(url_for("developers", _external=True), priority="0.65", changefreq="monthly")
-        _add(url_for("companies.companies", _external=True), priority="0.8", changefreq="weekly")
-        _add(url_for("explore.explore_hub", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("explore.explore_remote", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("explore.explore_functions", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("browse.companies", _external=True), priority="0.8", changefreq="weekly")
+        _add(url_for("browse.explore_hub", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("browse.explore_remote", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("browse.explore_functions", _external=True), priority="0.7", changefreq="weekly")
 
         # Top company profile pages
         try:
@@ -2737,7 +2738,7 @@ def create_app() -> Flask:
                 _cn = _tc.get("company_name") or ""
                 _cs = _slugify(_cn)
                 if _cs:
-                    _add(url_for("companies.company_detail_page", slug=_cs, _external=True),
+                    _add(url_for("browse.company_detail_page", slug=_cs, _external=True),
                          priority="0.6", changefreq="weekly")
         except Exception as _exc:
             logger.debug("sitemap company entries failed: %s", _exc)
@@ -2756,16 +2757,16 @@ def create_app() -> Flask:
         _add(url_for("salary.salary_trends", _external=True), priority="0.7", changefreq="weekly")
         _add(url_for("salary.compensation_methodology", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("hire", _external=True), priority="0.8", changefreq="monthly")
-        _add(url_for("stripe_routes.post_a_job", _external=True), priority="0.75", changefreq="monthly")
+        _add(url_for("payments.post_a_job", _external=True), priority="0.75", changefreq="monthly")
         _add(url_for("docs_api", _external=True), priority="0.6", changefreq="monthly")
         _add(url_for("legal", _external=True), priority="0.2", changefreq="yearly")
         _add(url_for("tracker", _external=True), priority="0.6", changefreq="weekly")
-        _add(url_for("career.career_evaluate", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("career.career_ai_exposure", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("career.career_hiring_trends", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("career.career_earnings", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("career.career_paths", _external=True), priority="0.7", changefreq="weekly")
-        _add(url_for("career.career_market_position", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_evaluate", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_ai_exposure", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_hiring_trends", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_earnings", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_paths", _external=True), priority="0.7", changefreq="weekly")
+        _add(url_for("insights.career_market_position", _external=True), priority="0.7", changefreq="weekly")
 
         filter_targets = [
             {"title": "ai"},
@@ -3201,7 +3202,7 @@ def create_app() -> Flask:
                     "chat_limit_reached": True,
                     "cta": {
                         "developers": url_for("developers"),
-                        "pricing": url_for("stripe_routes.pricing"),
+                        "pricing": url_for("payments.pricing"),
                     },
                 }
             )
@@ -3259,7 +3260,7 @@ def create_app() -> Flask:
             out["chat_limit_reached"] = True
             out["cta"] = {
                 "developers": url_for("developers"),
-                "pricing": url_for("stripe_routes.pricing"),
+                "pricing": url_for("payments.pricing"),
             }
         return _api_success(out)
 

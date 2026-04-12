@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Catalitium pricing: Market Intelligence, job search tools, and recruiter plans. Compare features, upgrade or cancel anytime.">
-<link rel="canonical" href="{{ url_for('stripe_routes.pricing', _external=True) }}">
+<link rel="canonical" href="{{ url_for('payments.pricing', _external=True) }}">
 <meta property="og:title" content="Pricing | Catalitium">
 <meta property="og:description" content="Choose the plan that fits your career or hiring goals. Market intelligence, salary insights, and job tools.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_routes.pricing', _external=True) }}">
+<meta property="og:url" content="{{ url_for('payments.pricing', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Pricing | Catalitium">
@@ -110,7 +110,7 @@
             {% if mi_sub.cancel_at_period_end %}Cancels at period end{% else %}Current plan{% endif %}
           </span>
           {% elif user %}
-          <form method="post" action="{{ url_for('stripe_routes.stripe_subscribe') }}">
+          <form method="post" action="{{ url_for('payments.stripe_subscribe') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="plan_key" value="{{ key }}">
             <button type="submit"
@@ -191,7 +191,7 @@
             {% if api_sub.cancel_at_period_end %}Cancels at period end{% else %}Current plan{% endif %}
           </span>
           {% elif user %}
-          <form method="post" action="{{ url_for('stripe_routes.stripe_subscribe') }}">
+          <form method="post" action="{{ url_for('payments.stripe_subscribe') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="plan_key" value="api_access">
             <button type="submit"

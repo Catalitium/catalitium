@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Post tech jobs on Catalitium: featured listings, recruiter plans, and transparent pricing for employers.">
-<link rel="canonical" href="{{ url_for('stripe_routes.post_a_job', _external=True) }}">
+<link rel="canonical" href="{{ url_for('payments.post_a_job', _external=True) }}">
 <meta property="og:title" content="Post a Job | Catalitium">
 <meta property="og:description" content="Reach high-intent tech talent with Catalitium job postings and featured placement.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_routes.post_a_job', _external=True) }}">
+<meta property="og:url" content="{{ url_for('payments.post_a_job', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Post a Job | Catalitium">
@@ -76,7 +76,7 @@
         {% endfor %}
       </ul>
 
-      <form method="post" action="{{ url_for('stripe_routes.stripe_checkout') }}" class="mt-7">
+      <form method="post" action="{{ url_for('payments.stripe_checkout') }}" class="mt-7">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="plan_key" value="{{ key }}">
         <button type="submit"
