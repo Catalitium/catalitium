@@ -46,7 +46,10 @@ data/archive/
 .idea/
 .vscode/*
 !.vscode/settings.json
-.cursor/
+# Cursor: ignore local UI state; share team rules under .cursor/rules/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
 *.swo
 .DS_Store

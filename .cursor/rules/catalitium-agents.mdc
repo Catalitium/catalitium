@@ -1,0 +1,32 @@
+---
+description: How Catalitium coding agents plan, verify, and stay minimal — mirrors claude-rules.md
+alwaysApply: true
+---
+
+# Catalitium agent behavior (Cursor)
+
+Canonical copy with rationale: **`claude-rules.md`** at the repository root. This rule is the **operating checklist** in chat.
+
+## Plan and scope
+
+- Plan before multi-step or multi-file work; re-plan when blocked or requirements shift.
+- State **how you will verify** (pytest, compileall, smoke path), not only what you will change.
+
+## Execution
+
+- Prefer narrow sub-tasks over one unfocused mega-change when it reduces errors.
+- Default to **autonomy** on reproducible bugs and CI failures; ask only for secrets, product intent, or irreversible ops.
+
+## Done means proven
+
+- Do not call work complete without running checks you named, or saying clearly why a check does not apply.
+- Smallest diff that meets the ask; no drive-by refactors or unrelated files.
+
+## Safety
+
+- Never commit secrets or real `.env` content; align env docs with **`.env.example`**.
+- No force-push, mass delete, or production data changes without explicit user instruction.
+
+## Tasks (optional)
+
+- If `tasks/todo.md` exists: short checkable plan + brief completion note with paths cited.
