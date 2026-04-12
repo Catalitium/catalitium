@@ -17,33 +17,34 @@
 <style>
   :root {
     --carl-primary: #1a73e8;
-    --carl-secondary: #18a7ec;
-    --carl-accent: #00bfff;
-    --carl-bg-0: #050b1a;
-    --carl-bg-1: #0a1428;
-    --carl-card-fill: linear-gradient(145deg, rgba(26, 115, 232, 0.14), rgba(0, 191, 255, 0.07) 55%, rgba(24, 167, 236, 0.09));
-    --carl-card-border: rgba(255, 255, 255, 0.32);
+    --carl-secondary: #00bfff;
+    --carl-accent: #00ffca;
+    --carl-bg-0: #020617;
+    --carl-bg-1: #050b1a;
+    --carl-card-fill: linear-gradient(165deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.25) 100%);
+    --carl-card-border: rgba(255, 255, 255, 0.12);
   }
   /* Okara-style Carl: full-bleed dashboard, hide site chrome when active */
-  body.troy-dashboard-active header { display: none !important; }
-  body.troy-dashboard-active footer { display: none !important; }
-  body.troy-dashboard-active #troy-shell,
-  body.troy-dashboard-active #troy-workspace {
+  body.carl-dashboard-active header { display: none !important; }
+  body.carl-dashboard-active footer { display: none !important; }
+  body.carl-dashboard-active #carl-shell,
+  body.carl-dashboard-active #carl-workspace {
     min-height: 100dvh;
   }
-  body.troy-dashboard-active #content {
+  body.carl-dashboard-active #content {
     padding-left: 0 !important;
     padding-right: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0.5rem !important;
     max-width: none !important;
   }
-  #troy-shell {
-    background: radial-gradient(circle at 12% 8%, rgba(26, 115, 232, 0.28), transparent 35%),
-      radial-gradient(circle at 88% 18%, rgba(0, 191, 255, 0.2), transparent 34%),
+  #carl-shell {
+    background: 
+      radial-gradient(circle at 0% 0%, rgba(26, 115, 232, 0.22), transparent 45%),
+      radial-gradient(circle at 100% 0%, rgba(0, 255, 202, 0.15), transparent 45%),
       linear-gradient(160deg, var(--carl-bg-0), var(--carl-bg-1));
   }
-  body.troy-carl-page header {
+  body.carl-carl-page header {
     border-color: rgba(122, 169, 225, 0.3) !important;
     background: linear-gradient(145deg, rgba(7, 17, 39, 0.94), rgba(9, 29, 64, 0.88)) !important;
     box-shadow: 0 10px 34px rgba(1, 8, 24, 0.36), inset 0 1px 0 rgba(155, 207, 255, 0.14);
@@ -51,75 +52,75 @@
     -webkit-backdrop-filter: saturate(175%) blur(18px);
     color: #f1f5f9;
   }
-  body.troy-carl-page header .text-slate-900,
-  body.troy-carl-page header .text-slate-600,
-  body.troy-carl-page header .dark\:text-slate-300 {
+  body.carl-carl-page header .text-slate-900,
+  body.carl-carl-page header .text-slate-600,
+  body.carl-carl-page header .dark\:text-slate-300 {
     color: #ffffff !important;
   }
-  body.troy-carl-page header a.flex.items-center.gap-2 img[alt="Catalitium logo"] {
+  body.carl-carl-page header a.flex.items-center.gap-2 img[alt="Catalitium logo"] {
     filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.4));
   }
-  body.troy-carl-page header #hamburger {
+  body.carl-carl-page header #hamburger {
     border-color: rgba(255, 255, 255, 0.38) !important;
     color: #ffffff !important;
   }
-  body.troy-carl-page header #hamburger:hover {
+  body.carl-carl-page header #hamburger:hover {
     border-color: rgba(0, 191, 255, 0.55) !important;
     background: rgba(255, 255, 255, 0.08) !important;
   }
-  body.troy-carl-page header nav > a {
+  body.carl-carl-page header nav > a {
     color: rgba(255, 255, 255, 0.9) !important;
   }
-  body.troy-carl-page header nav > a[aria-current="page"] {
+  body.carl-carl-page header nav > a[aria-current="page"] {
     color: #ffffff !important;
     background: rgba(0, 191, 255, 0.22) !important;
     border: 1px solid rgba(0, 191, 255, 0.5) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
-  body.troy-carl-page header nav > a:hover {
+  body.carl-carl-page header nav > a:hover {
     color: #ffffff !important;
     background: rgba(255, 255, 255, 0.1) !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end .border-l {
+  body.carl-carl-page header .md\:flex.items-center.justify-end .border-l {
     border-color: rgba(255, 255, 255, 0.18) !important;
   }
   /* Pill CTAs only (+ Add Salary, Get started). Plain text-brand links (e.g. Account) stay borderless. */
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border {
     color: #e0f4ff !important;
     border-color: rgba(0, 191, 255, 0.55) !important;
     background: rgba(0, 191, 255, 0.1) !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border:hover {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border:hover {
     background: rgba(0, 191, 255, 0.18) !important;
     border-color: rgba(0, 191, 255, 0.75) !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border) {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border) {
     color: #dff6ff !important;
     background: transparent !important;
     border: none !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border):hover {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border):hover {
     color: #ffffff !important;
     background: transparent !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600,
-  body.troy-carl-page header .md\:flex.items-center.justify-end > button {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600,
+  body.carl-carl-page header .md\:flex.items-center.justify-end > button {
     color: rgba(255, 255, 255, 0.88) !important;
   }
-  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600:hover,
-  body.troy-carl-page header .md\:flex.items-center.justify-end > button:hover {
+  body.carl-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600:hover,
+  body.carl-carl-page header .md\:flex.items-center.justify-end > button:hover {
     color: #ffffff !important;
   }
-  body.troy-carl-page header a.bg-brand {
+  body.carl-carl-page header a.bg-brand {
     box-shadow: 0 4px 22px rgba(26, 115, 232, 0.45);
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, filter 0.25s ease;
   }
-  body.troy-carl-page header a.bg-brand:hover {
+  body.carl-carl-page header a.bg-brand:hover {
     transform: translateY(-1px);
     filter: brightness(1.06);
     box-shadow: 0 8px 28px rgba(0, 191, 255, 0.35);
   }
-  body.troy-carl-page #page-progress {
+  body.carl-carl-page #page-progress {
     box-shadow: 0 0 14px rgba(0, 191, 255, 0.75);
   }
   .carl-btn-analyze {
@@ -191,8 +192,8 @@
     .carl-btn-analyze,
     .carl-btn-analyze:hover:not(:disabled),
     .carl-btn-analyze:active:not(:disabled),
-    body.troy-carl-page header a.bg-brand,
-    body.troy-carl-page header a.bg-brand:hover,
+    body.carl-carl-page header a.bg-brand,
+    body.carl-carl-page header a.bg-brand:hover,
     .carl-file-input::file-selector-button,
     .carl-file-input::-webkit-file-upload-button,
     .carl-file-input:hover::file-selector-button,
@@ -222,65 +223,36 @@
   .carl-scroll-dark::-webkit-scrollbar-thumb:hover {
     background: linear-gradient(180deg, rgba(0, 191, 255, 0.9), rgba(24, 167, 236, 0.66));
   }
-  /* Desktop (xl): single viewport, no page scroll; inner regions scroll */
+  /* Desktop (xl): Allow natural scroll to reach Career Radar */
   @media (min-width: 1280px) {
-    html:has(body.troy-dashboard-active) {
-      height: 100dvh;
-      overflow: hidden;
-    }
-    body.troy-dashboard-active {
-      overflow: hidden;
-      min-height: 100dvh;
-      max-height: 100dvh;
-    }
-    body.troy-dashboard-active #content {
-      padding-bottom: 0 !important;
-      height: 100dvh;
-      max-height: 100dvh;
-      min-height: 0;
-      overflow: hidden;
-    }
-    body.troy-dashboard-active #troy-shell {
-      height: 100%;
-      max-height: 100%;
-      min-height: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    body.troy-dashboard-active #troy-workspace {
-      flex: 1 1 0%;
-      min-height: 0;
-      max-height: none;
-      overflow: hidden;
+    body.carl-dashboard-active #content {
+      padding-bottom: 3rem !important;
     }
   }
-  .troy-card {
-    background:
-      var(--carl-card-fill),
-      rgba(6, 14, 32, 0.28);
+  .carl-card {
+    background: var(--carl-card-fill);
     border: 1px solid var(--carl-card-border);
-    border-radius: 12px;
-    box-shadow: 0 22px 48px rgba(2, 8, 22, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.32);
-    backdrop-filter: saturate(165%) blur(26px);
-    -webkit-backdrop-filter: saturate(165%) blur(26px);
+    border-radius: 20px;
+    box-shadow: 0 12px 40px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
   }
-  .troy-card-soft {
-    background: linear-gradient(140deg, rgba(10, 20, 42, 0.42), rgba(12, 24, 52, 0.32));
-    border: 1px solid rgba(160, 205, 255, 0.34);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-    backdrop-filter: saturate(150%) blur(20px);
-    -webkit-backdrop-filter: saturate(150%) blur(20px);
+  .carl-card-soft {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
-  .troy-tab-active {
+  .carl-tab-active {
     background: rgba(24, 167, 236, 0.22);
     color: var(--carl-accent);
     border-color: rgba(24, 167, 236, 0.48);
   }
-  .troy-gauge-track,
-  .troy-gauge-track-small {
-    background: conic-gradient(from -90deg, var(--carl-accent) 0deg, var(--carl-accent) var(--troy-deg, 0deg), rgba(9, 18, 40, 0.92) var(--troy-deg, 0deg));
+  .carl-gauge-track,
+  .carl-gauge-track-small {
+    background: conic-gradient(from -90deg, var(--carl-accent) 0deg, var(--carl-accent) var(--carl-deg, 0deg), rgba(9, 18, 40, 0.92) var(--carl-deg, 0deg));
   }
-  .troy-action-details[open] .troy-chevron { transform: rotate(180deg); }
+  .carl-action-details[open] .carl-chevron { transform: rotate(180deg); }
   .carl-pill {
     background: linear-gradient(130deg, rgba(24, 167, 236, 0.22), rgba(26, 115, 232, 0.1));
     border: 1px solid rgba(160, 205, 255, 0.42);
@@ -290,15 +262,12 @@
   /* Staggered dashboard reveal */
   [data-carl-reveal] {
     opacity: 0;
-    transform: translateY(16px) scale(0.982);
-    filter: blur(7px);
-    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.05s ease;
-    will-change: opacity, transform, filter;
+    transform: translateY(20px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
   [data-carl-reveal].carl-reveal-in {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    transform: translateY(0);
   }
   @keyframes carl-fade-row {
     from { opacity: 0; transform: translateY(9px) scale(0.992); filter: blur(2.5px); }
@@ -323,19 +292,19 @@
     animation: carl-chat-bubble-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   /* Premium CV analyze loading (upload phase) */
-  #troy-upload-loading {
+  #carl-upload-loading {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.65s;
   }
-  #troy-upload-loading.is-visible {
+  #carl-upload-loading.is-visible {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
   }
-  #troy-upload-loading.is-leaving {
+  #carl-upload-loading.is-leaving {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -403,33 +372,87 @@
 {% endblock %}
 
 {% block content %}
-<div id="troy-shell" class="min-h-[calc(100dvh-3.5rem)] bg-[#0D0D0D] text-[#E5E5E5]">
-  <!-- Landing: upload -->
-  <div id="troy-upload-hero" class="mx-auto max-w-xl px-4 py-10 sm:py-14">
-    <div class="troy-card relative overflow-hidden p-6 sm:p-8">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00bfff]">Carl · Demo</p>
-      <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">CV intelligence workspace</h1>
-      <p class="mt-2 text-sm text-[#9CA3AF] leading-relaxed">
-        Upload a PDF or DOCX. You’ll get an Okara-style dashboard: terminal feed, analytics, actions, and chat.
-      </p>
-      <form id="troy-upload-form" class="mt-6 space-y-3">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input id="troy-file-input" name="cv_file" type="file" accept=".pdf,.docx"
-               class="carl-file-input w-full rounded-xl border border-white/15 bg-[#09142b]/70 px-4 py-3 text-sm text-[#E5E5E5]">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-          <button type="submit" id="troy-upload-btn"
-                  class="carl-btn-analyze">
-            Analyze CV
-          </button>
+  <div id="carl-shell" class="relative flex flex-col font-sans text-slate-200">
+    {% if preloaded_analysis %}
+    <script id="preloaded-carl-data" type="application/json">
+        {{ preloaded_analysis | tojson | safe }}
+    </script>
+    {% endif %}
+  <!-- Persona Gateway -->
+  <div id="carl-persona-gate" class="mx-auto flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center p-6 text-center">
+    <h1 class="text-4xl font-bold tracking-tight text-white mb-3">Who is Carl helping today?</h1>
+    <p class="text-[#9CA3AF] max-w-lg mb-12">Select your persona to unlock specialized AI tools for hiring teams or active job seekers.</p>
+    
+    <div class="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
+      <!-- Companies Card -->
+      <button type="button" onclick="alert('Carl for Companies is coming soon!')" class="group relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-[#111]/40 p-10 text-left transition hover:border-[#18a7ec]/50 hover:bg-[#18a7ec]/5 backdrop-blur-sm">
+        <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#18a7ec]/10 text-[#00bfff]">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         </div>
-        <textarea id="troy-text-fallback" name="cv_text" rows="3"
-                  placeholder="Optional: paste CV text if needed."
-                  class="w-full rounded-xl border border-white/15 bg-[#09142b]/70 px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280]"></textarea>
-      </form>
-      <p id="troy-upload-error" class="mt-3 hidden rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
+        <h2 class="text-2xl font-bold text-white">For Companies</h2>
+        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Screen candidates, generate standard interview questions, and measure fit against your Job Descriptions.</p>
+        <span class="absolute right-5 top-5 rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white">Coming Soon</span>
+      </button>
+
+      <!-- Individuals Card -->
+      <button type="button" id="btn-select-individual" class="group flex flex-col items-center rounded-3xl border border-[#22c55e]/30 bg-[#111]/40 p-10 text-left transition hover:border-[#22c55e]/60 hover:bg-[#22c55e]/5 backdrop-blur-sm">
+        <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#22c55e]/10 text-[#4ade80]">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <h2 class="text-2xl font-bold text-white">For Individuals</h2>
+        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Analyze your CV for ATS fit, get targeted writing improvements, and discover matching jobs instantly.</p>
+        <div class="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-[#4ade80] opacity-0 transition group-hover:opacity-100">
+          Enter Workspace <span>→</span>
+        </div>
+      </button>
     </div>
   </div>
-  <div id="troy-upload-loading" class="fixed inset-0 z-[120] flex items-center justify-center bg-[#050b1a]/52 px-4 py-8 backdrop-blur-2xl" aria-live="polite" aria-busy="false">
+
+  <div id="carl-individuals-workspace" class="hidden">
+    <!-- Landing: upload -->
+    <div id="carl-upload-hero" class="mx-auto max-w-2xl px-4 py-16">
+      <div class="text-center">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#22c55e]">Carl Intelligence Workspace</p>
+        <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Upload your CV to begin</h1>
+        <p class="mt-3 text-[#9CA3AF] max-w-lg mx-auto">Get an instant Okara-style dashboard with tailored analytics, active job matches, and structural feedback.</p>
+      </div>
+
+      <form id="carl-upload-form" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Drag Drop Visuals -->
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-white/50 mb-5">
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+
+        <div class="relative group cursor-pointer inline-block">
+          <input id="carl-file-input" name="cv_file" type="file" accept=".pdf,.docx" class="absolute inset-0 z-50 w-full h-full opacity-0 cursor-pointer">
+          <span class="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-7 py-3 text-sm font-bold text-black transition-transform group-hover:scale-105 shadow-lg shadow-[#22c55e]/20">
+             Choose PDF or DOCX
+          </span>
+        </div>
+        <p id="carl-file-name-display" class="mt-4 text-sm font-medium text-[#4ade80] hidden truncate max-w-full"></p>
+
+        <div class="mt-6">
+          <button type="button" id="btn-toggle-text-paste" class="text-[13px] font-medium text-[#9CA3AF] hover:text-white underline underline-offset-4">Or paste raw text instead</button>
+        </div>
+
+        <div id="carl-text-paste-zone" class="hidden mt-6 text-left">
+            <textarea id="carl-text-fallback" name="cv_text" rows="5"
+                      placeholder="Paste your CV or resume text here..."
+                      class="w-full rounded-2xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-[#22c55e] focus:ring-1 focus:ring-[#22c55e] transition shadow-inner"></textarea>
+        </div>
+
+        <div class="mt-8 border-t border-white/10 pt-8 flex justify-center">
+          <button type="submit" id="carl-upload-btn" class="carl-btn-analyze flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-white text-black px-6 py-3.5 font-bold transition hover:bg-gray-200 disabled:opacity-50 shadow-md">
+            <svg id="carl-analyze-spinner" class="hidden h-5 w-5 animate-spin text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span id="carl-analyze-text" class="text-[15px]">Analyze Profile</span>
+          </button>
+        </div>
+      </form>
+      <p id="carl-upload-error" class="mt-4 hidden rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 text-center font-medium"></p>
+    </div>
+  <div id="carl-upload-loading" class="fixed inset-0 z-[120] flex items-center justify-center bg-[#050b1a]/52 px-4 py-8 backdrop-blur-2xl" aria-live="polite" aria-busy="false">
     <div class="w-full max-w-xl rounded-2xl border border-white/15 bg-[#050f24]/78 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.52)] backdrop-blur-md sm:p-8">
       <div class="flex flex-col items-center justify-center gap-5">
         <div class="relative flex h-20 w-20 items-center justify-center">
@@ -443,7 +466,7 @@
         <div class="max-w-[16rem] text-center">
           <p class="carl-loading-wordmark">CARL</p>
           <p class="mt-2 text-base font-semibold tracking-tight text-white">Deep document pass</p>
-          <p id="troy-upload-loading-status" class="mt-2 min-h-[2.75rem] text-sm leading-relaxed text-[#9CA3AF]">Preparing your workspace…</p>
+          <p id="carl-upload-loading-status" class="mt-2 min-h-[2.75rem] text-sm leading-relaxed text-[#9CA3AF]">Preparing your workspace…</p>
         </div>
         <div class="h-px w-full max-w-[14rem] overflow-hidden rounded-full bg-white/10">
           <div class="carl-load-bar-inner h-full rounded-full bg-gradient-to-r from-transparent via-[#18A7EC] to-transparent"></div>
@@ -453,189 +476,197 @@
   </div>
 
   <!-- Full-page dashboard (shown after analyze) -->
-  <div id="troy-workspace" class="hidden flex min-h-[calc(100dvh-3.5rem)] flex-col xl:min-h-0">
+  <div id="carl-workspace" class="hidden min-h-[calc(100dvh-3.5rem)] flex-col xl:overflow-y-auto carl-scroll-dark">
     <!-- Terminal strip (top) -->
-    <div data-carl-reveal class="troy-card mx-3 mt-2 shrink-0 p-3 sm:mx-4 sm:p-4 xl:p-3">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2 mb-2 xl:pb-2 xl:mb-2">
+    <div data-carl-reveal class="bg-[#050505] border border-[#22c55e]/30 rounded-xl mx-3 mt-2 shrink-0 p-3 sm:mx-4 sm:p-4 xl:p-3 shadow-[inset_0_2px_18px_rgba(0,0,0,0.8)]">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#22c55e]/30 pb-2 mb-2 xl:pb-2 xl:mb-2 text-[#22c55e]">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-semibold text-white">Carl Terminal</span>
-          <span class="carl-pill rounded-full px-2 py-0.5 text-[11px] text-[#A8D8FF]">Live parse</span>
+          <span class="text-sm font-bold text-[#22c55e]">Carl Terminal</span>
+          <span class="rounded-full border border-[#22c55e]/50 bg-[#166534]/40 px-2 py-0.5 text-[11px] text-[#4ade80]">Live parse</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="relative flex h-2 w-2">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00bfff] opacity-40"></span>
-            <span class="relative inline-flex h-2 w-2 rounded-full bg-[#18a7ec]"></span>
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4ade80] opacity-40"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-[#22c55e]"></span>
           </span>
-          <span id="troy-terminal-status" class="text-xs font-medium text-[#00bfff]">Ready</span>
+          <span id="carl-terminal-status" class="text-xs font-bold text-[#4ade80]">Ready</span>
         </div>
       </div>
-      <div id="troy-terminal" class="carl-scroll-dark max-h-32 overflow-y-auto overflow-x-hidden font-mono text-[13px] leading-[1.45] text-[#8ecaff] xl:max-h-[5.25rem]"></div>
+      <div id="carl-terminal" class="carl-scroll-dark max-h-32 overflow-y-auto overflow-x-hidden font-mono text-[13px] leading-[1.45] text-[#4ade80] xl:max-h-[5.25rem]"></div>
     </div>
 
     <!-- Main grid -->
-    <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 p-3 sm:p-4 xl:grid-cols-12 xl:gap-3 xl:overflow-hidden">
-      <!-- Left: Candidate + documents -->
-      <div data-carl-reveal class="flex min-h-0 flex-col gap-3 xl:col-span-3 xl:h-full xl:min-h-0">
-        <div class="troy-card p-4">
+    <div class="grid grid-cols-1 gap-4 p-4 xl:grid-cols-12 xl:items-start">
+      <!-- Panel 1: Sidebar (3/12) -->
+      <div id="carl-sidebar" class="space-y-4 xl:col-span-3 min-w-0">
+        <div class="carl-card p-4">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Candidate</p>
           <div class="mt-3 flex gap-3">
             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1a73e8]/25 text-sm font-bold text-[#00bfff]">C</div>
             <div class="min-w-0">
-              <p id="troy-candidate-email" class="truncate text-base font-semibold text-white">
+              <p id="carl-candidate-email" class="truncate text-base font-semibold text-white">
                 {{ (session.get("user") or {}).get("email", "—") }}
               </p>
-              <p id="troy-persona-line" class="text-xs text-[#9CA3AF]">—</p>
+              <p id="carl-persona-line" class="text-xs text-[#9CA3AF]">—</p>
             </div>
           </div>
-          <h2 id="troy-headline" class="mt-4 text-sm font-semibold leading-snug text-white">—</h2>
-          <p id="troy-fit-summary" class="mt-2 text-xs leading-relaxed text-[#9CA3AF] text-justify xl:line-clamp-4"></p>
+          <h2 id="carl-headline" class="mt-4 text-sm font-semibold leading-snug text-white">—</h2>
+          <p id="carl-fit-summary" class="mt-2 text-xs leading-relaxed text-[#9CA3AF] text-justify xl:line-clamp-4"></p>
           <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div class="troy-card-soft rounded-lg py-2">
+            <div class="carl-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Level</p>
-              <p id="troy-level" class="text-xs font-semibold text-white">—</p>
+              <p id="carl-level" class="text-xs font-semibold text-white">—</p>
             </div>
-            <div class="troy-card-soft rounded-lg py-2">
+            <div class="carl-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Confidence</p>
-              <p id="troy-confidence" class="text-xs font-semibold text-[#00bfff]">—</p>
+              <p id="carl-confidence" class="text-xs font-semibold text-[#00bfff]">—</p>
             </div>
-            <div class="troy-card-soft rounded-lg py-2">
+            <div class="carl-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Words</p>
-              <p id="troy-word-count" class="text-xs font-semibold text-white">—</p>
+              <p id="carl-word-count" class="text-xs font-semibold text-white">—</p>
             </div>
           </div>
         </div>
-        <div class="troy-card flex min-h-[200px] flex-1 flex-col p-4 xl:min-h-0">
+        <div class="carl-card flex flex-col p-4">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Documents</p>
-          <ul id="troy-documents" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm"></ul>
-          <p id="troy-profile-sync" class="mt-2 hidden border-t border-white/10 pt-2 text-[11px] leading-relaxed text-[#6B7280]" aria-live="polite"></p>
+          <ul id="carl-documents" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm"></ul>
+          <p id="carl-profile-sync" class="mt-2 hidden border-t border-white/10 pt-2 text-[11px] leading-relaxed text-[#6B7280]" aria-live="polite"></p>
         </div>
       </div>
 
-      <!-- Analytics -->
-      <div data-carl-reveal class="troy-card flex min-h-0 flex-col p-4 xl:col-span-4 xl:h-full">
-        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Analytics</p>
-        <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
-          <button type="button" data-troy-tab="overview" class="troy-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium transition-colors">Overview</button>
-          <button type="button" data-troy-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Skills</button>
-          <button type="button" data-troy-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Signals</button>
-        </div>
+      <!-- Panel 2: Analytics (5/12) -->
+      <div id="carl-analytics-container" data-carl-reveal class="carl-card flex flex-col p-4 xl:col-span-5 min-w-0 h-full">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Analytics</p>
+          <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
+            <button type="button" data-carl-tab="overview" class="carl-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium transition-colors">Overview</button>
+            <button type="button" data-carl-tab="suggestions" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Suggestions</button>
+            <button type="button" data-carl-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Skills</button>
+            <button type="button" data-carl-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Signals</button>
+            <button type="button" data-carl-tab="actions" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Actions</button>
+          </div>
 
-        <div id="troy-panel-overview" class="troy-tab-panel carl-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto xl:gap-3">
-          <div class="troy-card-soft rounded-xl p-3">
-            <p class="text-xs font-medium text-[#9CA3AF]">ATS estimate</p>
-            <div class="mt-2 flex items-end justify-between gap-2">
-              <span id="troy-ats-score" class="text-3xl font-bold tabular-nums text-[#00bfff]">0</span>
-              <p id="troy-ats-coverage" class="text-right text-xs text-[#9CA3AF]"></p>
+          <div id="carl-panel-overview" class="carl-tab-panel carl-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto xl:gap-3">
+            <div class="relative bg-white/5 rounded-2xl p-4 overflow-hidden">
+              <div class="absolute inset-0 bg-gradient-to-br from-[#1a73e8]/10 to-transparent pointer-events-none"></div>
+              <p class="text-xs font-medium text-[#9CA3AF]">ATS Match Integrity</p>
+              <div class="mt-2 flex items-baseline justify-between">
+                <span id="carl-ats-score" class="text-4xl font-bold tabular-nums text-white drop-shadow-[0_0_10px_rgba(26,115,232,0.5)]">0</span>
+                <p id="carl-ats-coverage" class="text-right text-xs font-semibold text-[#00ffca]"></p>
+              </div>
             </div>
             <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-              <div class="rounded-lg bg-[#00bfff]/12 px-2 py-1.5 text-[#9bddff]">
-                <span class="text-[#6B7280]">Matched</span>
-                <p id="troy-keywords-hit" class="mt-0.5 font-medium text-[#d2efff]"></p>
-              </div>
-              <div class="rounded-lg bg-[#1a73e8]/15 px-2 py-1.5 text-[#9cc9ff]">
-                <span class="text-[#6B7280]">Missing</span>
-                <p id="troy-keywords-missing" class="mt-0.5 font-medium text-[#c7e2ff]"></p>
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center justify-center gap-5 py-1.5">
-            <div class="text-center">
-              <div id="troy-gauge-structure" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
-                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
-                  <span id="troy-gauge-structure-val">0</span>
+                <div class="rounded-lg bg-[#00bfff]/12 px-2 py-1.5 text-[#9bddff]">
+                  <span class="text-[#6B7280]">Matched</span>
+                  <p id="carl-keywords-hit" class="mt-0.5 font-medium text-[#d2efff]"></p>
+                </div>
+                <div class="rounded-lg bg-[#1a73e8]/15 px-2 py-1.5 text-[#9cc9ff]">
+                  <span class="text-[#6B7280]">Missing</span>
+                  <p id="carl-keywords-missing" class="mt-0.5 font-medium text-[#c7e2ff]"></p>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-[#6B7280]">Structure</p>
+            <div class="flex flex-wrap items-center justify-center gap-5 py-1.5">
+              <div class="text-center">
+                <div id="carl-gauge-structure" class="carl-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--carl-deg: 0deg;">
+                  <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
+                    <span id="carl-gauge-structure-val">0</span>
+                  </div>
+                </div>
+                <p class="mt-2 text-[11px] text-[#6B7280]">Structure</p>
+              </div>
+              <div class="text-center">
+                <div id="carl-gauge-keywords" class="carl-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--carl-deg: 0deg;">
+                  <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
+                    <span id="carl-gauge-keywords-val">0</span>
+                  </div>
+                </div>
+                <p class="mt-2 text-[11px] text-[#6B7280]">Keywords</p>
+              </div>
+              <div class="text-center">
+                <div id="carl-gauge-impact" class="carl-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--carl-deg: 0deg;">
+                  <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
+                    <span id="carl-gauge-impact-val">0</span>
+                  </div>
+                </div>
+                <p class="mt-2 text-[11px] text-[#6B7280]">Impact</p>
+              </div>
             </div>
-            <div class="text-center">
-              <div id="troy-gauge-keywords" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
-                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
-                  <span id="troy-gauge-keywords-val">0</span>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Core CV signals</p>
+              <div class="mt-2 grid grid-cols-2 gap-2">
+                <div class="carl-card-soft rounded-lg p-2">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Structure</p>
+                  <p id="carl-vital-structure" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
+                </div>
+                <div class="carl-card-soft rounded-lg p-2">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Keywords</p>
+                  <p id="carl-vital-keywords" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
+                </div>
+                <div class="carl-card-soft rounded-lg p-2">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Impact</p>
+                  <p id="carl-vital-impact" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
+                </div>
+                <div class="carl-card-soft rounded-lg p-2">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Narrative</p>
+                  <p id="carl-vital-narrative" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-[#6B7280]">Keywords</p>
             </div>
-            <div class="text-center">
-              <div id="troy-gauge-impact" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
-                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
-                  <span id="troy-gauge-impact-val">0</span>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Premium CV scan</p>
+              <div class="mt-2 grid grid-cols-3 gap-2">
+                <div class="carl-card-soft rounded-lg p-2 text-center">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Leadership</p>
+                  <p id="carl-metric-leadership" class="mt-1 text-[11px] font-semibold text-[#00bfff] uppercase tracking-wider">—</p>
+                </div>
+                <div class="carl-card-soft rounded-lg p-2 text-center">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Role Match</p>
+                  <p id="carl-metric-role-match" class="mt-1 text-[11px] font-semibold text-[#18a7ec] uppercase tracking-wider">—</p>
+                </div>
+                <div class="carl-card-soft rounded-lg p-2 text-center">
+                  <p class="text-[10px] uppercase text-[#6B7280]">Evidence</p>
+                  <p id="carl-metric-evidence" class="mt-1 text-[11px] font-semibold text-[#1a73e8] uppercase tracking-wider">—</p>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-[#6B7280]">Impact</p>
             </div>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Core CV signals</p>
-            <div class="mt-2 grid grid-cols-2 gap-2">
-              <div class="troy-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-[#6B7280]">Structure</p>
-                <p id="troy-vital-structure" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
-              </div>
-              <div class="troy-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-[#6B7280]">Keywords</p>
-                <p id="troy-vital-keywords" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
-              </div>
-              <div class="troy-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-[#6B7280]">Impact</p>
-                <p id="troy-vital-impact" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
-              </div>
-              <div class="troy-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-[#6B7280]">Narrative</p>
-                <p id="troy-vital-narrative" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Premium CV scan</p>
-            <div class="mt-2 grid grid-cols-3 gap-2">
-              <div class="troy-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-[#6B7280]">Leadership</p>
-                <p id="troy-metric-leadership" class="mt-1 text-base font-semibold text-[#00bfff]">0</p>
-              </div>
-              <div class="troy-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-[#6B7280]">Role Match</p>
-                <p id="troy-metric-role-match" class="mt-1 text-base font-semibold text-[#18a7ec]">0</p>
-              </div>
-              <div class="troy-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-[#6B7280]">Evidence</p>
-                <p id="troy-metric-evidence" class="mt-1 text-base font-semibold text-[#1a73e8]">0</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div id="troy-panel-skills" class="troy-tab-panel carl-scroll-dark mt-4 hidden flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <div id="troy-skills" class="space-y-3"></div>
-        </div>
+          <div id="carl-panel-skills" class="carl-tab-panel carl-scroll-dark mt-4 hidden flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <div id="carl-skills" class="space-y-3"></div>
+          </div>
 
-        <div id="troy-panel-risks" class="troy-tab-panel carl-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-          <div>
-            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Timeline</p>
-            <ul id="troy-timeline" class="mt-2 space-y-2 text-xs text-[#D1D5DB]"></ul>
+          <div id="carl-panel-risks" class="carl-tab-panel carl-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+            <div>
+              <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Timeline</p>
+              <ul id="carl-timeline" class="mt-2 space-y-2 text-xs text-[#D1D5DB]"></ul>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Risk flags</p>
+              <ul id="carl-risk-flags" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FCA5A5]"></ul>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Quick wins</p>
+              <ul id="carl-quick-wins" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FDE68A]"></ul>
+            </div>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Risk flags</p>
-            <ul id="troy-risk-flags" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FCA5A5]"></ul>
+          <div id="carl-panel-suggestions" class="carl-tab-panel carl-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+            <div>
+              <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Missing Technologies</p>
+              <ul id="carl-suggestions-tech" class="mt-2 list-disc space-y-2 pl-4 text-xs text-[#E5E5E5]"></ul>
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Recommended Certifications</p>
+              <ul id="carl-suggestions-certs" class="mt-2 list-disc space-y-2 pl-4 text-xs text-[#E5E5E5]"></ul>
+            </div>
           </div>
-          <div>
-            <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Quick wins</p>
-            <ul id="troy-quick-wins" class="mt-2 list-disc space-y-1 pl-4 text-xs text-[#FDE68A]"></ul>
-          </div>
-        </div>
+
       </div>
 
-      <!-- Actions feed -->
-      <div data-carl-reveal class="troy-card flex min-h-0 flex-col p-4 xl:col-span-2 xl:h-full">
-        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Actions</p>
-        <div id="troy-actions" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"></div>
-      </div>
-
-      <!-- Chat -->
-      <aside data-carl-reveal class="troy-card flex min-h-[320px] flex-col p-4 xl:col-span-3 xl:h-full xl:min-h-0">
+      <!-- Panel 3: Talk to Carl (4/12) -->
+      <aside id="carl-chat-container" data-carl-reveal class="carl-card flex min-h-[480px] flex-col p-4 xl:col-span-4 min-w-0 h-full">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
         <p class="mt-1 text-[11px] text-[#6B7280]">Three short questions about <span class="text-[#9CA3AF]">this</span> analysis only—use the chips or mention keywords from your pass.</p>
-        <div id="troy-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
-        <div id="troy-chat-chips" class="mt-2 flex flex-wrap gap-2 hidden" aria-label="Suggested prompts"></div>
+        <div id="carl-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
+        <div id="carl-chat-chips" class="mt-2 flex flex-wrap gap-2 hidden" aria-label="Suggested prompts"></div>
         <div id="carl-api-cta" class="mt-3 hidden rounded-xl border border-[#1a73e8]/35 bg-[#1a73e8]/12 p-3 text-xs text-[#E5E5E5]">
           <p class="font-semibold text-white">Continue with the Jobs API</p>
           <p class="mt-1 text-[#9CA3AF]">You have used the three free prompts for this CV pass. Run <strong>Analyze</strong> again for another round, or connect your product via our API.</p>
@@ -644,19 +675,52 @@
             <a id="carl-cta-pricing" href="{{ url_for('payments.pricing') }}" class="inline-flex items-center rounded-lg bg-[#FF7A00] px-3 py-1.5 font-medium text-[#0D0D0D] hover:bg-[#ff8f26]">API pricing</a>
           </div>
         </div>
-        <form id="troy-chat-form" class="mt-3">
-          <div class="flex items-center gap-2 rounded-full border border-white/20 bg-[rgba(8,18,42,0.38)] px-3 py-1.5 backdrop-blur-md">
-            <span class="text-[#6B7280]" aria-hidden="true">
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-            </span>
-            <input type="text" id="troy-chat-input" placeholder="Optional: tie your question to this pass (max 280 chars)…" maxlength="280"
+        <form id="carl-chat-form" class="mt-3">
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2 rounded-full border border-white/20 bg-[rgba(8,18,42,0.38)] px-3 py-1.5 backdrop-blur-md">
+              <span class="text-[#6B7280]" aria-hidden="true">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+              </span>
+            <input type="text" id="carl-chat-input" placeholder="Optional: tie your question to this pass (max 280 chars)…" maxlength="280"
                    class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-0">
-            <button type="submit" id="troy-chat-submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a73e8] text-white hover:bg-[#18a7ec]" aria-label="Send">
+            <button type="submit" id="carl-chat-submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a73e8] text-white hover:bg-[#18a7ec]" aria-label="Send">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
             </button>
+            </div>
+            <div class="flex justify-end pr-3">
+               <span id="chat-char-counter" class="text-[10px] text-[#6B7280]">0/280</span>
+            </div>
           </div>
         </form>
-      </aside>
+        </aside>
+    </div>
+
+    <!-- Carl's Career Radar -->
+    <div id="carl-matches-section" data-carl-reveal class="hidden mt-6 mx-3 sm:mx-4 xl:mx-0 w-full rounded-3xl border border-white/10 bg-[#111]/30 p-6 sm:p-8 shadow-2xl backdrop-blur-md transition-all">
+      <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <svg class="h-5 w-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+          Carl's Career Radar
+        </h2>
+        <a href="/jobs" class="text-sm font-semibold text-[#18a7ec] hover:text-white transition">Search all jobs &rarr;</a>
+      </div>
+      
+      <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="flex flex-col gap-3">
+          <p class="text-xs font-bold uppercase tracking-wider text-[#00bfff]">Recommended Roles</p>
+          <div id="carl-match-jobs" class="flex flex-col gap-3"></div>
+        </div>
+        
+        <div class="flex flex-col gap-3">
+          <p class="text-xs font-bold uppercase tracking-wider text-[#22c55e]">Top Tech Targets</p>
+          <div id="carl-match-companies" class="flex flex-col gap-3"></div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <p class="text-xs font-bold uppercase tracking-wider text-[#FF7A00]">Niche & Remote Targets</p>
+          <div id="carl-match-niche" class="flex flex-col gap-3"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

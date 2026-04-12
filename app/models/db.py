@@ -159,6 +159,8 @@ def upsert_profile_cv_extract(
     meta: Optional[Dict[str, Any]] = None,
     *,
     email: Optional[str] = None,
+    analysis_full: Optional[Dict[str, Any]] = None,
+    cv_url: Optional[str] = None,
 ) -> str:
     """Insert or update ``profiles`` with parsed CV (handles missing profile row). Returns ``ok`` or ``error``."""
     uid = (user_id or "").strip()
@@ -170,15 +172,26 @@ def upsert_profile_cv_extract(
         with db.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO profiles (id, email, cv_extracted_text, cv_meta, cv_extracted_at, updated_at)
-                VALUES (%s::uuid, %s, %s, %s::jsonb, NOW(), NOW())
+                INSERT INTO profiles (
+                    id, email, cv_extracted_text, cv_meta, cv_extracted_at, updated_at,
+                    cv_analysis_full, cv_url
+                )
+                VALUES (
+                    %s::uuid, %s, %s, %s::jsonb, NOW(), NOW(),
+                    %s::jsonb, %s
+                )
                 ON CONFLICT (id) DO UPDATE SET
                     cv_extracted_text = EXCLUDED.cv_extracted_text,
                     cv_meta = EXCLUDED.cv_meta,
                     cv_extracted_at = EXCLUDED.cv_extracted_at,
+                    cv_analysis_full = EXCLUDED.cv_analysis_full,
+                    cv_url = EXCLUDED.cv_url,
                     updated_at = NOW()
                 """,
-                (uid, email_val, cv_text, json.dumps(meta or {})),
+                (
+                    uid, email_val, cv_text, json.dumps(meta or {}),
+                    json.dumps(analysis_full or {}), cv_url
+                ),
             )
         return "ok"
     except Exception as exc:
@@ -244,6 +257,12 @@ def init_db():
             )
             cur.execute(
                 "ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id TEXT"
+            )
+            cur.execute(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cv_url TEXT"
+            )
+            cur.execute(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cv_analysis_full JSONB"
             )
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS salary_submissions (

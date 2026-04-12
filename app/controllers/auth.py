@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+import re
 import secrets
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
@@ -221,6 +223,10 @@ def register():
         email = validate_email(email, check_deliverability=False).normalized
     except Exception:
         flash("Please enter a valid email.", "error")
+        return render_template("register.html", tab=action, account_type=account_type), 400
+
+    if action == "signup" and len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
         return render_template("register.html", tab=action, account_type=account_type), 400
 
     sb = _get_supabase()
@@ -539,3 +545,36 @@ def hire_onboarding():
     session["user"]["hire_access"] = True
     flash("Company profile saved. Welcome to Hire.", "success")
     return redirect(url_for("auth.hire"))
+
+
+def upload_cv_to_storage(user_id: str, filename: str, file_bytes: bytes) -> Optional[str]:
+    """Upload CV bytes to Supabase Storage for Carl persistence. Returns public URL or None."""
+    uid = (user_id or "").strip()
+    if not uid or not file_bytes:
+        return None
+    admin = _get_supabase_admin()
+    if admin is None:
+        return None
+    bucket = (os.getenv("SUPABASE_CV_BUCKET") or "carl-cvs").strip()
+    if not bucket:
+        return None
+    safe = re.sub(r"[^a-zA-Z0-9._-]+", "_", (filename or "cv.pdf").strip())[:120] or "cv.pdf"
+    path = f"{uid}/{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{safe}"
+    try:
+        admin.storage.from_(bucket).upload(
+            path,
+            file_bytes,
+            file_options={"content-type": "application/pdf", "upsert": "true"},
+        )
+    except Exception as exc:
+        logger.warning("upload_cv_to_storage upload failed: %s", exc)
+        return None
+    try:
+        res = admin.storage.from_(bucket).get_public_url(path)
+        if isinstance(res, str):
+            return res
+        if isinstance(res, dict):
+            return str(res.get("publicUrl") or res.get("publicURL") or "") or None
+    except Exception as exc:
+        logger.warning("upload_cv_to_storage public URL failed: %s", exc)
+    return None

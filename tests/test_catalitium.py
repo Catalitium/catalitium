@@ -394,6 +394,17 @@ def test_carl_get_ok_when_logged_in(carl_client):
     assert "csrf_token" in r.get_data(as_text=True)
 
 
+def test_carl_dashboard_markup_three_column_grid(carl_client):
+    """Regression: malformed closing divs once dropped chat out of the xl grid."""
+    _carl_login(carl_client)
+    html = carl_client.get("/carl").get_data(as_text=True)
+    assert 'id="carl-sidebar"' in html
+    assert 'id="carl-analytics-container"' in html
+    assert 'id="carl-chat-container"' in html
+    assert 'id="carl-chat-form"' in html
+    assert html.index("carl-analytics-container") < html.index("carl-chat-container")
+
+
 def test_carl_analyze_requires_login(carl_client):
     r = carl_client.post("/carl/analyze", data={})
     assert r.status_code == 401
@@ -461,7 +472,7 @@ def test_carl_chat_turn_limit_and_grounding(carl_client):
 def test_carl_analyze_merges_cv_meta_payload(carl_client, monkeypatch):
     captured: list = []
 
-    def _capture(user_id: str, cv_text: str, meta: Dict[str, Any], email=None):
+    def _capture(user_id: str, cv_text: str, meta: Dict[str, Any], email=None, **kwargs):
         captured.append(meta)
         return "ok"
 
