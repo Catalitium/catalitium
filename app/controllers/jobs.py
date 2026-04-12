@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 import json as _json
 import os
 import re
@@ -28,9 +27,14 @@ from flask import (
     url_for,
 )
 
-from ..config import GUEST_DAILY_LIMIT, SITEMAP_CACHE_TTL
-from ..mailer import send_subscribe_welcome
-from ..market_reports_data import REPORTS
+from ..config import SITEMAP_CACHE_TTL
+from ..utils import (
+    DEMO_JOBS,
+    REPORTS,
+    guest_daily_consume,
+    guest_daily_remaining,
+    send_subscribe_welcome,
+)
 from ..models.catalog import (
     Job,
     clean_job_description_text,
@@ -289,69 +293,15 @@ def _call_anthropic(description: str, api_key: str):
 
 ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
 
-_DEMO_JOBS_CSV = Path(__file__).resolve().parent.parent / "data" / "demo_jobs.csv"
-
-def _get_demo_jobs():
-    """Return demo jobs for empty search results, loaded from demo_jobs.csv."""
-    jobs = []
-    try:
-        with open(_DEMO_JOBS_CSV, newline="", encoding="utf-8") as fh:
-            for i, row in enumerate(csv.DictReader(fh), start=1):
-                jobs.append({
-                    "id": f"demo-{i}",
-                    "title": row.get("title", ""),
-                    "company": row.get("company", ""),
-                    "location": row.get("location", ""),
-                    "description": row.get("description", ""),
-                    "date_posted": row.get("date_posted", ""),
-                    "date_raw": "",
-                    "link": "",
-                    "is_new": False,
-                    "is_ghost": False,
-                    "match_score": None,
-                    "match_reasons": [],
-                    "median_salary": None,
-                    "median_salary_currency": None,
-                    "median_salary_compact": None,
-                    "estimated_salary_range_compact": None,
-                    "estimated_salary_range_numeric": None,
-                    "salary_delta_pct": None,
-                    "salary_uplift_factor": None,
-                })
-    except Exception as exc:
-        logger.warning("_get_demo_jobs: could not load %s: %s", _DEMO_JOBS_CSV, exc)
-    return jobs
-
-
-
-# Email functions live in app/mailer.py — imported at the top of this file.
+# Email/data functions consolidated in app/utils.py.
 
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
-# ---------------------------------------------------------------------------
-# Guest daily job view limit  (threshold defined in app/config.py)
-# ---------------------------------------------------------------------------
-
-
-def _guest_daily_remaining() -> int:
-    """Return remaining guest job views for today. -1 means unlimited (signed in or subscribed)."""
-    if session.get("user") or session.get("subscribed"):
-        return -1
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if session.get("_guest_date") != today:
-        session["_guest_date"] = today
-        session["_guest_seen"] = 0
-        session.modified = True
-    return max(0, GUEST_DAILY_LIMIT - int(session.get("_guest_seen") or 0))
-
-
-def _guest_daily_consume(count: int) -> None:
-    """Record that `count` jobs were shown to a guest today."""
-    if session.get("user") or session.get("subscribed"):
-        return
-    session["_guest_seen"] = int(session.get("_guest_seen") or 0) + count
-    session.modified = True
+# Guest daily limit helpers live in app/utils.py (guest_daily_remaining / guest_daily_consume).
+# Aliased here for backward-compat with call sites in this file.
+_guest_daily_remaining = guest_daily_remaining
+_guest_daily_consume = guest_daily_consume
 
 
 def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
@@ -724,11 +674,10 @@ def jobs():
         items.append(item_payload)
 
     if not raw_title and not raw_country and not items:
-        demo_jobs = _get_demo_jobs()
-        items = demo_jobs
-        total = len(demo_jobs)
+        items = DEMO_JOBS
+        total = len(DEMO_JOBS)
         page = 1
-        per_page = len(demo_jobs)
+        per_page = len(DEMO_JOBS)
         per_page_display = display_per_page(per_page)
 
     per_page_display = display_per_page(per_page)

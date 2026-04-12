@@ -16,7 +16,7 @@ from ..config import (
     CARL_CHAT_MAX_REPLY_CHARS,
     CARL_CHAT_MAX_TURNS,
 )
-from ..market_reports_data import REPORTS
+from ..utils import REPORTS
 from ..models.cv import CVExtractionError, extract_cv_from_upload, normalize_cv_text
 from ..models.db import SUPABASE_URL, logger, upsert_profile_cv_extract
 from ..models.identity import get_user_subscriptions

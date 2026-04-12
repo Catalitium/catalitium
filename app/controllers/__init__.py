@@ -19,3 +19,15 @@ ALL_BLUEPRINTS = (
     payments_bp,
     api_bp,
 )
+
+__all__ = [
+    "ALL_BLUEPRINTS",
+    "api_bp",
+    "auth_bp",
+    "browse_bp",
+    "carl_bp",
+    "insights_bp",
+    "jobs_bp",
+    "payments_bp",
+    "salary_bp",
+]

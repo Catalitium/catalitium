@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from .db import get_db, logger
+from ..utils import now_iso
 
 
 def insert_salary_submission(
@@ -616,11 +617,6 @@ def get_salary_trends(
 
     _cache_set(cache_key, trends)
     return trends
-
-
-def now_iso() -> str:
-    """UTC timestamp in ISO-8601 seconds precision."""
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def safe_salary_context(location: str) -> Dict[str, Any]:

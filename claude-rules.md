@@ -100,27 +100,27 @@ Keep a one-page **release checklist** (env, redirects, smoke commands) checked b
 
 ### Top 5 — optimization by simplification
 
-1. **One “how to run” path** — `README.md` + `run.py` + `.env.example` as the only entry narrative; delete scattered duplicate instructions.  
-2. **Smaller hot files** — move new routes out of `factory.py` into `controllers/` as the default habit so the factory stays wiring-only.  
-3. **Single task source** — either `tasks/todo.md` or GitHub issues, not both silently; reduces dropped context.  
-4. **Script index** — one `scripts/README` table: purpose, required env, exit codes; stops guesswork before deploy.  
-5. **Branch hygiene command** — document `git fetch && git branch --merged main` (and when to use `-D`) so merged feature branches do not linger.
+1. **`jobs.py` (≈1,800 LOC)** is the new `app.py` — routes, query helpers, guest tracking, sitemap, and robots.txt in one file. Split into `jobs_core.py` (landing + listings), `jobs_api.py` (api_* endpoints), `jobs_forms.py` (subscribe / contact / posting).
+2. **`catalog.py` (≈1,650 LOC)** — career-tools bloc (`compute_ai_exposure`, `compute_market_position`, `get_career_paths`, `get_hiring_velocity`) is ≈300 LOC of unrelated concern; extract to `models/career_tools.py`.
+3. **`identity.py` (≈528 LOC)** spans 4 unrelated domains: subscribers, contact forms, API keys, Stripe subscriptions. Split each into its own focused module under `models/`.
+4. **DB error-handling inconsistency** — `identity.py`/`money.py` return `”ok”/”error”` strings; `catalog.py` raises exceptions. Pick one pattern (prefer exceptions) and standardise across all models.
+5. **`api_ok`/`api_fail` vs `api_error_response`/`api_success_response`** — two tiers for the same thing. Controllers should use only the Flask-aware pair; remove the dict-only layer from `__all__`.
 
 ### Top 5 — low-hanging fruit (simple enhancements)
 
-1. **CI or `scripts/` one-liner** — `python -m compileall app && pytest tests -q` in docs or a tiny `Makefile`/`justfile` target.  
-2. **Supabase checklist in repo** — bullet list: Site URL, redirect allowlist for `/auth/confirm`, email template sanity (link to `.env.example`).  
-3. **404/redirect audit script** — extend existing smoke to assert removed routes (`/compare`) stay gone.  
-4. **`.cursor/rules` + `claude-rules.md`** — keep them in sync with one line at top of each pointing to the other (already mirrored in `.mdc`).  
-5. **Optional `pyvenv.cfg` note** — already in `run.py`; link from README “Troubleshooting” once.
+1. **`now_iso()` precision** — `utils.py` emits full ISO (no `timespec`), but old callers used `timespec=”seconds”`. Align to one format and document the choice.
+2. **`models/__init__.py` is empty** — add `__all__` listing public callables, for discoverability parity with `controllers/__init__.py`.
+3. **`deploy.txt` at root** — orphaned deployment notes not linked from anywhere. Absorb useful parts into `README.md` and delete.
+4. **`app/__init__.py` is empty** — add a one-line docstring so bare package imports are self-documenting.
+5. **`tests/smoke_prod.ps1`** — last PowerShell file in the repo. Document the equivalent bash/python invocation in a comment, or convert to a cross-platform Python script.
 
-### Top 5 — reconciliation (align divergent truths)
+### Top 5 — Next things to-do (align divergent truths)
 
-1. **`CLAUDE.md` vs `README.md`** — same feature list and stack version cues; one defers to the other for details.  
-2. **Environment variables** — grep `os.getenv` / `environ` vs `.env.example`; missing keys documented.  
-3. **Auth surfaces** — `/register`, `/auth/forgot`, `/auth/confirm`, `/auth/session` listed in one short doc section next to Supabase dashboard steps.  
-4. **“Compare” naming** — salary `/salary/compare-cities` vs removed job `/compare` called out once to prevent accidental resurrection.  
-5. **Git ignore vs tracked** — `.claude/` local only; `.cursor/rules/` tracked; no duplicate tracked secrets under ignored folders.
+1. **`jobs.py` alias** — `_guest_daily_remaining = guest_daily_remaining` is a backward-compat alias. Remove it once all call sites in the file use the public name directly.
+2. **SMTP smoke test coverage** — `utils.py` now owns all SMTP logic (merged from `mailer.py`); confirm `tests/smtp_smoke_test.py` still hits the right code path.
+3. **Weekly digest entry-point** — `run_weekly_digest()` lives in `utils.py` with no documented cron command. Add invocation to `README.md`: `python -c “from app.utils import run_weekly_digest; import sys; sys.exit(run_weekly_digest())”`.
+4. **`validate_market_reports` entry-point** — update any CI or cron reference still pointing at the deleted `scripts/validate_market_reports.py` to call `from app.utils import validate_market_reports` instead.
+5. **Stash hygiene** — `git stash list` has 3 old WIP stashes; pop or drop them so future `stash pop` cannot resurface abandoned route/service experiments.
 
 ---
 

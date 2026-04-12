@@ -32,7 +32,7 @@ from ..models.identity import (
     sync_api_key_quota_for_api_access,
     upsert_user_subscription,
 )
-from ..mailer import (
+from ..utils import (
     send_api_access_key_provisioned,
     send_api_access_payment_confirmed,
     send_api_key_activation_reminder,

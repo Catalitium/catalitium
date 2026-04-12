@@ -4,10 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional
 
 from .db import get_db, logger, _is_unique_violation
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+from ..utils import now_iso as _now_iso
 
 
 JOB_POSTING_ACTIVE_DAYS = 10

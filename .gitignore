@@ -57,8 +57,6 @@ Thumbs.db
 
 # Project specific
 data/archive/
-docs/
-!docs/sprints/
 app/**/__pycache__/
 app/models/__pycache__/
 app/controllers/__pycache__/
@@ -97,6 +95,9 @@ app/static/css/tailwind.css
 
 # Node / Tailwind build
 node_modules/
+
+# Windows shell crash dumps
+*.stackdump
 
 # Local agent/skill dirs
 .agent/
