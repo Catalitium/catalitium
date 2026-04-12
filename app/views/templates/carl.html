@@ -481,7 +481,9 @@
           <div class="mt-3 flex gap-3">
             <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1a73e8]/25 text-sm font-bold text-[#00bfff]">C</div>
             <div class="min-w-0">
-              <p class="text-base font-semibold text-white">Catalitium</p>
+              <p id="troy-candidate-email" class="truncate text-base font-semibold text-white">
+                {{ (session.get("user") or {}).get("email", "—") }}
+              </p>
               <p id="troy-persona-line" class="text-xs text-[#9CA3AF]">—</p>
             </div>
           </div>
@@ -505,6 +507,7 @@
         <div class="troy-card flex min-h-[200px] flex-1 flex-col p-4 xl:min-h-0">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Documents</p>
           <ul id="troy-documents" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm"></ul>
+          <p id="troy-profile-sync" class="mt-2 hidden border-t border-white/10 pt-2 text-[11px] leading-relaxed text-[#6B7280]" aria-live="polite"></p>
         </div>
       </div>
 
@@ -630,15 +633,25 @@
       <!-- Chat -->
       <aside data-carl-reveal class="troy-card flex min-h-[320px] flex-col p-4 xl:col-span-3 xl:h-full xl:min-h-0">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
+        <p class="mt-1 text-[11px] text-[#6B7280]">Three short questions about <span class="text-[#9CA3AF]">this</span> analysis only—use the chips or mention keywords from your pass.</p>
         <div id="troy-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
+        <div id="troy-chat-chips" class="mt-2 flex flex-wrap gap-2 hidden" aria-label="Suggested prompts"></div>
+        <div id="carl-api-cta" class="mt-3 hidden rounded-xl border border-[#1a73e8]/35 bg-[#1a73e8]/12 p-3 text-xs text-[#E5E5E5]">
+          <p class="font-semibold text-white">Continue with the Jobs API</p>
+          <p class="mt-1 text-[#9CA3AF]">You have used the three free prompts for this CV pass. Run <strong>Analyze</strong> again for another round, or connect your product via our API.</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <a id="carl-cta-developers" href="{{ url_for('developers') }}" class="inline-flex items-center rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/15">Developers</a>
+            <a id="carl-cta-pricing" href="{{ url_for('stripe_routes.pricing') }}" class="inline-flex items-center rounded-lg bg-[#1a73e8] px-3 py-1.5 font-medium text-white hover:bg-[#18a7ec]">API pricing</a>
+          </div>
+        </div>
         <form id="troy-chat-form" class="mt-3">
           <div class="flex items-center gap-2 rounded-full border border-white/20 bg-[rgba(8,18,42,0.38)] px-3 py-1.5 backdrop-blur-md">
             <span class="text-[#6B7280]" aria-hidden="true">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
             </span>
-            <input type="text" id="troy-chat-input" placeholder="Ask me anything…"
+            <input type="text" id="troy-chat-input" placeholder="Optional: tie your question to this pass (max 280 chars)…" maxlength="280"
                    class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-0">
-            <button type="submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a73e8] text-white hover:bg-[#18a7ec]" aria-label="Send">
+            <button type="submit" id="troy-chat-submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a73e8] text-white hover:bg-[#18a7ec]" aria-label="Send">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
             </button>
           </div>

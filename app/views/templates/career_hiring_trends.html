@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Hiring Velocity Dashboard | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Track which companies are ramping up or slowing down hiring. Real-time hiring velocity data from Catalitium.">
+<link rel="canonical" href="{{ url_for('career.career_hiring_trends', _external=True) }}">
+<meta property="og:title" content="Hiring Velocity Dashboard | Catalitium">
+<meta property="og:description" content="See which companies are hiring aggressively and which are slowing down.">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center">
+        <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" viewBox="0 0 24 24" fill="none"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Hiring Velocity</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">30-day hiring momentum by company</p>
+      </div>
+    </div>
+    <form method="get" class="flex flex-wrap gap-2">
+      <input name="location" type="text" placeholder="Location filter" value="{{ request.args.get('location', '') }}"
+             class="rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none">
+      <input name="function" type="text" placeholder="Function filter" value="{{ request.args.get('function', '') }}"
+             class="rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-brand/50 focus:outline-none">
+      <button type="submit" class="rounded-xl bg-brand text-white px-4 py-2 text-sm font-semibold hover:opacity-90 transition">Filter</button>
+    </form>
+  </div>
+
+  {% if not velocity %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center">
+    <p class="text-slate-500 dark:text-slate-400">No hiring velocity data available.</p>
+  </div>
+  {% else %}
+
+  {% set growing = velocity|selectattr('trend', 'equalto', 'growing')|list %}
+  {% set declining = velocity|selectattr('trend', 'equalto', 'declining')|list %}
+  {% set stable = velocity|selectattr('trend', 'equalto', 'stable')|list %}
+
+  {% if growing %}
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-emerald-700 dark:text-emerald-400 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M5 15l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Hot Companies
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for v in growing %}
+      <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">{{ v.company_name }}</p>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-sm text-slate-600 dark:text-slate-400">{{ v.recent_count }} jobs (30d)</span>
+          <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">+{{ v.velocity_pct }}%</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">{{ v.total_jobs }} total postings</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if declining %}
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-rose-700 dark:text-rose-400 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M19 9l-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Cooling Down
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for v in declining %}
+      <div class="rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">{{ v.company_name }}</p>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-sm text-slate-600 dark:text-slate-400">{{ v.recent_count }} jobs (30d)</span>
+          <span class="text-sm font-bold text-rose-600 dark:text-rose-400">{{ v.velocity_pct }}%</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">{{ v.total_jobs }} total postings</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if stable %}
+  <section class="mb-8">
+    <h2 class="text-lg font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Stable Hirers
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for v in stable %}
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">{{ v.company_name }}</p>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-sm text-slate-600 dark:text-slate-400">{{ v.recent_count }} jobs (30d)</span>
+          <span class="text-sm font-semibold text-slate-500">{{ v.velocity_pct }}%</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">{{ v.total_jobs }} total postings</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

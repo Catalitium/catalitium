@@ -68,6 +68,20 @@ python run.py
 
 Visit `http://localhost:5000`
 
+**Pre-deploy smoke** (with `.env` configured):
+
+```bash
+python scripts/smoke_db_tables.py
+python scripts/supabase_smoke_test.py   # optional; broader DB checks
+python scripts/smoke_routes_http.py     # Flask test_client: /health, /jobs, sitemap, job detail
+```
+
+**Post-deploy (production URLs)** — after DNS/deploy:
+
+```powershell
+pwsh -File scripts/smoke_prod.ps1
+```
+
 ---
 
 ## Project Structure
@@ -88,8 +102,7 @@ catalitium/
 │           ├── base.html       # Layout, nav, service worker, cookie consent
 │           ├── components/     # Reusable partials (job_card, promo_card)
 │           └── reports/        # Market research report pages
-├── scripts/                    # Utility scripts (email digest, smoke tests)
-├── tests/                      # Pytest smoke + prod-readiness tests
+├── scripts/                    # Utility scripts (email digest, DB/HTTP smoke tests)
 ├── public/                     # Static assets served directly (testimonial images)
 ├── .env.example                # All required env vars — copy to .env to run locally
 ├── requirements.txt            # Pinned Python dependencies

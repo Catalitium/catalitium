@@ -44,8 +44,12 @@ data/archive/
 
 # Development/IDE
 .idea/
-.vscode/
-.cursor/
+.vscode/*
+!.vscode/settings.json
+# Cursor: ignore local UI state; share team rules under .cursor/rules/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 *.swp
 *.swo
 .DS_Store
@@ -54,10 +58,17 @@ Thumbs.db
 # Project specific
 data/archive/
 docs/
+!docs/sprints/
 app/**/__pycache__/
 app/models/__pycache__/
 app/controllers/__pycache__/
 app/views/__pycache__/
+
+# Sprint artifacts at repo root (should live in docs/sprints/)
+/PLAN.md
+/HANDOFF.md
+/AGENT_CONTRACT.md
+/NEXT_STEPS_PROPOSAL.md
 
 # Local scratch at repo root (tracked tasks live under tasks/)
 /todo.md
@@ -93,3 +104,4 @@ node_modules/
 # Track tasks/todo.md; ignore other task exports
 tasks/*
 !tasks/todo.md
+worktrees/

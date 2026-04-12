@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Browse Jobs by Function Category | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Explore tech job categories: Backend, Frontend, ML/AI, Data, DevOps, and more. See job counts and salary data availability.">
+<link rel="canonical" href="{{ url_for('explore.explore_functions', _external=True) }}">
+<meta property="og:title" content="Browse by Function | Catalitium">
+<meta property="og:description" content="Explore tech jobs by function category with salary data insights.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('explore.explore_functions', _external=True) }}">
+{% endblock %}
+
+{% block content %}
+<section class="pt-8 sm:pt-16 pb-8">
+  <div class="mx-auto max-w-6xl px-4 text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      Browse by <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-brand">Function</span>
+    </h1>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+      Explore job categories across the tech industry. Each card shows how many roles are available and what percentage include salary data.
+    </p>
+    <div class="mt-4">
+      <a href="{{ url_for('explore.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
+    </div>
+  </div>
+</section>
+
+{% set cat_colors = {
+  'Backend': 'emerald',
+  'Frontend': 'sky',
+  'Fullstack': 'brand',
+  'ML/AI': 'violet',
+  'Data': 'amber',
+  'DevOps': 'indigo',
+  'Product': 'rose',
+  'Design': 'pink',
+  'Security': 'red',
+  'Management': 'slate',
+  'Other': 'slate',
+} %}
+
+{% set cat_icons = {
+  'Backend': '<path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  'Frontend': '<rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.5"/>',
+  'Fullstack': '<path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  'ML/AI': '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  'Data': '<path d="M3 12h4l3-9 4 18 3-9h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'DevOps': '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  'Product': '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  'Design': '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  'Security': '<path d="M12 2L4 6v5c0 5.55 3.4 10.74 8 12 4.6-1.26 8-6.45 8-12V6l-8-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  'Management': '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+} %}
+
+<section class="pb-16">
+  <div class="mx-auto max-w-6xl px-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for item in functions %}
+      {% set color = cat_colors.get(item.function, 'slate') %}
+      <a href="{{ url_for('jobs', function=item.function) }}"
+         class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-brand dark:hover:border-brand hover:shadow-md transition-all">
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-{{ color }}-50 dark:bg-{{ color }}-900/30 border border-{{ color }}-200 dark:border-{{ color }}-800 flex items-center justify-center">
+            <svg class="w-5 h-5 text-{{ color }}-600 dark:text-{{ color }}-400" viewBox="0 0 24 24" fill="none">{{ cat_icons.get(item.function, cat_icons.get('Backend', '')) }}</svg>
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-base font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand">{{ item.function }}</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">{{ '{:,}'.format(item.job_count) }} jobs</p>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span>{{ item.has_salary_pct }}% with salary data</span>
+          <span class="text-brand opacity-0 group-hover:opacity-100 transition-opacity font-medium">Browse &rarr;</span>
+        </div>
+        <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+          <div class="h-1.5 rounded-full bg-gradient-to-r from-brand/60 to-brand" style="width: {{ item.has_salary_pct }}%"></div>
+        </div>
+      </a>
+      {% else %}
+      <p class="col-span-full text-sm text-slate-500">No function data available yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Salary Trends | Monthly Market Data | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Monthly tech salary trends from live job listings. Track whether the market is going up or down. Filter by function or city."/>
+<link rel="canonical" href="{{ url_for('salary.salary_trends', _external=True) }}">
+<meta property="og:title" content="Salary Trends | Monthly Market Data | Catalitium"/>
+<meta property="og:description" content="Track monthly salary trends in tech. Is the market going up or down? Filter by function or city."/>
+<meta property="og:type" content="website"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+  <nav class="text-xs text-slate-400 mb-6">
+    <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand">Salary Tools</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-600 dark:text-slate-300">Trends</span>
+  </nav>
+
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Salary Intelligence</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Salary Trends</h1>
+    <p class="mt-2 text-slate-500 dark:text-slate-400">
+      Monthly salary data aggregated from live job listings. Track market movements by function or city.
+    </p>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" action="{{ url_for('salary.salary_trends') }}" class="flex flex-wrap gap-3 items-end mb-8">
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Function</span>
+      <select name="category"
+              class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+        <option value="">All Functions</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="flex flex-col gap-1.5">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">City</span>
+      <input type="text" name="city" value="{{ selected_city or '' }}"
+             placeholder="e.g. Zurich"
+             class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+    </label>
+    <button type="submit"
+            class="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      Update
+    </button>
+    {% if selected_category or selected_city %}
+    <a href="{{ url_for('salary.salary_trends') }}"
+       class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm text-slate-500 hover:text-brand hover:border-brand transition-colors">
+      Clear
+    </a>
+    {% endif %}
+  </form>
+
+  {% if trends %}
+  <!-- Interpretation -->
+  {% if trends|length >= 2 %}
+  {% set latest = trends[0].median_salary %}
+  {% set oldest = trends[-1].median_salary %}
+  <div class="rounded-xl px-5 py-4 mb-6
+              {% if latest > oldest %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800
+              {% elif latest < oldest %}bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800
+              {% else %}bg-brand/5 border border-brand/20{% endif %}">
+    <p class="text-sm font-semibold mb-1
+              {% if latest > oldest %}text-emerald-700 dark:text-emerald-300
+              {% elif latest < oldest %}text-rose-700 dark:text-rose-300
+              {% else %}text-brand{% endif %}">
+      {% if latest > oldest %}
+        Market is trending up
+      {% elif latest < oldest %}
+        Market is trending down
+      {% else %}
+        Market is flat
+      {% endif %}
+    </p>
+    <p class="text-sm text-slate-600 dark:text-slate-400">
+      {% if oldest > 0 %}
+      {% set change_pct = ((latest - oldest) / oldest * 100)|round(1) %}
+      Median salary moved from {{ '{:,}'.format(oldest) }} to {{ '{:,}'.format(latest) }}
+      ({{ '+' if change_pct > 0 }}{{ change_pct }}%) over the last {{ trends|length }} months
+      {% if selected_category %} for {{ selected_category }} roles{% endif %}{% if selected_city %} in {{ selected_city }}{% endif %}.
+      {% endif %}
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Horizontal bar chart (most recent month at top) -->
+  {% set max_med = trends|map(attribute='median_salary')|max|default(1) %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Monthly Median Salary</p>
+    <div class="space-y-3">
+      {% for t in trends %}
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-medium text-slate-700 dark:text-slate-300">{{ t.month }}</span>
+          <span class="text-slate-500">{{ '{:,}'.format(t.job_count) }} jobs &middot; <span class="text-brand font-semibold">CHF {{ '{:,}'.format(t.median_salary) }}</span></span>
+        </div>
+        <div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div class="h-3 rounded-full bg-gradient-to-r from-brand/60 to-brand transition-all"
+               style="width: {{ ((t.median_salary / max_med) * 100)|int if max_med else 0 }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Data table -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden mb-8">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-100 bg-slate-50 dark:bg-slate-900/50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <th class="px-4 py-3">Month</th>
+          <th class="px-4 py-3 text-right">Median Salary</th>
+          <th class="px-4 py-3 text-right">Job Count</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for t in trends %}
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+          <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ t.month }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-brand">CHF {{ '{:,}'.format(t.median_salary) }}</td>
+          <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ '{:,}'.format(t.job_count) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center mb-8">
+    <p class="text-slate-500">No trend data available{% if selected_category %} for {{ selected_category }}{% endif %}{% if selected_city %} in {{ selected_city }}{% endif %}. Try different filters or clear them.</p>
+  </div>
+  {% endif %}
+
+  <!-- Cross-links -->
+  <div class="grid gap-4 sm:grid-cols-3 mb-8">
+    <a href="{{ url_for('salary.salary_underpaid') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Am I Underpaid?</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Check your percentile</p>
+    </a>
+    <a href="{{ url_for('salary.salary_compare_cities') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">PPP-adjusted comparison</p>
+    </a>
+    <a href="{{ url_for('salary.salary_by_function') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">By Function</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Benchmarks by team</p>
+    </a>
+  </div>
+
+</div>
+{% endblock %}

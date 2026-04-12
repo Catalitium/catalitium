@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Remote-Friendly Tech Companies | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Discover companies with the highest percentage of remote job postings. Find your next remote-first employer.">
+<link rel="canonical" href="{{ url_for('explore.explore_remote', _external=True) }}">
+<meta property="og:title" content="Remote-Friendly Companies | Catalitium">
+<meta property="og:description" content="Companies ranked by remote job availability.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('explore.explore_remote', _external=True) }}">
+{% endblock %}
+
+{% block content %}
+<section class="pt-8 sm:pt-16 pb-8">
+  <div class="mx-auto max-w-6xl px-4 text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-brand">Remote-Friendly</span> Companies
+    </h1>
+    <p class="mt-4 text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+      Companies ranked by the percentage of their job postings that are remote.
+    </p>
+    <div class="mt-4">
+      <a href="{{ url_for('explore.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
+    </div>
+  </div>
+</section>
+
+<section class="pb-16">
+  <div class="mx-auto max-w-6xl px-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for c in companies %}
+      <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:shadow-md transition-shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="text-base font-semibold text-slate-800 dark:text-slate-200 truncate" title="{{ c.company_name }}">{{ c.company_name }}</h2>
+            {% if c.latest_date %}
+            <p class="text-xs text-slate-500 mt-0.5">Latest: {{ c.latest_date }}</p>
+            {% endif %}
+          </div>
+          <div class="flex-shrink-0 text-right">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-sm font-bold
+              {% if c.remote_pct >= 80 %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800
+              {% elif c.remote_pct >= 50 %}bg-sky-50 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800
+              {% else %}bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800{% endif %}">
+              {{ c.remote_pct }}% remote
+            </span>
+          </div>
+        </div>
+        <div class="mt-3 flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+          <span>{{ c.total_jobs }} total jobs</span>
+          <span class="text-sky-600 dark:text-sky-400">{{ c.remote_jobs }} remote</span>
+        </div>
+        <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+          <div class="h-1.5 rounded-full bg-gradient-to-r from-sky-400 to-brand" style="width: {{ c.remote_pct }}%"></div>
+        </div>
+        <div class="mt-3 flex gap-2">
+          <a href="{{ url_for('jobs', title=c.company_name, country='Remote') }}"
+             class="text-xs text-brand hover:underline font-medium">View remote jobs &rarr;</a>
+        </div>
+      </div>
+      {% else %}
+      <p class="col-span-full text-sm text-slate-500">No remote company data available yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

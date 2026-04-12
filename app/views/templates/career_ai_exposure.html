@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}AI Exposure by Role | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Discover which job functions are most exposed to AI and automation. Data-driven AI impact analysis by Catalitium.">
+<link rel="canonical" href="{{ url_for('career.career_ai_exposure', _external=True) }}">
+<meta property="og:title" content="AI Exposure by Role | Catalitium">
+<meta property="og:description" content="Which roles are most impacted by AI? Explore AI exposure data across job functions.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ url_for('career.career_ai_exposure', _external=True) }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+      <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" viewBox="0 0 24 24" fill="none"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">AI & Automation Exposure</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">How much AI is mentioned in job descriptions by function</p>
+    </div>
+  </div>
+
+  {% if not exposures %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-8 text-center">
+    <p class="text-slate-500 dark:text-slate-400">No exposure data available. Try again when the database is connected.</p>
+  </div>
+  {% else %}
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 mb-1">AI-Native</p>
+      <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ exposures|selectattr('category', 'equalto', 'ai-native')|list|length }}</p>
+      <p class="text-xs text-emerald-600/70 dark:text-emerald-400/70">functions with &gt;50% AI mentions</p>
+    </div>
+    <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-1">AI-Adjacent</p>
+      <p class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ exposures|selectattr('category', 'equalto', 'ai-adjacent')|list|length }}</p>
+      <p class="text-xs text-amber-600/70 dark:text-amber-400/70">functions with 20–50% AI mentions</p>
+    </div>
+    <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">AI-Distant</p>
+      <p class="text-2xl font-bold text-slate-700 dark:text-slate-300">{{ exposures|selectattr('category', 'equalto', 'ai-distant')|list|length }}</p>
+      <p class="text-xs text-slate-500/70 dark:text-slate-400/70">functions with &lt;20% AI mentions</p>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 dark:border-slate-800">
+            <th class="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Function</th>
+            <th class="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">AI Exposure</th>
+            <th class="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 hidden sm:table-cell">Jobs</th>
+            <th class="text-right px-4 py-3 font-semibold text-slate-600 dark:text-slate-400 hidden sm:table-cell">Median Salary</th>
+            <th class="px-4 py-3 font-semibold text-slate-600 dark:text-slate-400">Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in exposures %}
+          <tr class="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ exp.function_name }}</td>
+            <td class="px-4 py-3 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <div class="w-20 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                  <div class="h-full rounded-full {% if exp.category == 'ai-native' %}bg-emerald-500{% elif exp.category == 'ai-adjacent' %}bg-amber-500{% else %}bg-slate-400{% endif %}"
+                       style="width: {{ [exp.exposure_pct, 100]|min }}%"></div>
+                </div>
+                <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 w-12 text-right">{{ exp.exposure_pct }}%</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400 hidden sm:table-cell">{{ '{:,}'.format(exp.job_count) }}</td>
+            <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400 hidden sm:table-cell">
+              {% if exp.median_salary %}{{ '{:,.0f}'.format(exp.median_salary) }}{% else %}—{% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center text-[11px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5
+                {% if exp.category == 'ai-native' %}text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800
+                {% elif exp.category == 'ai-adjacent' %}text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800
+                {% else %}text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700{% endif %}">
+                {{ exp.category }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mt-4 text-xs text-slate-400 dark:text-slate-500">
+    <p>AI exposure is measured by the percentage of job descriptions that mention AI/ML-related keywords including artificial intelligence, machine learning, deep learning, LLM, GPT, NLP, computer vision, generative AI, and automation.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

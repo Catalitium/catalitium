@@ -16,6 +16,9 @@
   var chatForm = document.getElementById("troy-chat-form");
   var chatInput = document.getElementById("troy-chat-input");
   var chatLog = document.getElementById("troy-chat-log");
+  var chatChips = document.getElementById("troy-chat-chips");
+  var apiCta = document.getElementById("carl-api-cta");
+  var chatSubmit = document.getElementById("troy-chat-submit");
 
   var analysisState = null;
   var terminalTimer = null;
@@ -455,6 +458,115 @@
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 
+  function setChatLocked(locked) {
+    if (chatInput) chatInput.disabled = !!locked;
+    if (chatSubmit) chatSubmit.disabled = !!locked;
+    if (chatChips) {
+      var buttons = chatChips.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i++) buttons[i].disabled = !!locked;
+    }
+  }
+
+  function resetCarlChatGate() {
+    if (apiCta) apiCta.classList.add("hidden");
+    setChatLocked(false);
+  }
+
+  function applyCarlChatLimit(inner) {
+    if (apiCta) apiCta.classList.remove("hidden");
+    if (inner && inner.cta) {
+      var d = document.getElementById("carl-cta-developers");
+      var p = document.getElementById("carl-cta-pricing");
+      if (d && inner.cta.developers) d.setAttribute("href", inner.cta.developers);
+      if (p && inner.cta.pricing) p.setAttribute("href", inner.cta.pricing);
+    }
+    if (chatChips) chatChips.classList.add("hidden");
+    setChatLocked(true);
+  }
+
+  function renderSuggestedChips(prompts) {
+    if (!chatChips) return;
+    chatChips.innerHTML = "";
+    var list = Array.isArray(prompts) && prompts.length ? prompts.slice(0, 3) : [];
+    if (!list.length) {
+      chatChips.classList.add("hidden");
+      return;
+    }
+    chatChips.classList.remove("hidden");
+    list.forEach(function (text, idx) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "max-w-full rounded-full border border-white/10 bg-[#111] px-3 py-1.5 text-left text-xs text-[#E5E5E5] hover:border-[#FF7A00]/40 hover:text-white";
+      btn.setAttribute("aria-label", "Suggested question " + (idx + 1));
+      var label = String(text || "").trim();
+      btn.title = label;
+      btn.textContent = label.length > 72 ? label.slice(0, 69) + "…" : label;
+      btn.addEventListener("click", function () {
+        sendCarlChat({ promptId: idx, displayText: label });
+      });
+      chatChips.appendChild(btn);
+    });
+  }
+
+  function sendCarlChat(opts) {
+    opts = opts || {};
+    if (!analysisState) return;
+    if (chatInput && chatInput.disabled) return;
+
+    var promptId = opts.promptId;
+    var displayText = opts.displayText;
+    var rawMsg = opts.message != null ? String(opts.message).trim() : "";
+
+    if (promptId === undefined && !rawMsg) return;
+
+    var userShow = displayText || rawMsg;
+    if (userShow) addChatMessage("user", userShow);
+    if (opts.message != null && chatInput) chatInput.value = "";
+
+    var body = {};
+    if (promptId !== undefined && promptId !== null) {
+      body.prompt_id = promptId;
+      if (rawMsg) body.message = rawMsg;
+    } else {
+      body.message = rawMsg;
+    }
+
+    fetch("/carl/chat", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken(),
+      },
+      body: JSON.stringify(body),
+    })
+      .then(function (resp) {
+        return resp
+          .json()
+          .catch(function () {
+            return {};
+          })
+          .then(function (data) {
+            return { httpOk: resp.ok, data: data };
+          });
+      })
+      .then(function (result) {
+        var env = result.data || {};
+        if (!result.httpOk || env.ok === false) {
+          addChatMessage("assistant", env.message || "Unable to send chat message.");
+          return;
+        }
+        var inner = env.data || {};
+        var reply = inner.reply;
+        addChatMessage("assistant", reply || "I can help with ATS, strengths, or rewrite suggestions.");
+        if (inner.chat_limit_reached) applyCarlChatLimit(inner);
+      })
+      .catch(function () {
+        addChatMessage("assistant", "Temporary chat issue. Ask again in a moment.");
+      });
+  }
+
   var troyTabsBound = false;
 
   function initTabs() {
@@ -486,7 +598,29 @@
     activate("overview");
   }
 
-  function hydrateDashboard(analysis) {
+  function renderProfileSync(sync, source) {
+    var el = document.getElementById("troy-profile-sync");
+    if (!el) return;
+    if (!sync) {
+      el.textContent = "";
+      el.classList.add("hidden");
+      return;
+    }
+    el.classList.remove("hidden");
+    var fn = source && source.filename != null ? String(source.filename) : "—";
+    var st = sync.status || "";
+    var at = sync.saved_at ? " · " + String(sync.saved_at) : "";
+    if (st === "saved") {
+      el.textContent = "Profile: saved " + fn + " to your account." + at;
+    } else if (st === "error") {
+      el.textContent = "Profile sync failed. Preview still works locally." + (sync.message ? " (" + sync.message + ")" : "");
+    } else {
+      el.textContent = "Profile sync skipped" + (sync.message ? ": " + sync.message : ".");
+    }
+  }
+
+  function hydrateDashboard(analysis, extras) {
+    extras = extras || {};
     analysisState = analysis || {};
     document.body.classList.add("troy-dashboard-active");
     if (uploadHero) uploadHero.classList.add("hidden");
@@ -504,6 +638,7 @@
     renderAts(analysisState.atsScore || {}, true);
     renderSkills(analysisState.skillsRadar || []);
     renderDocuments(analysisState.documents || []);
+    renderProfileSync(extras.profileSync, extras.source);
     renderActions(analysisState.actionFeed || []);
 
     renderList("troy-timeline", analysisState.experienceTimeline, function (item) {
@@ -523,9 +658,16 @@
       return escapeHtml(item || "");
     });
 
-    if (chatLog) chatLog.innerHTML = "";
+    if (chatLog) {
+      chatLog.innerHTML = "";
+      addChatMessage(
+        "assistant",
+        (analysisState.chatContext && analysisState.chatContext.summary) || "Analysis ready. Ask about ATS, rewrites, or risks."
+      );
+    }
+    resetCarlChatGate();
+    renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
     if (terminalStatus) terminalStatus.textContent = "Streaming";
-
     playTerminal(analysisState.terminalLogs || []);
     initTabs();
 
@@ -543,16 +685,6 @@
       setTimeout(function () {
         animateDashboardMeters(analysisState.overview || {}, analysisState.atsScore || {});
       }, meterDelay);
-
-      var chatDelay = REVEAL_BASE_DELAY_MS + 4 * REVEAL_STAGGER_MS + CHAT_START_OFFSET_MS;
-      setTimeout(function () {
-        if (!chatLog) return;
-        addChatMessage(
-          "assistant",
-          (analysisState.chatContext && analysisState.chatContext.summary) ||
-            "Analysis ready. Ask about ATS, rewrites, or risks."
-        );
-      }, chatDelay);
     });
   }
 
@@ -584,19 +716,28 @@
       })
       .then(function (result) {
         if (!result.ok || !result.data || result.data.ok === false) {
-          throw new Error((result.data && result.data.message) || "Could not analyze CV.");
+          var em = (result.data && result.data.message) || "Could not analyze CV.";
+          if (result.data && result.data.code === "login_required") {
+            em = "Sign in to use Carl, then try again.";
+          }
+          throw new Error(em);
         }
-        var analysis = result.data.data && result.data.data.analysis;
+        var inner = (result.data && result.data.data) || {};
+        var analysis = inner.analysis;
         if (!analysis) throw new Error("Analysis payload missing.");
+        var extras = {
+          profileSync: inner.profile_sync,
+          source: inner.source,
+        };
         var elapsed = performance.now() - started;
         var remain = Math.max(0, MIN_ANALYZE_MS - elapsed);
         return delay(remain).then(function () {
-          return analysis;
+          return { analysis: analysis, extras: extras };
         });
       })
-      .then(function (analysis) {
+      .then(function (payload) {
         hideUploadPremiumLoading(540, function () {
-          hydrateDashboard(analysis);
+          hydrateDashboard(payload.analysis, payload.extras);
         });
       })
       .catch(function (err) {
@@ -616,42 +757,7 @@
       var message = (chatInput && chatInput.value) || "";
       message = message.trim();
       if (!message) return;
-      addChatMessage("user", message);
-      if (chatInput) chatInput.value = "";
-
-      fetch("/carl/chat", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken(),
-        },
-        body: JSON.stringify({
-          message: message,
-          chat_context: analysisState.chatContext || {},
-          missing_keywords: (analysisState.atsScore && analysisState.atsScore.missingKeywords) || [],
-        }),
-      })
-        .then(function (resp) {
-          return resp
-            .json()
-            .catch(function () {
-              return {};
-            })
-            .then(function (data) {
-              return { ok: resp.ok, data: data };
-            });
-        })
-        .then(function (result) {
-          if (!result.ok || !result.data || result.data.ok === false) {
-            throw new Error((result.data && result.data.message) || "Unable to send chat message.");
-          }
-          var reply = result.data.data && result.data.data.reply;
-          addChatMessage("assistant", reply || "I can help with ATS, strengths, or rewrite suggestions.");
-        })
-        .catch(function () {
-          addChatMessage("assistant", "Temporary chat issue. Ask again in a moment.");
-        });
+      sendCarlChat({ message: message });
     });
   }
 

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Cross-City Salary Comparison | PPP Adjusted | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Compare tech salaries across cities with purchasing power parity (PPP) adjustment. See what your salary is really worth in Zurich, Berlin, London, San Francisco, and 25+ cities."/>
+<link rel="canonical" href="{{ url_for('salary.salary_compare_cities', _external=True) }}">
+<meta property="og:title" content="Cross-City Salary Comparison | Catalitium"/>
+<meta property="og:description" content="Compare tech salaries across 30+ cities with PPP adjustment. See what your pay is really worth."/>
+<meta property="og:type" content="website"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+  <nav class="text-xs text-slate-400 mb-6">
+    <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand">Salary Tools</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-600 dark:text-slate-300">Compare Cities</span>
+  </nav>
+
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Salary Intelligence</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Cross-City Salary Comparison</h1>
+    <p class="mt-2 text-slate-500 dark:text-slate-400">
+      Compare raw salaries and PPP-adjusted purchasing power across major tech hubs.
+      Select a role and up to 4 cities to see the real difference.
+    </p>
+  </div>
+
+  <form method="get" action="{{ url_for('salary.salary_compare_cities') }}" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 mb-8">
+    <label class="flex flex-col gap-1.5 mb-4">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Job Title</span>
+      <input type="text" name="title" value="{{ request.args.get('title', '') }}" required
+             placeholder="e.g. Software Engineer"
+             class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+    </label>
+    <div class="mb-4">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-300 block mb-2">Select up to 4 cities</span>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {% for city in ppp_cities %}
+        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+          <input type="checkbox" name="cities" value="{{ city }}"
+                 {% if city in selected_cities %}checked{% endif %}
+                 class="rounded border-slate-300 text-brand focus:ring-brand/30"
+                 onchange="limitCheckboxes(this)">
+          {{ city }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit"
+            class="w-full sm:w-auto rounded-xl bg-brand px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      Compare
+    </button>
+  </form>
+
+  {% if results %}
+  <div class="mb-8">
+    <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Comparison Results</h2>
+
+    <!-- Cards -->
+    <div class="grid gap-4 sm:grid-cols-2 mb-6">
+      {% for r in results %}
+      <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-slate-900 dark:text-white">{{ r.city }}</h3>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-brand/10 text-brand font-semibold">PPP {{ r.ppp_index }}</span>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">Raw Median</span>
+            <span class="font-semibold text-slate-800 dark:text-slate-200">
+              {% if r.raw_median %}{{ r.currency or 'CHF' }} {{ '{:,}'.format(r.raw_median|int) }}{% else %}No data{% endif %}
+            </span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-slate-500">PPP-Adjusted</span>
+            <span class="font-bold text-brand">
+              {% if r.adjusted_salary %}{{ r.currency or 'CHF' }} {{ '{:,}'.format(r.adjusted_salary|int) }}{% else %}N/A{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Bar chart -->
+    {% set max_adjusted = results|map(attribute='adjusted_salary')|select('number')|max|default(1) %}
+    <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+      <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">PPP-Adjusted Comparison</p>
+      <div class="space-y-3">
+        {% for r in results %}
+        {% if r.adjusted_salary %}
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-medium text-slate-700 dark:text-slate-300">{{ r.city }}</span>
+            <span class="text-brand font-semibold">{{ r.currency or 'CHF' }} {{ '{:,}'.format(r.adjusted_salary|int) }}</span>
+          </div>
+          <div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div class="h-3 rounded-full bg-gradient-to-r from-brand/60 to-brand transition-all duration-300"
+                 style="width: {{ ((r.adjusted_salary / max_adjusted) * 100)|int }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Cross-links -->
+  <div class="grid gap-4 sm:grid-cols-2 mb-8">
+    <a href="{{ url_for('salary.salary_underpaid') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Am I Underpaid?</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Check your salary percentile</p>
+    </a>
+    <a href="{{ url_for('salary.salary_trends') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Trends</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Monthly salary trend data</p>
+    </a>
+  </div>
+
+  <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-5 text-xs text-slate-500 space-y-1.5">
+    <p class="font-semibold text-slate-700 dark:text-slate-200 text-sm">About PPP Adjustment</p>
+    <p>Purchasing Power Parity (PPP) indices reflect the relative cost of living in each city compared to Zurich (index 1.0).
+       A lower index means your money goes further. Adjusted salary = raw median / PPP index.</p>
+    <p><a href="{{ url_for('salary.compensation_methodology') }}" class="text-brand hover:underline">Full methodology &rarr;</a></p>
+  </div>
+
+</div>
+
+<script>
+function limitCheckboxes(el) {
+  var checked = document.querySelectorAll('input[name="cities"]:checked');
+  if (checked.length > 4) { el.checked = false; }
+}
+</script>
+{% endblock %}

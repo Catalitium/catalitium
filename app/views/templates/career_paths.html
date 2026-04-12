@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Career Path Explorer{% if paths %} — {{ paths.current }}{% endif %} | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Explore career progression, lateral moves, and top employers for any tech role. Career intelligence by Catalitium.">
+<link rel="canonical" href="{{ url_for('career.career_paths', _external=True) }}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+      <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Career Path Explorer</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">See where your role can take you</p>
+    </div>
+  </div>
+
+  <!-- Search form -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 mb-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-3">
+      <input name="title" type="text" required placeholder="Enter your current role, e.g. Senior Software Engineer" value="{{ request.args.get('title', '') }}"
+             class="flex-1 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 dark:text-slate-200 px-4 py-3 focus:ring-2 focus:ring-brand/50 focus:outline-none">
+      <button type="submit" class="rounded-xl bg-brand text-white px-6 py-3 font-semibold text-sm hover:opacity-90 transition">Explore Paths</button>
+    </form>
+  </div>
+
+  {% if paths %}
+  <div class="mb-4">
+    <p class="text-sm text-slate-600 dark:text-slate-400">Showing career paths from: <strong class="text-slate-800 dark:text-slate-200">{{ paths.current }}</strong></p>
+  </div>
+
+  <!-- Next Steps -->
+  {% if paths.next_steps %}
+  <section class="mb-6">
+    <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-emerald-500" viewBox="0 0 24 24" fill="none"><path d="M5 15l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Next Steps
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {% for step in paths.next_steps %}
+      <a href="{{ url_for('jobs', title=step.title) }}"
+         class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand hover:shadow-sm transition group">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand transition">{{ step.title }}</p>
+        <div class="flex items-center gap-3 mt-2 text-xs text-slate-500">
+          <span>{{ step.job_count }} open roles</span>
+          {% if step.median_salary %}
+          <span class="font-semibold text-amber-600 dark:text-amber-400">~{{ '{:,.0f}'.format(step.median_salary) }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Lateral Moves -->
+  {% if paths.lateral_moves %}
+  <section class="mb-6">
+    <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-sky-500" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Lateral Moves
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {% for move in paths.lateral_moves %}
+      <a href="{{ url_for('jobs', title=move.title) }}"
+         class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand hover:shadow-sm transition group">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand transition">{{ move.title }}</p>
+        <div class="flex items-center gap-3 mt-2 text-xs text-slate-500">
+          <span>{{ move.job_count }} open roles</span>
+          {% if move.median_salary %}
+          <span class="font-semibold text-amber-600 dark:text-amber-400">~{{ '{:,.0f}'.format(move.median_salary) }}</span>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Top Employers -->
+  {% if paths.companies_hiring %}
+  <section class="mb-6">
+    <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-16 0H3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Top Employers
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for co in paths.companies_hiring %}
+      <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
+        <p class="font-semibold text-slate-800 dark:text-slate-200 truncate">{{ co.name }}</p>
+        <p class="text-xs text-slate-500 mt-1">{{ co.count }} matching roles</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

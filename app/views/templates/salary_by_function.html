@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Salary by Function &amp; Team | Tech Salary Benchmarks | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Tech salary benchmarks by function: Backend, Frontend, ML/AI, DevOps, Product, Design, and more. See median salaries and job counts by team category."/>
+<link rel="canonical" href="{{ url_for('salary.salary_by_function', _external=True) }}">
+<meta property="og:title" content="Salary by Function | Tech Benchmarks | Catalitium"/>
+<meta property="og:description" content="Compare tech salaries across Backend, Frontend, ML/AI, DevOps, Product, Design and more."/>
+<meta property="og:type" content="website"/>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+  <nav class="text-xs text-slate-400 mb-6">
+    <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand">Salary Tools</a>
+    <span class="mx-1">/</span>
+    <span class="text-slate-600 dark:text-slate-300">By Function</span>
+  </nav>
+
+  <div class="mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-1">Salary Intelligence</p>
+    <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">Salary by Function</h1>
+    <p class="mt-2 text-slate-500 dark:text-slate-400">
+      Median salaries aggregated by team function from live job listings.
+      {% if location_filter %}Filtered to roles matching &ldquo;{{ location_filter }}&rdquo;.{% endif %}
+    </p>
+  </div>
+
+  <!-- Location filter -->
+  <form method="get" action="{{ url_for('salary.salary_by_function') }}" class="flex gap-3 items-end mb-8">
+    <label class="flex flex-col gap-1.5 flex-1">
+      <span class="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter by Location</span>
+      <input type="text" name="location" value="{{ location_filter or '' }}"
+             placeholder="e.g. Zurich, Berlin, Remote"
+             class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30">
+    </label>
+    <button type="submit"
+            class="rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      Filter
+    </button>
+    {% if location_filter %}
+    <a href="{{ url_for('salary.salary_by_function') }}"
+       class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm text-slate-500 hover:text-brand hover:border-brand transition-colors">
+      Clear
+    </a>
+    {% endif %}
+  </form>
+
+  {% if benchmarks %}
+  <!-- Table -->
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden mb-8">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-100 bg-slate-50 dark:bg-slate-900/50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <th class="px-4 py-3">Function</th>
+          <th class="px-4 py-3 text-right">Median Salary</th>
+          <th class="px-4 py-3 text-right">Jobs</th>
+          <th class="px-4 py-3 text-right"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for b in benchmarks %}
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+          <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{{ b.function }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-brand">{{ b.currency }} {{ '{:,}'.format(b.median_salary) }}</td>
+          <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ '{:,}'.format(b.job_count) }}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="{{ url_for('jobs', title=b.function|lower) }}" class="text-xs text-brand hover:underline">Browse jobs &rarr;</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bar chart -->
+  {% set max_sal = benchmarks|map(attribute='median_salary')|max|default(1) %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 mb-8">
+    <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Visual Comparison</p>
+    <div class="space-y-3">
+      {% for b in benchmarks %}
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-medium text-slate-700 dark:text-slate-300">{{ b.function }}</span>
+          <span class="text-brand font-semibold">{{ b.currency }} {{ '{:,}'.format(b.median_salary) }}</span>
+        </div>
+        <div class="h-3 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div class="h-3 rounded-full bg-gradient-to-r from-brand/60 to-brand transition-all"
+               style="width: {{ ((b.median_salary / max_sal) * 100)|int }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% else %}
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center mb-8">
+    <p class="text-slate-500">No salary data available{% if location_filter %} for &ldquo;{{ location_filter }}&rdquo;{% endif %}. Try a different location or clear the filter.</p>
+  </div>
+  {% endif %}
+
+  <!-- Cross-links -->
+  <div class="grid gap-4 sm:grid-cols-3 mb-8">
+    <a href="{{ url_for('salary.salary_underpaid') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Am I Underpaid?</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Check your percentile</p>
+    </a>
+    <a href="{{ url_for('salary.salary_compare_cities') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Compare Cities</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">PPP-adjusted comparison</p>
+    </a>
+    <a href="{{ url_for('salary.salary_trends') }}" class="flex flex-col gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 hover:border-brand transition-colors">
+      <p class="text-xs font-semibold uppercase tracking-widest text-brand">Trends</p>
+      <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Monthly salary movements</p>
+    </a>
+  </div>
+
+</div>
+{% endblock %}
