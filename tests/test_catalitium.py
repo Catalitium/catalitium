@@ -18,7 +18,7 @@ from typing import Any, Dict
 
 import pytest
 
-import app.app as app_module
+import app.factory as app_factory
 from app.app import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
 from app.integrations.carl_mock_analysis import (
@@ -45,7 +45,7 @@ from app.utils.text import slugify_job_title
 @pytest.fixture()
 def carl_client(app, monkeypatch):
     """Carl routes: stub profile upsert (no DB write required for default tests)."""
-    monkeypatch.setattr(app_module, "upsert_profile_cv_extract", lambda *a, **k: "ok")
+    monkeypatch.setattr(app_factory, "upsert_profile_cv_extract", lambda *a, **k: "ok")
     return app.test_client()
 
 
@@ -445,7 +445,7 @@ def test_carl_analyze_merges_cv_meta_payload(carl_client, monkeypatch):
         captured.append(meta)
         return "ok"
 
-    monkeypatch.setattr(app_module, "upsert_profile_cv_extract", _capture)
+    monkeypatch.setattr(app_factory, "upsert_profile_cv_extract", _capture)
     _carl_login(carl_client)
     page = carl_client.get("/carl")
     csrf = _csrf_from_carl_page(page.get_data(as_text=True))

@@ -21,7 +21,9 @@ from flask import (
 )
 
 from .api_utils import api_fail, api_ok, parse_int_arg
-from .config import GHOST_JOB_DAYS, PER_PAGE_MAX
+from .config import PER_PAGE_MAX
+from .support.job_dates import coerce_datetime, job_is_ghost, job_is_new
+from .support.text_norm import slugify, to_lc
 from .models.db import (
     _compact_salary_number,
     check_and_increment_api_key,
@@ -92,80 +94,8 @@ def get_salary_percentiles(title: str, location: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Pure utility functions
+# Pure utility functions (slugify / datetime / to_lc live in app.support)
 # ---------------------------------------------------------------------------
-
-def slugify(text: str) -> str:
-    """Convert text to a URL-safe slug (max 60 chars)."""
-    text = (text or "").lower().strip()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text)
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")[:60]
-
-
-def coerce_datetime(value) -> Optional[datetime]:
-    """Convert assorted datetime-like inputs into timezone-aware datetimes when possible."""
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value
-    if hasattr(value, "to_datetime"):
-        try:
-            return value.to_datetime()
-        except Exception:
-            pass
-    if hasattr(value, "isoformat"):
-        try:
-            iso = value.isoformat()
-            return datetime.fromisoformat(iso)
-        except Exception:
-            pass
-    text = str(value).strip()
-    if not text:
-        return None
-    try:
-        return datetime.fromisoformat(text)
-    except Exception:
-        pass
-    formats = ("%Y-%m-%d", "%Y.%m.%d", "%Y%m%d", "%Y/%m/%d")
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(text[: len(fmt)], fmt)
-            return dt
-        except Exception:
-            continue
-    return None
-
-
-def job_is_new(job_date_raw, row_date) -> bool:
-    """Return True when the job was posted within the last 7 days."""
-    dt = coerce_datetime(row_date) or coerce_datetime(job_date_raw)
-    if not dt:
-        return False
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    now = datetime.now(timezone.utc)
-    return (now - dt) <= timedelta(days=7)
-
-
-def job_is_ghost(job_date_raw) -> bool:
-    """Return True when the job was posted more than GHOST_JOB_DAYS ago (may be filled)."""
-    dt = coerce_datetime(job_date_raw)
-    if not dt:
-        return False
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - dt) > timedelta(days=GHOST_JOB_DAYS)
-
-
-def to_lc(value: str) -> str:
-    """Return a lowercase camel-style version of a string for API responses."""
-    parts = [p for p in re.split(r"[^A-Za-z0-9]+", value or "") if p]
-    if not parts:
-        return value or ""
-    head, *tail = parts
-    return head.lower() + "".join(part.capitalize() for part in tail)
 
 
 def estimate_salary_display(
