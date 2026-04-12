@@ -4,6 +4,7 @@ from .api import bp as api_bp
 from .auth import bp as auth_bp
 from .browse import bp as browse_bp
 from .carl import bp as carl_bp
+from .carl4b2b import bp as carl4b2b_bp
 from .insights import bp as insights_bp
 from .jobs import bp as jobs_bp
 from .payments import bp as payments_bp
@@ -13,6 +14,7 @@ ALL_BLUEPRINTS = (
     auth_bp,
     jobs_bp,
     carl_bp,
+    carl4b2b_bp,
     browse_bp,
     insights_bp,
     salary_bp,
@@ -26,6 +28,7 @@ __all__ = [
     "auth_bp",
     "browse_bp",
     "carl_bp",
+    "carl4b2b_bp",
     "insights_bp",
     "jobs_bp",
     "payments_bp",

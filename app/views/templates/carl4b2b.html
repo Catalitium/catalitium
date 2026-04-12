@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block title %}Carl for Companies | Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Employer-facing hiring snapshot from the indexed job catalog (Carl4B2B).">
+<link rel="canonical" href="{{ url_for('carl4b2b.carl4b2b_dashboard', _external=True) }}">
+{% endblock %}
+
+{% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --c4b-primary: #2563eb;
+    --c4b-amber: #f59e0b;
+    --c4b-accent: #38bdf8;
+    --c4b-bg-0: #020617;
+    --c4b-bg-1: #0f172a;
+    --c4b-card-fill: linear-gradient(165deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.28) 100%);
+    --c4b-card-border: rgba(255, 255, 255, 0.12);
+  }
+  body.carl4b2b-dashboard-active header { display: none !important; }
+  body.carl4b2b-dashboard-active footer { display: none !important; }
+  body.carl4b2b-dashboard-active #carl4b2b-shell,
+  body.carl4b2b-dashboard-active #carl4b2b-workspace {
+    min-height: 100dvh;
+  }
+  body.carl4b2b-dashboard-active #content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0.5rem !important;
+    max-width: none !important;
+  }
+  #carl4b2b-shell {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.28), transparent 46%),
+      radial-gradient(circle at 100% 0%, rgba(245, 158, 11, 0.14), transparent 42%),
+      linear-gradient(160deg, var(--c4b-bg-0), var(--c4b-bg-1));
+  }
+  body.carl4b2b-page header {
+    border-color: rgba(96, 165, 250, 0.35) !important;
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.9)) !important;
+  }
+  .c4b-card {
+    background: var(--c4b-card-fill);
+    border: 1px solid var(--c4b-card-border);
+    border-radius: 20px;
+    box-shadow: 0 12px 40px -12px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+  }
+  .c4b-card-soft {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .c4b-tab-active {
+    background: rgba(37, 99, 235, 0.25);
+    color: var(--c4b-amber);
+    border-color: rgba(245, 158, 11, 0.45);
+  }
+  .c4b-gauge-track-small {
+    background: conic-gradient(from -90deg, var(--c4b-accent) 0deg, var(--c4b-accent) var(--c4b-deg, 0deg), rgba(9, 18, 40, 0.92) var(--c4b-deg, 0deg));
+  }
+  .c4b-scroll-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(56, 189, 248, 0.55) rgba(8, 16, 36, 0.85);
+  }
+  [data-c4b-reveal] {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: all 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-c4b-reveal].c4b-reveal-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  @keyframes c4b-fade-row {
+    from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  .c4b-animate-row {
+    opacity: 0;
+    animation: c4b-fade-row 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes c4b-terminal-row-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .c4b-terminal-row-in {
+    animation: c4b-terminal-row-in 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes c4b-chat-bubble-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .c4b-chat-bubble-in {
+    animation: c4b-chat-bubble-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .c4b-btn-analyze {
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: #0f172a;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #38bdf8 100%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 22px rgba(245, 158, 11, 0.35);
+    transition: transform 0.25s ease, filter 0.2s ease;
+  }
+  .c4b-btn-analyze:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+  .c4b-btn-analyze:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="carl4b2b-shell" class="relative flex flex-col font-sans text-slate-200">
+  {% if preloaded_carl4b2b_analysis %}
+  <script id="preloaded-carl4b2b-data" type="application/json">
+      {{ preloaded_carl4b2b_analysis | tojson | safe }}
+  </script>
+  {% endif %}
+
+  <div id="carl4b2b-query-hero" class="mx-auto max-w-3xl px-4 py-12">
+    <div class="text-center">
+      <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Carl for Companies</p>
+      <h1 class="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Competitive hiring map</h1>
+      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Signals are built only from Catalitium’s indexed job catalog — not legal market definition. Enter a role family and geography to see posting concentration and active hirers.</p>
+    </div>
+
+    <form id="carl4b2b-market-form" class="mt-8 space-y-4 rounded-3xl border border-white/10 bg-slate-950/50 p-6 sm:p-8 backdrop-blur-md">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block text-left text-xs font-semibold text-slate-400">Target role / title family
+          <input name="title_q" id="carl4b2b-title" type="text" placeholder="e.g. software engineer"
+                 class="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+        </label>
+        <label class="block text-left text-xs font-semibold text-slate-400">Country / region code
+          <input name="country_q" id="carl4b2b-country" type="text" placeholder="e.g. CH or Germany"
+                 class="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+        </label>
+      </div>
+      <label class="block text-left text-xs font-semibold text-slate-400">Exclude “our company” (substring match)
+        <input name="exclude_company" id="carl4b2b-exclude" type="text" placeholder="Your brand string to down-rank"
+               class="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+      </label>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block text-left text-xs font-semibold text-slate-400">Business URL (stored in meta only)
+          <input name="business_url" id="carl4b2b-url" type="url" placeholder="https://…"
+                 class="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+        </label>
+        <label class="block text-left text-xs font-semibold text-slate-400">Contact email (optional)
+          <input name="company_email" id="carl4b2b-email" type="email" placeholder="people@company.com"
+                 class="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+        </label>
+      </div>
+      <div class="flex justify-center pt-2">
+        <button type="submit" id="carl4b2b-analyze-btn" class="c4b-btn-analyze flex items-center gap-2">
+          <svg id="carl4b2b-analyze-spinner" class="hidden h-5 w-5 animate-spin text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span id="carl4b2b-analyze-text">Run market map</span>
+        </button>
+      </div>
+    </form>
+    <p id="carl4b2b-form-error" class="mt-4 hidden rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200"></p>
+  </div>
+
+  <div id="carl4b2b-workspace" class="hidden min-h-[calc(100dvh-3.5rem)] flex-col c4b-scroll-dark pb-8">
+    <div data-c4b-reveal class="mx-3 mt-2 rounded-xl border border-amber-500/25 bg-black p-3 sm:mx-4 sm:p-4 shadow-inner">
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/20 pb-2 text-amber-300">
+        <span class="text-sm font-bold">Carl4B2B Terminal</span>
+        <span id="carl4b2b-terminal-status" class="text-xs font-semibold text-amber-200/90">Ready</span>
+      </div>
+      <div id="carl4b2b-terminal" class="c4b-scroll-dark max-h-32 overflow-y-auto font-mono text-[13px] leading-relaxed text-amber-100/90 xl:max-h-[5.25rem]"></div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 p-4 xl:grid-cols-12 xl:items-start">
+      <div id="carl4b2b-sidebar" class="min-w-0 space-y-4 xl:col-span-3">
+        <div class="c4b-card p-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Lead recruiter</p>
+          <div class="mt-3 flex gap-3">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/25 text-sm font-bold text-sky-300">B2B</div>
+            <div class="min-w-0">
+              <p id="carl4b2b-user-email" class="truncate text-base font-semibold text-white">{{ (session.get("user") or {}).get("email", "—") }}</p>
+              <p id="carl4b2b-persona-line" class="text-xs text-slate-400">—</p>
+            </div>
+          </div>
+          <h2 id="carl4b2b-headline" class="mt-4 text-sm font-semibold leading-snug text-white">—</h2>
+          <p id="carl4b2b-fit-summary" class="mt-2 text-xs leading-relaxed text-slate-400"></p>
+          <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div class="c4b-card-soft rounded-lg py-2">
+              <p class="text-[10px] uppercase text-slate-500">Postings</p>
+              <p id="carl4b2b-level" class="text-xs font-semibold text-white">—</p>
+            </div>
+            <div class="c4b-card-soft rounded-lg py-2">
+              <p class="text-[10px] uppercase text-slate-500">Confidence</p>
+              <p id="carl4b2b-confidence" class="text-xs font-semibold text-sky-300">—</p>
+            </div>
+            <div class="c4b-card-soft rounded-lg py-2">
+              <p class="text-[10px] uppercase text-slate-500">Sample rows</p>
+              <p id="carl4b2b-word-count" class="text-xs font-semibold text-white">—</p>
+            </div>
+          </div>
+        </div>
+        <div class="c4b-card flex flex-col p-4">
+          <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Documents</p>
+          <ul id="carl4b2b-documents" class="c4b-scroll-dark mt-3 flex max-h-48 min-h-0 flex-col gap-2 overflow-y-auto text-sm"></ul>
+          <p id="carl4b2b-profile-sync" class="mt-2 hidden border-t border-white/10 pt-2 text-[11px] text-slate-500" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div id="carl4b2b-analytics-container" data-c4b-reveal class="c4b-card flex min-h-0 flex-col p-4 xl:col-span-5">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Analytics</p>
+        <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
+          <button type="button" data-c4b-tab="overview" class="c4b-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium">Overview</button>
+          <button type="button" data-c4b-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Competitive radar</button>
+          <button type="button" data-c4b-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Signals</button>
+        </div>
+        <div id="carl4b2b-panel-overview" class="c4b-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+          <div class="relative overflow-hidden rounded-2xl bg-white/5 p-4">
+            <p class="text-xs font-medium text-slate-400">Market saturation (catalog heuristic)</p>
+            <div class="mt-2 flex items-baseline justify-between">
+              <span id="carl4b2b-ats-score" class="text-4xl font-bold tabular-nums text-white">0</span>
+              <p id="carl4b2b-ats-coverage" class="text-right text-xs font-semibold text-amber-300"></p>
+            </div>
+          </div>
+          <div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+            <div class="rounded-lg bg-sky-500/10 px-2 py-1.5 text-sky-100">
+              <span class="text-slate-500">Active hirers</span>
+              <p id="carl4b2b-keywords-hit" class="mt-0.5 font-medium"></p>
+            </div>
+            <div class="rounded-lg bg-amber-500/10 px-2 py-1.5 text-amber-100">
+              <span class="text-slate-500">Gaps / flags</span>
+              <p id="carl4b2b-keywords-missing" class="mt-0.5 font-medium"></p>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center justify-center gap-5 py-2">
+            <div class="text-center">
+              <div id="carl4b2b-gauge-structure" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                  <span id="carl4b2b-gauge-structure-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-slate-500">Pipeline breadth</p>
+            </div>
+            <div class="text-center">
+              <div id="carl4b2b-gauge-keywords" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                  <span id="carl4b2b-gauge-keywords-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-slate-500">Saturation</p>
+            </div>
+            <div class="text-center">
+              <div id="carl4b2b-gauge-impact" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-slate-950 text-sm font-bold text-white">
+                  <span id="carl4b2b-gauge-impact-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-slate-500">Posting momentum</p>
+            </div>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Core market signals</p>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Pipeline</p>
+                <p id="carl4b2b-vital-structure" class="mt-1 text-lg font-semibold tabular-nums text-sky-300">0</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Saturation</p>
+                <p id="carl4b2b-vital-keywords" class="mt-1 text-lg font-semibold tabular-nums text-amber-300">0</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Momentum</p>
+                <p id="carl4b2b-vital-impact" class="mt-1 text-lg font-semibold tabular-nums text-sky-300">0</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Narrative</p>
+                <p id="carl4b2b-vital-narrative" class="mt-1 text-lg font-semibold tabular-nums text-amber-200">0</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Premium scan</p>
+            <div class="mt-2 grid grid-cols-3 gap-2">
+              <div class="c4b-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-slate-500">Leadership</p>
+                <p id="carl4b2b-metric-leadership" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-sky-300">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-slate-500">Role match</p>
+                <p id="carl4b2b-metric-role-match" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-amber-300">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-slate-500">Evidence</p>
+                <p id="carl4b2b-metric-evidence" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-sky-200">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="carl4b2b-panel-skills" class="c4b-scroll-dark mt-4 hidden max-h-[28rem] min-h-0 flex-1 flex-col overflow-y-auto">
+          <div id="carl4b2b-skills" class="space-y-3"></div>
+        </div>
+        <div id="carl4b2b-panel-risks" class="c4b-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-slate-500">Roll-up</p>
+            <ul id="carl4b2b-timeline" class="mt-2 space-y-2 text-xs text-slate-300"></ul>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-slate-500">Risk flags</p>
+            <ul id="carl4b2b-risk-flags" class="mt-2 list-disc space-y-1 pl-4 text-xs text-red-300"></ul>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase text-slate-500">Quick wins</p>
+            <ul id="carl4b2b-quick-wins" class="mt-2 list-disc space-y-1 pl-4 text-xs text-amber-200"></ul>
+          </div>
+        </div>
+      </div>
+
+      <aside id="carl4b2b-chat-container" data-c4b-reveal class="c4b-card flex min-h-[420px] flex-col p-4 xl:col-span-4">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Talk to Carl (companies)</p>
+        <p class="mt-1 text-[11px] text-slate-500">Grounded on this catalog pass — use chips or words from the analysis.</p>
+        <div id="carl4b2b-chat-log" class="c4b-scroll-dark mt-3 flex min-h-[140px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/40 p-3"></div>
+        <div id="carl4b2b-chat-chips" class="mt-2 hidden flex flex-wrap gap-2" aria-label="Suggested prompts"></div>
+        <div id="carl4b2b-api-cta" class="mt-3 hidden rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs text-slate-200">
+          <p class="font-semibold text-white">Limit reached</p>
+          <p class="mt-1 text-slate-400">Run another map or explore API plans.</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <a id="carl4b2b-cta-developers" href="{{ url_for('jobs.developers') }}" class="inline-flex rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/15">Developers</a>
+            <a id="carl4b2b-cta-pricing" href="{{ url_for('payments.pricing') }}" class="inline-flex rounded-lg bg-amber-500 px-3 py-1.5 font-medium text-slate-900 hover:bg-amber-400">Pricing</a>
+          </div>
+        </div>
+        <form id="carl4b2b-chat-form" class="mt-3">
+          <div class="flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/50 px-3 py-1.5">
+            <input type="text" id="carl4b2b-chat-input" placeholder="Ask about this catalog slice…" maxlength="280"
+                   class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-0">
+            <button type="submit" id="carl4b2b-chat-submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white hover:bg-sky-500" aria-label="Send">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            </button>
+          </div>
+          <div class="mt-1 flex justify-end pr-1">
+            <span id="carl4b2b-chat-counter" class="text-[10px] text-slate-500">0/280</span>
+          </div>
+        </form>
+      </aside>
+    </div>
+
+    <div id="carl4b2b-matches-section" data-c4b-reveal class="mx-3 mt-6 hidden rounded-3xl border border-white/10 bg-slate-950/40 p-6 sm:mx-4">
+      <div class="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+        <h2 class="flex items-center gap-2 text-xl font-bold text-white">
+          <span class="text-sky-400">◎</span> Competitive radar
+        </h2>
+        <a href="/jobs" class="text-sm font-semibold text-sky-400 hover:text-white">Search jobs →</a>
+      </div>
+      <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-sky-400">Sample roles</p>
+          <div id="carl4b2b-match-jobs" class="mt-3 flex flex-col gap-3"></div>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-amber-400">Top hirers</p>
+          <div id="carl4b2b-match-companies" class="mt-3 flex flex-col gap-3"></div>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Niche / long tail</p>
+          <div id="carl4b2b-match-niche" class="mt-3 flex flex-col gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script defer src="{{ url_for('static', filename='js/carl4b2b.js', v=asset_version) }}"></script>
+{% endblock %}
