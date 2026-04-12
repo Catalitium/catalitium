@@ -52,13 +52,13 @@
           </p>
         </div>
         {% if session.get("user") %}
-        <a href="{{ url_for('post_job_form') }}"
+        <a href="{{ url_for('auth.post_job_form') }}"
            class="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand/30 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white whitespace-nowrap">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Post a Job
         </a>
         {% else %}
-        <a href="{{ url_for('register') }}"
+        <a href="{{ url_for('auth.register') }}"
            class="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-base font-semibold text-white shadow-lg shadow-brand/30 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:ring-offset-2 focus-visible:ring-offset-white whitespace-nowrap">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
           Post a Job

@@ -300,7 +300,7 @@ def stripe_subscribe():
     """Start a Stripe Checkout Session for a B2C subscription."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("payments.pricing"))
@@ -371,7 +371,7 @@ def subscription_success():
     """Landing page after a successful B2C subscription checkout."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     plan_key = request.args.get("plan_key", "")
     product = _STRIPE_B2C_PRODUCTS.get(plan_key)
     if plan_key == "api_access":
@@ -380,7 +380,7 @@ def subscription_success():
             "to see setup steps and documentation.",
             "success",
         )
-        return redirect(url_for("studio", api_welcome="1"))
+        return redirect(url_for("auth.studio", api_welcome="1"))
     return render_template("subscription_success.html", user=user, product=product)
 
 
@@ -389,7 +389,7 @@ def subscription_manage():
     """Manage active B2C subscriptions."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     subs = get_user_subscriptions(user.get("id", ""))
     return render_template(
         "subscription_manage.html",
@@ -404,7 +404,7 @@ def subscription_cancel():
     """Cancel a B2C subscription at period end."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("payments.subscription_manage"))
@@ -452,7 +452,7 @@ def stripe_checkout():
     user = session.get("user")
     if not user:
         flash("Please sign in to purchase a job posting.", "error")
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("payments.post_a_job"))
@@ -510,7 +510,7 @@ def stripe_success():
     """Landing page after successful Stripe Checkout."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
 
     session_id = (request.args.get("session_id") or "").strip()
     if not session_id:
@@ -536,7 +536,7 @@ def stripe_submit_job():
     """Handle job details submission after a successful payment."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("payments.post_a_job"))
@@ -549,7 +549,7 @@ def stripe_submit_job():
 
     if order.get("job_submitted_at"):
         flash("A job has already been submitted for this order.", "error")
-        return redirect(url_for("hire"))
+        return redirect(url_for("auth.hire"))
 
     job_title = (request.form.get("job_title") or "").strip()
     company = (request.form.get("company") or "").strip()
@@ -609,7 +609,7 @@ def stripe_submit_job():
     )
 
     flash("Job submitted! It will go live within 24 hours. Check your email for confirmation.", "success")
-    return redirect(url_for("hire"))
+    return redirect(url_for("auth.hire"))
 
 
 @bp.get("/stripe/cancel")

@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Catalitium hiring dashboard for recruiters and companies: manage postings, candidates, and employer tools.">
-<link rel="canonical" href="{{ url_for('hire', _external=True) }}">
+<link rel="canonical" href="{{ url_for('auth.hire', _external=True) }}">
 <meta property="og:title" content="Hire | Catalitium">
 <meta property="og:description" content="Employer and recruiter workspace on Catalitium.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('hire', _external=True) }}">
+<meta property="og:url" content="{{ url_for('auth.hire', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Hire | Catalitium">
@@ -27,11 +27,11 @@
       <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ hire.company_name or user.email }}</p>
     </div>
     <div class="flex items-center gap-3">
-      <a href="{{ url_for('post_job_form') }}"
+      <a href="{{ url_for('auth.post_job_form') }}"
          class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand/90 transition-colors">
         Post a New Job
       </a>
-      <a href="{{ url_for('hire_onboarding') }}"
+      <a href="{{ url_for('auth.hire_onboarding') }}"
          class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors">
         Edit company details
       </a>
@@ -74,14 +74,14 @@
     <p class="text-base font-medium text-slate-700 dark:text-slate-200">Account actions</p>
     <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Manage access quickly.</p>
     <div class="mt-4 flex flex-wrap items-center gap-3">
-      <form method="post" action="{{ url_for('logout') }}">
+      <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 class="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white transition-colors">
           Sign out
         </button>
       </form>
-      <a href="{{ url_for('profile') }}"
+      <a href="{{ url_for('auth.profile') }}"
          class="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-4 py-2 text-sm font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950 transition-colors">
         Manage account
       </a>

@@ -21,7 +21,7 @@
     if (statusEl) statusEl.textContent = 'This link is invalid or has expired. Request a new reset email from the Sign in page.';
     return;
   }
-  fetch({{ url_for('auth_session_from_tokens')|tojson }}, {
+  fetch({{ url_for('auth.auth_session_from_tokens')|tojson }}, {
     method: 'POST',
     credentials: 'same-origin',
     headers: {
@@ -36,7 +36,7 @@
         if (statusEl) statusEl.textContent = 'Could not complete sign-in. Request a new reset link from Sign in.';
         return;
       }
-      var dest = x.j.redirect || {{ url_for('studio')|tojson }};
+      var dest = x.j.redirect || {{ url_for('auth.studio')|tojson }};
       window.location.href = dest;
     })
     .catch(function(){

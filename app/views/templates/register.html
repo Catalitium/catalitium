@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Create a Catalitium account or sign in to save searches, access market intelligence, and manage subscriptions.">
-<link rel="canonical" href="{{ url_for('register', _external=True) }}">
+<link rel="canonical" href="{{ url_for('auth.register', _external=True) }}">
 <meta property="og:title" content="Account access | Catalitium">
 <meta property="og:description" content="Sign in or create an account for Catalitium job search, salary insights, and premium reports.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('register', _external=True) }}">
+<meta property="og:url" content="{{ url_for('auth.register', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Account access | Catalitium">
@@ -38,7 +38,7 @@
   {% endif %}
 
   <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-    <form method="post" action="{{ url_for('register') }}" class="space-y-4">
+    <form method="post" action="{{ url_for('auth.register') }}" class="space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="action" id="action-input" value="{{ tab }}">
       <div id="account-type-wrap" class="{{ 'hidden' if tab == 'login' else '' }}">
@@ -74,7 +74,7 @@
         <button type="button" id="forgot-toggle" class="text-brand hover:underline font-medium">Forgot password?</button>
       </p>
       <div id="forgot-panel" class="hidden mt-4 space-y-3">
-        <form method="post" action="{{ url_for('auth_forgot_password') }}" class="space-y-3">
+        <form method="post" action="{{ url_for('auth.auth_forgot_password') }}" class="space-y-3">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <p class="text-xs text-slate-500 dark:text-slate-400">We will email you a secure link to sign in and set a new password.</p>
           <div>

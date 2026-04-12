@@ -608,7 +608,7 @@ def carl_dashboard():
     if not session.get("user"):
         session["redirect_after_login"] = url_for("carl.carl_dashboard")
         flash("Sign in to use Carl.", "info")
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     return render_template("carl.html", wide_layout=True)
 
 
@@ -825,7 +825,7 @@ def market_research_report(slug: str):
     if not user:
         session["redirect_after_login"] = request.path
         flash("Sign in to read this report.", "info")
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     mi_tier = _mi_tier(user)
     return render_template(
         report.get("template", "reports/report.html"),

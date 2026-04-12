@@ -137,19 +137,19 @@
         <a href="{{ url_for('salary.salary_contribute') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full text-sm font-medium text-brand border border-brand/30 hover:bg-brand/10 transition-colors">+ Add Salary</a>
         <div class="border-l border-slate-200 dark:border-slate-700 h-5"></div>
         {% if session.get("user") %}
-        <a href="{{ url_for('post_job_form') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
+        <a href="{{ url_for('auth.post_job_form') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
         {% else %}
-        <a href="{{ url_for('register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
+        <a href="{{ url_for('auth.register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-white bg-brand shadow-sm hover:bg-brand/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Post Job</a>
         {% endif %}
         {% if session.get("user") %}
-        <a href="{{ url_for('studio') }}" class="whitespace-nowrap text-sm font-medium text-brand hover:underline transition-colors">Account</a>
-        <form method="post" action="{{ url_for('logout') }}" class="inline">
+        <a href="{{ url_for('auth.studio') }}" class="whitespace-nowrap text-sm font-medium text-brand hover:underline transition-colors">Account</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Sign out</button>
         </form>
         {% else %}
-        <a href="{{ url_for('register') }}" class="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Sign in</a>
-        <a href="{{ url_for('register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Get started</a>
+        <a href="{{ url_for('auth.register') }}" class="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Sign in</a>
+        <a href="{{ url_for('auth.register') }}" class="whitespace-nowrap px-3 py-1.5 rounded-full font-semibold text-sm text-brand border border-brand/30 bg-brand/5 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 transition-colors">Get started</a>
         {% endif %}
       </div>
     </div>
@@ -194,12 +194,12 @@
           <span>Research</span>
         </a>
         {% if session.get("user") %}
-        <a href="{{ url_for('post_job_form') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('auth.post_job_form') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
           <span class="font-semibold text-brand">Post Job</span>
         </a>
         {% else %}
-        <a href="{{ url_for('register') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
+        <a href="{{ url_for('auth.register') }}" class="flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-3 text-sm hover:border-brand motion-safe:transition-colors hover:shadow-sm active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M4 12h16M4 17h10" stroke-linecap="round"/><circle cx="18" cy="17" r="1.4" fill="currentColor"/></svg>
           <span class="font-semibold text-brand">Post Job</span>
         </a>
@@ -227,24 +227,24 @@
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('developers') }}">API</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-subscribe>Weekly Digest</a></li>
         {% if session.get("user") %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('post_job_form') }}">Post a Job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('auth.post_job_form') }}">Post a Job</a></li>
         {% else %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Post a Job</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('auth.register') }}">Post a Job</a></li>
         {% endif %}
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="#" data-open-contact>Contact us</a></li>
         <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('legal') }}">Privacy &amp; Terms</a></li>
         <li><button type="button" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" onclick="if(typeof Cookiebot!=='undefined'){Cookiebot.renew();}">Cookie Settings</button></li>
         {% if session.get("user") %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('profile') }}">My Profile</a></li>
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('studio') }}">My Account</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('auth.profile') }}">My Profile</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand" href="{{ url_for('auth.studio') }}">My Account</a></li>
         <li>
-          <form method="post" action="{{ url_for('logout') }}">
+          <form method="post" action="{{ url_for('auth.logout') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="block w-full text-left rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand">Sign out</button>
           </form>
         </li>
         {% else %}
-        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('register') }}">Sign in / Sign up</a></li>
+        <li><a class="block rounded-lg px-3 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-brand font-semibold text-brand" href="{{ url_for('auth.register') }}">Sign in / Sign up</a></li>
         {% endif %}
       </ul>
     </div>
@@ -348,7 +348,7 @@
           <a href="{{ url_for('salary.salary_tool') }}" class="hover:text-brand transition-colors">Salaries</a>
           <a href="{{ url_for('salary.salary_contribute') }}" class="hover:text-brand transition-colors">Add Your Salary</a>
           <a href="{{ url_for('developers') }}" class="hover:text-brand transition-colors">API</a>
-          <a href="{{ url_for('docs_api') }}" class="hover:text-brand transition-colors">API reference</a>
+          <a href="{{ url_for('auth.docs_api') }}" class="hover:text-brand transition-colors">API reference</a>
           <a href="#" data-open-subscribe class="hover:text-brand transition-colors">Weekly Digest</a>
           <a href="{{ url_for('payments.pricing') }}" class="hover:text-brand transition-colors">Pricing</a>
           <a href="{{ url_for('browse.companies') }}" class="hover:text-brand transition-colors">Companies</a>
@@ -359,9 +359,9 @@
           <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Company</p>
           <a href="{{ url_for('about') }}" class="hover:text-brand transition-colors">About Us</a>
           {% if session.get("user") %}
-          <a href="{{ url_for('post_job_form') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          <a href="{{ url_for('auth.post_job_form') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
           {% else %}
-          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
+          <a href="{{ url_for('auth.register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Post a Job</a>
           {% endif %}
           <a href="#" data-open-contact class="hover:text-brand transition-colors">Contact Us</a>
           <a href="{{ url_for('legal') }}" class="hover:text-brand transition-colors">Privacy &amp; Terms</a>
@@ -372,15 +372,15 @@
         <div class="flex flex-col gap-2">
           <p class="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Account</p>
           {% if session.get("user") %}
-          <a href="{{ url_for('profile') }}" class="hover:text-brand transition-colors">My Profile</a>
-          <a href="{{ url_for('studio') }}" class="hover:text-brand transition-colors">My Account</a>
-          <form method="post" action="{{ url_for('logout') }}" class="inline">
+          <a href="{{ url_for('auth.profile') }}" class="hover:text-brand transition-colors">My Profile</a>
+          <a href="{{ url_for('auth.studio') }}" class="hover:text-brand transition-colors">My Account</a>
+          <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="text-left hover:text-brand transition-colors">Sign out</button>
           </form>
           {% else %}
-          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors">Sign in</a>
-          <a href="{{ url_for('register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Get started</a>
+          <a href="{{ url_for('auth.register') }}" class="hover:text-brand transition-colors">Sign in</a>
+          <a href="{{ url_for('auth.register') }}" class="hover:text-brand transition-colors font-semibold text-brand">Get started</a>
           {% endif %}
 
           <!-- Theme toggle -->

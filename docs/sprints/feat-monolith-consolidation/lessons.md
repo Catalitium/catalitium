@@ -14,6 +14,8 @@
 
 ## 2026-04-12 | ALPHA_1 | inlined carl_mock into controllers/carl.py; removed app/integrations/ | carl.py +~540 lines, integrations -2 files
 
+## 2026-04-12 | ALPHA_2 | auth blueprint + templates url_for auth.* | factory.py -469 lines (approx)
+
 ## Patterns to keep
 
 - **Re-export hubs** (`models/db` importing four domains) make the import graph opaque; prefer explicit imports from `catalog` / `money` / `identity` / `utils` when stripping `db.py`.

@@ -25,17 +25,17 @@
       and recruiters who want to use Catalitium data in their own tools without ceremony.
     </p>
     <div class="flex flex-wrap gap-3 pt-2">
-      <a href="{{ url_for('docs_api') }}"
+      <a href="{{ url_for('auth.docs_api') }}"
          class="inline-flex items-center justify-center rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         Full API reference
       </a>
       {% if session.get('user') %}
-      <a href="{{ url_for('studio') }}#api-access"
+      <a href="{{ url_for('auth.studio') }}#api-access"
          class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-brand transition-colors">
         Studio — API setup
       </a>
       {% else %}
-      <a href="{{ url_for('register') }}"
+      <a href="{{ url_for('auth.register') }}"
          class="inline-flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:border-brand transition-colors">
         Sign in for API keys
       </a>
@@ -57,7 +57,7 @@
   <section class="space-y-3">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Getting an API key</h2>
     <ol class="list-decimal list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1.5">
-      <li>While signed in, POST to <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/api/keys/register</code> (or use <strong>Register free API key</strong> in <a href="{{ url_for('studio') }}" class="text-brand hover:underline">Studio</a>).</li>
+      <li>While signed in, POST to <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/api/keys/register</code> (or use <strong>Register free API key</strong> in <a href="{{ url_for('auth.studio') }}" class="text-brand hover:underline">Studio</a>).</li>
       <li>Click the confirmation link in the email (key activates once).</li>
       <li>Send the key in <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-API-Key</code> for all <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">/v1/*</code> calls.</li>
     </ol>
@@ -115,7 +115,7 @@ print("Found", data["meta"]["total"], "jobs")</code></pre>
   <section class="space-y-2">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Limits &amp; headers</h2>
     <p class="text-sm text-slate-700 dark:text-slate-300">
-      Quotas combine <strong>daily</strong> and <strong>calendar-month</strong> limits (see <a href="{{ url_for('docs_api') }}" class="text-brand hover:underline">API reference</a>). Each response includes:
+      Quotas combine <strong>daily</strong> and <strong>calendar-month</strong> limits (see <a href="{{ url_for('auth.docs_api') }}" class="text-brand hover:underline">API reference</a>). Each response includes:
     </p>
     <ul class="list-disc list-inside text-sm text-slate-700 dark:text-slate-300 space-y-1">
       <li><code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">X-RateLimit-Limit</code> / <code class="bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded text-xs">Remaining</code> for the daily window.</li>

@@ -3,7 +3,7 @@
 
 {% block meta %}
 <meta name="description" content="Catalitium developer API: authenticate with X-API-Key, query jobs and salary data, quotas and examples.">
-<link rel="canonical" href="{{ url_for('docs_api', _external=True) }}">
+<link rel="canonical" href="{{ url_for('auth.docs_api', _external=True) }}">
 {% endblock %}
 
 {% block content %}
@@ -86,7 +86,7 @@
   </div>
 
   <div class="mt-12 flex flex-wrap gap-3">
-    <a href="{{ url_for('studio') }}"
+    <a href="{{ url_for('auth.studio') }}"
        class="inline-flex items-center justify-center rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
       Open Studio
     </a>

@@ -586,12 +586,12 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Search roles with salary bands. Filter by title and region.</p>
       </div>
       {% if session.get("user") %}
-      <a href="{{ url_for('post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      <a href="{{ url_for('auth.post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Post a Job
       </a>
       {% else %}
-      <a href="{{ url_for('register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      <a href="{{ url_for('auth.register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Post a Job
       </a>
