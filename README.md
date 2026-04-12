@@ -71,9 +71,9 @@ Visit `http://localhost:5000`
 **Pre-deploy smoke** (with `.env` configured):
 
 ```bash
-python scripts/smoke_db_tables.py
-python scripts/supabase_smoke_test.py   # optional; broader DB checks
-python scripts/smoke_routes_http.py     # Flask test_client: /health, /jobs, sitemap, job detail
+python scripts/smoke.py --section routes   # recommended: Flask test_client smoke
+python scripts/smoke.py --section all      # db + routes + carl + supabase + smtp + reports (needs env)
+# Or run individual scripts: smoke_db_tables.py, supabase_smoke_test.py, smoke_routes_http.py
 ```
 
 **Post-deploy (production URLs)** — after DNS/deploy:
@@ -89,7 +89,7 @@ pwsh -File scripts/smoke_prod.ps1
 ```
 catalitium/
 ├── app/
-│   ├── app.py                  # Flask app factory — all routes, rate limiting, auth
+│   ├── factory.py              # Flask app factory — routes, rate limiting, auth
 │   ├── api_utils.py            # JSON envelopes, query param helpers, TTL cache
 │   ├── models/
 │   │   └── db.py               # DB queries, connection pool, API key management

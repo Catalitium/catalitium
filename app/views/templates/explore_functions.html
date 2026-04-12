@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Explore tech job categories: Backend, Frontend, ML/AI, Data, DevOps, and more. See job counts and salary data availability.">
-<link rel="canonical" href="{{ url_for('explore.explore_functions', _external=True) }}">
+<link rel="canonical" href="{{ url_for('browse.explore_functions', _external=True) }}">
 <meta property="og:title" content="Browse by Function | Catalitium">
 <meta property="og:description" content="Explore tech jobs by function category with salary data insights.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('explore.explore_functions', _external=True) }}">
+<meta property="og:url" content="{{ url_for('browse.explore_functions', _external=True) }}">
 {% endblock %}
 
 {% block content %}
@@ -20,7 +20,7 @@
       Explore job categories across the tech industry. Each card shows how many roles are available and what percentage include salary data.
     </p>
     <div class="mt-4">
-      <a href="{{ url_for('explore.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
+      <a href="{{ url_for('browse.explore_hub') }}" class="text-sm text-brand hover:underline">&larr; Back to Explore</a>
     </div>
   </div>
 </section>
@@ -57,7 +57,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {% for item in functions %}
       {% set color = cat_colors.get(item.function, 'slate') %}
-      <a href="{{ url_for('jobs', function=item.function) }}"
+      <a href="{{ url_for('jobs.jobs', function=item.function) }}"
          class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-brand dark:hover:border-brand hover:shadow-md transition-all">
         <div class="flex items-center gap-3">
           <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-{{ color }}-50 dark:bg-{{ color }}-900/30 border border-{{ color }}-200 dark:border-{{ color }}-800 flex items-center justify-center">

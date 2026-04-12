@@ -2,9 +2,11 @@
 
 from flask import Blueprint, render_template, request
 
-from ..models.db import logger, get_salary_for_location, Job
+from ..models.catalog import Job
+from ..models.db import logger
+from ..models.money import get_salary_for_location
 
-bp = Blueprint("career", __name__)
+bp = Blueprint("insights", __name__)
 
 
 @bp.get("/career/evaluate")

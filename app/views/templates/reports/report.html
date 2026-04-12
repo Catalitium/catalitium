@@ -4,11 +4,11 @@
 
 {% block meta %}
 <meta name="description" content="Data-driven analysis of AI's impact on tech jobs, skills in demand, salaries by region (US, Europe, India), and fastest growing roles for 2025-2026. By Catalitium.">
-<link rel="canonical" href="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.market_research_report', slug=report.slug, _external=True) }}">
 <meta property="og:title" content="{{ report.title }}">
 <meta property="og:description" content="{{ report.description }}">
 <meta property="og:type" content="article">
-<meta property="og:url" content="{{ url_for('market_research_report', slug=report.slug, _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl.market_research_report', slug=report.slug, _external=True) }}">
 <meta name="keywords" content="{{ report.keywords | join(', ') }}">
 <meta name="author" content="Catalitium">
 <meta property="article:published_time" content="{{ report.published }}">
@@ -23,9 +23,9 @@
 
 <!-- Breadcrumb -->
 <nav class="mb-6 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2" aria-label="Breadcrumb">
-  <a href="{{ url_for('jobs') }}" class="hover:text-brand transition-colors">Home</a>
+  <a href="{{ url_for('jobs.jobs') }}" class="hover:text-brand transition-colors">Home</a>
   <span>&rsaquo;</span>
-  <a href="{{ url_for('market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
+  <a href="{{ url_for('carl.market_research_index') }}" class="hover:text-brand transition-colors">Market Research</a>
   <span>&rsaquo;</span>
   <span class="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[200px] sm:max-w-none">{{ report.short_title }}</span>
 </nav>
@@ -39,7 +39,7 @@
     <!-- Hero / title block -->
     <header class="mb-8">
       <p class="text-xs font-semibold uppercase tracking-widest text-brand mb-3">
-        <a href="{{ url_for('market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
+        <a href="{{ url_for('carl.market_research_index') }}" class="hover:underline">Market Research by Catalitium</a>
       </p>
       <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-white leading-tight mb-4">
         {{ report.title }}
@@ -454,7 +454,7 @@
     <div class="rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 my-10">
       <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Get the next Catalitium report in your inbox</h3>
       <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">One weekly email with the best tech jobs and market signal. No spam. Unsubscribe anytime.</p>
-      <form action="{{ url_for('subscribe') }}" method="post"
+      <form action="{{ url_for('jobs.subscribe') }}" method="post"
             class="relative flex flex-col sm:flex-row gap-3">
 {% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
 {{ subscribe_security('report-generic') }}
@@ -507,17 +507,17 @@
         <em>"Empowering Individuals and Organizations with Technology."</em>
       </p>
       <div class="flex flex-wrap gap-4 text-sm">
-        <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">
+        <a href="{{ url_for('jobs.jobs') }}" class="inline-flex items-center gap-1 rounded-xl bg-brand text-white px-4 py-2 font-semibold hover:opacity-90 transition">
           Browse Tech Jobs
         </a>
-        <a href="{{ url_for('resources') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+        <a href="{{ url_for('carl.resources') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition">
           Explore Resources
         </a>
-        <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+        <a href="{{ url_for('carl.market_research_index') }}" class="inline-flex items-center gap-1 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-4 py-2 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition">
           All Reports
         </a>
-        <a href="{{ url_for('about') }}" class="text-brand hover:underline py-2 text-sm">About Us</a>
-        <a href="{{ url_for('legal') }}" class="text-slate-500 hover:underline py-2 text-sm">Privacy &amp; Terms</a>
+        <a href="{{ url_for('jobs.about') }}" class="text-brand hover:underline py-2 text-sm">About Us</a>
+        <a href="{{ url_for('jobs.legal') }}" class="text-slate-500 hover:underline py-2 text-sm">Privacy &amp; Terms</a>
       </div>
     </section>
 
@@ -588,18 +588,18 @@
   "author": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('jobs', _external=True) }}"
+    "url": "{{ url_for('jobs.jobs', _external=True) }}"
   },
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('jobs', _external=True) }}"
+    "url": "{{ url_for('jobs.jobs', _external=True) }}"
   },
   "datePublished": "{{ report.published }}",
   "dateModified": "{{ report.published }}",
   "mainEntityOfPage": {
     "@type": "WebPage",
-    "@id": "{{ url_for('market_research_report', slug=report.slug, _external=True) }}"
+    "@id": "{{ url_for('carl.market_research_report', slug=report.slug, _external=True) }}"
   },
   "keywords": "{{ report.keywords | join(', ') }}",
   "inLanguage": "en",

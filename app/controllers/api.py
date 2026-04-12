@@ -9,7 +9,7 @@ from typing import Dict
 
 from flask import Blueprint, g, jsonify, render_template, request, session
 
-from ..helpers import (
+from ..utils import (
     BLACKLIST_LINKS,
     api_error_response,
     api_success_response,
@@ -18,21 +18,18 @@ from ..helpers import (
     require_api_key,
     resolve_pagination,
 )
-from ..models.db import (
-    Job,
-    clean_job_description_text,
+from ..models.catalog import Job, clean_job_description_text, get_job_summary, save_job_summary
+from ..models.db import logger
+from ..models.identity import (
     confirm_api_key_by_token,
     create_api_key,
     get_api_key_by_email,
-    get_job_summary,
-    get_salary_for_location,
-    logger,
     revoke_api_key,
-    save_job_summary,
 )
+from ..models.money import get_salary_for_location
 from ..mailer import send_api_key_activation
 
-bp = Blueprint("api_v1", __name__)
+bp = Blueprint("api", __name__)
 
 
 # ---------------------------------------------------------------------------
@@ -139,8 +136,8 @@ def api_keys_revoke():
 @require_api_key
 def v1_jobs():
     """Authenticated job search; same parameters as /api/jobs."""
-    from ..normalization import normalize_country, normalize_title
-    from ..models.db import parse_salary_query
+    from ..utils import normalize_country, normalize_title
+    from ..models.money import parse_salary_query
 
     raw_title = (request.args.get("title") or "").strip()
     raw_country = (request.args.get("country") or "").strip()

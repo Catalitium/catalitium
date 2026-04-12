@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Manage your Catalitium subscriptions: Market Intelligence, job tools, and billing in one place.">
-<link rel="canonical" href="{{ url_for('stripe_routes.subscription_manage', _external=True) }}">
+<link rel="canonical" href="{{ url_for('payments.subscription_manage', _external=True) }}">
 <meta property="og:title" content="My Subscriptions | Catalitium">
 <meta property="og:description" content="View and manage your Catalitium plans and subscriptions.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_routes.subscription_manage', _external=True) }}">
+<meta property="og:url" content="{{ url_for('payments.subscription_manage', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="My Subscriptions | Catalitium">
@@ -82,7 +82,7 @@
 
       {# Upgrade / switch buttons #}
       {% if not sub or sub.status == 'cancelled' or (sub and sub.tier != products[paid_key_1].tier) %}
-      <form method="post" action="{{ url_for('stripe_routes.stripe_subscribe') }}">
+      <form method="post" action="{{ url_for('payments.stripe_subscribe') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="plan_key" value="{{ paid_key_1 }}">
         <button type="submit"
@@ -93,7 +93,7 @@
       {% endif %}
 
       {% if paid_key_2 and (not sub or sub.status == 'cancelled' or (sub and sub.tier != products[paid_key_2].tier)) %}
-      <form method="post" action="{{ url_for('stripe_routes.stripe_subscribe') }}">
+      <form method="post" action="{{ url_for('payments.stripe_subscribe') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="plan_key" value="{{ paid_key_2 }}">
         <button type="submit"
@@ -105,7 +105,7 @@
 
       {# Cancel button, only if active and not already scheduled to cancel #}
       {% if sub and sub.status == 'active' and not sub.cancel_at_period_end %}
-      <form method="post" action="{{ url_for('stripe_routes.subscription_cancel') }}"
+      <form method="post" action="{{ url_for('payments.subscription_cancel') }}"
         onsubmit="return confirm('Cancel your {{ pl_label }} subscription? You keep access until the end of the billing period.')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="product_line" value="{{ pl_key }}">
@@ -118,7 +118,7 @@
 
       {# Resubscribe after scheduled cancellation #}
       {% if sub and sub.cancel_at_period_end %}
-      <a href="{{ url_for('stripe_routes.pricing') }}"
+      <a href="{{ url_for('payments.pricing') }}"
         class="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         Resubscribe
       </a>
@@ -131,7 +131,7 @@
   <p class="mt-10 text-center text-sm text-slate-400 dark:text-slate-500">
     Need help? <a href="mailto:info@catalitium.com" class="text-brand hover:underline">info@catalitium.com</a>
     &nbsp;·&nbsp;
-    <a href="{{ url_for('stripe_routes.pricing') }}" class="text-brand hover:underline">View all plans</a>
+    <a href="{{ url_for('payments.pricing') }}" class="text-brand hover:underline">View all plans</a>
   </p>
 
 </div>

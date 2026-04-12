@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Tech career resources, salary guides, and original market research on AI jobs and hiring trends, built from real job data. Sign in to read reports; Market Intelligence unlocks premium research.">
-<link rel="canonical" href="{{ url_for('market_research_index', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.market_research_index', _external=True) }}">
 <meta property="og:title" content="Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends | Catalitium">
 <meta property="og:description" content="Salary benchmarks, AI market reports, hiring trend data, and job search guides. Sign in to read full reports; Market Intelligence unlocks premium research. Published by Catalitium.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('market_research_index', _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl.market_research_index', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Market Research & Resources | Catalitium">
@@ -37,7 +37,7 @@
     </h2>
     <!-- Featured: first/latest report, full width spotlight -->
     {% set featured = reports[0] %}
-    <a href="{% if user %}{{ url_for('market_research_report', slug=featured.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
+    <a href="{% if user %}{{ url_for('carl.market_research_report', slug=featured.slug) }}{% else %}{{ url_for('auth.register') }}{% endif %}"
        class="group block rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 sm:p-8 hover:shadow-lg motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-start gap-5">
         <div class="w-14 h-14 rounded-2xl bg-brand text-white flex items-center justify-center flex-shrink-0">
@@ -81,7 +81,7 @@
     <!-- Remaining reports + Coming Soon in 2-col grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {% for report in reports[1:] %}
-      <a href="{% if user %}{{ url_for('market_research_report', slug=report.slug) }}{% else %}{{ url_for('register') }}{% endif %}"
+      <a href="{% if user %}{{ url_for('carl.market_research_report', slug=report.slug) }}{% else %}{{ url_for('auth.register') }}{% endif %}"
          class="group rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/5 to-brand/10 p-6 hover:shadow-md motion-safe:transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <div class="flex items-start justify-between gap-3 mb-4">
           <div class="w-12 h-12 rounded-xl bg-brand text-white flex items-center justify-center flex-shrink-0">
@@ -311,7 +311,7 @@
         <h3 class="font-semibold text-slate-500 dark:text-slate-400 mb-1">Tech Salary Report <span class="text-xs font-normal text-slate-400">(Coming Soon)</span></h3>
         <p class="text-xs text-slate-400">Printable salary benchmarks by role and region, updated from live job data.</p>
       </div>
-      <a href="{{ url_for('jobs') }}"
+      <a href="{{ url_for('jobs.jobs') }}"
          class="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-brand hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <svg class="w-6 h-6 text-brand mb-3" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         <h3 class="font-semibold text-slate-800 group-hover:text-brand transition mb-1">Job Search</h3>
@@ -342,11 +342,11 @@
   "@type": "CollectionPage",
   "name": "Market Research & Resources: Tech Salaries, AI Careers & Hiring Trends",
   "description": "Free tech career resources, salary guides, and original market research on AI jobs, hiring trends, and the future of work. Built from real job data by Catalitium.",
-  "url": "{{ url_for('market_research_index', _external=True) }}",
+  "url": "{{ url_for('carl.market_research_index', _external=True) }}",
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('jobs', _external=True) }}"
+    "url": "{{ url_for('jobs.jobs', _external=True) }}"
   },
   "inLanguage": "en"
 }

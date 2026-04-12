@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Catalitium builds AI-powered tools and agents. Job platform with salary insights, market reports, custom development, and AI agents as a service.">
-<link rel="canonical" href="{{ url_for('landing', _external=True) }}">
+<link rel="canonical" href="{{ url_for('jobs.landing', _external=True) }}">
 <meta property="og:title" content="Catalitium: Automation over complexity.">
 <meta property="og:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('landing', _external=True) }}">
+<meta property="og:url" content="{{ url_for('jobs.landing', _external=True) }}">
 <meta name="twitter:title" content="Catalitium: Automation over complexity.">
 <meta name="twitter:description" content="AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
 {% endblock %}
@@ -44,7 +44,7 @@
     </p>
 
     <div class="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-      <a href="{{ url_for('jobs') }}"
+      <a href="{{ url_for('jobs.jobs') }}"
          class="group inline-flex items-center gap-2 rounded-xl bg-brand text-white dark:bg-white dark:text-slate-900 px-7 py-4 text-base font-semibold shadow-lg shadow-brand/20 dark:shadow-white/10 hover:shadow-xl hover:shadow-brand/30 dark:hover:shadow-white/20 hover:-translate-y-0.5 transition-all duration-300">
         Explore jobs
         <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -120,7 +120,7 @@
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
             Curated tech job listings with salary insights and market data. Companies post directly; professionals find high-signal roles without the noise.
           </p>
-          <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
+          <a href="{{ url_for('jobs.jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
             Browse jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -137,7 +137,7 @@
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
             Deep research reports on AI adoption, salary dynamics, and the structural shifts reshaping software and hiring. Independent, data-driven insights.
           </p>
-          <a href="{{ url_for('market_research_index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:gap-2 transition-all">
+          <a href="{{ url_for('carl.market_research_index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:gap-2 transition-all">
             Read reports <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -154,7 +154,7 @@
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
             Custom AI and automation solutions built for results without the overhead of traditional development. Fast, lean, built to last.
           </p>
-          <a href="{{ url_for('about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:gap-2 transition-all">
+          <a href="{{ url_for('jobs.about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-violet-600 dark:text-violet-400 hover:gap-2 transition-all">
             Learn more <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -171,7 +171,7 @@
           <p class="text-slate-600 dark:text-slate-400 leading-relaxed mb-5">
             Autonomous AI agents that run business tasks end to end. Subscription-based. Oriented around outcomes, not seats.
           </p>
-          <a href="{{ url_for('about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:gap-2 transition-all">
+          <a href="{{ url_for('jobs.about') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:gap-2 transition-all">
             Learn more <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
           </a>
         </div>
@@ -194,7 +194,7 @@
           Latest roles, right now
         </h2>
       </div>
-      <a href="{{ url_for('jobs') }}" class="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
+      <a href="{{ url_for('jobs.jobs') }}" class="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-brand hover:gap-2 transition-all">
         View all jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </a>
     </div>
@@ -202,7 +202,7 @@
     {% if featured_jobs %}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {% for job in featured_jobs[:4] %}
-      <a href="{{ url_for('job_detail', job_id=job.id) }}"
+      <a href="{{ url_for('jobs.job_detail', job_id=job.id) }}"
          class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 p-5 hover:border-brand/30 dark:hover:border-brand/30 hover:shadow-xl hover:shadow-brand/10 dark:hover:shadow-brand/20 hover:-translate-y-1 transition-all duration-300">
         <div class="text-xs font-semibold text-brand mb-2 uppercase tracking-wider clamp-1">{{ job.company }}</div>
         <h3 class="text-base font-bold text-slate-900 dark:text-white mb-2 clamp-2 group-hover:text-brand transition-colors">{{ job.title }}</h3>
@@ -220,7 +220,7 @@
     {% endif %}
 
     <div class="mt-8 text-center sm:hidden">
-      <a href="{{ url_for('jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand">
+      <a href="{{ url_for('jobs.jobs') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand">
         View all jobs <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </a>
     </div>
@@ -258,7 +258,7 @@
               Hiring trend analysis
             </li>
           </ul>
-          <a href="{{ url_for('market_research_index') }}"
+          <a href="{{ url_for('carl.market_research_index') }}"
              class="inline-flex items-center gap-2 rounded-xl bg-blue-600 text-white px-6 py-3 text-sm font-semibold hover:bg-blue-700 hover:-translate-y-0.5 transition-all duration-300 w-fit">
             Read our reports
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -325,7 +325,7 @@
     </div>
 
     <div class="mt-12 text-center">
-      <a href="{{ url_for('register') }}"
+      <a href="{{ url_for('auth.register') }}"
          class="inline-flex items-center gap-2 rounded-xl bg-emerald-500 text-white px-7 py-4 text-base font-semibold hover:bg-emerald-600 dark:hover:bg-emerald-400 hover:-translate-y-0.5 transition-all duration-300">
         Start a conversation
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -370,7 +370,7 @@
     </div>
 
     <div class="mt-10">
-      <a href="{{ url_for('stripe_routes.pricing') }}"
+      <a href="{{ url_for('payments.pricing') }}"
          class="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-6 py-3 text-sm font-semibold hover:border-brand hover:text-brand transition-all duration-300">
         See full pricing
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
@@ -396,12 +396,12 @@
     </p>
 
     <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-      <a href="{{ url_for('register') }}"
+      <a href="{{ url_for('auth.register') }}"
          class="inline-flex items-center gap-2 rounded-xl bg-brand text-white dark:bg-white dark:text-slate-900 px-7 py-4 text-base font-semibold shadow-lg shadow-brand/20 dark:shadow-white/10 hover:shadow-xl hover:bg-blue-700 dark:hover:shadow-white/20 hover:-translate-y-0.5 transition-all duration-300">
         Get started free
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </a>
-      <a href="{{ url_for('about') }}"
+      <a href="{{ url_for('jobs.about') }}"
          class="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-7 py-4 text-base font-semibold hover:border-slate-500 dark:hover:border-slate-400 hover:text-slate-900 dark:hover:text-white hover:-translate-y-0.5 transition-all duration-300">
         Contact us
       </a>
@@ -426,7 +426,7 @@
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Catalitium",
-  "url": "{{ url_for('landing', _external=True) }}",
+  "url": "{{ url_for('jobs.landing', _external=True) }}",
   "logo": "{{ url_for('static', filename='img/logo.png', _external=True) }}",
   "description": "Catalitium builds and deploys AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.",
   "foundingDate": "2025",

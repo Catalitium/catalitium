@@ -51,7 +51,7 @@ def main() -> int:
 
     from werkzeug.datastructures import FileStorage
 
-    from app.integrations.cv_extract import CVExtractionError, extract_cv_from_upload
+    from app.models.cv import CVExtractionError, extract_cv_from_upload
 
     raw = pdf.read_bytes()
     fs = FileStorage(stream=io.BytesIO(raw), filename=pdf.name, content_type="application/pdf")
@@ -68,7 +68,7 @@ def main() -> int:
         print("SKIP: no DATABASE_URL / SUPABASE_URL — load .env then rerun.")
         return 0
 
-    from app.app import create_app
+    from app.factory import create_app
 
     app = create_app()
     client = app.test_client()

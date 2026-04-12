@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Market Research report quality requirements.
 
-Checks each report declared in app/app.py for:
+Checks each report declared in app/market_reports_data.py for:
 - template file exists
 - methodology section present
 - sources section present
@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_FILE = ROOT / "app" / "app.py"
+APP_FILE = ROOT / "app" / "factory.py"
 TEMPLATES_DIR = ROOT / "app" / "views" / "templates"
 STATIC_DIR = ROOT / "app" / "static"
 
@@ -29,7 +29,7 @@ def _extract_reports_literal(app_py: str) -> str:
     marker = "REPORTS = ["
     start = app_py.find(marker)
     if start == -1:
-        raise ValueError("Could not find REPORTS declaration in app/app.py")
+        raise ValueError("Could not find REPORTS declaration in app/factory.py")
     cursor = start + len("REPORTS = ")
     text = app_py[cursor:]
     depth = 0
@@ -57,9 +57,10 @@ def _has_visuals(text: str) -> bool:
 
 
 def main() -> int:
-    app_source = APP_FILE.read_text(encoding="utf-8")
-    reports_literal = _extract_reports_literal(app_source)
-    reports = ast.literal_eval(reports_literal)
+    sys.path.insert(0, str(ROOT))
+    from app.market_reports_data import REPORTS  # noqa: PLC0415
+
+    reports = REPORTS
 
     failures: list[str] = []
 

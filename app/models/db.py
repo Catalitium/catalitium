@@ -1,16 +1,10 @@
-# app/models/db.py - Database connection infrastructure + re-exports
+# app/models/db.py - Database connection infrastructure
 #
 # This file owns: connection pool, get_db, close_db, init_db,
 #                 upsert_profile_cv_extract, summarize_two_sentences,
-#                 parse_job_description.
+#                 parse_job_description, SECRET_KEY/SUPABASE_URL passthrough.
 #
-# Catalog + salary helpers live in:
-#   models/catalog.py      — Job, taxonomy, explore, career
-#   models/money.py        — salary, compensation, analytics, now_iso, safe_salary_context
-#   models/identity.py     — subscribers, Stripe orders, subscriptions, API keys
-#
-# Re-exports from those modules are at the bottom of this file so that
-# all existing `from .models.db import X` calls in app.py continue to work.
+# Domain models: import from ``catalog``, ``money``, ``identity``, or ``utils`` directly.
 
 import json
 import re
@@ -385,48 +379,3 @@ def parse_job_description(text: str) -> str:
     return summarize_two_sentences(t)
 
 
-# ----------------------------- Normalization (re-export) ---------------------
-# Single source of truth lives in app/normalization.py
-from ..normalization import (  # noqa: E402
-    COUNTRY_NORM,
-    LOCATION_COUNTRY_HINTS,
-    SWISS_LOCATION_TERMS,
-    TITLE_SYNONYMS,
-    normalize_country,
-    normalize_title,
-)
-
-# ----------------------------- Model re-exports ------------------------------
-# All imports from `from .models.db import X` in app.py continue to work.
-
-from .catalog import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
-from .money import (  # noqa: E402,F401
-    insert_salary_submission,
-    get_salary_for_location,
-    parse_money_numbers,
-    parse_salary_query,
-    _compact_salary_number,
-    salary_range_around,
-    parse_salary_range_string,
-    now_iso,
-    safe_salary_context,
-)
-from .identity import (  # noqa: E402,F401
-    insert_stripe_order,
-    mark_stripe_order_paid,
-    mark_stripe_order_job_submitted,
-    get_stripe_order,
-    upsert_user_subscription,
-    get_user_subscriptions,
-    get_subscription_by_stripe_id,
-    create_api_key,
-    get_api_key_by_email,
-    confirm_api_key_by_token,
-    revoke_api_key,
-    check_and_increment_api_key,
-    sync_api_key_quota_for_api_access,
-    insert_subscriber,
-    insert_contact,
-    insert_job_posting,
-    JOB_POSTING_ACTIVE_DAYS,
-)

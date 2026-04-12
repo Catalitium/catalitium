@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Your Catalitium subscription is confirmed. Thank you for upgrading.">
-<link rel="canonical" href="{{ url_for('stripe_routes.subscription_success', _external=True) }}">
+<link rel="canonical" href="{{ url_for('payments.subscription_success', _external=True) }}">
 <meta property="og:title" content="Subscription Confirmed | Catalitium">
 <meta property="og:description" content="Subscription confirmation on Catalitium.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_routes.subscription_success', _external=True) }}">
+<meta property="og:url" content="{{ url_for('payments.subscription_success', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Subscription Confirmed | Catalitium">
@@ -45,11 +45,11 @@
   </p>
 
   <div class="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-    <a href="{{ url_for('stripe_routes.subscription_manage') }}"
+    <a href="{{ url_for('payments.subscription_manage') }}"
       class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand/90 transition-colors shadow-lg shadow-brand/20">
       Manage subscription
     </a>
-    <a href="{{ url_for('jobs') }}"
+    <a href="{{ url_for('jobs.jobs') }}"
       class="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 px-6 py-3 text-sm font-semibold text-slate-900 dark:text-white hover:border-brand dark:hover:border-brand transition-colors">
       Back to home
     </a>

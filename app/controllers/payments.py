@@ -17,8 +17,9 @@ from flask import (
     url_for,
 )
 
-from ..helpers import csrf_valid
-from ..models.db import (
+from ..utils import csrf_valid
+from ..models.db import logger
+from ..models.identity import (
     create_api_key,
     get_api_key_by_email,
     get_stripe_order,
@@ -26,7 +27,6 @@ from ..models.db import (
     get_user_subscriptions,
     insert_job_posting,
     insert_stripe_order,
-    logger,
     mark_stripe_order_job_submitted,
     mark_stripe_order_paid,
     sync_api_key_quota_for_api_access,
@@ -45,7 +45,7 @@ try:
 except ImportError:
     _stripe = None  # type: ignore[assignment]
 
-bp = Blueprint("stripe_routes", __name__)
+bp = Blueprint("payments", __name__)
 
 # ---------------------------------------------------------------------------
 # B2C product catalogue
@@ -300,16 +300,16 @@ def stripe_subscribe():
     """Start a Stripe Checkout Session for a B2C subscription."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return redirect(url_for("stripe_routes.pricing"))
+        return redirect(url_for("payments.pricing"))
 
     plan_key = (request.form.get("plan_key") or "").strip()
     product = _STRIPE_B2C_PRODUCTS.get(plan_key)
     if not product or not product["price_id"]:
         flash("Invalid plan selected.", "error")
-        return redirect(url_for("stripe_routes.pricing"))
+        return redirect(url_for("payments.pricing"))
 
     user_id = user.get("id", "")
     user_email = user.get("email", "")
@@ -328,11 +328,11 @@ def stripe_subscribe():
                 proration_behavior="create_prorations",
             )
             flash(f"Switched to {product['name']}. Changes apply immediately.", "success")
-            return redirect(url_for("stripe_routes.subscription_manage"))
+            return redirect(url_for("payments.subscription_manage"))
         except Exception as exc:
             logger.error("stripe_subscribe: plan change failed %s", exc)
             flash("Could not change plan. Please contact support.", "error")
-            return redirect(url_for("stripe_routes.pricing"))
+            return redirect(url_for("payments.pricing"))
 
     try:
         checkout_session = _stripe.checkout.Session.create(
@@ -363,7 +363,7 @@ def stripe_subscribe():
     except Exception as exc:
         logger.error("stripe_subscribe: checkout creation failed %s", exc)
         flash("Could not start checkout. Please try again.", "error")
-        return redirect(url_for("stripe_routes.pricing"))
+        return redirect(url_for("payments.pricing"))
 
 
 @bp.get("/stripe/subscription/success")
@@ -371,7 +371,7 @@ def subscription_success():
     """Landing page after a successful B2C subscription checkout."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     plan_key = request.args.get("plan_key", "")
     product = _STRIPE_B2C_PRODUCTS.get(plan_key)
     if plan_key == "api_access":
@@ -380,7 +380,7 @@ def subscription_success():
             "to see setup steps and documentation.",
             "success",
         )
-        return redirect(url_for("studio", api_welcome="1"))
+        return redirect(url_for("auth.studio", api_welcome="1"))
     return render_template("subscription_success.html", user=user, product=product)
 
 
@@ -389,7 +389,7 @@ def subscription_manage():
     """Manage active B2C subscriptions."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     subs = get_user_subscriptions(user.get("id", ""))
     return render_template(
         "subscription_manage.html",
@@ -404,17 +404,17 @@ def subscription_cancel():
     """Cancel a B2C subscription at period end."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return redirect(url_for("stripe_routes.subscription_manage"))
+        return redirect(url_for("payments.subscription_manage"))
 
     product_line = (request.form.get("product_line") or "").strip()
     subs = get_user_subscriptions(user.get("id", ""))
     sub = subs.get(product_line)
     if not sub or not sub.get("stripe_subscription_id"):
         flash("No active subscription found.", "error")
-        return redirect(url_for("stripe_routes.subscription_manage"))
+        return redirect(url_for("payments.subscription_manage"))
 
     try:
         _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -427,7 +427,7 @@ def subscription_cancel():
         logger.error("subscription_cancel: failed %s", exc)
         flash("Could not cancel subscription. Please contact support.", "error")
 
-    return redirect(url_for("stripe_routes.subscription_manage"))
+    return redirect(url_for("payments.subscription_manage"))
 
 
 # ------------------------------------------------------------------
@@ -452,19 +452,19 @@ def stripe_checkout():
     user = session.get("user")
     if not user:
         flash("Please sign in to purchase a job posting.", "error")
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
     if not _stripe:
         flash("Payment service unavailable. Please try again later.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     plan_key = (request.form.get("plan_key") or "").strip()
     product = _STRIPE_PRODUCTS.get(plan_key)
     if not product or not product["price_id"]:
         flash("Invalid plan selected.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
     base_url = os.getenv("BASE_URL", request.host_url.rstrip("/"))
@@ -492,7 +492,7 @@ def stripe_checkout():
     except Exception as exc:
         logger.warning("stripe_checkout error: %s", exc)
         flash("Could not initiate payment. Please try again.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     insert_stripe_order(
         stripe_session_id=checkout_session.id,
@@ -510,17 +510,17 @@ def stripe_success():
     """Landing page after successful Stripe Checkout."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
 
     session_id = (request.args.get("session_id") or "").strip()
     if not session_id:
         flash("No payment session found.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     order = get_stripe_order(session_id)
     if not order or order.get("user_id") != user.get("id"):
         flash("Payment not found or does not belong to your account.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     product = _STRIPE_PRODUCTS.get(order.get("plan_key", ""))
     return render_template(
@@ -536,20 +536,20 @@ def stripe_submit_job():
     """Handle job details submission after a successful payment."""
     user = session.get("user")
     if not user:
-        return redirect(url_for("register"))
+        return redirect(url_for("auth.register"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     session_id = (request.form.get("stripe_session_id") or "").strip()
     order = get_stripe_order(session_id) if session_id else None
     if not order or order.get("user_id") != user.get("id"):
         flash("Invalid or unauthorised payment session.", "error")
-        return redirect(url_for("stripe_routes.post_a_job"))
+        return redirect(url_for("payments.post_a_job"))
 
     if order.get("job_submitted_at"):
         flash("A job has already been submitted for this order.", "error")
-        return redirect(url_for("hire"))
+        return redirect(url_for("auth.hire"))
 
     job_title = (request.form.get("job_title") or "").strip()
     company = (request.form.get("company") or "").strip()
@@ -560,13 +560,13 @@ def stripe_submit_job():
 
     if len(job_title) < 2:
         flash("Please enter a job title.", "error")
-        return redirect(url_for("stripe_routes.stripe_success", session_id=session_id))
+        return redirect(url_for("payments.stripe_success", session_id=session_id))
     if len(company) < 2:
         flash("Please enter a company name.", "error")
-        return redirect(url_for("stripe_routes.stripe_success", session_id=session_id))
+        return redirect(url_for("payments.stripe_success", session_id=session_id))
     if len(description) < 20:
         flash("Please add a job description (at least 20 characters).", "error")
-        return redirect(url_for("stripe_routes.stripe_success", session_id=session_id))
+        return redirect(url_for("payments.stripe_success", session_id=session_id))
 
     description_full = description
     if apply_url:
@@ -583,7 +583,7 @@ def stripe_submit_job():
     )
     if status != "ok":
         flash("Could not save your job. Please contact support.", "error")
-        return redirect(url_for("stripe_routes.stripe_success", session_id=session_id))
+        return redirect(url_for("payments.stripe_success", session_id=session_id))
 
     mark_stripe_order_job_submitted(stripe_session_id=session_id)
 
@@ -609,7 +609,7 @@ def stripe_submit_job():
     )
 
     flash("Job submitted! It will go live within 24 hours. Check your email for confirmation.", "success")
-    return redirect(url_for("hire"))
+    return redirect(url_for("auth.hire"))
 
 
 @bp.get("/stripe/cancel")

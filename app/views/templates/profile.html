@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Manage your Catalitium profile: name, preferences, and account details.">
-<link rel="canonical" href="{{ url_for('profile', _external=True) }}">
+<link rel="canonical" href="{{ url_for('auth.profile', _external=True) }}">
 <meta property="og:title" content="My Profile | Catalitium">
 <meta property="og:description" content="Update your Catalitium account profile and preferences.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('profile', _external=True) }}">
+<meta property="og:url" content="{{ url_for('auth.profile', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="My Profile | Catalitium">
@@ -27,7 +27,7 @@
   </div>
 
   <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-    <form method="post" action="{{ url_for('profile') }}" class="space-y-4">
+    <form method="post" action="{{ url_for('auth.profile') }}" class="space-y-4">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div>
         <label for="full_name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Full name</label>
@@ -64,7 +64,7 @@
                 class="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
           Save profile
         </button>
-        <a href="{{ url_for('studio') }}"
+        <a href="{{ url_for('auth.studio') }}"
            class="rounded-xl border border-slate-200 dark:border-slate-600 px-4 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
           Back to studio
         </a>
@@ -76,14 +76,14 @@
     <p class="text-base font-semibold text-slate-900 dark:text-slate-100">Account actions</p>
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Sign out quickly or permanently delete your account.</p>
     <div class="mt-4 flex flex-wrap items-center gap-3">
-      <form method="post" action="{{ url_for('logout') }}">
+      <form method="post" action="{{ url_for('auth.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit"
                 class="rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
           Sign out
         </button>
       </form>
-      <form method="post" action="{{ url_for('account_delete') }}" class="flex flex-wrap items-center gap-2" onsubmit="return confirm('Delete your account permanently? This cannot be undone.');">
+      <form method="post" action="{{ url_for('auth.account_delete') }}" class="flex flex-wrap items-center gap-2" onsubmit="return confirm('Delete your account permanently? This cannot be undone.');">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="text" name="confirm_delete" required
                class="rounded-xl border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"

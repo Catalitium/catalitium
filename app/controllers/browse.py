@@ -1,30 +1,71 @@
-"""Company discovery routes: hub + detail page."""
+"""Explore hub + company discovery (merged former explore + companies blueprints)."""
 
 import re
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
-from ..helpers import (
-    BLACKLIST_LINKS,
-    TITLE_BUCKET1_KEYWORDS,
-    TITLE_BUCKET2_KEYWORDS,
+from ..utils import (
     estimate_salary_display,
     job_is_ghost,
     job_is_new,
     resolve_pagination,
     slugify,
 )
-from ..models.db import (
+from ..models.catalog import (
     Job,
-    _compact_salary_number,
     format_job_date_string,
-    get_salary_for_location,
-    logger,
-    parse_job_description,
-    salary_range_around,
+    get_explore_data,
+    get_function_distribution,
+    get_remote_companies,
 )
+from ..models.db import logger, parse_job_description
+from ..models.money import get_salary_for_location
 
-bp = Blueprint("companies", __name__)
+bp = Blueprint("browse", __name__)
+
+
+# --- Explore (unchanged URLs) ---
+
+
+@bp.get("/explore")
+def explore_hub():
+    """Render the Explore Hub with top titles, locations, and companies."""
+    try:
+        data = get_explore_data()
+    except Exception:
+        logger.exception("explore_hub data fetch failed")
+        data = {"top_titles": [], "top_locations": [], "top_companies": []}
+    return render_template(
+        "explore.html",
+        top_titles=data.get("top_titles", []),
+        top_locations=data.get("top_locations", []),
+        top_companies=data.get("top_companies", []),
+    )
+
+
+@bp.get("/explore/remote-companies")
+def explore_remote():
+    """Render the remote-friendliness leaderboard."""
+    try:
+        companies = get_remote_companies(limit=50)
+    except Exception:
+        logger.exception("explore_remote data fetch failed")
+        companies = []
+    return render_template("explore_remote.html", companies=companies)
+
+
+@bp.get("/explore/functions")
+def explore_functions():
+    """Render the function category browser."""
+    try:
+        functions = get_function_distribution()
+    except Exception:
+        logger.exception("explore_functions data fetch failed")
+        functions = []
+    return render_template("explore_functions.html", functions=functions)
+
+
+# --- Companies ---
 
 
 @bp.get("/companies")
@@ -70,9 +111,9 @@ def companies():
         "per_page": per_page,
         "has_prev": page > 1,
         "has_next": page < pages_display,
-        "prev_url": url_for("companies.companies", search=search or None, page=page - 1)
+        "prev_url": url_for("browse.companies", search=search or None, page=page - 1)
         if page > 1 else None,
-        "next_url": url_for("companies.companies", search=search or None, page=page + 1)
+        "next_url": url_for("browse.companies", search=search or None, page=page + 1)
         if page < pages_display else None,
     }
 

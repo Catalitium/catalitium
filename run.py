@@ -44,7 +44,7 @@ ENVIRONMENT = _current_env()
 if ENVIRONMENT != "production" and not os.getenv("SECRET_KEY"):
     os.environ["SECRET_KEY"] = "dev-" + os.urandom(16).hex()
 
-from app.app import create_app  # noqa: E402 (import after env setup)
+from app.factory import create_app  # noqa: E402 (import after env setup)
 
 app = create_app()
 

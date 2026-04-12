@@ -2,12 +2,12 @@
 {% block title %}Explore Tech Jobs by Title, Location & Company | Catalitium{% endblock %}
 
 {% block meta %}
-<meta name="description" content="Discover trending tech roles, top hiring locations, and leading companies. Explore curated job market data with salary insights.">
-<link rel="canonical" href="{{ url_for('explore.explore_hub', _external=True) }}">
+<meta name="description" content="Discover trending tech roles, top hiring locations, and leading browse. Explore curated job market data with salary insights.">
+<link rel="canonical" href="{{ url_for('browse.explore_hub', _external=True) }}">
 <meta property="og:title" content="Explore Tech Jobs | Catalitium">
-<meta property="og:description" content="Discover trending tech roles, top hiring locations, and leading companies.">
+<meta property="og:description" content="Discover trending tech roles, top hiring locations, and leading browse.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('explore.explore_hub', _external=True) }}">
+<meta property="og:url" content="{{ url_for('browse.explore_hub', _external=True) }}">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -21,7 +21,7 @@
       "@type": "ListItem",
       "position": {{ loop.index }},
       "name": "{{ item.name|e }}",
-      "url": "{{ url_for('jobs', title=item.name, _external=True) }}"
+      "url": "{{ url_for('jobs.jobs', title=item.name, _external=True) }}"
     }{% if not loop.last or top_locations %},{% endif %}
     {% endfor %}
     {% for item in top_locations[:10] %}
@@ -29,7 +29,7 @@
       "@type": "ListItem",
       "position": {{ loop.index + top_titles[:10]|length }},
       "name": "{{ item.name|e }}",
-      "url": "{{ url_for('jobs', country=item.name, _external=True) }}"
+      "url": "{{ url_for('jobs.jobs', country=item.name, _external=True) }}"
     }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]
@@ -47,11 +47,11 @@
       Discover trending roles, top hiring locations, and the companies posting the most jobs right now.
     </p>
     <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-      <a href="{{ url_for('explore.explore_remote') }}" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors">
+      <a href="{{ url_for('browse.explore_remote') }}" class="inline-flex items-center gap-2 rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-900/30 px-4 py-2 text-sm font-medium text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/50 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke-linecap="round"/></svg>
         Remote-Friendly Companies
       </a>
-      <a href="{{ url_for('explore.explore_functions') }}" class="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/30 px-4 py-2 text-sm font-medium text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors">
+      <a href="{{ url_for('browse.explore_functions') }}" class="inline-flex items-center gap-2 rounded-lg border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/30 px-4 py-2 text-sm font-medium text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M9 12h6M11 17h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Browse by Function
       </a>
@@ -65,7 +65,7 @@
     <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Trending Titles</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {% for item in top_titles %}
-      <a href="{{ url_for('jobs', title=item.name) }}"
+      <a href="{{ url_for('jobs.jobs', title=item.name) }}"
          class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-brand dark:hover:border-brand hover:shadow-md transition-all">
         <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand truncate" title="{{ item.name }}">{{ item.name|capitalize }}</p>
         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ '{:,}'.format(item.job_count) }} jobs</p>
@@ -86,7 +86,7 @@
     <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Top Locations</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {% for item in top_locations %}
-      <a href="{{ url_for('jobs', country=item.name) }}"
+      <a href="{{ url_for('jobs.jobs', country=item.name) }}"
          class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-brand dark:hover:border-brand hover:shadow-md transition-all">
         <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand truncate" title="{{ item.name }}">{{ item.name }}</p>
         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ '{:,}'.format(item.job_count) }} jobs</p>
@@ -107,7 +107,7 @@
     <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-4">Top Companies</h2>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {% for item in top_companies %}
-      <a href="{{ url_for('jobs', title=item.name) }}"
+      <a href="{{ url_for('jobs.jobs', title=item.name) }}"
          class="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-brand dark:hover:border-brand hover:shadow-md transition-all">
         <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand truncate" title="{{ item.name }}">{{ item.name }}</p>
         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ '{:,}'.format(item.job_count) }} jobs</p>

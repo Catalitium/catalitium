@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Upload a CV and preview the Carl analysis dashboard demo.">
-<link rel="canonical" href="{{ url_for('carl_dashboard', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl.carl_dashboard', _external=True) }}">
 <meta property="og:title" content="Carl CV Dashboard | Catalitium">
 <meta property="og:description" content="UI-first CV analysis demo with terminal feed, analytics cards, and chat.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('carl_dashboard', _external=True) }}">
+<meta property="og:url" content="{{ url_for('carl.carl_dashboard', _external=True) }}">
 {% endblock %}
 
 {% block head_extra %}
@@ -640,8 +640,8 @@
           <p class="font-semibold text-white">Continue with the Jobs API</p>
           <p class="mt-1 text-[#9CA3AF]">You have used the three free prompts for this CV pass. Run <strong>Analyze</strong> again for another round, or connect your product via our API.</p>
           <div class="mt-2 flex flex-wrap gap-2">
-            <a id="carl-cta-developers" href="{{ url_for('developers') }}" class="inline-flex items-center rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/15">Developers</a>
-            <a id="carl-cta-pricing" href="{{ url_for('stripe_routes.pricing') }}" class="inline-flex items-center rounded-lg bg-[#1a73e8] px-3 py-1.5 font-medium text-white hover:bg-[#18a7ec]">API pricing</a>
+            <a id="carl-cta-developers" href="{{ url_for('jobs.developers') }}" class="inline-flex items-center rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/15">Developers</a>
+            <a id="carl-cta-pricing" href="{{ url_for('payments.pricing') }}" class="inline-flex items-center rounded-lg bg-[#FF7A00] px-3 py-1.5 font-medium text-[#0D0D0D] hover:bg-[#ff8f26]">API pricing</a>
           </div>
         </div>
         <form id="troy-chat-form" class="mt-3">

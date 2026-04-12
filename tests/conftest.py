@@ -34,7 +34,7 @@ if not (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip():
 @pytest.fixture()
 def app():
     """Single app instance per test (TESTING mode)."""
-    from app.app import create_app
+    from app.factory import create_app
 
     application = create_app()
     application.config["TESTING"] = True

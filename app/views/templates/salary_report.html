@@ -196,15 +196,15 @@
       <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 mb-2">One-tap presets</p>
         <div class="flex flex-wrap gap-2 text-xs">
-          <a href="{{ url_for('jobs', title='senior engineer') }}"
+          <a href="{{ url_for('jobs.jobs', title='senior engineer') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             Senior Engineer &rarr;
           </a>
-          <a href="{{ url_for('jobs', title='ai', country='EU') }}"
+          <a href="{{ url_for('jobs.jobs', title='ai', country='EU') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             AI in Europe &rarr;
           </a>
-          <a href="{{ url_for('jobs', title='staff engineer', country='US') }}"
+          <a href="{{ url_for('jobs.jobs', title='staff engineer', country='US') }}"
              class="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 hover:border-brand hover:text-brand">
             Staff / Principal US &rarr;
           </a>
@@ -212,7 +212,7 @@
       </div>
       <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-4">
         <form method="post"
-              action="{{ url_for('subscribe') }}"
+              action="{{ url_for('jobs.subscribe') }}"
               class="relative space-y-2"
               data-gtm-salary-capture="inline">
 {% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
@@ -374,7 +374,7 @@
          Outliers are excluded from median calculations.</p>
       <p>Data is refreshed continuously. This report reflects a snapshot as of <strong>{{ generated }}</strong>.
          All figures are estimates, verify compensation directly with employers.</p>
-      <p class="mt-2"><a href="{{ url_for('jobs') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
+      <p class="mt-2"><a href="{{ url_for('jobs.jobs') }}" class="text-brand hover:underline">Browse live jobs &rarr;</a></p>
     </section>
 
   </div><!-- /panel-salary -->
@@ -586,12 +586,12 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Search roles with salary bands. Filter by title and region.</p>
       </div>
       {% if session.get("user") %}
-      <a href="{{ url_for('post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      <a href="{{ url_for('auth.post_job_form') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Post a Job
       </a>
       {% else %}
-      <a href="{{ url_for('register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
+      <a href="{{ url_for('auth.register') }}" class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         Post a Job
       </a>
@@ -599,7 +599,7 @@
     </div>
 
     <!-- Search form -->
-    <form id="jobBrowserForm" data-api-url="{{ url_for('api_jobs') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] mb-6">
+    <form id="jobBrowserForm" data-api-url="{{ url_for('jobs.api_jobs') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] mb-6">
       <label class="flex flex-col gap-1 text-sm">
         <span class="font-semibold text-slate-700 dark:text-slate-300">Title</span>
         <input id="jobBrowserTitle" name="title" type="text" placeholder="e.g. Software Engineer"

@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="{{ company.name }} has {{ company.job_count }} open tech roles across {{ company.locations|length }} location{{ 's' if company.locations|length != 1 else '' }}. Browse jobs and salary data on Catalitium.">
-<link rel="canonical" href="{{ url_for('companies.company_detail_page', slug=company.slug, _external=True) }}">
+<link rel="canonical" href="{{ url_for('browse.company_detail_page', slug=company.slug, _external=True) }}">
 <meta property="og:title" content="{{ company.name }} — Jobs & Profile | Catalitium">
 <meta property="og:description" content="{{ company.job_count }} open roles at {{ company.name }}. Locations: {{ company.locations[:3]|join(', ') }}.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('companies.company_detail_page', slug=company.slug, _external=True) }}">
+<meta property="og:url" content="{{ url_for('browse.company_detail_page', slug=company.slug, _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta name="twitter:title" content="{{ company.name }} — Jobs | Catalitium">
 <meta name="twitter:description" content="{{ company.job_count }} open roles at {{ company.name }}.">
@@ -16,7 +16,7 @@
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": {{ company.name|tojson }},
-  "url": "{{ url_for('companies.company_detail_page', slug=company.slug, _external=True) }}"
+  "url": "{{ url_for('browse.company_detail_page', slug=company.slug, _external=True) }}"
 }
 </script>
 {% endblock %}
@@ -26,9 +26,9 @@
 
   <!-- Breadcrumb -->
   <nav class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mb-6" aria-label="Breadcrumb">
-    <a href="{{ url_for('landing') }}" class="hover:text-brand transition-colors">Home</a>
+    <a href="{{ url_for('jobs.landing') }}" class="hover:text-brand transition-colors">Home</a>
     <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
-    <a href="{{ url_for('companies.companies') }}" class="hover:text-brand transition-colors">Companies</a>
+    <a href="{{ url_for('browse.companies') }}" class="hover:text-brand transition-colors">Companies</a>
     <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
     <span class="text-slate-700 dark:text-slate-300 truncate max-w-xs">{{ company.name }}</span>
   </nav>
@@ -106,7 +106,7 @@
 
   <!-- Back link -->
   <div class="mt-8 text-center">
-    <a href="{{ url_for('companies.companies') }}" class="text-sm text-brand hover:underline font-medium">&larr; Back to all companies</a>
+    <a href="{{ url_for('browse.companies') }}" class="text-sm text-brand hover:underline font-medium">&larr; Back to all companies</a>
   </div>
 </section>
 {% endblock %}

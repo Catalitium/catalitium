@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(scope="module")
 def _app():
     """Module-scoped app to avoid repeated init_db connections."""
-    from app.app import create_app
+    from app.factory import create_app
     application = create_app()
     application.config["TESTING"] = True
     return application
@@ -42,7 +42,7 @@ def _mock_cursor(fetchall=None, fetchone=None, description=None):
 # ---------------------------------------------------------------------------
 
 def test_company_list_returns_list(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
 
     mock_cur = _mock_cursor(
         fetchall=[
@@ -67,7 +67,7 @@ def test_company_list_returns_list(company_app):
 
 
 def test_company_list_with_search(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
 
     mock_cur = _mock_cursor(
         fetchall=[("Acme Corp", 10, ["US"], "2026-04-01", 5)],
@@ -86,7 +86,7 @@ def test_company_list_with_search(company_app):
 
 
 def test_company_list_handles_db_error(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
     with company_app.app_context():
         with patch("app.models.catalog.get_db", side_effect=Exception("db down")):
             result = Job.company_list()
@@ -98,7 +98,7 @@ def test_company_list_handles_db_error(company_app):
 # ---------------------------------------------------------------------------
 
 def test_company_count_returns_int(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
 
     mock_cur = _mock_cursor(fetchone=(42,))
     mock_conn = MagicMock()
@@ -112,7 +112,7 @@ def test_company_count_returns_int(company_app):
 
 
 def test_company_count_handles_db_error(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
     with company_app.app_context():
         with patch("app.models.catalog.get_db", side_effect=Exception("db down")):
             count = Job.company_count()
@@ -124,7 +124,7 @@ def test_company_count_handles_db_error(company_app):
 # ---------------------------------------------------------------------------
 
 def test_company_detail_returns_dict(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
 
     mock_cur = _mock_cursor(
         fetchone=("Acme Corp", 10, ["US", "DE"], ["software engineer", "data scientist"], "2026-04-01", 5),
@@ -143,7 +143,7 @@ def test_company_detail_returns_dict(company_app):
 
 
 def test_company_detail_returns_none_for_empty(company_app):
-    from app.models.db import Job
+    from app.models.catalog import Job
 
     mock_cur = _mock_cursor(
         fetchone=None,
@@ -160,7 +160,7 @@ def test_company_detail_returns_none_for_empty(company_app):
 
 
 def test_company_detail_empty_name():
-    from app.models.db import Job
+    from app.models.catalog import Job
     assert Job.company_detail("") is None
     assert Job.company_detail(None) is None
 
@@ -170,7 +170,7 @@ def test_company_detail_empty_name():
 # ---------------------------------------------------------------------------
 
 def test_companies_route_200(company_client):
-    from app.models.db import Job
+    from app.models.catalog import Job
     with patch.object(Job, "company_count", return_value=0), \
          patch.object(Job, "company_list", return_value=[]):
         resp = company_client.get("/companies")
@@ -179,7 +179,7 @@ def test_companies_route_200(company_client):
 
 
 def test_companies_route_with_search(company_client):
-    from app.models.db import Job
+    from app.models.catalog import Job
     with patch.object(Job, "company_count", return_value=0), \
          patch.object(Job, "company_list", return_value=[]):
         resp = company_client.get("/companies?search=Acme")
@@ -187,7 +187,7 @@ def test_companies_route_with_search(company_client):
 
 
 def test_companies_route_with_data(company_client):
-    from app.models.db import Job
+    from app.models.catalog import Job
     fake_rows = [
         {
             "company_name": "Acme Corp",
@@ -209,7 +209,7 @@ def test_companies_route_with_data(company_client):
 # ---------------------------------------------------------------------------
 
 def test_company_detail_route_404_unknown(company_client):
-    from app.models.db import Job
+    from app.models.catalog import Job
     with patch.object(Job, "company_name_by_slug", return_value=None):
         resp = company_client.get("/companies/nonexistent-company-xyz")
     assert resp.status_code == 404
@@ -217,10 +217,11 @@ def test_company_detail_route_404_unknown(company_client):
 
 def test_company_detail_route_200(company_client):
     """Full integration mock: slug lookup + company_detail + company_jobs."""
-    from app.models.db import Job
-    import app.app as app_mod
+    from app.models.catalog import Job
+    from app.utils import slugify
+
     company_name = "Acme Corp"
-    slug = app_mod._slugify(company_name)
+    slug = slugify(company_name)
 
     fake_detail = {
         "company_name": company_name,

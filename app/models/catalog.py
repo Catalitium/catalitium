@@ -13,7 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from .db import get_db, logger, _pg_connect
 from .money import get_salary_for_location, parse_salary_range_string
-from ..normalization import COUNTRY_NORM, LOCATION_COUNTRY_HINTS, SWISS_LOCATION_TERMS
+from ..utils import COUNTRY_NORM, LOCATION_COUNTRY_HINTS, SWISS_LOCATION_TERMS
 
 # =============================================================================
 # TAXONOMY
