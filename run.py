@@ -2,6 +2,16 @@
 """Catalitium application entry point.
 
 Exposes the WSGI ``app`` for production and keeps ``python run.py`` for local dev.
+
+If Windows prints **No pyvenv.cfg file** when you run ``.venv\\Scripts\\python.exe``,
+the virtualenv folder is broken (often missing ``.venv/pyvenv.cfg``). Delete ``.venv``
+and recreate it from the repo root::
+
+    python -m venv .venv
+    .venv\\Scripts\\pip install -r requirements.txt
+
+Then use ``python run.py`` or ``.venv\\Scripts\\python.exe run.py`` — same interpreter
+as ``pyvenv.cfg`` expects; no extra tooling is required beyond a normal venv.
 """
 
 import os
