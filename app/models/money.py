@@ -8,11 +8,6 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from .db import get_db, logger
-from .taxonomy import categorize_function
-
-
-def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def insert_salary_submission(
@@ -47,7 +42,7 @@ def insert_salary_submission(
                     (currency or "CHF").strip().upper(),
                     years_exp,
                     (email or "").strip() or None,
-                    _now_iso(),
+                    now_iso(),
                 ),
             )
         return "ok"
@@ -480,6 +475,8 @@ def compare_cities_salary(title: str, cities: List[str]) -> List[dict]:
 
 
 def get_function_benchmarks(location: Optional[str] = None) -> List[dict]:
+    from .catalog import categorize_function
+
     cache_key = ("fn_benchmarks", (location or "").lower())
     cached = _cache_get(cache_key)
     if cached is not None:
@@ -537,6 +534,8 @@ def get_salary_trends(
     city: Optional[str] = None,
     months: int = 12,
 ) -> List[dict]:
+    from .catalog import categorize_function
+
     cache_key = ("sal_trends", (title_category or "").lower(), (city or "").lower(), months)
     cached = _cache_get(cache_key)
     if cached is not None:
@@ -617,3 +616,35 @@ def get_salary_trends(
 
     _cache_set(cache_key, trends)
     return trends
+
+
+def now_iso() -> str:
+    """UTC timestamp in ISO-8601 seconds precision."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def safe_salary_context(location: str) -> Dict[str, Any]:
+    """Wrap ``get_salary_for_location`` with standardized None handling.
+
+    Returns a dict with keys: ``median``, ``currency``, ``raw`` (the
+    original tuple or None).  Callers never need to unpack/guard against
+    None themselves.
+    """
+    result: Optional[Tuple[float, Optional[str]]] = None
+    try:
+        if location:
+            result = get_salary_for_location(location)
+    except Exception as exc:
+        logger.debug("safe_salary_context(%r) lookup failed: %s", location, exc)
+
+    if result and result[0] is not None:
+        return {
+            "median": float(result[0]),
+            "currency": result[1] or None,
+            "raw": result,
+        }
+    return {
+        "median": None,
+        "currency": None,
+        "raw": None,
+    }

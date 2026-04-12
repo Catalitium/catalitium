@@ -20,7 +20,7 @@ from app.models.money import (
     get_function_benchmarks,
     get_salary_trends,
 )
-from app.models.taxonomy import categorize_function
+from app.models.catalog import categorize_function
 
 
 # ---------------------------------------------------------------------------

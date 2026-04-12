@@ -4,13 +4,9 @@
 #                 upsert_profile_cv_extract, summarize_two_sentences,
 #                 parse_job_description.
 #
-# Shared taxonomy and utility helpers live in:
-#   models/taxonomy.py     — canonical categorize_function
-#   models/utils.py        — now_iso, safe_salary_context
-#
-# All model logic has been split into focused modules:
-#   models/jobs.py         — Job class, job summary cache, date/text helpers
-#   models/money.py        — salary, compensation, analytics
+# Catalog + salary helpers live in:
+#   models/catalog.py      — Job, taxonomy, explore, career, compare
+#   models/money.py        — salary, compensation, analytics, now_iso, safe_salary_context
 #   models/identity.py     — subscribers, Stripe orders, subscriptions, API keys
 #
 # Re-exports from those modules are at the bottom of this file so that
@@ -384,7 +380,7 @@ def summarize_two_sentences(text: str) -> str:
 
 def parse_job_description(text: str) -> str:
     """Clean and summarize a raw job description to a short, readable preview."""
-    from .jobs import clean_job_description_text
+    from .catalog import clean_job_description_text
     t = clean_job_description_text(text or "")
     return summarize_two_sentences(t)
 
@@ -403,7 +399,7 @@ from ..normalization import (  # noqa: E402
 # ----------------------------- Model re-exports ------------------------------
 # All imports from `from .models.db import X` in app.py continue to work.
 
-from .jobs import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
+from .catalog import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
 from .money import (  # noqa: E402,F401
     insert_salary_submission,
     get_salary_for_location,
@@ -412,6 +408,8 @@ from .money import (  # noqa: E402,F401
     _compact_salary_number,
     salary_range_around,
     parse_salary_range_string,
+    now_iso,
+    safe_salary_context,
 )
 from .identity import (  # noqa: E402,F401
     insert_stripe_order,

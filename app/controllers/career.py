@@ -10,7 +10,7 @@ bp = Blueprint("career", __name__)
 @bp.get("/career/evaluate")
 def career_evaluate():
     """'Is This Worth It?' evaluator for a specific job."""
-    from ..models.career import compute_worth_it_score, find_alternatives
+    from ..models.catalog import compute_worth_it_score, find_alternatives
 
     job_id = request.args.get("job_id", "").strip()
     score = None
@@ -42,7 +42,7 @@ def career_evaluate():
 @bp.get("/career/ai-exposure")
 def career_ai_exposure():
     """AI/Automation exposure ranking by job function."""
-    from ..models.career import compute_ai_exposure
+    from ..models.catalog import compute_ai_exposure
 
     exposures = []
     try:
@@ -56,7 +56,7 @@ def career_ai_exposure():
 @bp.get("/career/hiring-trends")
 def career_hiring_trends():
     """Hiring velocity dashboard."""
-    from ..models.career import get_hiring_velocity
+    from ..models.catalog import get_hiring_velocity
 
     loc = request.args.get("location", "").strip() or None
     func = request.args.get("function", "").strip() or None
@@ -72,7 +72,7 @@ def career_hiring_trends():
 @bp.get("/career/earnings")
 def career_earnings():
     """First-year earnings estimator."""
-    from ..models.career import estimate_earnings
+    from ..models.catalog import estimate_earnings
 
     title = request.args.get("title", "").strip()
     location = request.args.get("location", "").strip()
@@ -102,7 +102,7 @@ def career_earnings():
 @bp.get("/career/paths")
 def career_paths():
     """Career path explorer."""
-    from ..models.career import get_career_paths
+    from ..models.catalog import get_career_paths
 
     title = request.args.get("title", "").strip()
     paths = None
@@ -118,7 +118,7 @@ def career_paths():
 @bp.get("/career/market-position")
 def career_market_position():
     """Market position benchmarking tool."""
-    from ..models.career import compute_market_position
+    from ..models.catalog import compute_market_position
 
     title = request.args.get("title", "").strip()
     location = request.args.get("location", "").strip()

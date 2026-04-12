@@ -121,8 +121,8 @@ from .models.money import (
     get_function_benchmarks,
     get_salary_trends,
 )
-from .models.taxonomy import categorize_function
-from .models.explore import (
+from .models.catalog import (
+    categorize_function,
     compute_quality_score,
     get_explore_data,
     get_remote_companies,
@@ -3270,7 +3270,7 @@ def create_app() -> Flask:
     @app.get("/compare")
     def compare_workspace():
         """Side-by-side comparison of up to 4 jobs."""
-        from .models.compare import score_job
+        from .models.catalog import score_job
 
         ids_raw = (request.args.get("ids") or "").strip()
         id_list = [x.strip() for x in ids_raw.split(",") if x.strip()][:4]

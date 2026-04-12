@@ -3,7 +3,7 @@
 from flask import Blueprint, render_template
 
 from ..models.db import logger
-from ..models.explore import (
+from ..models.catalog import (
     get_explore_data,
     get_function_distribution,
     get_remote_companies,

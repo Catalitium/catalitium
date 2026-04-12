@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 
 import pytest
 
-from app.models.compare import score_job, compare_jobs
+from app.models.catalog import score_job, compare_jobs
 
 
 # ---------------------------------------------------------------------------

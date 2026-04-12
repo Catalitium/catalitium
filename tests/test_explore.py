@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app.models.explore import (
+from app.models.catalog import (
     FUNCTION_CATEGORIES,
     categorize_function,
     compute_quality_score,

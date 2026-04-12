@@ -12,10 +12,13 @@ from .db import (
     salary_range_around,
     SUPABASE_URL,
 )
+from .catalog import FUNCTION_CATEGORIES, categorize_function
 
 __all__ = [
+    "FUNCTION_CATEGORIES",
     "Job",
     "SUPABASE_URL",
+    "categorize_function",
     "close_db",
     "get_db",
     "init_db",
