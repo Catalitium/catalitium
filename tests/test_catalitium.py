@@ -266,6 +266,16 @@ def test_http_safe_parse_search_params_basic():
     assert c
 
 
+def test_normalize_title_spanish_engineer_maps_to_english():
+    from app.utils import normalize_title
+
+    assert "engineer" in normalize_title("ingeniero")
+    assert "engineer" in normalize_title("Senior Ingeniero de software")
+    assert "developer" in normalize_title("desarrollador")
+    # Word boundaries: do not mangle "software engineer" via "software eng"
+    assert normalize_title("software engineer") == "software engineer"
+
+
 def test_http_slugify_job_title():
     assert "senior" in slugify_job_title("Senior Engineer!!!")
 
@@ -350,6 +360,14 @@ def test_http_salary_tool_redirect(client):
     r = client.get("/salary-tool", follow_redirects=False)
     assert r.status_code == 301
     assert r.headers.get("Location")
+
+
+def test_http_salary_tools_renders_with_csrf(client):
+    """subscribe_security macro must see csrf_token (Jinja macro + globals)."""
+    r = client.get("/salary-tools")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert 'name="csrf_token"' in html
 
 
 def test_http_health_deep_includes_db_latency(client):

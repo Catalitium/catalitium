@@ -72,7 +72,7 @@ _STRIPE_B2C_PRODUCTS: Dict[str, Dict[str, Any]] = {
         "tier": "pro",
         "name": "Market Intelligence Pro",
         "price_display": "$99",
-        "tagline": "Everything in Premium plus personalised reports and exports.",
+        "tagline": "Personalised reports, data exports, and priority support.",
         "features": [
             "Everything in Premium",
             "Personalised market intelligence reports",

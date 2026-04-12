@@ -1,0 +1,10 @@
+{
+  "name": "catalitium-tailwind",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -c ./tailwind.config.js -i ./tailwind-input.css -o ./tailwind.css --minify"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

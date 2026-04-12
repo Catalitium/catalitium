@@ -90,10 +90,7 @@ deploy.txt
 .env
 Catalitium_Soul_File.md
 
-# Generated Tailwind CSS build
-app/static/css/tailwind.css
-
-# Node / Tailwind build
+# Node / Tailwind (dev-only; see app/static/css/package.json). tailwind.css is committed after build.
 node_modules/
 
 # Windows shell crash dumps
