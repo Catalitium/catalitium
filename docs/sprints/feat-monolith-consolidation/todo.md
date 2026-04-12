@@ -2,6 +2,8 @@
 
 Branch: `feat/monolith-consolidation` (do not merge to `main` without PR review).
 
+Workflow contract: [claude-rules.md](../claude-rules.md) — use as `@claude-rules.md` before long runs.
+
 ## Done this session
 
 - [x] Phase 0 / Item 1 alignment: single import surface `app.utils` for controllers, `factory`, `models/db` normalization re-exports, `catalog`, tests.
@@ -10,6 +12,7 @@ Branch: `feat/monolith-consolidation` (do not merge to `main` without PR review)
 - [x] Removed duplicate inline support block from `factory` (email, datetime, slugify, spam, api envelope) in favor of `app.utils`.
 - [x] `scripts/validate_market_reports.py` reads `REPORTS` from `app/factory.py`.
 - [x] Verification: `python -m compileall app`, `pytest tests/` — 186 passed, 2 skipped (2026-04-12).
+- [x] `docs/sprints/claude-rules.md` — sprint agent contract; `scripts/smoke.py` unified runner (see README).
 
 ## Deferred (follow-up PRs)
 
@@ -17,7 +20,8 @@ Branch: `feat/monolith-consolidation` (do not merge to `main` without PR review)
 - [ ] Move `integrations/cv_extract.py` → `models/cv.py`; fold carl mock into blueprint; delete `integrations/`.
 - [ ] Strip `models/db.py` re-exports (O1); direct imports across codebase.
 - [ ] Controller merges (`browse`, `insights`), renames (`payments`, `api`), R5 internal vs external API split.
-- [ ] `scripts/smoke.py --section all`; digest rename; E3 magic numbers audit.
+- [x] `scripts/smoke.py --section …` unified runner (`db`, `routes`, `carl`, `supabase`, `smtp`, `reports`, `all`).
+- [ ] `scripts/digest.py` rename from weekly digest script; E3 magic numbers audit.
 - [ ] Route baseline: capture `flask --app run.py routes` output after next large refactor for diffing.
 
 ## Review

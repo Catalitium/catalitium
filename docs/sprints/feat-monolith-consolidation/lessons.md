@@ -9,3 +9,7 @@
 ## 2026-04-12
 
 - Merged normalization into `app.utils` but left `db.py` re-exporting from `utils` for compatibility; full O1 should remove that indirection in a dedicated change set.
+
+## 2026-04-12 (smoke + rules)
+
+- One **`scripts/smoke.py --section`** entry point reduces “which script did we run?” drift; document it in README and `.env.example` so operators find it.
