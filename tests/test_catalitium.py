@@ -14,14 +14,15 @@ from __future__ import annotations
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
 
-import app.app as app_module
+import app.factory as app_factory
 from app.app import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
-from app.services.carl_mock_analysis import (
+from app.integrations.carl_mock_analysis import (
     generate_chat_reply,
     is_carl_message_grounded,
     normalize_carl_user_message,
@@ -45,7 +46,7 @@ from app.utils.text import slugify_job_title
 @pytest.fixture()
 def carl_client(app, monkeypatch):
     """Carl routes: stub profile upsert (no DB write required for default tests)."""
-    monkeypatch.setattr(app_module, "upsert_profile_cv_extract", lambda *a, **k: "ok")
+    monkeypatch.setattr(app_factory, "upsert_profile_cv_extract", lambda *a, **k: "ok")
     return app.test_client()
 
 
@@ -338,6 +339,9 @@ def test_http_remote_redirects_to_jobs(client):
 
 
 def test_http_static_tailwind_css_served(client):
+    tw = Path(__file__).resolve().parents[1] / "app" / "static" / "css" / "tailwind.css"
+    if not tw.is_file():
+        pytest.skip("tailwind.css is gitignored; add a local build to exercise this path")
     r = client.get("/static/css/tailwind.css")
     assert r.status_code == 200
     assert "text/css" in (r.headers.get("Content-Type") or "").lower()
@@ -445,7 +449,7 @@ def test_carl_analyze_merges_cv_meta_payload(carl_client, monkeypatch):
         captured.append(meta)
         return "ok"
 
-    monkeypatch.setattr(app_module, "upsert_profile_cv_extract", _capture)
+    monkeypatch.setattr(app_factory, "upsert_profile_cv_extract", _capture)
     _carl_login(carl_client)
     page = carl_client.get("/carl")
     csrf = _csrf_from_carl_page(page.get_data(as_text=True))

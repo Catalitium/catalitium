@@ -1323,7 +1323,7 @@ function escHtml(s){
   var lastVisit = localStorage.getItem(LS_KEY);
   /* Update timestamp for next visit */
   localStorage.setItem(LS_KEY, new Date().toISOString());
-  if(!lastVisit) return; /* First visit: nothing to compare */
+  if(!lastVisit) return; /* First visit: no prior timestamp */
 
   var lastTs = new Date(lastVisit).getTime();
   if(!lastTs) return;
@@ -1482,107 +1482,6 @@ document.addEventListener('change', function(e) {
       }
     }
   } catch(_) {}
-})();
-
-// ====================================================================
-// FEATURE: COMPARE (localStorage, max 4 items)
-// ====================================================================
-(function(){
-  var KEY = 'catalitium_compare';
-  var MAX = 4;
-
-  function get(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(_){ return []; } }
-  function save(arr){ try{ localStorage.setItem(KEY,JSON.stringify(arr)); }catch(_){} }
-  function has(id){ return get().some(function(b){ return String(b.id)===String(id); }); }
-
-  function add(job){
-    var arr=get();
-    if(arr.length>=MAX){
-      arr.pop();
-    }
-    if(!arr.some(function(b){ return String(b.id)===String(job.id); })){
-      arr.unshift(job);
-      save(arr);
-    }
-  }
-  function remove(id){ save(get().filter(function(b){ return String(b.id)!==String(id); })); }
-
-  function styleBtn(btn,selected){
-    btn.setAttribute('aria-pressed',selected?'true':'false');
-    var label=btn.querySelector('.compare-label');
-    if(selected){
-      btn.classList.add('text-teal-600','border-teal-300','bg-teal-50');
-      btn.classList.remove('text-slate-600');
-      if(label) label.textContent='Comparing';
-    } else {
-      btn.classList.remove('text-teal-600','border-teal-300','bg-teal-50');
-      btn.classList.add('text-slate-600');
-      if(label) label.textContent='Compare';
-    }
-  }
-
-  function initBtns(){
-    document.querySelectorAll('[data-compare-btn]').forEach(function(btn){
-      styleBtn(btn,has(btn.getAttribute('data-job-id')));
-    });
-  }
-
-  function syncUI(){
-    var count=get().length;
-    var fab=document.getElementById('compare-fab');
-    if(fab){
-      if(count>=2){
-        var ids=get().map(function(j){ return j.id; }).join(',');
-        fab.href='/compare?ids='+ids;
-        fab.querySelector('.compare-fab-count').textContent=count;
-        fab.classList.remove('hidden');
-      } else {
-        fab.classList.add('hidden');
-      }
-    }
-  }
-
-  document.addEventListener('click',function(e){
-    var cmpBtn=e.target&&e.target.closest('[data-compare-btn]');
-    if(!cmpBtn) return;
-    e.preventDefault();
-    var id=cmpBtn.getAttribute('data-job-id');
-    if(has(id)){
-      remove(id); styleBtn(cmpBtn,false);
-      trackEvent('compare_remove',{job_id:id});
-    } else {
-      if(get().length>=MAX){
-        var oldest=get()[get().length-1];
-        remove(oldest.id);
-        var oldBtn=document.querySelector('[data-compare-btn][data-job-id="'+oldest.id+'"]');
-        if(oldBtn) styleBtn(oldBtn,false);
-      }
-      add({ id:id,
-            title:cmpBtn.getAttribute('data-job-title')||'',
-            company:cmpBtn.getAttribute('data-job-company')||'',
-            location:cmpBtn.getAttribute('data-job-location')||'' });
-      styleBtn(cmpBtn,true);
-      trackEvent('compare_add',{job_id:id});
-    }
-    syncUI();
-  });
-
-  function createFab(){
-    if(document.getElementById('compare-fab')) return;
-    var fab=document.createElement('a');
-    fab.id='compare-fab';
-    fab.href='/compare';
-    fab.className='hidden fixed bottom-20 md:bottom-6 right-4 z-30 inline-flex items-center gap-2 rounded-full bg-teal-600 text-white pl-4 pr-5 py-3 text-sm font-semibold shadow-lg hover:bg-teal-700 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-300';
-    fab.innerHTML='<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Compare <span class="compare-fab-count inline-flex items-center justify-center min-w-[20px] h-5 rounded-full bg-white text-teal-700 text-[11px] font-bold px-1.5">0</span>';
-    document.body.appendChild(fab);
-  }
-
-  window.__initCompare=function(){ initBtns(); syncUI(); };
-  createFab();
-  initBtns();
-  syncUI();
-
-  document.addEventListener('catalitium:results-updated',function(){ initBtns(); syncUI(); });
 })();
 
 /* --- Advanced filter persistence (feature/smart-discovery-explore) --- */

@@ -1,6 +1,6 @@
 """Text utility helpers for Catalitium."""
 
-from app.app import _slugify
+from app.factory import slugify as _slugify
 
 
 def slugify_job_title(title: str) -> str:

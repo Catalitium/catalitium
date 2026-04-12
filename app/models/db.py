@@ -4,24 +4,20 @@
 #                 upsert_profile_cv_extract, summarize_two_sentences,
 #                 parse_job_description.
 #
-# All model logic has been split into focused modules:
-#   models/jobs.py         — Job class, job summary cache, date/text helpers
-#   models/salary.py       — salary queries and parsing utilities
-#   models/subscriptions.py — Stripe orders and user subscriptions
-#   models/api_keys.py     — API key CRUD and quota management
-#   models/users.py        — subscribers, contacts, job postings
+# Catalog + salary helpers live in:
+#   models/catalog.py      — Job, taxonomy, explore, career
+#   models/money.py        — salary, compensation, analytics, now_iso, safe_salary_context
+#   models/identity.py     — subscribers, Stripe orders, subscriptions, API keys
 #
 # Re-exports from those modules are at the bottom of this file so that
 # all existing `from .models.db import X` calls in app.py continue to work.
 
 import json
-import os
 import re
 import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:
     import psycopg  # psycopg v3
@@ -41,55 +37,9 @@ except ImportError:
 
 # ----------------------------- Config ----------------------------------------
 
-def _normalize_pg_url(url: str) -> str:
-    """Normalize Postgres URLs for psycopg3.
-
-    Supabase pooler URLs often include ``pgbouncer=true``; libpq/psycopg reject that
-    param for direct connections, so we strip it and add ``sslmode=require`` plus a
-    short ``connect_timeout`` when missing.
-    """
-    if not url or not url.startswith(("postgres://", "postgresql://")):
-        return url
-    parsed = urlparse(url)
-    hostname = parsed.hostname or ""
-    port = parsed.port
-    query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)]
-    query_pairs = [(k, v) for k, v in query_pairs if k.lower() != "pgbouncer"]
-    has_ssl = any(k.lower() == "sslmode" for k, _ in query_pairs)
-    if not has_ssl:
-        query_pairs.append(("sslmode", "require"))
-    has_connect_timeout = any(k.lower() == "connect_timeout" for k, _ in query_pairs)
-    if not has_connect_timeout:
-        query_pairs.append(("connect_timeout", "5"))
-    new_query = urlencode(query_pairs)
-    auth = ""
-    user = quote(parsed.username) if parsed.username else ""
-    pwd = quote(parsed.password) if parsed.password else ""
-    if user:
-        auth = user
-        if parsed.password:
-            auth += f":{pwd}"
-        auth += "@"
-    hostport = hostname
-    if port:
-        hostport = f"{hostname}:{port}"
-    parsed = parsed._replace(netloc=f"{auth}{hostport}")
-    return urlunparse(parsed._replace(query=new_query))
-
-
-def _truthy(value: str | None) -> bool:
-    if value is None:
-        return False
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-_SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
-SUPABASE_URL = _normalize_pg_url(_SUPABASE_RAW)
-SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
-from ..config import DB_POOL_MAX_DEFAULT  # noqa: E402
-DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", str(DB_POOL_MAX_DEFAULT)))
+from ..config import DB_POOL_MAX, SECRET_KEY, SUPABASE_URL  # noqa: E402
 
 # ----------------------------- Logging ---------------------------------------
 logging.basicConfig(
@@ -242,59 +192,7 @@ def upsert_profile_cv_extract(
         return "error"
 
 
-# ----------------------------- Description Parsing ---------------------------
-
-# Small multilingual stopword set to keep summarizer lightweight
-_STOPWORDS = {
-    # EN
-    "a","about","above","after","again","against","all","am","an","and","any","are","as","at",
-    "be","because","been","before","being","below","between","both","but","by","can","could",
-    "did","do","does","doing","down","during","each","few","for","from","further","had","has",
-    "have","having","he","her","here","hers","herself","him","himself","his","how","i","if","in",
-    "into","is","it","its","itself","me","more","most","my","myself","no","nor","not","of","off",
-    "on","once","only","or","other","our","ours","ourselves","out","over","own","same","she","should",
-    "so","some","such","than","that","the","their","theirs","them","themselves","then","there","these",
-    "they","this","those","through","to","too","under","until","up","very","was","we","were","what",
-    "when","where","which","while","who","whom","why","with","you","your","yours","yourself","yourselves",
-    # ES/FR minimal
-    "de","la","el","en","y","los","las","que","es","un","una","con","por","para","le","et","Ã ",
-    "les","des","est","pour","dans"
-}
-
-def summarize_two_sentences(text: str) -> str:
-    """Extract two most representative sentences from text (pure stdlib)."""
-    import re
-    from collections import Counter
-    if not text:
-        return ""
-    s = text.strip()
-    sentences = re.split(r"(?<=[.!?])\s+", s)
-    if len(sentences) < 2:
-        return s
-    words = re.findall(r"\b\w+\b", s.lower())
-    freqs = Counter(w for w in words if w not in _STOPWORDS)
-    scores = {}
-    for sent in sentences:
-        tokens = re.findall(r"\b\w+\b", sent.lower())
-        if not tokens:
-            continue
-        score = sum(freqs.get(w, 0) for w in tokens if w not in _STOPWORDS) / max(len(tokens), 1)
-        scores[sent] = score
-    top = sorted(scores.items(), key=lambda x: (-x[1], sentences.index(x[0])))[:2]
-    final = sorted([t[0] for t in top], key=lambda x: sentences.index(x))
-    return " ".join(final)
-
-
 # ----------------------------- Schema Init -----------------------------------
-
-def _ensure_postgres_columns(db, table: str, definitions: Dict[str, str]) -> None:
-    try:
-        with db.cursor() as cur:
-            for column, ddl in definitions.items():
-                cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {ddl}")
-    except Exception as exc:
-        logger.debug("Unable to ensure columns for %s: %s", table, exc)
-
 
 def init_db():
     """Connectivity check + ensure all required tables and columns exist."""
@@ -482,7 +380,7 @@ def summarize_two_sentences(text: str) -> str:
 
 def parse_job_description(text: str) -> str:
     """Clean and summarize a raw job description to a short, readable preview."""
-    from .jobs import clean_job_description_text
+    from .catalog import clean_job_description_text
     t = clean_job_description_text(text or "")
     return summarize_two_sentences(t)
 
@@ -501,8 +399,8 @@ from ..normalization import (  # noqa: E402
 # ----------------------------- Model re-exports ------------------------------
 # All imports from `from .models.db import X` in app.py continue to work.
 
-from .jobs import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
-from .salary import (  # noqa: E402,F401
+from .catalog import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
+from .money import (  # noqa: E402,F401
     insert_salary_submission,
     get_salary_for_location,
     parse_money_numbers,
@@ -510,8 +408,10 @@ from .salary import (  # noqa: E402,F401
     _compact_salary_number,
     salary_range_around,
     parse_salary_range_string,
+    now_iso,
+    safe_salary_context,
 )
-from .subscriptions import (  # noqa: E402,F401
+from .identity import (  # noqa: E402,F401
     insert_stripe_order,
     mark_stripe_order_paid,
     mark_stripe_order_job_submitted,
@@ -519,13 +419,14 @@ from .subscriptions import (  # noqa: E402,F401
     upsert_user_subscription,
     get_user_subscriptions,
     get_subscription_by_stripe_id,
-)
-from .api_keys import (  # noqa: E402,F401
     create_api_key,
     get_api_key_by_email,
     confirm_api_key_by_token,
     revoke_api_key,
     check_and_increment_api_key,
     sync_api_key_quota_for_api_access,
+    insert_subscriber,
+    insert_contact,
+    insert_job_posting,
+    JOB_POSTING_ACTIVE_DAYS,
 )
-from .users import insert_subscriber, insert_contact, insert_job_posting, JOB_POSTING_ACTIVE_DAYS  # noqa: E402,F401

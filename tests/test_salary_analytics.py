@@ -13,14 +13,14 @@ from __future__ import annotations
 
 import pytest
 
-from app.models.salary_analytics import (
+from app.models.money import (
     compute_percentile,
     get_ppp_indices,
     compare_cities_salary,
-    categorize_function,
     get_function_benchmarks,
     get_salary_trends,
 )
+from app.models.catalog import categorize_function
 
 
 # ---------------------------------------------------------------------------

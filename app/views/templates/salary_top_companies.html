@@ -2,7 +2,7 @@
 {% block title %}Top Paying Tech Companies: DACH 2026 | Catalitium{% endblock %}
 {% block meta %}
 <meta name="description" content="Ranked list of top paying tech employers in Zurich, Berlin, and Munich. See median total compensation at Google, Meta, Stripe, SAP, and more.">
-<link rel="canonical" href="{{ url_for('salary_top_companies', _external=True) }}">
+<link rel="canonical" href="{{ url_for('salary.salary_top_companies', _external=True) }}">
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
     <h1 class="text-3xl font-bold text-slate-900 dark:text-white" data-salary-role="Top DACH Companies" data-salary-median="CHF 138k–210k (Zurich)">Top Paying Tech Companies</h1>
     <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
       Ranked by median base salary · Zurich figures in CHF · Berlin &amp; Munich in EUR ·
-      <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">use the calculator</a> for role-specific ranges
+      <a href="{{ url_for('salary.salary_tool') }}" class="text-brand hover:underline">use the calculator</a> for role-specific ranges
     </p>
   </div>
 
@@ -64,7 +64,7 @@
       Based on public data (Glassdoor, Levels.fyi, LinkedIn 2024–2026). Actual compensation varies by level, experience, and negotiation.
       Zurich figures in CHF; Berlin and Munich in EUR.
     </p>
-    <a href="{{ url_for('salary_contribute') }}"
+    <a href="{{ url_for('salary.salary_contribute') }}"
       class="shrink-0 inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand/90 transition-colors whitespace-nowrap">
       + Add Your Salary
     </a>
@@ -72,8 +72,8 @@
 
   <!-- Nav links -->
   <div class="mt-10 flex flex-wrap gap-3 text-sm">
-    <a href="{{ url_for('salary_tool') }}" class="text-brand hover:underline">← Salary Calculator</a>
-    <a href="{{ url_for('salary_by_title') }}" class="text-brand hover:underline">Salaries by Role →</a>
+    <a href="{{ url_for('salary.salary_tool') }}" class="text-brand hover:underline">← Salary Calculator</a>
+    <a href="{{ url_for('salary.salary_by_title') }}" class="text-brand hover:underline">Salaries by Role →</a>
   </div>
 
 </div>

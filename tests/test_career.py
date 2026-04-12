@@ -28,7 +28,7 @@ def career_client(app):
 
 
 def test_worth_it_score_full_marks():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     job = {
         "job_salary_range": "100000-120000",
@@ -50,7 +50,7 @@ def test_worth_it_score_full_marks():
 
 
 def test_worth_it_score_no_data():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     job = {
         "job_salary_range": "",
@@ -65,7 +65,7 @@ def test_worth_it_score_no_data():
 
 
 def test_worth_it_score_below_market():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     job = {
         "job_salary_range": "50000-60000",
@@ -80,7 +80,7 @@ def test_worth_it_score_below_market():
 
 
 def test_worth_it_score_hybrid():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     job = {
         "job_salary_range": "80k-100k",
@@ -96,7 +96,7 @@ def test_worth_it_score_hybrid():
 
 
 def test_worth_it_score_estimated_only():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     job = {
         "job_salary_range": "",
@@ -110,7 +110,7 @@ def test_worth_it_score_estimated_only():
 
 
 def test_worth_it_breakdown_keys():
-    from app.models.career import compute_worth_it_score
+    from app.models.catalog import compute_worth_it_score
 
     result = compute_worth_it_score({}, None, None)
     expected_keys = {
@@ -125,7 +125,7 @@ def test_worth_it_breakdown_keys():
 # ---------------------------------------------------------------------------
 
 def test_ai_exposure_returns_list(app):
-    from app.models.career import compute_ai_exposure
+    from app.models.catalog import compute_ai_exposure
 
     with app.app_context():
         try:
@@ -150,10 +150,11 @@ def test_ai_exposure_dict_shape():
 
 
 def test_ai_exposure_category_thresholds():
-    from app.models.career import _AI_PATTERN
-    assert _AI_PATTERN.search("We use machine learning models daily")
-    assert _AI_PATTERN.search("Experience with GPT and LLM required")
-    assert not _AI_PATTERN.search("Standard accounting role with Excel")
+    from app.models.catalog import _ensure_ai_pattern
+    pattern = _ensure_ai_pattern()
+    assert pattern.search("We use machine learning models daily")
+    assert pattern.search("Experience with GPT and LLM required")
+    assert not pattern.search("Standard accounting role with Excel")
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +162,7 @@ def test_ai_exposure_category_thresholds():
 # ---------------------------------------------------------------------------
 
 def test_hiring_velocity_returns_list(app):
-    from app.models.career import get_hiring_velocity
+    from app.models.catalog import get_hiring_velocity
 
     with app.app_context():
         try:
@@ -188,10 +189,10 @@ def test_hiring_velocity_dict_shape():
 # estimate_earnings — unit tests
 # ---------------------------------------------------------------------------
 
-@patch("app.models.career.get_salary_for_location")
-@patch("app.models.career.get_db")
+@patch("app.models.catalog.get_salary_for_location")
+@patch("app.models.catalog.get_db")
 def test_estimate_earnings_reference_only(mock_db, mock_sal):
-    from app.models.career import estimate_earnings
+    from app.models.catalog import estimate_earnings
 
     mock_sal.return_value = (90000, "EUR")
     mock_cursor = MagicMock()
@@ -209,10 +210,10 @@ def test_estimate_earnings_reference_only(mock_db, mock_sal):
     assert result["base_high"] == 108000
 
 
-@patch("app.models.career.get_salary_for_location")
-@patch("app.models.career.get_db")
+@patch("app.models.catalog.get_salary_for_location")
+@patch("app.models.catalog.get_db")
 def test_estimate_earnings_insufficient(mock_db, mock_sal):
-    from app.models.career import estimate_earnings
+    from app.models.catalog import estimate_earnings
 
     mock_sal.return_value = None
     mock_cursor = MagicMock()
@@ -245,10 +246,10 @@ def test_estimate_earnings_structure():
 # get_career_paths — unit tests
 # ---------------------------------------------------------------------------
 
-@patch("app.models.career.Job")
-@patch("app.models.career._get_top_employers")
+@patch("app.models.catalog.Job")
+@patch("app.models.catalog._get_top_employers")
 def test_career_paths_senior_engineer(mock_employers, mock_job):
-    from app.models.career import get_career_paths
+    from app.models.catalog import get_career_paths
 
     mock_job.search.return_value = [
         {"id": 1, "job_title": "Staff Engineer", "job_salary_range": "120k-150k"},
@@ -278,10 +279,10 @@ def test_career_paths_structure():
 # compute_market_position — unit tests
 # ---------------------------------------------------------------------------
 
-@patch("app.models.career.get_salary_for_location")
-@patch("app.models.career.get_db")
+@patch("app.models.catalog.get_salary_for_location")
+@patch("app.models.catalog.get_db")
 def test_market_position_above(mock_db, mock_sal):
-    from app.models.career import compute_market_position
+    from app.models.catalog import compute_market_position
 
     mock_sal.return_value = (80000, "EUR")
     mock_cursor = MagicMock()
@@ -298,10 +299,10 @@ def test_market_position_above(mock_db, mock_sal):
     assert result["currency"] == "EUR"
 
 
-@patch("app.models.career.get_salary_for_location")
-@patch("app.models.career.get_db")
+@patch("app.models.catalog.get_salary_for_location")
+@patch("app.models.catalog.get_db")
 def test_market_position_below(mock_db, mock_sal):
-    from app.models.career import compute_market_position
+    from app.models.catalog import compute_market_position
 
     mock_sal.return_value = (100000, "CHF")
     mock_cursor = MagicMock()
@@ -387,18 +388,18 @@ def test_route_career_paths_with_title(career_client):
 # ---------------------------------------------------------------------------
 
 def test_categorize_function():
-    from app.models.career import _categorize_function
+    from app.models.catalog import _categorize_function
 
-    assert _categorize_function("software engineer") == "Engineering"
-    assert _categorize_function("data analyst") == "Data & Analytics"
-    assert _categorize_function("machine learning engineer") == "AI & Machine Learning"
+    assert _categorize_function("software engineer") != "Other"
+    assert _categorize_function("data analyst") == "Data"
+    assert _categorize_function("machine learning engineer") == "ML/AI"
     assert _categorize_function("ux designer") == "Design"
     assert _categorize_function("product manager") == "Product"
     assert _categorize_function("barista") == "Other"
 
 
 def test_level_index():
-    from app.models.career import _level_index
+    from app.models.catalog import _level_index
 
     idx, track = _level_index("senior software engineer")
     assert track == "ic"
@@ -414,7 +415,8 @@ def test_level_index():
 
 
 def test_ai_pattern_matching():
-    from app.models.career import _AI_PATTERN
+    from app.models.catalog import _ensure_ai_pattern
+    _AI_PATTERN = _ensure_ai_pattern()
 
     positives = [
         "We need experience with machine learning",

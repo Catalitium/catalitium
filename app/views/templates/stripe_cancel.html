@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Payment was cancelled. You can return to Catalitium pricing to try again anytime.">
-<link rel="canonical" href="{{ url_for('stripe_cancel', _external=True) }}">
+<link rel="canonical" href="{{ url_for('stripe_routes.stripe_cancel', _external=True) }}">
 <meta property="og:title" content="Payment Cancelled | Catalitium">
 <meta property="og:description" content="Stripe checkout was cancelled on Catalitium.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('stripe_cancel', _external=True) }}">
+<meta property="og:url" content="{{ url_for('stripe_routes.stripe_cancel', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 <meta name="twitter:title" content="Payment Cancelled | Catalitium">
@@ -28,7 +28,7 @@
   <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Payment cancelled</h1>
   <p class="mt-3 text-slate-500 dark:text-slate-400">No charge was made. You can go back and try again whenever you're ready.</p>
   <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-    <a href="{{ url_for('post_a_job') }}"
+    <a href="{{ url_for('stripe_routes.post_a_job') }}"
        class="rounded-xl bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-brand/90 transition-colors shadow-md shadow-brand/20">
       Back to plans
     </a>

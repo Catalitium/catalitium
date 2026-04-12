@@ -55,7 +55,7 @@ def test_company_list_returns_list(company_app):
     mock_conn.cursor.return_value = mock_cur
 
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", return_value=mock_conn):
+        with patch("app.models.catalog.get_db", return_value=mock_conn):
             result = Job.company_list()
 
     assert isinstance(result, list)
@@ -77,7 +77,7 @@ def test_company_list_with_search(company_app):
     mock_conn.cursor.return_value = mock_cur
 
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", return_value=mock_conn):
+        with patch("app.models.catalog.get_db", return_value=mock_conn):
             result = Job.company_list(search="Acme")
 
     assert len(result) == 1
@@ -88,7 +88,7 @@ def test_company_list_with_search(company_app):
 def test_company_list_handles_db_error(company_app):
     from app.models.db import Job
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", side_effect=Exception("db down")):
+        with patch("app.models.catalog.get_db", side_effect=Exception("db down")):
             result = Job.company_list()
     assert result == []
 
@@ -105,7 +105,7 @@ def test_company_count_returns_int(company_app):
     mock_conn.cursor.return_value = mock_cur
 
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", return_value=mock_conn):
+        with patch("app.models.catalog.get_db", return_value=mock_conn):
             count = Job.company_count()
 
     assert count == 42
@@ -114,7 +114,7 @@ def test_company_count_returns_int(company_app):
 def test_company_count_handles_db_error(company_app):
     from app.models.db import Job
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", side_effect=Exception("db down")):
+        with patch("app.models.catalog.get_db", side_effect=Exception("db down")):
             count = Job.company_count()
     assert count == 0
 
@@ -134,7 +134,7 @@ def test_company_detail_returns_dict(company_app):
     mock_conn.cursor.return_value = mock_cur
 
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", return_value=mock_conn):
+        with patch("app.models.catalog.get_db", return_value=mock_conn):
             detail = Job.company_detail("Acme Corp")
 
     assert detail is not None
@@ -153,7 +153,7 @@ def test_company_detail_returns_none_for_empty(company_app):
     mock_conn.cursor.return_value = mock_cur
 
     with company_app.app_context():
-        with patch("app.models.jobs.get_db", return_value=mock_conn):
+        with patch("app.models.catalog.get_db", return_value=mock_conn):
             detail = Job.company_detail("Unknown Corp")
 
     assert detail is None
