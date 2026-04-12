@@ -138,7 +138,14 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
       if(!a) return;
       var act = a.getAttribute('data-nav-action');
       if (act === 'search'){
-        e.preventDefault(); close(); var q=document.getElementById('q'); if(q) q.focus();
+        e.preventDefault(); close();
+        var q=document.getElementById('q');
+        if(q){ try{ q.focus(); }catch(_){} }
+        else {
+          var dest = a.getAttribute('href');
+          if(dest && dest !== '#') window.location.href = dest;
+          else window.location.href = '/jobs';
+        }
         trackEvent('nav_action', { action: 'quick_search' });
       }
     });
@@ -746,7 +753,17 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
   var COUNTRY_MAP = { de:'DE', deu:'DE', germany:'DE', deutschland:'DE', ch:'CH', schweiz:'CH', suisse:'CH', svizzera:'CH', switzerland:'CH', at:'AT', 'sterreich':'AT', austria:'AT', eu:'EU', europe:'EU', eur:'EU', 'european union':'EU', uk:'UK', gb:'UK', england:'UK', 'united kingdom':'UK', us:'US', usa:'US', 'united states':'US', america:'US', es:'ES', spain:'ES', fr:'FR', france:'FR', it:'IT', italy:'IT', nl:'NL', netherlands:'NL', be:'BE', belgium:'BE', se:'SE', sweden:'SE', pl:'PL', poland:'PL', pt:'PT', portugal:'PT', ie:'IE', ireland:'IE', dk:'DK', denmark:'DK', fi:'FI', finland:'FI', gr:'GR', greece:'GR', hu:'HU', hungary:'HU', ro:'RO', romania:'RO', sk:'SK', slovakia:'SK', si:'SI', slovenia:'SI', bg:'BG', bulgaria:'BG', hr:'HR', croatia:'HR', cy:'CY', cyprus:'CY', cz:'CZ', 'czech republic':'CZ', czech:'CZ', ee:'EE', estonia:'EE', lv:'LV', latvia:'LV', lt:'LT', lithuania:'LT', lu:'LU', luxembourg:'LU', mt:'MT', malta:'MT', co:'CO', colombia:'CO', mx:'MX', mexico:'MX' };
   var TITLE_MAP = { swe:'software engineer', 'software eng':'software engineer', 'sw eng':'software engineer', frontend:'front end', 'front-end':'front end', backend:'back end', 'back-end':'back end', fullstack:'full stack', 'full-stack':'full stack', pm:'product manager', 'prod mgr':'product manager', 'product owner':'product manager', ds:'data scientist', ml:'machine learning', mle:'machine learning engineer', sre:'site reliability engineer', devops:'devops', 'sec eng':'security engineer', infosec:'security', programmer:'developer', coder:'developer' };
   function normCountry(v){ if(!v) return ''; var t=(v.trim().toLowerCase()); if(COUNTRY_MAP[t]) return COUNTRY_MAP[t]; if(/^[a-z]{2}$/.test(t)) return t.toUpperCase(); return v.trim(); }
-  function normTitle(v){ if(!v) return ''; var s=v.toLowerCase(); Object.keys(TITLE_MAP).forEach(function(k){ if(s.indexOf(k)>=0) s=s.replace(new RegExp(k,'g'), TITLE_MAP[k]); }); return s.replace(/\s+/g,' ').trim(); }
+  function normTitle(v){
+    if(!v) return '';
+    var s = v.toLowerCase();
+    var keys = Object.keys(TITLE_MAP).sort(function(a,b){ return b.length - a.length; });
+    keys.forEach(function(k){
+      var esc = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp('\\b' + esc + '\\b', 'gi');
+      s = s.replace(re, TITLE_MAP[k]);
+    });
+    return s.replace(/\s+/g,' ').trim();
+  }
   if(form){ form.addEventListener('submit', function(){
     var titleVal = q ? normTitle(q.value) : '';
     var countryVal = loc ? normCountry(loc.value) : '';
@@ -1248,7 +1265,7 @@ function escHtml(s){
   var drop=document.createElement('div');
   drop.id='autocomplete-drop';
   drop.setAttribute('role','listbox');
-  drop.className='absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden hidden';
+  drop.className='absolute left-0 right-0 top-full z-[80] mt-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-lg overflow-hidden hidden';
   wrap.appendChild(drop);
 
   var debT=null, selIdx=-1, suggestions=[];
@@ -1261,7 +1278,7 @@ function escHtml(s){
     drop.innerHTML='';
     items.forEach(function(s,i){
       var d=document.createElement('div');
-      d.className='px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 text-slate-800';
+      d.className='px-4 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100';
       d.setAttribute('role','option');
       d.setAttribute('data-idx',String(i));
       d.textContent=s;
@@ -1304,6 +1321,7 @@ function escHtml(s){
     else { return; }
     opts.forEach(function(el,i){
       el.classList.toggle('bg-slate-100',i===selIdx);
+      el.classList.toggle('dark:bg-slate-700',i===selIdx);
     });
   });
 

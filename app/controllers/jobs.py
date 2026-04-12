@@ -467,6 +467,10 @@ def jobs():
         title_q = normalize_title(raw_title)
     if raw_country and not country_q:
         country_q = normalize_country(raw_country)
+    if title_q:
+        title_q = str(title_q).strip() or None
+    if country_q:
+        country_q = str(country_q).strip() or None
 
     display_country = country_q or raw_country
     search_country = country_q

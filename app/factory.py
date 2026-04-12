@@ -149,9 +149,24 @@ def create_app() -> Flask:
             "is_production_env": (env == "production" and not is_local_host),
         }
 
+    # Macros imported with {% from ... import macro %} do not receive request context
+    # unless imported "with context"; globals make csrf_token() work inside those macros.
+    app.jinja_env.globals["csrf_token"] = _csrf_token
+
     def _api_request() -> bool:
         path = request.path or ""
         return path.startswith("/api/") or path.startswith("/v1/") or request.is_json
+
+    def _wants_html() -> bool:
+        """True when the client is likely a browser expecting HTML (not JSON API)."""
+        if _api_request():
+            return False
+        accept = (request.headers.get("Accept") or "").lower()
+        if "text/html" in accept:
+            return True
+        if request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html":
+            return True
+        return False
 
     def _api_error(code: str, message: str, status: int = 400, details: Optional[Dict[str, Any]] = None):
         return jsonify(
@@ -269,6 +284,8 @@ def create_app() -> Flask:
     def handle_not_found(_error):
         if _api_request():
             return _api_error("not_found", "Resource not found", 404)
+        if _wants_html():
+            return render_template("errors/404.html"), 404
         return jsonify({"error": "not found"}), 404
 
     @app.errorhandler(500)
@@ -276,6 +293,8 @@ def create_app() -> Flask:
         logger.exception("Unhandled error", exc_info=error)
         if _api_request():
             return _api_error("internal_error", "Internal server error", 500)
+        if _wants_html():
+            return render_template("errors/500.html"), 500
         return jsonify({"error": "internal error"}), 500
 
     @app.errorhandler(413)

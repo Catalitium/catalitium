@@ -1,17 +1,19 @@
 {% extends "base.html" %}
-{% block title %}{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}{% endblock %}
+{% set tq = (title_q or '')|trim %}
+{% set cq = (country_q or '')|trim %}
+{% block title %}{% if tq %}{{ tq|capitalize }} Jobs{% if cq %} in {{ cq }}{% endif %} | Catalitium{% elif cq %}Jobs in {{ cq }} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}{% endblock %}
 
 {% block meta %}
 {% set _jobs_page = pagination.page if pagination and pagination.page > 1 else none %}
-<meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
-<link rel="canonical" href="{{ url_for('jobs.jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
+<meta name="description" content="{% if tq %}{{ tq|capitalize }} jobs{% if cq %} in {{ cq }}{% endif %} with real salary data.{% elif cq %}Jobs in {{ cq }} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
+<link rel="canonical" href="{{ url_for('jobs.jobs', title=tq or none, country=cq or none, page=_jobs_page, _external=True) }}">
 <!-- Open Graph tags -->
-<meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
-<meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
+<meta property="og:title" content="{% if tq %}{{ tq|capitalize }} Jobs{% if cq %} in {{ cq }}{% endif %} | Catalitium{% elif cq %}Jobs in {{ cq }} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
+<meta property="og:description" content="{% if tq %}Browse {{ tq|capitalize }} jobs with real salary data{% elif cq %}Browse jobs in {{ cq }} with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('jobs.jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
-<meta name="twitter:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}{% else %}Tech Jobs & Salary Insights{% endif %}">
-<meta name="twitter:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
+<meta property="og:url" content="{{ url_for('jobs.jobs', title=tq or none, country=cq or none, page=_jobs_page, _external=True) }}">
+<meta name="twitter:title" content="{% if tq %}{{ tq|capitalize }} Jobs{% if cq %} in {{ cq }}{% endif %}{% elif cq %}Jobs in {{ cq }}{% else %}Tech Jobs & Salary Insights{% endif %}">
+<meta name="twitter:description" content="{% if tq %}Browse {{ tq|capitalize }} jobs with real salary data{% elif cq %}Browse jobs in {{ cq }}{% else %}Search tech jobs with verified salary insights{% endif %}">
 {% if pagination %}
   {% if pagination.prev_url %}<link rel="prev" href="{{ pagination.prev_url }}">{% endif %}
   {% if pagination.next_url %}<link rel="next" href="{{ pagination.next_url }}">{% endif %}
@@ -23,20 +25,22 @@
 <section class="pt-8 sm:pt-16 pb-8" role="region" aria-labelledby="jobs-hero">
   <div class="mx-auto max-w-6xl text-center px-4">
       <h1 id="jobs-hero" class="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-        {% if title_q %}
-          {{ title_q|capitalize }} Jobs {% if country_q %}in {{ country_q }}{% endif %}
+        {% if tq %}
+          {{ tq|capitalize }} Jobs {% if cq %}in {{ cq }}{% endif %}
+        {% elif cq %}
+          All Jobs in {{ cq }}
         {% else %}
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand to-sky-500">High-signal</span> tech jobs.
         {% endif %}
       </h1>
       <p class="mt-4 text-lg text-slate-600 dark:text-slate-400">
-        {% if title_q %}
+        {% if tq or cq %}
           {{ count|default(0) }} curated roles with verified salaries.
         {% else %}
           Curated roles with verified salaries.
         {% endif %}
       </p>
-      {% if not title_q %}
+      {% if not tq and not cq %}
       <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         <a href="#results"
            class="inline-flex items-center justify-center rounded-xl bg-brand text-white px-6 py-3.5 text-base font-semibold shadow-lg shadow-brand/20 hover:bg-brand/90 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
@@ -57,7 +61,7 @@
         <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg> No ghost jobs</span>
       </div>
       {% endif %}
-    {% if title_q and count > 0 %}
+    {% if tq and count > 0 %}
     <div class="mt-4 text-sm text-slate-500 dark:text-slate-500">
       Updated {{ "2025-11-02"|datetime|timeago }}
     </div>
@@ -289,8 +293,8 @@
   </div>
   </div>
   <div class="flex flex-wrap justify-start items-center gap-2 sm:gap-3 py-1.5" role="listbox" aria-label="Quick filters">
-    {% set t = (title_q or '') %}
-    {% set c = (country_q or '') %}
+    {% set t = tq %}
+    {% set c = cq %}
     {% set base_chip = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none' %}
     {% set off_chip = 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' %}
     {% set on_chip = 'bg-brand text-white border-brand' %}
@@ -305,8 +309,11 @@
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Dev
     </a>
-    <a role="button" aria-pressed="{{ 'true' if 'remote' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' remote').strip(), country=c) }}" data-filter-chip="title" data-filter-value="remote"
-       class="{{ base_chip }} {{ on_chip if 'remote' in (t|lower) else off_chip }}">
+    {% set remote_chip_on = request.args.get('remote') or ('remote' in (t|lower)) or (c|lower == 'remote') %}
+    <a role="button" aria-pressed="{{ 'true' if remote_chip_on else 'false' }}"
+       href="{% if remote_chip_on %}{{ url_for('jobs.jobs', title=t or none, country=c or none) }}{% else %}{{ url_for('jobs.jobs', title=t or none, country=c or none, remote=1) }}{% endif %}"
+       data-filter-chip="remote" data-filter-value="remote"
+       class="{{ base_chip }} {{ on_chip if remote_chip_on else off_chip }}">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 9a8 8 0 0116 0v6a2 2 0 01-2 2h-3l-2 3-2-3H6a2 2 0 01-2-2V9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
       Remote
     </a>
@@ -317,11 +324,6 @@
     <a role="button" aria-pressed="{{ 'true' if '100k' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' 100k').strip(), country=c) }}" data-filter-chip="title" data-filter-value=">100k"
        class="{{ base_chip }} {{ on_chip if '100k' in (t|lower) else off_chip }}">
       >100k
-    </a>
-    <a role="button" aria-pressed="{{ 'true' if c|lower=='remote' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='Remote') }}" data-filter-chip="country" data-filter-value="Remote"
-       class="{{ base_chip }} {{ on_chip if c|lower=='remote' else off_chip }}">
-      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-      Remote
     </a>
     <a role="button" aria-pressed="{{ 'true' if c=='CH' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='CH') }}" data-filter-chip="country" data-filter-value="CH"
        class="{{ base_chip }} {{ on_chip if c=='CH' else off_chip }}">

@@ -26,7 +26,7 @@
   </div>
 
   <!-- Form card -->
-  <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+  <div id="salary-wizard-card" class="relative z-10 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
     <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
 
     <!-- ── Step 1: Role ── -->
@@ -34,12 +34,12 @@
       <h2 class="text-base font-semibold text-slate-800 dark:text-slate-200 mb-5">Your role</h2>
       <div class="space-y-4">
 
-        <div>
+        <div class="relative z-[90]">
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
-          <input id="job_title" type="text" autocomplete="off" placeholder="e.g. Senior Software Engineer"
+          <input id="job_title" type="text" required autocomplete="off" placeholder="e.g. Senior Software Engineer"
             class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-base focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40"
             oninput="fetchSuggestions(this,'title')" onfocus="fetchSuggestions(this,'title')">
-          <ul id="suggestions-title" class="hidden mt-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg overflow-hidden text-sm z-10 absolute w-full max-w-lg"></ul>
+          <ul id="suggestions-title" class="hidden mt-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg overflow-hidden text-sm z-[90] absolute left-0 right-0 top-full max-w-lg"></ul>
         </div>
 
         <div>
@@ -50,7 +50,7 @@
 
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">City</label>
-          <select id="location"
+          <select id="location" required
             class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-base focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40">
             <option value="">Select a city…</option>
             <option value="Zurich">Zurich 🇨🇭</option>
@@ -89,7 +89,7 @@
         <div>
           <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Salary</label>
           <div class="flex gap-2">
-            <input id="base_salary" type="number" min="1" max="10000000" placeholder="e.g. 130000"
+            <input id="base_salary" type="number" required min="1" max="10000000" placeholder="e.g. 130000"
               class="flex-1 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 dark:text-slate-100 px-4 py-3 text-base focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/40">
             <div class="flex rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden text-sm font-semibold">
               <button type="button" id="btn-chf" onclick="setCurrency('CHF')"
@@ -126,7 +126,7 @@
     <!-- ── Step 3: Optional email + submit ── -->
     <div id="step-3" class="hidden">
       <h2 class="text-base font-semibold text-slate-800 dark:text-slate-200 mb-1">Almost done</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Submit to reveal your market percentile instantly.</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Submit to reveal your market percentile in the summary card below.</p>
 
       <div class="space-y-4">
         <div>
@@ -192,17 +192,16 @@
   // ── Step navigation ──────────────────────────────────────────────
   window.goStep = function (n) {
     if (n === 2) {
-      var title = document.getElementById('job_title').value.trim();
-      var loc   = document.getElementById('location').value;
-      if (!title || !loc) {
-        alert('Please fill in Job Title and City to continue.');
-        return;
-      }
+      var jt = document.getElementById('job_title');
+      var locEl = document.getElementById('location');
+      if (!jt.checkValidity()) { jt.reportValidity(); return; }
+      if (!locEl.checkValidity()) { locEl.reportValidity(); return; }
     }
     if (n === 3) {
-      var sal = parseInt(document.getElementById('base_salary').value, 10);
       if (!_seniority) { alert('Please select a seniority level.'); return; }
-      if (!sal || sal < 1) { alert('Please enter your base salary.'); return; }
+      var base = document.getElementById('base_salary');
+      var sal = parseInt(base.value, 10);
+      if (!base.checkValidity() || !sal || sal < 1) { base.reportValidity(); return; }
     }
     document.getElementById('step-' + _currentStep).classList.add('hidden');
     document.getElementById('step-' + n).classList.remove('hidden');
@@ -220,6 +219,10 @@
       }
     });
     _currentStep = n;
+    var wiz = document.getElementById('salary-wizard-card');
+    if (wiz) {
+      try { wiz.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    }
   };
 
   // ── Seniority pills ──────────────────────────────────────────────
@@ -274,10 +277,7 @@
     });
     list.classList.remove('hidden');
     // Position below input
-    list.style.top  = (input.offsetTop + input.offsetHeight + 2) + 'px';
-    list.style.left = input.offsetLeft + 'px';
     list.style.width = input.offsetWidth + 'px';
-    list.style.position = 'absolute';
   }
 
   function hideSuggestions(type) {
@@ -338,13 +338,25 @@
       var card = document.getElementById('result-card');
       card.classList.remove('blur-sm','opacity-60','pointer-events-none','select-none');
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Swap step 3 to success state
-      document.getElementById('step-3').innerHTML =
-        '<div class="text-center py-4">' +
-        '<div class="text-3xl mb-3">✓</div>' +
-        '<p class="text-base font-semibold text-slate-800 dark:text-slate-200">Thanks for contributing!</p>' +
-        '<p class="text-sm text-slate-500 mt-1">Your data helps the DACH tech community. 🇨🇭🇩🇪🇦🇹</p>' +
-        '</div>';
+      // Swap step 3 to success state (DOM nodes + codepoints so flags render reliably)
+      var s3 = document.getElementById('step-3');
+      s3.innerHTML = '';
+      var wrap = document.createElement('div');
+      wrap.className = 'text-center py-4';
+      var tick = document.createElement('div');
+      tick.className = 'text-3xl mb-3';
+      tick.textContent = '\u2713';
+      var p1 = document.createElement('p');
+      p1.className = 'text-base font-semibold text-slate-800 dark:text-slate-200';
+      p1.textContent = 'Thanks for contributing!';
+      var p2 = document.createElement('p');
+      p2.className = 'text-sm text-slate-500 mt-1';
+      p2.appendChild(document.createTextNode('Your data helps the DACH tech community. '));
+      p2.appendChild(document.createTextNode(String.fromCodePoint(0x1f1e8, 0x1f1ed, 0x1f1e9, 0x1f1ea, 0x1f1e6, 0x1f1f9)));
+      wrap.appendChild(tick);
+      wrap.appendChild(p1);
+      wrap.appendChild(p2);
+      s3.appendChild(wrap);
     })
     .catch(function (err) {
       btn.disabled = false;
@@ -353,6 +365,14 @@
       errBox.classList.remove('hidden');
     });
   };
+  var _yoe = document.getElementById('years_exp');
+  var _yoeLbl = document.getElementById('yoe-label');
+  if (_yoe && _yoeLbl) {
+    function _syncYoe() { _yoeLbl.textContent = _yoe.value; }
+    _yoe.addEventListener('input', _syncYoe);
+    _yoe.addEventListener('change', _syncYoe);
+    _syncYoe();
+  }
 })();
 </script>
 {% endblock %}

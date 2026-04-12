@@ -49,7 +49,7 @@ AI and software handle the heavy lifting so humans do the meaningful work.
 | Backend | Flask 3.1 · Python 3.11+ |
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (email + password) |
-| Frontend | Jinja2 + Tailwind CSS (CDN) |
+| Frontend | Jinja2 + Tailwind CSS (pre-built `app/static/css/tailwind.css`) |
 | Payments | Stripe (pay-per-post) |
 | Server | Gunicorn · gthread · systemd |
 | Deployment | Hetzner VPS · Nginx reverse proxy |
@@ -67,6 +67,18 @@ python run.py
 ```
 
 Visit `http://localhost:5000`
+
+### Tailwind CSS (optional, developers only)
+
+Production serves the committed file `app/static/css/tailwind.css`. **Node is not required at runtime.** When you add or change Tailwind utility classes in templates or `app/static/js`, regenerate CSS from the build folder:
+
+```bash
+cd app/static/css
+npm install   # first time, or after dependency bumps
+npm run build:css
+```
+
+Commit the updated `tailwind.css` with your template changes.
 
 **Pre-deploy smoke** (with `.env` configured):
 
