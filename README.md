@@ -89,7 +89,7 @@ pwsh -File scripts/smoke_prod.ps1
 ```
 catalitium/
 ├── app/
-│   ├── app.py                  # Flask app factory — all routes, rate limiting, auth
+│   ├── factory.py              # Flask app factory — routes, rate limiting, auth
 │   ├── api_utils.py            # JSON envelopes, query param helpers, TTL cache
 │   ├── models/
 │   │   └── db.py               # DB queries, connection pool, API key management

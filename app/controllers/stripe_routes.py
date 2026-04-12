@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 
-from ..helpers import csrf_valid
+from ..utils import csrf_valid
 from ..models.db import (
     create_api_key,
     get_api_key_by_email,

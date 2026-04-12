@@ -4,7 +4,7 @@ import re
 
 from flask import Blueprint, abort, redirect, render_template, request, url_for
 
-from ..helpers import (
+from ..utils import (
     BLACKLIST_LINKS,
     TITLE_BUCKET1_KEYWORDS,
     TITLE_BUCKET2_KEYWORDS,

@@ -6,12 +6,13 @@ from typing import Optional
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
 
-from ..helpers import (
+from ..utils import (
     _SALARY_SEED,
     csrf_valid,
     get_salary_percentiles,
+    parse_int_arg,
+    parse_str_arg,
 )
-from ..api_utils import parse_int_arg, parse_str_arg
 from ..models.db import (
     get_salary_for_location,
     insert_salary_submission,

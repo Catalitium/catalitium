@@ -9,7 +9,7 @@ from typing import Dict
 
 from flask import Blueprint, g, jsonify, render_template, request, session
 
-from ..helpers import (
+from ..utils import (
     BLACKLIST_LINKS,
     api_error_response,
     api_success_response,
@@ -139,7 +139,7 @@ def api_keys_revoke():
 @require_api_key
 def v1_jobs():
     """Authenticated job search; same parameters as /api/jobs."""
-    from ..normalization import normalize_country, normalize_title
+    from ..utils import normalize_country, normalize_title
     from ..models.db import parse_salary_query
 
     raw_title = (request.args.get("title") or "").strip()

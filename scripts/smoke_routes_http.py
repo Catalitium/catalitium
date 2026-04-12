@@ -30,7 +30,7 @@ if str(_ROOT) not in sys.path:
 
 
 def main() -> int:
-    from app.app import create_app
+    from app.factory import create_app
 
     app = create_app()
 

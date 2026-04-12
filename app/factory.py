@@ -27,119 +27,35 @@ from flask import (
 
 from .config import (
     PER_PAGE_MAX,
-    GHOST_JOB_DAYS,
     GUEST_DAILY_LIMIT,
-    SUMMARY_CACHE_TTL,
-    SUMMARY_CACHE_MAX,
-    AUTOCOMPLETE_CACHE_TTL,
-    AUTOCOMPLETE_CACHE_MAX,
-    SALARY_INSIGHTS_CACHE_TTL,
-    SALARY_INSIGHTS_CACHE_MAX,
     SITEMAP_CACHE_TTL,
     CARL_CHAT_MAX_TURNS,
     CARL_CHAT_MAX_MESSAGE_CHARS,
 )
 
-# region support — inlined from former app/support (pure helpers, no Flask)
-_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
-
-class EmailNotValidError(ValueError):
-    """Raised when an email address fails basic format validation."""
-
-
-def validate_email(email: str, *, check_deliverability: bool = False):  # noqa: ARG001
-    """Lightweight format-only email validator. Returns an object with .normalized."""
-    class _Result:
-        normalized: str
-
-    r = _Result()
-    r.normalized = email.strip().lower()
-    if not _EMAIL_RE.match(r.normalized):
-        raise EmailNotValidError(f"Invalid email: {email!r}")
-    return r
-
-
-def _coerce_datetime(value):
-    """Convert assorted datetime-like inputs into timezone-aware datetimes when possible."""
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return value
-    if hasattr(value, "to_datetime"):
-        try:
-            return value.to_datetime()
-        except Exception:
-            pass
-    if hasattr(value, "isoformat"):
-        try:
-            iso = value.isoformat()
-            return datetime.fromisoformat(iso)
-        except Exception:
-            pass
-    text = str(value).strip()
-    if not text:
-        return None
-    try:
-        return datetime.fromisoformat(text)
-    except Exception:
-        pass
-    formats = ("%Y-%m-%d", "%Y.%m.%d", "%Y%m%d", "%Y/%m/%d")
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(text[: len(fmt)], fmt)
-            return dt
-        except Exception:
-            continue
-    return None
-
-
-def _job_is_new(job_date_raw, row_date) -> bool:
-    """Return True when the job was posted within the last 7 days."""
-    dt = _coerce_datetime(row_date) or _coerce_datetime(job_date_raw)
-    if not dt:
-        return False
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    now = datetime.now(timezone.utc)
-    return (now - dt) <= timedelta(days=7)
-
-
-def _job_is_ghost(job_date_raw) -> bool:
-    """Return True when the job was posted more than GHOST_JOB_DAYS ago (may be filled)."""
-    dt = _coerce_datetime(job_date_raw)
-    if not dt:
-        return False
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return (datetime.now(timezone.utc) - dt) > timedelta(days=GHOST_JOB_DAYS)
-
-
-def _slugify(text: str) -> str:
-    """Convert text to a URL-safe slug (max 60 chars)."""
-    text = (text or "").lower().strip()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text)
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")[:60]
-
-
-def _to_lc(value: str) -> str:
-    """Return a lowercase camel-style version of a string for API responses."""
-    parts = [p for p in re.split(r"[^A-Za-z0-9]+", value or "") if p]
-    if not parts:
-        return value or ""
-    head, *tail = parts
-    return head.lower() + "".join(part.capitalize() for part in tail)
-
-
-coerce_datetime = _coerce_datetime
-job_is_new = _job_is_new
-job_is_ghost = _job_is_ghost
-slugify = _slugify
-to_lc = _to_lc
-
-# endregion support
+from .utils import (
+    AUTOCOMPLETE_CACHE,
+    EmailNotValidError,
+    SALARY_CACHE,
+    SUMMARY_CACHE,
+    api_fail,
+    api_ok,
+    coerce_datetime as _coerce_datetime,
+    disposable_email_domain,
+    generate_request_id,
+    honeypot_triggered,
+    job_is_ghost as _job_is_ghost,
+    job_is_new as _job_is_new,
+    normalize_country,
+    normalize_title,
+    parse_int_arg,
+    parse_str_arg,
+    prepare_contact_submission,
+    sanitize_subscriber_search_fields,
+    slugify as _slugify,
+    to_lc as _to_lc,
+    validate_email,
+)
 
 from .mailer import (
     send_subscribe_welcome,
@@ -149,13 +65,6 @@ from .mailer import (
     send_api_key_activation_reminder,
     send_job_posting_admin_notification,
     send_job_posting_confirmation,
-)
-from .normalization import normalize_country, normalize_title
-from .subscriber_fields import sanitize_subscriber_search_fields
-from .spam_guards import (
-    disposable_email_domain,
-    honeypot_triggered,
-    prepare_contact_submission,
 )
 from .models.db import (
     SECRET_KEY,
@@ -223,14 +132,6 @@ import hashlib
 import secrets
 import functools
 from werkzeug.middleware.proxy_fix import ProxyFix
-from .api_utils import (
-    TTLCache,
-    api_fail,
-    api_ok,
-    generate_request_id,
-    parse_int_arg,
-    parse_str_arg,
-)
 from .integrations.cv_extract import (
     CVExtractionError,
     extract_cv_from_upload,
@@ -1019,9 +920,9 @@ def create_app() -> Flask:
             return fn
         return limiter.exempt(fn)
 
-    summary_cache = TTLCache(ttl_seconds=SUMMARY_CACHE_TTL, max_size=SUMMARY_CACHE_MAX)
-    autocomplete_cache = TTLCache(ttl_seconds=AUTOCOMPLETE_CACHE_TTL, max_size=AUTOCOMPLETE_CACHE_MAX)
-    salary_insights_cache = TTLCache(ttl_seconds=SALARY_INSIGHTS_CACHE_TTL, max_size=SALARY_INSIGHTS_CACHE_MAX)
+    summary_cache = SUMMARY_CACHE
+    autocomplete_cache = AUTOCOMPLETE_CACHE
+    salary_insights_cache = SALARY_CACHE
 
     @app.before_request
     def assign_request_id():

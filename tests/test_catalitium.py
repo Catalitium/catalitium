@@ -20,25 +20,23 @@ from typing import Any, Dict
 import pytest
 
 import app.factory as app_factory
-from app.app import safe_parse_search_params
+from app.factory import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
 from app.integrations.carl_mock_analysis import (
     generate_chat_reply,
     is_carl_message_grounded,
     normalize_carl_user_message,
 )
-from app.spam_guards import (
+from app.utils import (
     disposable_email_domain,
     honeypot_triggered,
     prepare_contact_submission,
-)
-from app.subscriber_fields import (
     sanitize_search_country,
     sanitize_search_salary_band,
     sanitize_search_title,
     sanitize_subscriber_search_fields,
+    slugify_job_title,
 )
-from app.utils.text import slugify_job_title
 
 # -----------------------------------------------------------------------------
 

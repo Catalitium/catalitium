@@ -68,7 +68,7 @@ def main() -> int:
         print("SKIP: no DATABASE_URL / SUPABASE_URL — load .env then rerun.")
         return 0
 
-    from app.app import create_app
+    from app.factory import create_app
 
     app = create_app()
     client = app.test_client()

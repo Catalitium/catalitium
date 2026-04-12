@@ -386,8 +386,8 @@ def parse_job_description(text: str) -> str:
 
 
 # ----------------------------- Normalization (re-export) ---------------------
-# Single source of truth lives in app/normalization.py
-from ..normalization import (  # noqa: E402
+# Canonical definitions live in app.utils
+from ..utils import (  # noqa: E402
     COUNTRY_NORM,
     LOCATION_COUNTRY_HINTS,
     SWISS_LOCATION_TERMS,

@@ -10,7 +10,7 @@ import pytest
 @pytest.fixture(scope="module")
 def _app():
     """Module-scoped app to avoid repeated init_db connections."""
-    from app.app import create_app
+    from app.factory import create_app
     application = create_app()
     application.config["TESTING"] = True
     return application
@@ -218,9 +218,10 @@ def test_company_detail_route_404_unknown(company_client):
 def test_company_detail_route_200(company_client):
     """Full integration mock: slug lookup + company_detail + company_jobs."""
     from app.models.db import Job
-    import app.app as app_mod
+    from app.utils import slugify
+
     company_name = "Acme Corp"
-    slug = app_mod._slugify(company_name)
+    slug = slugify(company_name)
 
     fake_detail = {
         "company_name": company_name,
