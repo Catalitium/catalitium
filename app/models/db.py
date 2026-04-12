@@ -169,6 +169,7 @@ def upsert_profile_cv_extract(
     email_val = (email or "").strip() or None
     db = get_db()
     try:
+        with db.cursor() as cur:
             cur.execute(
                 """
                 INSERT INTO profiles (
