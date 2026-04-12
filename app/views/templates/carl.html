@@ -11,7 +11,19 @@
 {% endblock %}
 
 {% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --carl-primary: #1a73e8;
+    --carl-secondary: #18a7ec;
+    --carl-accent: #00bfff;
+    --carl-bg-0: #050b1a;
+    --carl-bg-1: #0a1428;
+    --carl-card-fill: linear-gradient(145deg, rgba(26, 115, 232, 0.14), rgba(0, 191, 255, 0.07) 55%, rgba(24, 167, 236, 0.09));
+    --carl-card-border: rgba(255, 255, 255, 0.32);
+  }
   /* Okara-style Carl: full-bleed dashboard, hide site chrome when active */
   body.troy-dashboard-active header { display: none !important; }
   body.troy-dashboard-active footer { display: none !important; }
@@ -26,20 +38,367 @@
     padding-bottom: 0.5rem !important;
     max-width: none !important;
   }
+  #troy-shell {
+    background: radial-gradient(circle at 12% 8%, rgba(26, 115, 232, 0.28), transparent 35%),
+      radial-gradient(circle at 88% 18%, rgba(0, 191, 255, 0.2), transparent 34%),
+      linear-gradient(160deg, var(--carl-bg-0), var(--carl-bg-1));
+  }
+  body.troy-carl-page header {
+    border-color: rgba(122, 169, 225, 0.3) !important;
+    background: linear-gradient(145deg, rgba(7, 17, 39, 0.94), rgba(9, 29, 64, 0.88)) !important;
+    box-shadow: 0 10px 34px rgba(1, 8, 24, 0.36), inset 0 1px 0 rgba(155, 207, 255, 0.14);
+    backdrop-filter: saturate(175%) blur(18px);
+    -webkit-backdrop-filter: saturate(175%) blur(18px);
+    color: #f1f5f9;
+  }
+  body.troy-carl-page header .text-slate-900,
+  body.troy-carl-page header .text-slate-600,
+  body.troy-carl-page header .dark\:text-slate-300 {
+    color: #ffffff !important;
+  }
+  body.troy-carl-page header a.flex.items-center.gap-2 img[alt="Catalitium logo"] {
+    filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.4));
+  }
+  body.troy-carl-page header #hamburger {
+    border-color: rgba(255, 255, 255, 0.38) !important;
+    color: #ffffff !important;
+  }
+  body.troy-carl-page header #hamburger:hover {
+    border-color: rgba(0, 191, 255, 0.55) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+  body.troy-carl-page header nav > a {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  body.troy-carl-page header nav > a[aria-current="page"] {
+    color: #ffffff !important;
+    background: rgba(0, 191, 255, 0.22) !important;
+    border: 1px solid rgba(0, 191, 255, 0.5) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  body.troy-carl-page header nav > a:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end .border-l {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+  /* Pill CTAs only (+ Add Salary, Get started). Plain text-brand links (e.g. Account) stay borderless. */
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border {
+    color: #e0f4ff !important;
+    border-color: rgba(0, 191, 255, 0.55) !important;
+    background: rgba(0, 191, 255, 0.1) !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand.border:hover {
+    background: rgba(0, 191, 255, 0.18) !important;
+    border-color: rgba(0, 191, 255, 0.75) !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border) {
+    color: #dff6ff !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-brand:not(.border):hover {
+    color: #ffffff !important;
+    background: transparent !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600,
+  body.troy-carl-page header .md\:flex.items-center.justify-end > button {
+    color: rgba(255, 255, 255, 0.88) !important;
+  }
+  body.troy-carl-page header .md\:flex.items-center.justify-end > a.text-slate-600:hover,
+  body.troy-carl-page header .md\:flex.items-center.justify-end > button:hover {
+    color: #ffffff !important;
+  }
+  body.troy-carl-page header a.bg-brand {
+    box-shadow: 0 4px 22px rgba(26, 115, 232, 0.45);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, filter 0.25s ease;
+  }
+  body.troy-carl-page header a.bg-brand:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+    box-shadow: 0 8px 28px rgba(0, 191, 255, 0.35);
+  }
+  body.troy-carl-page #page-progress {
+    box-shadow: 0 0 14px rgba(0, 191, 255, 0.75);
+  }
+  .carl-btn-analyze {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.35rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: #ffffff;
+    background: linear-gradient(135deg, #1a73e8 0%, #0d5ccc 42%, #18a7ec 100%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 4px 22px rgba(26, 115, 232, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease, border-color 0.35s ease;
+  }
+  .carl-btn-analyze:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.06);
+    border-color: rgba(0, 191, 255, 0.45);
+    box-shadow: 0 12px 36px rgba(0, 191, 255, 0.28), 0 0 0 1px rgba(0, 191, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+  .carl-btn-analyze:active:not(:disabled) {
+    transform: translateY(0);
+    transition-duration: 0.12s;
+  }
+  .carl-btn-analyze:focus-visible {
+    outline: 2px solid #00bfff;
+    outline-offset: 3px;
+  }
+  .carl-btn-analyze:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 2px 12px rgba(26, 115, 232, 0.2);
+  }
+  .carl-file-input {
+    transition: border-color 0.35s ease, box-shadow 0.35s ease;
+  }
+  .carl-file-input:hover {
+    border-color: rgba(0, 191, 255, 0.35) !important;
+    box-shadow: 0 0 0 1px rgba(0, 191, 255, 0.12);
+  }
+  .carl-file-input::file-selector-button,
+  .carl-file-input::-webkit-file-upload-button {
+    margin-right: 0.75rem;
+    padding: 0.45rem 0.95rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(0, 191, 255, 0.5);
+    background: linear-gradient(145deg, rgba(26, 115, 232, 0.55), rgba(24, 167, 236, 0.28));
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease, border-color 0.35s ease, filter 0.3s ease;
+  }
+  .carl-file-input:hover::file-selector-button,
+  .carl-file-input:hover::-webkit-file-upload-button {
+    transform: translateY(-1px);
+    border-color: rgba(0, 191, 255, 0.85);
+    filter: brightness(1.08);
+    box-shadow: 0 6px 20px rgba(0, 191, 255, 0.22);
+  }
+  .carl-file-input:focus-visible {
+    outline: 2px solid #00bfff;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .carl-btn-analyze,
+    .carl-btn-analyze:hover:not(:disabled),
+    .carl-btn-analyze:active:not(:disabled),
+    body.troy-carl-page header a.bg-brand,
+    body.troy-carl-page header a.bg-brand:hover,
+    .carl-file-input::file-selector-button,
+    .carl-file-input::-webkit-file-upload-button,
+    .carl-file-input:hover::file-selector-button,
+    .carl-file-input:hover::-webkit-file-upload-button {
+      transition: none;
+      transform: none;
+    }
+  }
+  /* Premium dark scrollbars (terminal, chat, in-panel scroll) */
+  .carl-scroll-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(24, 167, 236, 0.55) rgba(8, 16, 36, 0.85);
+  }
+  .carl-scroll-dark::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+  .carl-scroll-dark::-webkit-scrollbar-track {
+    background: rgba(8, 16, 36, 0.9);
+    border-radius: 9999px;
+  }
+  .carl-scroll-dark::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(0, 191, 255, 0.75), rgba(26, 115, 232, 0.55));
+    border-radius: 9999px;
+    border: 2px solid rgba(8, 16, 36, 0.8);
+  }
+  .carl-scroll-dark::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(0, 191, 255, 0.9), rgba(24, 167, 236, 0.66));
+  }
+  /* Desktop (xl): single viewport, no page scroll; inner regions scroll */
+  @media (min-width: 1280px) {
+    html:has(body.troy-dashboard-active) {
+      height: 100dvh;
+      overflow: hidden;
+    }
+    body.troy-dashboard-active {
+      overflow: hidden;
+      min-height: 100dvh;
+      max-height: 100dvh;
+    }
+    body.troy-dashboard-active #content {
+      padding-bottom: 0 !important;
+      height: 100dvh;
+      max-height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
+    body.troy-dashboard-active #troy-shell {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    body.troy-dashboard-active #troy-workspace {
+      flex: 1 1 0%;
+      min-height: 0;
+      max-height: none;
+      overflow: hidden;
+    }
+  }
   .troy-card {
-    background: #1A1A1A;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+      var(--carl-card-fill),
+      rgba(6, 14, 32, 0.28);
+    border: 1px solid var(--carl-card-border);
     border-radius: 12px;
+    box-shadow: 0 22px 48px rgba(2, 8, 22, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    backdrop-filter: saturate(165%) blur(26px);
+    -webkit-backdrop-filter: saturate(165%) blur(26px);
+  }
+  .troy-card-soft {
+    background: linear-gradient(140deg, rgba(10, 20, 42, 0.42), rgba(12, 24, 52, 0.32));
+    border: 1px solid rgba(160, 205, 255, 0.34);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    backdrop-filter: saturate(150%) blur(20px);
+    -webkit-backdrop-filter: saturate(150%) blur(20px);
   }
   .troy-tab-active {
-    background: rgba(255, 122, 0, 0.15);
-    color: #FF7A00;
-    border-color: rgba(255, 122, 0, 0.35);
+    background: rgba(24, 167, 236, 0.22);
+    color: var(--carl-accent);
+    border-color: rgba(24, 167, 236, 0.48);
   }
-  .troy-gauge-track {
-    background: conic-gradient(from -90deg, #22c55e 0deg, #22c55e var(--troy-deg, 0deg), #2a2a2a var(--troy-deg, 0deg));
+  .troy-gauge-track,
+  .troy-gauge-track-small {
+    background: conic-gradient(from -90deg, var(--carl-accent) 0deg, var(--carl-accent) var(--troy-deg, 0deg), rgba(9, 18, 40, 0.92) var(--troy-deg, 0deg));
   }
   .troy-action-details[open] .troy-chevron { transform: rotate(180deg); }
+  .carl-pill {
+    background: linear-gradient(130deg, rgba(24, 167, 236, 0.22), rgba(26, 115, 232, 0.1));
+    border: 1px solid rgba(160, 205, 255, 0.42);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* Staggered dashboard reveal */
+  [data-carl-reveal] {
+    opacity: 0;
+    transform: translateY(16px) scale(0.982);
+    filter: blur(7px);
+    transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.05s ease;
+    will-change: opacity, transform, filter;
+  }
+  [data-carl-reveal].carl-reveal-in {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+  @keyframes carl-fade-row {
+    from { opacity: 0; transform: translateY(9px) scale(0.992); filter: blur(2.5px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  .carl-animate-row {
+    opacity: 0;
+    animation: carl-fade-row 0.95s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes carl-terminal-row-in {
+    from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  .carl-terminal-row-in {
+    animation: carl-terminal-row-in 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @keyframes carl-chat-bubble-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); filter: blur(2px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  .carl-chat-bubble-in {
+    animation: carl-chat-bubble-in 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  /* Premium CV analyze loading (upload phase) */
+  #troy-upload-loading {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s linear 0.65s;
+  }
+  #troy-upload-loading.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+  }
+  #troy-upload-loading.is-leaving {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(0.55, 0.02, 0.65, 0.28), visibility 0s linear 0.5s;
+  }
+  @keyframes carl-load-orbit {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes carl-load-pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.98); }
+    50% { opacity: 0.85; transform: scale(1); }
+  }
+  @keyframes carl-load-bar {
+    0% { transform: translateX(-65%); opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { transform: translateX(165%); opacity: 0.5; }
+  }
+  .carl-load-orbit-ring {
+    animation: carl-load-orbit 12s linear infinite;
+  }
+  .carl-load-glow {
+    animation: carl-load-pulse 3.2s ease-in-out infinite;
+  }
+  .carl-load-logo {
+    width: 2.75rem;
+    height: 2.75rem;
+    object-fit: contain;
+    filter: drop-shadow(0 0 14px rgba(24, 167, 236, 0.35));
+    transform: translateZ(0);
+  }
+  .carl-load-bar-inner {
+    width: 42%;
+    animation: carl-load-bar 2.8s ease-in-out infinite;
+  }
+  .carl-loading-wordmark {
+    font-family: "Montserrat", system-ui, -apple-system, sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.42em;
+    margin-right: -0.42em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: #eaf4ff;
+    text-shadow: 0 0 22px rgba(0, 191, 255, 0.45), 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .carl-loading-wordmark {
+      background-image: linear-gradient(
+        118deg,
+        #ffffff 0%,
+        #cfe9ff 22%,
+        #7dd3fc 48%,
+        #00bfff 72%,
+        #a5e9ff 100%
+      );
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 0 14px rgba(0, 191, 255, 0.35));
+    }
+  }
 </style>
 {% endblock %}
 
@@ -47,8 +406,8 @@
 <div id="troy-shell" class="min-h-[calc(100dvh-3.5rem)] bg-[#0D0D0D] text-[#E5E5E5]">
   <!-- Landing: upload -->
   <div id="troy-upload-hero" class="mx-auto max-w-xl px-4 py-10 sm:py-14">
-    <div class="troy-card p-6 sm:p-8">
-      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#FF7A00]">Carl · Demo</p>
+    <div class="troy-card relative overflow-hidden p-6 sm:p-8">
+      <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#00bfff]">Carl · Demo</p>
       <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">CV intelligence workspace</h1>
       <p class="mt-2 text-sm text-[#9CA3AF] leading-relaxed">
         Upload a PDF or DOCX. You’ll get an Okara-style dashboard: terminal feed, analytics, actions, and chat.
@@ -56,79 +415,101 @@
       <form id="troy-upload-form" class="mt-6 space-y-3">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input id="troy-file-input" name="cv_file" type="file" accept=".pdf,.docx"
-               class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-[#E5E5E5] file:mr-3 file:rounded-lg file:border-0 file:bg-[#FF7A00]/20 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-[#FF7A00]">
+               class="carl-file-input w-full rounded-xl border border-white/15 bg-[#09142b]/70 px-4 py-3 text-sm text-[#E5E5E5]">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
           <button type="submit" id="troy-upload-btn"
-                  class="rounded-xl bg-[#FF7A00] px-5 py-3 text-sm font-semibold text-[#0D0D0D] hover:bg-[#ff8f26] transition-colors">
+                  class="carl-btn-analyze">
             Analyze CV
           </button>
         </div>
         <textarea id="troy-text-fallback" name="cv_text" rows="3"
                   placeholder="Optional: paste CV text if needed."
-                  class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280]"></textarea>
+                  class="w-full rounded-xl border border-white/15 bg-[#09142b]/70 px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280]"></textarea>
       </form>
       <p id="troy-upload-error" class="mt-3 hidden rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300"></p>
     </div>
   </div>
+  <div id="troy-upload-loading" class="fixed inset-0 z-[120] flex items-center justify-center bg-[#050b1a]/52 px-4 py-8 backdrop-blur-2xl" aria-live="polite" aria-busy="false">
+    <div class="w-full max-w-xl rounded-2xl border border-white/15 bg-[#050f24]/78 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.52)] backdrop-blur-md sm:p-8">
+      <div class="flex flex-col items-center justify-center gap-5">
+        <div class="relative flex h-20 w-20 items-center justify-center">
+          <span class="carl-load-glow absolute inset-0 rounded-full bg-[#18A7EC]/25 blur-xl"></span>
+          <span class="carl-load-orbit-ring absolute inset-0 rounded-full border border-transparent bg-[conic-gradient(from_0deg,rgba(0,191,255,0.95),rgba(26,115,232,0.35),rgba(24,167,236,0.15),rgba(0,191,255,0.95))] p-[2px]">
+            <span class="flex h-full w-full items-center justify-center rounded-full bg-[#070f22]/95">
+              <img src="{{ url_for('static', filename='img/icon-512.png', v=asset_version) }}" alt="Catalitium logo" class="carl-load-logo" loading="eager" decoding="async">
+            </span>
+          </span>
+        </div>
+        <div class="max-w-[16rem] text-center">
+          <p class="carl-loading-wordmark">CARL</p>
+          <p class="mt-2 text-base font-semibold tracking-tight text-white">Deep document pass</p>
+          <p id="troy-upload-loading-status" class="mt-2 min-h-[2.75rem] text-sm leading-relaxed text-[#9CA3AF]">Preparing your workspace…</p>
+        </div>
+        <div class="h-px w-full max-w-[14rem] overflow-hidden rounded-full bg-white/10">
+          <div class="carl-load-bar-inner h-full rounded-full bg-gradient-to-r from-transparent via-[#18A7EC] to-transparent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Full-page dashboard (shown after analyze) -->
-  <div id="troy-workspace" class="hidden flex min-h-[calc(100dvh-3.5rem)] flex-col">
-    <!-- Terminal strip -->
-    <div class="troy-card mx-3 mt-2 shrink-0 p-4 sm:mx-4">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-3 mb-3">
+  <div id="troy-workspace" class="hidden flex min-h-[calc(100dvh-3.5rem)] flex-col xl:min-h-0">
+    <!-- Terminal strip (top) -->
+    <div data-carl-reveal class="troy-card mx-3 mt-2 shrink-0 p-3 sm:mx-4 sm:p-4 xl:p-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2 mb-2 xl:pb-2 xl:mb-2">
         <div class="flex items-center gap-2">
           <span class="text-sm font-semibold text-white">Carl Terminal</span>
-          <span class="rounded-full border border-white/10 bg-[#111] px-2 py-0.5 text-[11px] text-[#9CA3AF]">Live parse</span>
+          <span class="carl-pill rounded-full px-2 py-0.5 text-[11px] text-[#A8D8FF]">Live parse</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="relative flex h-2 w-2">
-            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40"></span>
-            <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00bfff] opacity-40"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-[#18a7ec]"></span>
           </span>
-          <span id="troy-terminal-status" class="text-xs font-medium text-emerald-400">Ready</span>
+          <span id="troy-terminal-status" class="text-xs font-medium text-[#00bfff]">Ready</span>
         </div>
       </div>
-      <div id="troy-terminal" class="max-h-36 overflow-y-auto font-mono text-[13px] leading-6 text-[#FF7A00]"></div>
+      <div id="troy-terminal" class="carl-scroll-dark max-h-32 overflow-y-auto overflow-x-hidden font-mono text-[13px] leading-[1.45] text-[#8ecaff] xl:max-h-[5.25rem]"></div>
     </div>
 
     <!-- Main grid -->
-    <div class="grid flex-1 grid-cols-1 gap-3 p-3 sm:p-4 xl:grid-cols-12 xl:gap-3 min-h-0">
+    <div class="grid min-h-0 flex-1 grid-cols-1 gap-3 p-3 sm:p-4 xl:grid-cols-12 xl:gap-3 xl:overflow-hidden">
       <!-- Left: Candidate + documents -->
-      <div class="flex flex-col gap-3 xl:col-span-3 min-h-0">
+      <div data-carl-reveal class="flex min-h-0 flex-col gap-3 xl:col-span-3 xl:h-full xl:min-h-0">
         <div class="troy-card p-4">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Candidate</p>
           <div class="mt-3 flex gap-3">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#FF7A00]/20 text-sm font-bold text-[#FF7A00]">C</div>
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1a73e8]/25 text-sm font-bold text-[#00bfff]">C</div>
             <div class="min-w-0">
               <p class="text-base font-semibold text-white">Catalitium</p>
               <p id="troy-persona-line" class="text-xs text-[#9CA3AF]">—</p>
             </div>
           </div>
           <h2 id="troy-headline" class="mt-4 text-sm font-semibold leading-snug text-white">—</h2>
-          <p id="troy-fit-summary" class="mt-2 text-xs leading-relaxed text-[#9CA3AF] text-justify"></p>
+          <p id="troy-fit-summary" class="mt-2 text-xs leading-relaxed text-[#9CA3AF] text-justify xl:line-clamp-4"></p>
           <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div class="rounded-lg bg-[#111] py-2">
+            <div class="troy-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Level</p>
               <p id="troy-level" class="text-xs font-semibold text-white">—</p>
             </div>
-            <div class="rounded-lg bg-[#111] py-2">
+            <div class="troy-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Confidence</p>
-              <p id="troy-confidence" class="text-xs font-semibold text-[#FF7A00]">—</p>
+              <p id="troy-confidence" class="text-xs font-semibold text-[#00bfff]">—</p>
             </div>
-            <div class="rounded-lg bg-[#111] py-2">
+            <div class="troy-card-soft rounded-lg py-2">
               <p class="text-[10px] uppercase text-[#6B7280]">Words</p>
               <p id="troy-word-count" class="text-xs font-semibold text-white">—</p>
             </div>
           </div>
         </div>
-        <div class="troy-card flex flex-1 flex-col p-4 min-h-[200px]">
+        <div class="troy-card flex min-h-[200px] flex-1 flex-col p-4 xl:min-h-0">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Documents</p>
-          <ul id="troy-documents" class="mt-3 flex flex-col gap-2 overflow-y-auto text-sm"></ul>
+          <ul id="troy-documents" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto text-sm"></ul>
         </div>
       </div>
 
       <!-- Analytics -->
-      <div class="troy-card flex flex-col p-4 xl:col-span-4 min-h-0">
+      <div data-carl-reveal class="troy-card flex min-h-0 flex-col p-4 xl:col-span-4 xl:h-full">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Analytics</p>
         <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
           <button type="button" data-troy-tab="overview" class="troy-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium transition-colors">Overview</button>
@@ -136,70 +517,95 @@
           <button type="button" data-troy-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Signals</button>
         </div>
 
-        <div id="troy-panel-overview" class="troy-tab-panel mt-4 flex flex-1 flex-col gap-4 overflow-y-auto min-h-0">
-          <div class="rounded-xl border border-white/5 bg-[#111] p-3">
+        <div id="troy-panel-overview" class="troy-tab-panel carl-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto xl:gap-3">
+          <div class="troy-card-soft rounded-xl p-3">
             <p class="text-xs font-medium text-[#9CA3AF]">ATS estimate</p>
             <div class="mt-2 flex items-end justify-between gap-2">
-              <span id="troy-ats-score" class="text-3xl font-bold tabular-nums text-[#FF7A00]">0</span>
+              <span id="troy-ats-score" class="text-3xl font-bold tabular-nums text-[#00bfff]">0</span>
               <p id="troy-ats-coverage" class="text-right text-xs text-[#9CA3AF]"></p>
             </div>
             <div class="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-              <div class="rounded-lg bg-emerald-500/10 px-2 py-1.5 text-emerald-300">
+              <div class="rounded-lg bg-[#00bfff]/12 px-2 py-1.5 text-[#9bddff]">
                 <span class="text-[#6B7280]">Matched</span>
-                <p id="troy-keywords-hit" class="mt-0.5 font-medium text-emerald-200"></p>
+                <p id="troy-keywords-hit" class="mt-0.5 font-medium text-[#d2efff]"></p>
               </div>
-              <div class="rounded-lg bg-[#FF7A00]/10 px-2 py-1.5 text-[#FFAB66]">
+              <div class="rounded-lg bg-[#1a73e8]/15 px-2 py-1.5 text-[#9cc9ff]">
                 <span class="text-[#6B7280]">Missing</span>
-                <p id="troy-keywords-missing" class="mt-0.5 font-medium text-[#FDBA74]"></p>
+                <p id="troy-keywords-missing" class="mt-0.5 font-medium text-[#c7e2ff]"></p>
               </div>
             </div>
           </div>
-          <div class="flex flex-wrap items-center justify-center gap-6 py-2">
+          <div class="flex flex-wrap items-center justify-center gap-5 py-1.5">
             <div class="text-center">
-              <div id="troy-gauge-structure" class="troy-gauge-track relative mx-auto h-[72px] w-[72px] rounded-full" style="--troy-deg: 0deg;">
-                <div class="absolute inset-[7px] flex items-center justify-center rounded-full bg-[#1A1A1A] text-sm font-bold text-white">
+              <div id="troy-gauge-structure" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
                   <span id="troy-gauge-structure-val">0</span>
                 </div>
               </div>
               <p class="mt-2 text-[11px] text-[#6B7280]">Structure</p>
             </div>
             <div class="text-center">
-              <div id="troy-gauge-keywords" class="troy-gauge-track relative mx-auto h-[72px] w-[72px] rounded-full" style="--troy-deg: 0deg;">
-                <div class="absolute inset-[7px] flex items-center justify-center rounded-full bg-[#1A1A1A] text-sm font-bold text-white">
+              <div id="troy-gauge-keywords" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
                   <span id="troy-gauge-keywords-val">0</span>
                 </div>
               </div>
               <p class="mt-2 text-[11px] text-[#6B7280]">Keywords</p>
             </div>
+            <div class="text-center">
+              <div id="troy-gauge-impact" class="troy-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--troy-deg: 0deg;">
+                <div class="absolute inset-[6px] flex items-center justify-center rounded-full bg-[#09122a] text-sm font-bold text-white">
+                  <span id="troy-gauge-impact-val">0</span>
+                </div>
+              </div>
+              <p class="mt-2 text-[11px] text-[#6B7280]">Impact</p>
+            </div>
           </div>
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Core CV signals</p>
             <div class="mt-2 grid grid-cols-2 gap-2">
-              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+              <div class="troy-card-soft rounded-lg p-2">
                 <p class="text-[10px] uppercase text-[#6B7280]">Structure</p>
-                <p id="troy-vital-structure" class="mt-1 text-lg font-semibold text-[#FF7A00]">—</p>
+                <p id="troy-vital-structure" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
               </div>
-              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+              <div class="troy-card-soft rounded-lg p-2">
                 <p class="text-[10px] uppercase text-[#6B7280]">Keywords</p>
-                <p id="troy-vital-keywords" class="mt-1 text-lg font-semibold text-emerald-400">—</p>
+                <p id="troy-vital-keywords" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
               </div>
-              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+              <div class="troy-card-soft rounded-lg p-2">
                 <p class="text-[10px] uppercase text-[#6B7280]">Impact</p>
-                <p id="troy-vital-impact" class="mt-1 text-lg font-semibold text-[#FF7A00]">—</p>
+                <p id="troy-vital-impact" class="mt-1 text-lg font-semibold text-[#00bfff]">—</p>
               </div>
-              <div class="rounded-lg border border-white/5 bg-[#111] p-2">
+              <div class="troy-card-soft rounded-lg p-2">
                 <p class="text-[10px] uppercase text-[#6B7280]">Narrative</p>
-                <p id="troy-vital-narrative" class="mt-1 text-lg font-semibold text-emerald-400">—</p>
+                <p id="troy-vital-narrative" class="mt-1 text-lg font-semibold text-[#18a7ec]">—</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Premium CV scan</p>
+            <div class="mt-2 grid grid-cols-3 gap-2">
+              <div class="troy-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-[#6B7280]">Leadership</p>
+                <p id="troy-metric-leadership" class="mt-1 text-base font-semibold text-[#00bfff]">0</p>
+              </div>
+              <div class="troy-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-[#6B7280]">Role Match</p>
+                <p id="troy-metric-role-match" class="mt-1 text-base font-semibold text-[#18a7ec]">0</p>
+              </div>
+              <div class="troy-card-soft rounded-lg p-2 text-center">
+                <p class="text-[10px] uppercase text-[#6B7280]">Evidence</p>
+                <p id="troy-metric-evidence" class="mt-1 text-base font-semibold text-[#1a73e8]">0</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div id="troy-panel-skills" class="troy-tab-panel mt-4 hidden flex flex-1 flex-col overflow-y-auto min-h-0">
+        <div id="troy-panel-skills" class="troy-tab-panel carl-scroll-dark mt-4 hidden flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div id="troy-skills" class="space-y-3"></div>
         </div>
 
-        <div id="troy-panel-risks" class="troy-tab-panel mt-4 hidden flex-1 flex-col gap-3 overflow-y-auto min-h-0">
+        <div id="troy-panel-risks" class="troy-tab-panel carl-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
           <div>
             <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Timeline</p>
             <ul id="troy-timeline" class="mt-2 space-y-2 text-xs text-[#D1D5DB]"></ul>
@@ -216,23 +622,23 @@
       </div>
 
       <!-- Actions feed -->
-      <div class="troy-card flex flex-col p-4 xl:col-span-2 min-h-0">
+      <div data-carl-reveal class="troy-card flex min-h-0 flex-col p-4 xl:col-span-2 xl:h-full">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Actions</p>
-        <div id="troy-actions" class="mt-3 flex flex-col gap-2 overflow-y-auto flex-1 min-h-0"></div>
+        <div id="troy-actions" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"></div>
       </div>
 
       <!-- Chat -->
-      <aside class="troy-card flex flex-col p-4 xl:col-span-3 min-h-[420px] xl:min-h-0 xl:max-h-[calc(100dvh-14rem)]">
+      <aside data-carl-reveal class="troy-card flex min-h-[320px] flex-col p-4 xl:col-span-3 xl:h-full xl:min-h-0">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
-        <div id="troy-chat-log" class="mt-3 flex flex-1 flex-col gap-2 overflow-y-auto rounded-xl bg-[#111] p-3 min-h-[200px]"></div>
+        <div id="troy-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
         <form id="troy-chat-form" class="mt-3">
-          <div class="flex items-center gap-2 rounded-full border border-white/10 bg-[#111] px-3 py-1.5">
+          <div class="flex items-center gap-2 rounded-full border border-white/20 bg-[rgba(8,18,42,0.38)] px-3 py-1.5 backdrop-blur-md">
             <span class="text-[#6B7280]" aria-hidden="true">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
             </span>
             <input type="text" id="troy-chat-input" placeholder="Ask me anything…"
                    class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:ring-0">
-            <button type="submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-[#0D0D0D] hover:bg-[#ff8f26]" aria-label="Send">
+            <button type="submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a73e8] text-white hover:bg-[#18a7ec]" aria-label="Send">
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
             </button>
           </div>
