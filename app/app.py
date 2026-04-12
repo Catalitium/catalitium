@@ -111,19 +111,17 @@ from .models.db import (
     sync_api_key_quota_for_api_access,
 )
 
-from .models.compensation import (
+from .models.money import (
     compute_compensation_confidence,
     confidence_color,
     source_label as compensation_source_label,
-)
-from .models.salary_analytics import (
     compute_percentile,
     get_ppp_indices,
     compare_cities_salary,
-    categorize_function,
     get_function_benchmarks,
     get_salary_trends,
 )
+from .models.taxonomy import categorize_function
 from .models.explore import (
     compute_quality_score,
     get_explore_data,
@@ -149,12 +147,12 @@ from .api_utils import (
     parse_int_arg,
     parse_str_arg,
 )
-from .services.cv_extract import (
+from .integrations.cv_extract import (
     CVExtractionError,
     extract_cv_from_upload,
     normalize_cv_text,
 )
-from .services.carl_mock_analysis import (
+from .integrations.carl_mock_analysis import (
     build_mock_analysis,
     carl_effective_user_message,
     generate_chat_reply,
@@ -976,7 +974,7 @@ def create_app() -> Flask:
         app.extensions["limiter"] = limiter
 
     # Register route blueprints (extracted from this file for readability)
-    from .routes import ALL_BLUEPRINTS
+    from .controllers import ALL_BLUEPRINTS
     for _bp in ALL_BLUEPRINTS:
         app.register_blueprint(_bp)
 

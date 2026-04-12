@@ -17,7 +17,7 @@ from ..models.db import (
     insert_salary_submission,
     logger,
 )
-from ..models.salary_analytics import (
+from ..models.money import (
     compare_cities_salary,
     compute_percentile,
     get_function_benchmarks,

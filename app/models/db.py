@@ -10,22 +10,18 @@
 #
 # All model logic has been split into focused modules:
 #   models/jobs.py         — Job class, job summary cache, date/text helpers
-#   models/salary.py       — salary queries and parsing utilities
-#   models/subscriptions.py — Stripe orders and user subscriptions
-#   models/api_keys.py     — API key CRUD and quota management
-#   models/users.py        — subscribers, contacts, job postings
+#   models/money.py        — salary, compensation, analytics
+#   models/identity.py     — subscribers, Stripe orders, subscriptions, API keys
 #
 # Re-exports from those modules are at the bottom of this file so that
 # all existing `from .models.db import X` calls in app.py continue to work.
 
 import json
-import os
 import re
 import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse, quote
 
 try:
     import psycopg  # psycopg v3
@@ -45,49 +41,9 @@ except ImportError:
 
 # ----------------------------- Config ----------------------------------------
 
-def _normalize_pg_url(url: str) -> str:
-    """Normalize Postgres URLs for psycopg3.
-
-    Supabase pooler URLs often include ``pgbouncer=true``; libpq/psycopg reject that
-    param for direct connections, so we strip it and add ``sslmode=require`` plus a
-    short ``connect_timeout`` when missing.
-    """
-    if not url or not url.startswith(("postgres://", "postgresql://")):
-        return url
-    parsed = urlparse(url)
-    hostname = parsed.hostname or ""
-    port = parsed.port
-    query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True)]
-    query_pairs = [(k, v) for k, v in query_pairs if k.lower() != "pgbouncer"]
-    has_ssl = any(k.lower() == "sslmode" for k, _ in query_pairs)
-    if not has_ssl:
-        query_pairs.append(("sslmode", "require"))
-    has_connect_timeout = any(k.lower() == "connect_timeout" for k, _ in query_pairs)
-    if not has_connect_timeout:
-        query_pairs.append(("connect_timeout", "5"))
-    new_query = urlencode(query_pairs)
-    auth = ""
-    user = quote(parsed.username) if parsed.username else ""
-    pwd = quote(parsed.password) if parsed.password else ""
-    if user:
-        auth = user
-        if parsed.password:
-            auth += f":{pwd}"
-        auth += "@"
-    hostport = hostname
-    if port:
-        hostport = f"{hostname}:{port}"
-    parsed = parsed._replace(netloc=f"{auth}{hostport}")
-    return urlunparse(parsed._replace(query=new_query))
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-_SUPABASE_RAW = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
-SUPABASE_URL = _normalize_pg_url(_SUPABASE_RAW)
-SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
-from ..config import DB_POOL_MAX_DEFAULT  # noqa: E402
-DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", str(DB_POOL_MAX_DEFAULT)))
+from ..settings import DB_POOL_MAX, SECRET_KEY, SUPABASE_URL  # noqa: E402
 
 # ----------------------------- Logging ---------------------------------------
 logging.basicConfig(
@@ -448,7 +404,7 @@ from ..normalization import (  # noqa: E402
 # All imports from `from .models.db import X` in app.py continue to work.
 
 from .jobs import Job, get_job_summary, save_job_summary, format_job_date_string, clean_job_description_text  # noqa: E402,F401
-from .salary import (  # noqa: E402,F401
+from .money import (  # noqa: E402,F401
     insert_salary_submission,
     get_salary_for_location,
     parse_money_numbers,
@@ -457,7 +413,7 @@ from .salary import (  # noqa: E402,F401
     salary_range_around,
     parse_salary_range_string,
 )
-from .subscriptions import (  # noqa: E402,F401
+from .identity import (  # noqa: E402,F401
     insert_stripe_order,
     mark_stripe_order_paid,
     mark_stripe_order_job_submitted,
@@ -465,13 +421,14 @@ from .subscriptions import (  # noqa: E402,F401
     upsert_user_subscription,
     get_user_subscriptions,
     get_subscription_by_stripe_id,
-)
-from .api_keys import (  # noqa: E402,F401
     create_api_key,
     get_api_key_by_email,
     confirm_api_key_by_token,
     revoke_api_key,
     check_and_increment_api_key,
     sync_api_key_quota_for_api_access,
+    insert_subscriber,
+    insert_contact,
+    insert_job_posting,
+    JOB_POSTING_ACTIVE_DAYS,
 )
-from .users import insert_subscriber, insert_contact, insert_job_posting, JOB_POSTING_ACTIVE_DAYS  # noqa: E402,F401

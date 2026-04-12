@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .db import get_db, logger
 from .jobs import Job
-from .salary import get_salary_for_location, parse_salary_range_string
+from .money import get_salary_for_location, parse_salary_range_string
 from .taxonomy import categorize_function as _categorize_function  # unified taxonomy
 
 # ── AI keyword list (lazy-compiled on first access) ──────────────────────

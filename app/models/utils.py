@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional, Tuple
 
-from .salary import get_salary_for_location
+from .money import get_salary_for_location
 from .db import logger
 
 

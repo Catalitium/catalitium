@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.models.compensation import (
+from app.models.money import (
     compute_compensation_confidence,
     confidence_color,
     source_label,

@@ -21,7 +21,7 @@ import pytest
 import app.app as app_module
 from app.app import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
-from app.services.carl_mock_analysis import (
+from app.integrations.carl_mock_analysis import (
     generate_chat_reply,
     is_carl_message_grounded,
     normalize_carl_user_message,
