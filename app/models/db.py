@@ -5,7 +5,7 @@
 #                 parse_job_description.
 #
 # Catalog + salary helpers live in:
-#   models/catalog.py      — Job, taxonomy, explore, career, compare
+#   models/catalog.py      — Job, taxonomy, explore, career
 #   models/money.py        — salary, compensation, analytics, now_iso, safe_salary_context
 #   models/identity.py     — subscribers, Stripe orders, subscriptions, API keys
 #
