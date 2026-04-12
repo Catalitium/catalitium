@@ -86,6 +86,8 @@ def categorize_function(title_norm: str | None) -> str:
     return "Other"
 
 
+_categorize_function = categorize_function  # legacy name used in tests / callers
+
 # =============================================================================
 # JOB LISTINGS & COMPANY AGGREGATES
 # =============================================================================

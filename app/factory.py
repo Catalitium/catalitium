@@ -25,15 +25,9 @@ from flask import (
     session,
 )
 
-from .support.forms_guards import EmailNotValidError, validate_email
-from .support.job_dates import (
-    coerce_datetime as _coerce_datetime,
-    job_is_ghost as _job_is_ghost,
-    job_is_new as _job_is_new,
-)
-from .support.text_norm import slugify as _slugify, to_lc as _to_lc
 from .config import (
     PER_PAGE_MAX,
+    GHOST_JOB_DAYS,
     GUEST_DAILY_LIMIT,
     SUMMARY_CACHE_TTL,
     SUMMARY_CACHE_MAX,
@@ -45,6 +39,108 @@ from .config import (
     CARL_CHAT_MAX_TURNS,
     CARL_CHAT_MAX_MESSAGE_CHARS,
 )
+
+# region support — inlined from former app/support (pure helpers, no Flask)
+_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+
+class EmailNotValidError(ValueError):
+    """Raised when an email address fails basic format validation."""
+
+
+def validate_email(email: str, *, check_deliverability: bool = False):  # noqa: ARG001
+    """Lightweight format-only email validator. Returns an object with .normalized."""
+    class _Result:
+        normalized: str
+
+    r = _Result()
+    r.normalized = email.strip().lower()
+    if not _EMAIL_RE.match(r.normalized):
+        raise EmailNotValidError(f"Invalid email: {email!r}")
+    return r
+
+
+def _coerce_datetime(value):
+    """Convert assorted datetime-like inputs into timezone-aware datetimes when possible."""
+    if not value:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if hasattr(value, "to_datetime"):
+        try:
+            return value.to_datetime()
+        except Exception:
+            pass
+    if hasattr(value, "isoformat"):
+        try:
+            iso = value.isoformat()
+            return datetime.fromisoformat(iso)
+        except Exception:
+            pass
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text)
+    except Exception:
+        pass
+    formats = ("%Y-%m-%d", "%Y.%m.%d", "%Y%m%d", "%Y/%m/%d")
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(text[: len(fmt)], fmt)
+            return dt
+        except Exception:
+            continue
+    return None
+
+
+def _job_is_new(job_date_raw, row_date) -> bool:
+    """Return True when the job was posted within the last 7 days."""
+    dt = _coerce_datetime(row_date) or _coerce_datetime(job_date_raw)
+    if not dt:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    return (now - dt) <= timedelta(days=7)
+
+
+def _job_is_ghost(job_date_raw) -> bool:
+    """Return True when the job was posted more than GHOST_JOB_DAYS ago (may be filled)."""
+    dt = _coerce_datetime(job_date_raw)
+    if not dt:
+        return False
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - dt) > timedelta(days=GHOST_JOB_DAYS)
+
+
+def _slugify(text: str) -> str:
+    """Convert text to a URL-safe slug (max 60 chars)."""
+    text = (text or "").lower().strip()
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s_]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")[:60]
+
+
+def _to_lc(value: str) -> str:
+    """Return a lowercase camel-style version of a string for API responses."""
+    parts = [p for p in re.split(r"[^A-Za-z0-9]+", value or "") if p]
+    if not parts:
+        return value or ""
+    head, *tail = parts
+    return head.lower() + "".join(part.capitalize() for part in tail)
+
+
+coerce_datetime = _coerce_datetime
+job_is_new = _job_is_new
+job_is_ghost = _job_is_ghost
+slugify = _slugify
+to_lc = _to_lc
+
+# endregion support
+
 from .mailer import (
     send_subscribe_welcome,
     send_api_key_activation,
@@ -109,8 +205,8 @@ from .models.money import (
     get_function_benchmarks,
     get_salary_trends,
 )
-from .models.taxonomy import categorize_function
-from .models.explore import (
+from .models.catalog import (
+    categorize_function,
     compute_quality_score,
     get_explore_data,
     get_remote_companies,
@@ -3209,7 +3305,7 @@ def create_app() -> Flask:
     @app.get("/compare")
     def compare_workspace():
         """Side-by-side comparison of up to 4 jobs."""
-        from .models.compare import score_job
+        from .models.catalog import score_job
 
         ids_raw = (request.args.get("ids") or "").strip()
         id_list = [x.strip() for x in ids_raw.split(",") if x.strip()][:4]

@@ -22,8 +22,7 @@ from flask import (
 
 from .api_utils import api_fail, api_ok, parse_int_arg
 from .config import PER_PAGE_MAX
-from .support.job_dates import coerce_datetime, job_is_ghost, job_is_new
-from .support.text_norm import slugify, to_lc
+from .factory import coerce_datetime, job_is_ghost, job_is_new, slugify, to_lc
 from .models.db import (
     _compact_salary_number,
     check_and_increment_api_key,
@@ -94,7 +93,7 @@ def get_salary_percentiles(title: str, location: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Pure utility functions (slugify / datetime / to_lc live in app.support)
+# Pure utility functions (slugify / datetime / to_lc re-exported from app.factory)
 # ---------------------------------------------------------------------------
 
 

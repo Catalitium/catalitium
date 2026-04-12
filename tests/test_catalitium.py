@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
@@ -338,6 +339,9 @@ def test_http_remote_redirects_to_jobs(client):
 
 
 def test_http_static_tailwind_css_served(client):
+    tw = Path(__file__).resolve().parents[1] / "app" / "static" / "css" / "tailwind.css"
+    if not tw.is_file():
+        pytest.skip("tailwind.css is gitignored; add a local build to exercise this path")
     r = client.get("/static/css/tailwind.css")
     assert r.status_code == 200
     assert "text/css" in (r.headers.get("Content-Type") or "").lower()

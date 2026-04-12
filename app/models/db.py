@@ -39,7 +39,7 @@ except ImportError:
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-from ..settings import DB_POOL_MAX, SECRET_KEY, SUPABASE_URL  # noqa: E402
+from ..config import DB_POOL_MAX, SECRET_KEY, SUPABASE_URL  # noqa: E402
 
 # ----------------------------- Logging ---------------------------------------
 logging.basicConfig(
