@@ -4,12 +4,12 @@
 {% block meta %}
 {% set _jobs_page = pagination.page if pagination and pagination.page > 1 else none %}
 <meta name="description" content="{% if title_q %}{{ title_q|capitalize }} jobs{% if country_q %} in {{ country_q }}{% endif %} with real salary data.{% else %}Search curated tech jobs with verified salary insights. Find your next role in AI, Development, Engineering across US, EU, UK & remote positions.{% endif %}">
-<link rel="canonical" href="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
+<link rel="canonical" href="{{ url_for('jobs.jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
 <!-- Open Graph tags -->
 <meta property="og:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %} | Catalitium{% else %}Find Tech Jobs & Salary Insights | Catalitium{% endif %}">
 <meta property="og:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
+<meta property="og:url" content="{{ url_for('jobs.jobs', title=title_q or none, country=country_q or none, page=_jobs_page, _external=True) }}">
 <meta name="twitter:title" content="{% if title_q %}{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}{% else %}Tech Jobs & Salary Insights{% endif %}">
 <meta name="twitter:description" content="{% if title_q %}Browse {{ title_q|capitalize }} jobs with real salary data{% else %}Search tech jobs with verified salary insights{% endif %}">
 {% if pagination %}
@@ -68,7 +68,7 @@
   <div class="mx-auto mt-6 max-w-6xl px-3 sm:px-0">
     <div class="sticky top-14 z-40 rounded-xl border border-slate-200 bg-white/95 backdrop-blur shadow-sm supports-[backdrop-filter]:bg-white/70 sm:static sm:border-transparent sm:bg-transparent sm:shadow-none">
       <form id="search"
-            action="{{ url_for('jobs') }}"
+            action="{{ url_for('jobs.jobs') }}"
             method="get"
             aria-label="Job search"
             role="search"
@@ -120,7 +120,7 @@
           <svg class="w-4 h-4 transition-transform [details[open]>&]:rotate-90" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
           Advanced Filters
         </summary>
-        <form id="advanced-filter-form" action="{{ url_for('jobs') }}" method="get" class="mt-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4">
+        <form id="advanced-filter-form" action="{{ url_for('jobs.jobs') }}" method="get" class="mt-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-4">
           {# Carry over main search params #}
           <input type="hidden" name="title" value="{{ title_q or '' }}">
           <input type="hidden" name="country" value="{{ country_q or '' }}">
@@ -195,7 +195,7 @@
                     class="rounded-lg bg-brand text-white px-4 py-2 text-sm font-medium hover:bg-brand/90 transition shadow-sm focus:ring-2 focus:ring-brand/50 focus:outline-none">
               Apply Filters
             </button>
-            <a href="{{ url_for('jobs', title=title_q or none, country=country_q or none) }}"
+            <a href="{{ url_for('jobs.jobs', title=title_q or none, country=country_q or none) }}"
                class="text-sm text-slate-500 hover:text-brand transition">Reset filters</a>
           </div>
         </form>
@@ -246,7 +246,7 @@
             country: {{ country_q }}
           </span>
         {% endif %}
-        <a class="ml-1 underline hover:text-brand" href="{{ url_for('jobs') }}">Clear</a>
+        <a class="ml-1 underline hover:text-brand" href="{{ url_for('jobs.jobs') }}">Clear</a>
       {% endif %}
     </div>
 
@@ -294,52 +294,52 @@
     {% set base_chip = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none' %}
     {% set off_chip = 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800' %}
     {% set on_chip = 'bg-brand text-white border-brand' %}
-    <a role="button" aria-pressed="{{ 'true' if 'ai' in (t|lower) else 'false' }}" href="{{ url_for('jobs', title=(t ~ ' ai').strip(), country=c) }}"
+    <a role="button" aria-pressed="{{ 'true' if 'ai' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' ai').strip(), country=c) }}"
        data-filter-chip="title" data-filter-value="ai"
        class="{{ base_chip }} {{ on_chip if 'ai' in (t|lower) else off_chip }}">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 6.5h3M5 11.5h6M5 16.5h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="15" cy="6.5" r="1.4" fill="currentColor"/><circle cx="12" cy="11.5" r="1.4" fill="currentColor"/><circle cx="9" cy="16.5" r="1.4" fill="currentColor"/></svg>
       AI
     </a>
-    <a role="button" aria-pressed="{{ 'true' if 'developer' in (t|lower) else 'false' }}" href="{{ url_for('jobs', title=(t ~ ' developer').strip(), country=c) }}" data-filter-chip="title" data-filter-value="developer"
+    <a role="button" aria-pressed="{{ 'true' if 'developer' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' developer').strip(), country=c) }}" data-filter-chip="title" data-filter-value="developer"
        class="{{ base_chip }} {{ on_chip if 'developer' in (t|lower) else off_chip }}">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 7l-4 5 4 5M16 7l4 5-4 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Dev
     </a>
-    <a role="button" aria-pressed="{{ 'true' if 'remote' in (t|lower) else 'false' }}" href="{{ url_for('jobs', title=(t ~ ' remote').strip(), country=c) }}" data-filter-chip="title" data-filter-value="remote"
+    <a role="button" aria-pressed="{{ 'true' if 'remote' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' remote').strip(), country=c) }}" data-filter-chip="title" data-filter-value="remote"
        class="{{ base_chip }} {{ on_chip if 'remote' in (t|lower) else off_chip }}">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 9a8 8 0 0116 0v6a2 2 0 01-2 2h-3l-2 3-2-3H6a2 2 0 01-2-2V9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
       Remote
     </a>
-    <a role="button" aria-pressed="{{ 'true' if 'senior' in (t|lower) else 'false' }}" href="{{ url_for('jobs', title=(t ~ ' senior').strip(), country=c) }}" data-filter-chip="title" data-filter-value="senior"
+    <a role="button" aria-pressed="{{ 'true' if 'senior' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' senior').strip(), country=c) }}" data-filter-chip="title" data-filter-value="senior"
        class="{{ base_chip }} {{ on_chip if 'senior' in (t|lower) else off_chip }}">
       Senior
     </a>
-    <a role="button" aria-pressed="{{ 'true' if '100k' in (t|lower) else 'false' }}" href="{{ url_for('jobs', title=(t ~ ' 100k').strip(), country=c) }}" data-filter-chip="title" data-filter-value=">100k"
+    <a role="button" aria-pressed="{{ 'true' if '100k' in (t|lower) else 'false' }}" href="{{ url_for('jobs.jobs', title=(t ~ ' 100k').strip(), country=c) }}" data-filter-chip="title" data-filter-value=">100k"
        class="{{ base_chip }} {{ on_chip if '100k' in (t|lower) else off_chip }}">
       >100k
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c|lower=='remote' else 'false' }}" href="{{ url_for('jobs', title=t, country='Remote') }}" data-filter-chip="country" data-filter-value="Remote"
+    <a role="button" aria-pressed="{{ 'true' if c|lower=='remote' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='Remote') }}" data-filter-chip="country" data-filter-value="Remote"
        class="{{ base_chip }} {{ on_chip if c|lower=='remote' else off_chip }}">
       <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4"/><path d="M12 3c-2.5 3-4 5.5-4 9s1.5 6 4 9M12 3c2.5 3 4 5.5 4 9s-1.5 6-4 9M3 12h18" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       Remote
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c=='CH' else 'false' }}" href="{{ url_for('jobs', title=t, country='CH') }}" data-filter-chip="country" data-filter-value="CH"
+    <a role="button" aria-pressed="{{ 'true' if c=='CH' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='CH') }}" data-filter-chip="country" data-filter-value="CH"
        class="{{ base_chip }} {{ on_chip if c=='CH' else off_chip }}">
       CH
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c=='EU' else 'false' }}" href="{{ url_for('jobs', title=t, country='EU') }}" data-filter-chip="country" data-filter-value="EU"
+    <a role="button" aria-pressed="{{ 'true' if c=='EU' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='EU') }}" data-filter-chip="country" data-filter-value="EU"
        class="{{ base_chip }} {{ on_chip if c=='EU' else off_chip }}">
       EU
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c=='UK' else 'false' }}" href="{{ url_for('jobs', title=t, country='UK') }}" data-filter-chip="country" data-filter-value="UK"
+    <a role="button" aria-pressed="{{ 'true' if c=='UK' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='UK') }}" data-filter-chip="country" data-filter-value="UK"
        class="{{ base_chip }} {{ on_chip if c=='UK' else off_chip }}">
       UK
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c=='US' else 'false' }}" href="{{ url_for('jobs', title=t, country='US') }}" data-filter-chip="country" data-filter-value="US"
+    <a role="button" aria-pressed="{{ 'true' if c=='US' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='US') }}" data-filter-chip="country" data-filter-value="US"
        class="{{ base_chip }} {{ on_chip if c=='US' else off_chip }}">
       US
     </a>
-    <a role="button" aria-pressed="{{ 'true' if c=='IN' else 'false' }}" href="{{ url_for('jobs', title=t, country='IN') }}" data-filter-chip="country" data-filter-value="IN"
+    <a role="button" aria-pressed="{{ 'true' if c=='IN' else 'false' }}" href="{{ url_for('jobs.jobs', title=t, country='IN') }}" data-filter-chip="country" data-filter-value="IN"
        class="{{ base_chip }} {{ on_chip if c=='IN' else off_chip }}">
       IN
     </a>
@@ -464,15 +464,15 @@
         <div class="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
           <span class="text-slate-500 dark:text-slate-400">Broaden quickly:</span>
           {% if title_q %}
-          <a class="text-brand font-medium underline" href="{{ url_for('jobs', country=country_q or none) }}">Clear title</a>
+          <a class="text-brand font-medium underline" href="{{ url_for('jobs.jobs', country=country_q or none) }}">Clear title</a>
           {% endif %}
           {% if country_q %}
-          <a class="text-brand font-medium underline" href="{{ url_for('jobs', title=title_q or none) }}">Clear location</a>
+          <a class="text-brand font-medium underline" href="{{ url_for('jobs.jobs', title=title_q or none) }}">Clear location</a>
           {% endif %}
           {% if title_q or country_q %}
           <span class="text-slate-300 dark:text-slate-600">·</span>
           {% endif %}
-          <a class="text-brand font-medium underline" href="{{ url_for('jobs') }}">Browse all jobs</a>
+          <a class="text-brand font-medium underline" href="{{ url_for('jobs.jobs') }}">Browse all jobs</a>
         </div>
       </div>
     {% endif %}
@@ -572,28 +572,28 @@
       Explore popular job sets
     </h3>
     <div class="mt-2 flex flex-wrap gap-2 sm:gap-3 text-sm">
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', title='ai') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', title='ai') }}">
         AI roles
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', title='developer') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', title='developer') }}">
         Developer jobs
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', title='remote') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', title='remote') }}">
         Remote first
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', title='senior') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', title='senior') }}">
         Senior tracks
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', title='>100k') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', title='>100k') }}">
         100k+ offers
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', country='EU') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', country='EU') }}">
         EU market
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', country='US') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', country='US') }}">
         US market
       </a>
-      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs', country='UK') }}">
+      <a class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition focus-visible:ring-2 focus-visible:ring-brand/50 focus:outline-none" href="{{ url_for('jobs.jobs', country='UK') }}">
         UK market
       </a>
     </div>
@@ -709,7 +709,7 @@
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Subscribe free for unlimited access, no account, no credit card needed.</p>
   </div>
   {% from "snippets/_honeypot_field.html" import honeypot_field %}
-  <form action="{{ url_for('subscribe') }}" method="POST" class="relative shrink-0 flex flex-col sm:flex-row items-center gap-2">
+  <form action="{{ url_for('jobs.subscribe') }}" method="POST" class="relative shrink-0 flex flex-col sm:flex-row items-center gap-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {{ honeypot_field('index-gate-hp-url') }}
     <input type="hidden" name="next" value="{{ request.url }}">
@@ -740,13 +740,13 @@
       "@type": "ListItem",
       "position": 1,
       "name": "Jobs",
-      "item": "{{ url_for('jobs', _external=True) }}"
+      "item": "{{ url_for('jobs.jobs', _external=True) }}"
     }{% if title_q %},
     {
       "@type": "ListItem",
       "position": 2,
       "name": "{{ title_q|capitalize }} Jobs{% if country_q %} in {{ country_q }}{% endif %}",
-      "item": "{{ url_for('jobs', title=title_q, country=country_q or None, _external=True) }}"
+      "item": "{{ url_for('jobs.jobs', title=title_q, country=country_q or None, _external=True) }}"
     }{% endif %}
   ]
 }
@@ -756,12 +756,12 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "url": "{{ url_for('jobs', _external=True) }}",
+  "url": "{{ url_for('jobs.jobs', _external=True) }}",
   "potentialAction": {
     "@type": "SearchAction",
     "target": {
       "@type": "EntryPoint",
-      "urlTemplate": "{{ url_for('jobs', _external=True) }}?title={search_term_string}"
+      "urlTemplate": "{{ url_for('jobs.jobs', _external=True) }}?title={search_term_string}"
     },
     "query-input": "required name=search_term_string"
   }

@@ -311,7 +311,7 @@
         <h3 class="font-semibold text-slate-500 dark:text-slate-400 mb-1">Tech Salary Report <span class="text-xs font-normal text-slate-400">(Coming Soon)</span></h3>
         <p class="text-xs text-slate-400">Printable salary benchmarks by role and region, updated from live job data.</p>
       </div>
-      <a href="{{ url_for('jobs') }}"
+      <a href="{{ url_for('jobs.jobs') }}"
          class="group rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 hover:border-brand hover:shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50">
         <svg class="w-6 h-6 text-brand mb-3" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
         <h3 class="font-semibold text-slate-800 group-hover:text-brand transition mb-1">Job Search</h3>
@@ -346,7 +346,7 @@
   "publisher": {
     "@type": "Organization",
     "name": "Catalitium",
-    "url": "{{ url_for('jobs', _external=True) }}"
+    "url": "{{ url_for('jobs.jobs', _external=True) }}"
   },
   "inLanguage": "en"
 }

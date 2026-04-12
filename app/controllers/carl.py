@@ -751,7 +751,7 @@ def carl_chat():
                 ),
                 "chat_limit_reached": True,
                 "cta": {
-                    "developers": url_for("developers"),
+                    "developers": url_for("jobs.developers"),
                     "pricing": url_for("payments.pricing"),
                 },
             }
@@ -809,7 +809,7 @@ def carl_chat():
     if new_turns >= CARL_CHAT_MAX_TURNS:
         out["chat_limit_reached"] = True
         out["cta"] = {
-            "developers": url_for("developers"),
+            "developers": url_for("jobs.developers"),
             "pricing": url_for("payments.pricing"),
         }
     return api_success_response(out)

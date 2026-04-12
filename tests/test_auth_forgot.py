@@ -24,7 +24,7 @@ def test_auth_forgot_calls_supabase_and_redirects(client):
     token = _csrf_from_register_page(page.get_data(as_text=True))
     mock_sb = MagicMock()
     mock_sb.auth.reset_password_for_email = MagicMock()
-    with patch("app.factory._get_supabase", return_value=mock_sb):
+    with patch("app.controllers.auth._get_supabase", return_value=mock_sb):
         r = client.post(
             "/auth/forgot",
             data={"email": "user@example.com", "csrf_token": token},
@@ -45,7 +45,7 @@ def test_auth_forgot_calls_supabase_and_redirects(client):
 def test_auth_forgot_without_supabase_still_redirects(client):
     page = client.get("/register?tab=login")
     token = _csrf_from_register_page(page.get_data(as_text=True))
-    with patch("app.factory._get_supabase", return_value=None):
+    with patch("app.controllers.auth._get_supabase", return_value=None):
         r = client.post(
             "/auth/forgot",
             data={"email": "anyone@example.com", "csrf_token": token},
@@ -73,7 +73,7 @@ def test_auth_session_sets_flask_session(client):
     mock_sb = MagicMock()
     mock_sb.auth.get_user = MagicMock(return_value=mock_ures)
 
-    with patch("app.factory._get_supabase", return_value=mock_sb):
+    with patch("app.controllers.auth._get_supabase", return_value=mock_sb):
         r = client.post(
             "/auth/session",
             json={"access_token": "fake.jwt.token", "refresh_token": ""},

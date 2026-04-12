@@ -16,6 +16,10 @@
 
 ## 2026-04-12 | ALPHA_2 | auth blueprint + templates url_for auth.* | factory.py -469 lines (approx)
 
+## 2026-04-12 | ALPHA_3 | jobs blueprint (`app/controllers/jobs.py`): landing, /jobs, APIs, subscribe/contact, sitemap, static well-known; `ALL_BLUEPRINTS` order auth → jobs → carl → browse…; `demo_jobs.csv` via `Path(__file__).resolve().parent.parent / "data"`; factory wiring-only ~366 lines; route count 88 unchanged
+
+## 2026-04-12 | ALPHA_4 | (same push as ALPHA_3) factory gate: `wc -l` ~366, `rg '@app\\.(get|post|route)'` → 0; remaining `@app` hooks only (before/after request, errors, filters)
+
 ## Patterns to keep
 
 - **Re-export hubs** (`models/db` importing four domains) make the import graph opaque; prefer explicit imports from `catalog` / `money` / `identity` / `utils` when stripping `db.py`.

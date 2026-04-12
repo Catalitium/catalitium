@@ -66,7 +66,7 @@
           <td class="px-4 py-3 text-right font-semibold text-brand">{{ b.currency }} {{ '{:,}'.format(b.median_salary) }}</td>
           <td class="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{{ '{:,}'.format(b.job_count) }}</td>
           <td class="px-4 py-3 text-right">
-            <a href="{{ url_for('jobs', title=b.function|lower) }}" class="text-xs text-brand hover:underline">Browse jobs &rarr;</a>
+            <a href="{{ url_for('jobs.jobs', title=b.function|lower) }}" class="text-xs text-brand hover:underline">Browse jobs &rarr;</a>
           </td>
         </tr>
         {% endfor %}

@@ -20,8 +20,7 @@ from typing import Any, Dict
 import pytest
 
 import app.controllers.carl as carl_ctrl
-import app.factory as app_factory
-from app.factory import safe_parse_search_params
+from app.controllers.jobs import safe_parse_search_params
 from app.config import CARL_CHAT_MAX_REPLY_CHARS
 from app.controllers.carl import (
     generate_chat_reply,

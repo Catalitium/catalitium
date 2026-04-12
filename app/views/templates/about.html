@@ -3,11 +3,11 @@
 
 {% block meta %}
 <meta name="description" content="Catalitium is a software company that builds and deploys AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.">
-<link rel="canonical" href="{{ url_for('about', _external=True) }}">
+<link rel="canonical" href="{{ url_for('jobs.about', _external=True) }}">
 <meta property="og:title" content="About Catalitium: Automation over complexity.">
 <meta property="og:description" content="Move fast. Stay lean. Let AI do the heavy lifting. We build agents and tools that connect businesses. Faster. Smarter.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="{{ url_for('about', _external=True) }}">
+<meta property="og:url" content="{{ url_for('jobs.about', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
 {% endblock %}
@@ -128,7 +128,7 @@
   "@type": "Organization",
   "name": "Catalitium",
   "description": "Catalitium is a software company that builds and deploys AI-powered tools and agents for companies that want to move faster, operate leaner, and automate intelligently.",
-  "url": "{{ url_for('jobs', _external=True) }}",
+  "url": "{{ url_for('jobs.jobs', _external=True) }}",
   "logo": "{{ url_for('static', filename='img/logo.png', _external=True) }}",
   "contactPoint": {
     "@type": "ContactPoint",

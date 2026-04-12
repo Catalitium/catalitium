@@ -40,7 +40,7 @@
   {% endwith %}
 
   <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm">
-    <form method="post" action="{{ url_for('job_posting') }}" class="space-y-5">
+    <form method="post" action="{{ url_for('jobs.job_posting') }}" class="space-y-5">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="contact_email" value="{{ user.email }}">
 

@@ -54,7 +54,7 @@
           <div class="h-1.5 rounded-full bg-gradient-to-r from-sky-400 to-brand" style="width: {{ c.remote_pct }}%"></div>
         </div>
         <div class="mt-3 flex gap-2">
-          <a href="{{ url_for('jobs', title=c.company_name, country='Remote') }}"
+          <a href="{{ url_for('jobs.jobs', title=c.company_name, country='Remote') }}"
              class="text-xs text-brand hover:underline font-medium">View remote jobs &rarr;</a>
         </div>
       </div>

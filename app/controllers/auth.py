@@ -365,12 +365,12 @@ def auth_session_from_tokens():
 @bp.route("/logout", methods=["GET", "POST"])
 def logout():
     if request.method == "GET":
-        return redirect(url_for("jobs"))
+        return redirect(url_for("jobs.jobs"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return redirect(url_for("jobs"))
+        return redirect(url_for("jobs.jobs"))
     session.pop("user", None)
-    return redirect(url_for("jobs"))
+    return redirect(url_for("jobs.jobs"))
 
 @bp.post("/account/delete")
 def account_delete():
@@ -395,7 +395,7 @@ def account_delete():
         return redirect(url_for("auth.profile"))
     session.pop("user", None)
     flash("Your account has been deleted.", "success")
-    return redirect(url_for("jobs"))
+    return redirect(url_for("jobs.jobs"))
 
 @bp.get("/studio")
 def studio():
