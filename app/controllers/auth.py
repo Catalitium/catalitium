@@ -223,6 +223,10 @@ def register():
         flash("Please enter a valid email.", "error")
         return render_template("register.html", tab=action, account_type=account_type), 400
 
+    if action == "signup" and len(password) < 8:
+        flash("Password must be at least 8 characters.", "error")
+        return render_template("register.html", tab=action, account_type=account_type), 400
+
     sb = _get_supabase()
     if not sb:
         flash(

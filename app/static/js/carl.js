@@ -1,24 +1,31 @@
 (function () {
-  var form = document.getElementById("troy-upload-form");
+  var form = document.getElementById("carl-upload-form");
   if (!form) return;
-  document.body.classList.add("troy-carl-page");
+  document.body.classList.add("carl-carl-page");
 
-  var uploadBtn = document.getElementById("troy-upload-btn");
-  var fileInput = document.getElementById("troy-file-input");
-  var textFallback = document.getElementById("troy-text-fallback");
-  var errorEl = document.getElementById("troy-upload-error");
-  var uploadHero = document.getElementById("troy-upload-hero");
-  var uploadLoading = document.getElementById("troy-upload-loading");
-  var uploadLoadingStatus = document.getElementById("troy-upload-loading-status");
-  var workspace = document.getElementById("troy-workspace");
-  var terminal = document.getElementById("troy-terminal");
-  var terminalStatus = document.getElementById("troy-terminal-status");
-  var chatForm = document.getElementById("troy-chat-form");
-  var chatInput = document.getElementById("troy-chat-input");
-  var chatLog = document.getElementById("troy-chat-log");
-  var chatChips = document.getElementById("troy-chat-chips");
+  var uploadBtn = document.getElementById("carl-upload-btn");
+  var fileInput = document.getElementById("carl-file-input");
+  var textFallback = document.getElementById("carl-text-fallback");
+  var errorEl = document.getElementById("carl-upload-error");
+  var uploadHero = document.getElementById("carl-upload-hero");
+  var uploadLoading = document.getElementById("carl-upload-loading");
+  var uploadLoadingStatus = document.getElementById("carl-upload-loading-status");
+  var workspace = document.getElementById("carl-workspace");
+  var terminal = document.getElementById("carl-terminal");
+  var terminalStatus = document.getElementById("carl-terminal-status");
+  var chatForm = document.getElementById("carl-chat-form");
+  var chatInput = document.getElementById("carl-chat-input");
+  var chatLog = document.getElementById("carl-chat-log");
+  var chatChips = document.getElementById("carl-chat-chips");
   var apiCta = document.getElementById("carl-api-cta");
-  var chatSubmit = document.getElementById("troy-chat-submit");
+  var chatSubmit = document.getElementById("carl-chat-submit");
+
+  var btnSelectIndividual = document.getElementById("btn-select-individual");
+  var gateGate = document.getElementById("carl-persona-gate");
+  var gateWorkspace = document.getElementById("carl-individuals-workspace");
+  var btnTogglePaste = document.getElementById("btn-toggle-text-paste");
+  var zonePaste = document.getElementById("carl-text-paste-zone");
+  var fileNameDisplay = document.getElementById("carl-file-name-display");
 
   var analysisState = null;
   var terminalTimer = null;
@@ -39,8 +46,8 @@
   var CHAT_START_OFFSET_MS = 1220;
   var METER_ANIMATION_MS = 1900;
   var ATS_ANIMATION_MS = 2050;
-  var TERMINAL_BASE_MS = 360;
-  var TERMINAL_VARIANCE_MS = 130;
+  var TERMINAL_BASE_MS = 60;
+  var TERMINAL_VARIANCE_MS = 40;
   var ROW_STAGGER_DOCUMENT_MS = 135;
   var ROW_STAGGER_ACTION_MS = 155;
   var ROW_STAGGER_SKILL_MS = 120;
@@ -53,7 +60,10 @@
   function setUploadLoading(on) {
     if (!uploadBtn) return;
     uploadBtn.disabled = !!on;
-    uploadBtn.textContent = on ? "Running analysis…" : "Analyze CV";
+    var spinner = document.getElementById("carl-analyze-spinner");
+    var textSpan = document.getElementById("carl-analyze-text");
+    if (spinner) spinner.classList.toggle("hidden", !on);
+    if (textSpan) textSpan.textContent = on ? "Running analysis…" : "Analyze CV";
   }
 
   function delay(ms) {
@@ -185,7 +195,7 @@
   }
 
   function renderDocuments(docs) {
-    var root = document.getElementById("troy-documents");
+    var root = document.getElementById("carl-documents");
     if (!root) return;
     root.innerHTML = "";
     var list = safeList(docs, []);
@@ -221,7 +231,7 @@
   }
 
   function renderActions(actions) {
-    var root = document.getElementById("troy-actions");
+    var root = document.getElementById("carl-actions");
     if (!root) return;
     root.innerHTML = "";
     var list = safeList(actions, []);
@@ -232,7 +242,7 @@
     list.forEach(function (a, i) {
       var det = document.createElement("details");
       det.className =
-        "carl-animate-row troy-action-details group rounded-lg border border-white/10 bg-[#0f1c3a]/65 open:border-[#18A7EC]/40";
+        "carl-animate-row carl-action-details group rounded-lg border border-white/10 bg-[#0f1c3a]/65 open:border-[#18A7EC]/40";
       det.style.animationDelay = i * ROW_STAGGER_ACTION_MS + "ms";
       det.open = i === 0;
       det.innerHTML =
@@ -249,7 +259,7 @@
         '<p class="truncate text-xs text-[#9CA3AF]">' +
         escapeHtml(a.subtitle || "") +
         "</p></div>" +
-        '<svg class="troy-chevron h-4 w-4 shrink-0 text-[#6B7280] transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>' +
+        '<svg class="carl-chevron h-4 w-4 shrink-0 text-[#6B7280] transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>' +
         "</summary>" +
         '<p class="border-t border-white/5 px-3 py-2 text-xs leading-relaxed text-[#9CA3AF]">' +
         escapeHtml(a.detail || "") +
@@ -259,7 +269,7 @@
   }
 
   function renderSkills(skills) {
-    var root = document.getElementById("troy-skills");
+    var root = document.getElementById("carl-skills");
     if (!root) return;
     root.innerHTML = "";
     var list = safeList(skills, []);
@@ -294,13 +304,16 @@
   }
 
   function renderOverview(overview, skipMeters) {
-    setText("troy-headline", overview.headline || "Analysis complete");
-    setText("troy-fit-summary", overview.fitSummary || "");
+    // Dynamic greeting based on persona/headline where possible
+    var parsedName = "John"; 
+    // Usually we would extract name from the CV DB.
+    setText("carl-headline", overview.headline || "Analysis complete");
+    setText("carl-fit-summary", overview.fitSummary || "");
     var personaLine = (overview.persona || "—") + " · " + (overview.level || "—");
-    setText("troy-persona-line", personaLine);
-    setText("troy-level", overview.level || "—");
-    setText("troy-confidence", overview.confidence ? overview.confidence + "%" : "—");
-    setText("troy-word-count", overview.wordCount != null ? String(overview.wordCount) : "—");
+    setText("carl-persona-line", personaLine);
+    setText("carl-level", overview.level || "—");
+    setText("carl-confidence", overview.confidence ? overview.confidence + "%" : "—");
+    setText("carl-word-count", overview.wordCount != null ? String(overview.wordCount) : "—");
 
     if (skipMeters) return;
 
@@ -310,33 +323,33 @@
     var sImpact = scores.impact;
     var sNarr = scores.narrative;
 
-    setGauge(document.getElementById("troy-gauge-structure"), document.getElementById("troy-gauge-structure-val"), sStruct);
-    setGauge(document.getElementById("troy-gauge-keywords"), document.getElementById("troy-gauge-keywords-val"), sKey);
-    setGauge(document.getElementById("troy-gauge-impact"), document.getElementById("troy-gauge-impact-val"), sImpact);
+    setGauge(document.getElementById("carl-gauge-structure"), document.getElementById("carl-gauge-structure-val"), sStruct);
+    setGauge(document.getElementById("carl-gauge-keywords"), document.getElementById("carl-gauge-keywords-val"), sKey);
+    setGauge(document.getElementById("carl-gauge-impact"), document.getElementById("carl-gauge-impact-val"), sImpact);
 
-    setVital("troy-vital-structure", sStruct);
-    setVital("troy-vital-keywords", sKey);
-    setVital("troy-vital-impact", sImpact);
-    setVital("troy-vital-narrative", sNarr);
+    setVital("carl-vital-structure", sStruct);
+    setVital("carl-vital-keywords", sKey);
+    setVital("carl-vital-impact", sImpact);
+    setVital("carl-vital-narrative", sNarr);
 
     var premium = overview.premiumSignals || {};
-    setMetric("troy-metric-leadership", premium.leadership);
-    setMetric("troy-metric-role-match", premium.roleMatch);
-    setMetric("troy-metric-evidence", premium.evidenceDensity);
+    setMetric("carl-metric-leadership", premium.leadership);
+    setMetric("carl-metric-role-match", premium.roleMatch);
+    setMetric("carl-metric-evidence", premium.evidenceDensity);
   }
 
   function resetDashboardMeters() {
-    setGauge(document.getElementById("troy-gauge-structure"), document.getElementById("troy-gauge-structure-val"), 0);
-    setGauge(document.getElementById("troy-gauge-keywords"), document.getElementById("troy-gauge-keywords-val"), 0);
-    setGauge(document.getElementById("troy-gauge-impact"), document.getElementById("troy-gauge-impact-val"), 0);
-    setText("troy-ats-score", "0");
-    ["troy-vital-structure", "troy-vital-keywords", "troy-vital-impact", "troy-vital-narrative"].forEach(function (id) {
+    setGauge(document.getElementById("carl-gauge-structure"), document.getElementById("carl-gauge-structure-val"), 0);
+    setGauge(document.getElementById("carl-gauge-keywords"), document.getElementById("carl-gauge-keywords-val"), 0);
+    setGauge(document.getElementById("carl-gauge-impact"), document.getElementById("carl-gauge-impact-val"), 0);
+    setText("carl-ats-score", "0");
+    ["carl-vital-structure", "carl-vital-keywords", "carl-vital-impact", "carl-vital-narrative"].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
       el.textContent = "0";
       el.className = "mt-1 text-lg font-semibold tabular-nums text-[#5c7caf]";
     });
-    ["troy-metric-leadership", "troy-metric-role-match", "troy-metric-evidence"].forEach(function (id) {
+    ["carl-metric-leadership", "carl-metric-role-match", "carl-metric-evidence"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.textContent = "0";
     });
@@ -349,43 +362,56 @@
     var dur = METER_ANIMATION_MS;
 
     animateGaugeTo(
-      document.getElementById("troy-gauge-structure"),
-      document.getElementById("troy-gauge-structure-val"),
+      document.getElementById("carl-gauge-structure"),
+      document.getElementById("carl-gauge-structure-val"),
       scores.structure,
       dur
     );
     animateGaugeTo(
-      document.getElementById("troy-gauge-keywords"),
-      document.getElementById("troy-gauge-keywords-val"),
+      document.getElementById("carl-gauge-keywords"),
+      document.getElementById("carl-gauge-keywords-val"),
       scores.keywords,
       dur
     );
     animateGaugeTo(
-      document.getElementById("troy-gauge-impact"),
-      document.getElementById("troy-gauge-impact-val"),
+      document.getElementById("carl-gauge-impact"),
+      document.getElementById("carl-gauge-impact-val"),
       scores.impact,
       dur
     );
 
-    var elAts = document.getElementById("troy-ats-score");
+    var elAts = document.getElementById("carl-ats-score");
     animateNumberEl(elAts, 0, atsScore, ATS_ANIMATION_MS);
 
-    animateNumberEl(document.getElementById("troy-vital-structure"), 0, scores.structure, dur, function () {
-      setVital("troy-vital-structure", scores.structure);
+    animateNumberEl(document.getElementById("carl-vital-structure"), 0, scores.structure, dur, function () {
+      setVital("carl-vital-structure", scores.structure);
     });
-    animateNumberEl(document.getElementById("troy-vital-keywords"), 0, scores.keywords, dur, function () {
-      setVital("troy-vital-keywords", scores.keywords);
+    animateNumberEl(document.getElementById("carl-vital-keywords"), 0, scores.keywords, dur, function () {
+      setVital("carl-vital-keywords", scores.keywords);
     });
-    animateNumberEl(document.getElementById("troy-vital-impact"), 0, scores.impact, dur, function () {
-      setVital("troy-vital-impact", scores.impact);
+    animateNumberEl(document.getElementById("carl-vital-impact"), 0, scores.impact, dur, function () {
+      setVital("carl-vital-impact", scores.impact);
     });
-    animateNumberEl(document.getElementById("troy-vital-narrative"), 0, scores.narrative, dur, function () {
-      setVital("troy-vital-narrative", scores.narrative);
+    animateNumberEl(document.getElementById("carl-vital-narrative"), 0, scores.narrative, dur, function () {
+      setVital("carl-vital-narrative", scores.narrative);
     });
 
-    animateNumberEl(document.getElementById("troy-metric-leadership"), 0, premium.leadership, dur);
-    animateNumberEl(document.getElementById("troy-metric-role-match"), 0, premium.roleMatch, dur);
-    animateNumberEl(document.getElementById("troy-metric-evidence"), 0, premium.evidenceDensity, dur);
+    function getPremiumString(score) {
+      var n = Number(score) || 0;
+      if (n < 60) return "Needs fix";
+      if (n < 80) return "Pass";
+      if (n < 90) return "Strong";
+      return "Exceptional";
+    }
+
+    var elLead = document.getElementById("carl-metric-leadership");
+    if (elLead) elLead.textContent = getPremiumString(premium.leadership);
+    
+    var elRole = document.getElementById("carl-metric-role-match");
+    if (elRole) elRole.textContent = getPremiumString(premium.roleMatch);
+    
+    var elEvid = document.getElementById("carl-metric-evidence");
+    if (elEvid) elEvid.textContent = getPremiumString(premium.evidenceDensity);
   }
 
   function setVital(id, v) {
@@ -404,10 +430,10 @@
   }
 
   function renderAts(ats, skipScore) {
-    if (!skipScore) setText("troy-ats-score", String(ats.score || 0));
-    setText("troy-ats-coverage", "Keyword coverage · " + (ats.keywordCoverage || 0) + "%");
-    setText("troy-keywords-hit", safeList(ats.matchedKeywords, ["—"]).join(", "));
-    setText("troy-keywords-missing", safeList(ats.missingKeywords, ["—"]).join(", "));
+    if (!skipScore) setText("carl-ats-score", String(ats.score || 0));
+    setText("carl-ats-coverage", "Keyword coverage · " + (ats.keywordCoverage || 0) + "%");
+    setText("carl-keywords-hit", safeList(ats.matchedKeywords, ["—"]).join(", "));
+    setText("carl-keywords-missing", safeList(ats.missingKeywords, ["—"]).join(", "));
   }
 
   function setText(id, value) {
@@ -428,7 +454,18 @@
     function tick() {
       if (index >= lines.length) {
         terminalTimer = null;
-        if (terminalStatus) terminalStatus.textContent = "Complete";
+        if (terminalStatus) {
+            var meterDelay = REVEAL_BASE_DELAY_MS + 2 * REVEAL_STAGGER_MS + METER_START_OFFSET_MS;
+             setTimeout(function() {
+                terminalStatus.textContent = "Complete";
+                if (terminal) {
+                   terminal.style.transition = "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
+                   terminal.style.maxHeight = "32px";
+                   terminal.style.opacity = "0.45";
+                   terminal.style.filter = "grayscale(100%)";
+                }
+            }, 300);
+        }
         return;
       }
       var row = document.createElement("div");
@@ -437,10 +474,7 @@
       terminal.appendChild(row);
       terminal.scrollTop = terminal.scrollHeight;
       index += 1;
-      var line = String(row.textContent || "");
-      var pauseBoost = /[.?!]$/.test(line.trim()) ? 120 : 0;
-      var jitter = Math.floor(Math.random() * TERMINAL_VARIANCE_MS);
-      terminalTimer = setTimeout(tick, TERMINAL_BASE_MS + jitter + pauseBoost);
+      terminalTimer = setTimeout(tick, 25);
     }
     tick();
   }
@@ -509,6 +543,49 @@
     });
   }
 
+  function renderMatches(matches) {
+    var jRoot = document.getElementById("carl-match-jobs");
+    var cRoot = document.getElementById("carl-match-companies");
+    var nRoot = document.getElementById("carl-match-niche");
+    if (!jRoot || !cRoot || !nRoot || !matches) return;
+    
+    jRoot.innerHTML = "";
+    cRoot.innerHTML = "";
+    nRoot.innerHTML = "";
+
+    function makeCard(title, subtitle, actionText, linkStr) {
+      return '<div class="group relative rounded-2xl border border-white/5 bg-white/[0.03] p-5 transition-all hover:bg-white/[0.06] hover:border-white/10">' +
+             '<div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1a73e8]/10 to-transparent opacity-0 transition group-hover:opacity-100 pointer-events-none"></div>' +
+             '<p class="relative text-[15px] font-bold text-white mb-1 leading-tight">' + escapeHtml(title) + '</p>' +
+             '<p class="relative text-[12px] text-[#9CA3AF] mb-4">' + escapeHtml(subtitle) + '</p>' +
+             '<a href="' + escapeHtml(linkStr) + '" class="relative inline-flex items-center justify-center w-full rounded-xl bg-white/5 py-2 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-[#1a73e8] transition">' + escapeHtml(actionText) + '</a>' +
+             '</div>';
+    }
+
+    var jobs = safeList(matches.jobs, []);
+    jobs.forEach(function(j) {
+      jRoot.innerHTML += makeCard(j.title, j.company + " · " + j.location, "Apply Setup", j.link || "/jobs");
+    });
+
+    var comps = safeList(matches.top_companies, []);
+    comps.forEach(function(c) {
+      cRoot.innerHTML += makeCard(c.name, c.reason, "View Scope", "/recruiter-salary-board");
+    });
+
+    var niches = safeList(matches.niche_companies, []);
+    niches.forEach(function(n) {
+      nRoot.innerHTML += makeCard(n.name, n.reason, "View Scope", "/recruiter-salary-board");
+    });
+
+    var matchesSection = document.getElementById("carl-matches-section");
+    if (matchesSection) {
+       matchesSection.classList.remove("hidden");
+       setTimeout(function() {
+          matchesSection.classList.add("carl-reveal-in");
+       }, REVEAL_BASE_DELAY_MS * 4);
+    }
+  }
+
   function sendCarlChat(opts) {
     opts = opts || {};
     if (!analysisState) return;
@@ -567,31 +644,33 @@
       });
   }
 
-  var troyTabsBound = false;
+  var carlTabsBound = false;
 
   function initTabs() {
-    var tabs = document.querySelectorAll("[data-troy-tab]");
+    var tabs = document.querySelectorAll("[data-carl-tab]");
     var panels = {
-      overview: document.getElementById("troy-panel-overview"),
-      skills: document.getElementById("troy-panel-skills"),
-      risks: document.getElementById("troy-panel-risks"),
+      overview: document.getElementById("carl-panel-overview"),
+      skills: document.getElementById("carl-panel-skills"),
+      risks: document.getElementById("carl-panel-risks"),
+      suggestions: document.getElementById("carl-panel-suggestions"),
+      actions: document.getElementById("carl-panel-actions"),
     };
     function activate(name) {
       Object.keys(panels).forEach(function (key) {
         if (panels[key]) panels[key].classList.toggle("hidden", key !== name);
       });
       tabs.forEach(function (btn) {
-        var on = btn.getAttribute("data-troy-tab") === name;
-        btn.classList.toggle("troy-tab-active", on);
+        var on = btn.getAttribute("data-carl-tab") === name;
+        btn.classList.toggle("carl-tab-active", on);
         btn.classList.toggle("text-[#9CA3AF]", !on);
         btn.classList.toggle("hover:text-white", !on);
       });
     }
-    if (!troyTabsBound) {
-      troyTabsBound = true;
+    if (!carlTabsBound) {
+      carlTabsBound = true;
       tabs.forEach(function (btn) {
         btn.addEventListener("click", function () {
-          activate(btn.getAttribute("data-troy-tab") || "overview");
+          activate(btn.getAttribute("data-carl-tab") || "overview");
         });
       });
     }
@@ -599,7 +678,7 @@
   }
 
   function renderProfileSync(sync, source) {
-    var el = document.getElementById("troy-profile-sync");
+    var el = document.getElementById("carl-profile-sync");
     if (!el) return;
     if (!sync) {
       el.textContent = "";
@@ -618,11 +697,33 @@
       el.textContent = "Profile sync skipped" + (sync.message ? ": " + sync.message : ".");
     }
   }
+  function renderSuggestions(analysis) {
+    var missing = [];
+    if (analysis.atsScore && analysis.atsScore.missingKeywords) {
+       missing = analysis.atsScore.missingKeywords;
+    }
+    if (!missing || !missing.length) {
+       renderList("carl-suggestions-tech", ["No major technologies missing from your profile!"], function(i) { return escapeHtml(i); });
+    } else {
+       renderList("carl-suggestions-tech", missing, function(i) { return escapeHtml(i); });
+    }
+
+    var persona = (analysis.overview && analysis.overview.persona) ? String(analysis.overview.persona).toLowerCase() : "";
+    var certs = ["AWS Certified Solutions Architect", "Certified ScrumMaster (CSM)", "PMP Certification"];
+    if (persona.indexOf("engineer") > -1 || persona.indexOf("developer") > -1) {
+       certs = ["AWS Certified Developer - Associate", "CKA: Certified Kubernetes Administrator", "Google Professional Cloud Architect"];
+    } else if (persona.indexOf("data") > -1) {
+       certs = ["AWS Certified Data Analytics", "Google Professional Data Engineer", "Databricks Certified Associate"];
+    } else if (persona.indexOf("product") > -1) {
+       certs = ["Certified Scrum Product Owner (CSPO)", "Pragmatic Institute Certified", "AIPMM Certified Product Manager"];
+    }
+    renderList("carl-suggestions-certs", certs, function(i) { return escapeHtml(i); });
+  }
 
   function hydrateDashboard(analysis, extras) {
     extras = extras || {};
     analysisState = analysis || {};
-    document.body.classList.add("troy-dashboard-active");
+    document.body.classList.add("carl-dashboard-active");
     if (uploadHero) uploadHero.classList.add("hidden");
     if (workspace) {
       workspace.classList.remove("hidden");
@@ -640,8 +741,9 @@
     renderDocuments(analysisState.documents || []);
     renderProfileSync(extras.profileSync, extras.source);
     renderActions(analysisState.actionFeed || []);
+    renderSuggestions(analysisState);
 
-    renderList("troy-timeline", analysisState.experienceTimeline, function (item) {
+    renderList("carl-timeline", analysisState.experienceTimeline, function (item) {
       return (
         '<span class="font-semibold text-[#18A7EC]">' +
         escapeHtml(item.period || "") +
@@ -651,10 +753,10 @@
         escapeHtml(item.impact || "")
       );
     });
-    renderList("troy-quick-wins", analysisState.quickWins, function (item) {
+    renderList("carl-quick-wins", analysisState.quickWins, function (item) {
       return escapeHtml(item || "");
     });
-    renderList("troy-risk-flags", analysisState.riskFlags, function (item) {
+    renderList("carl-risk-flags", analysisState.riskFlags, function (item) {
       return escapeHtml(item || "");
     });
 
@@ -684,12 +786,21 @@
       var meterDelay = REVEAL_BASE_DELAY_MS + 2 * REVEAL_STAGGER_MS + METER_START_OFFSET_MS;
       setTimeout(function () {
         animateDashboardMeters(analysisState.overview || {}, analysisState.atsScore || {});
+        renderMatches(analysisState.matches || null);
+        // Auto-scroll to results
+        if (workspace) {
+           workspace.scrollIntoView({ behavior: 'smooth' });
+        }
       }, meterDelay);
     });
   }
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
+    if ((!fileInput || !fileInput.value) && (!textFallback || !textFallback.value.trim())) {
+      setError("Please upload a file or paste your CV text to begin analysis.");
+      return;
+    }
     setError("");
     setUploadLoading(true);
     startUploadPremiumLoading();
@@ -772,9 +883,60 @@
 
   if (fileInput) {
     fileInput.addEventListener("change", function () {
-      if (fileInput.files && fileInput.files[0] && textFallback) {
-        textFallback.value = "";
+      if (fileInput.files && fileInput.files[0]) {
+        if (textFallback) textFallback.value = "";
+        if (fileNameDisplay) {
+           fileNameDisplay.textContent = "Selected: " + fileInput.files[0].name;
+           fileNameDisplay.classList.remove("hidden");
+        }
+      } else {
+        if (fileNameDisplay) fileNameDisplay.classList.add("hidden");
       }
     });
   }
+  if (textFallback) {
+    textFallback.addEventListener("input", function() {
+      if (textFallback.value.trim() && fileInput && fileInput.value) {
+        fileInput.value = "";
+        if (fileNameDisplay) fileNameDisplay.classList.add("hidden");
+      }
+    });
+  }
+
+  // Gate interactions
+  if (btnSelectIndividual) {
+    btnSelectIndividual.addEventListener("click", function() {
+      if (gateGate) gateGate.classList.add("hidden");
+      if (gateWorkspace) gateWorkspace.classList.remove("hidden");
+    });
+  }
+  if (btnTogglePaste) {
+    btnTogglePaste.addEventListener("click", function() {
+      if (zonePaste) zonePaste.classList.toggle("hidden");
+    });
+  }
+
+  if (chatInput) {
+    chatInput.addEventListener("input", function() {
+      var count = chatInput.value.length;
+      var counter = document.getElementById("chat-char-counter");
+      if (counter) counter.textContent = count + "/280";
+    });
+  }
+
+  // --- Eternal Persistence Recovery ---
+  document.addEventListener("DOMContentLoaded", function () {
+    var preloadedEl = document.getElementById("preloaded-carl-data");
+    if (preloadedEl && preloadedEl.textContent) {
+       try {
+          var data = JSON.parse(preloadedEl.textContent);
+          if (data && data.overview) {
+             console.log("Carl: recovering eternal state from profile...");
+             hydrateDashboard(data);
+          }
+       } catch (err) {
+          console.error("Carl: failed to parse preloaded state", err);
+       }
+    }
+  });
 })();

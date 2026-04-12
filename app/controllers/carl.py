@@ -21,6 +21,7 @@ from ..models.cv import CVExtractionError, extract_cv_from_upload, normalize_cv_
 from ..models.db import SUPABASE_URL, logger, upsert_profile_cv_extract
 from ..models.identity import get_user_subscriptions
 from ..utils import api_error_response, api_success_response, csrf_valid
+from .auth import upload_cv_to_storage
 
 DEFAULT_TARGET_KEYWORDS = [
     "python",
@@ -77,6 +78,8 @@ def _build_terminal_logs(
     narrative_confidence: int,
     normalized: str,
     headline: str,
+    jobs: list[dict[str, Any]],
+    companies: list[dict[str, Any]],
 ) -> list[str]:
     """Longer, CV-grounded terminal feed (existing UI streams these lines)."""
     excerpt = _cv_snippet(normalized, _MAX_SNIPPET)
@@ -108,6 +111,16 @@ def _build_terminal_logs(
         logs.append(_truncate(f"[Carl] strengths+: {strengths[1]}", _MAX_LINE))
     if risk_flags:
         logs.append(_truncate(f"[Carl] risk: {risk_flags[0]}", _MAX_LINE))
+    
+    # Radar logs
+    logs.append(_truncate(f"[Carl] market-radar: scanning for {persona} role matches...", _MAX_LINE))
+    if jobs:
+        role_titles = ", ".join([j.get("title", "") for j in jobs[:2]])
+        logs.append(_truncate(f"[Carl] matches: found {len(jobs)} target roles ({role_titles})", _MAX_LINE))
+    if companies:
+        comp_names = ", ".join([c.get("name", "") for c in companies[:3]])
+        logs.append(_truncate(f"[Carl] companies: mapping active tech hubs ({comp_names})", _MAX_LINE))
+
     logs.append(_truncate(f"[Carl] synthesis: {_truncate(headline, 100)}", _MAX_LINE))
     logs.append("[Carl] ready: dashboard payload assembled")
     return logs
@@ -266,6 +279,8 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
         narrative_confidence=confidence,
         normalized=normalized,
         headline=headline,
+        jobs=[], # Will be populated below
+        companies=[] # Will be populated below
     )
 
     chat_summary = _build_chat_summary(
@@ -277,6 +292,79 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
         missing_keywords=missing_keywords,
     )
     suggested_prompts = _build_suggested_prompts(missing_keywords, keyword_coverage)
+
+    try:
+        from ..models.catalog import Job
+        real_jobs = Job.search(persona, None, limit=12, offset=0)
+    except Exception:
+        real_jobs = []
+
+    recommended_jobs = []
+    top_companies = []
+    niche_companies = []
+
+    if real_jobs:
+        for r in real_jobs[:3]:
+            recommended_jobs.append({
+                "title": r.get("job_title", "Unknown Role"),
+                "company": r.get("company_name", "Confidential"),
+                "location": r.get("location", "Remote"),
+                "link": r.get("link", "#")
+            })
+        
+        comps = set()
+        for r in real_jobs:
+            c = (r.get("company_name") or "").strip()
+            if c and c not in comps:
+                comps.add(c)
+        clist = list(comps)
+        for c in clist[:3]:
+            top_companies.append({"name": c, "reason": f"Top volume hiring for {persona}"})
+        for c in clist[3:6]:
+            niche_companies.append({"name": c, "reason": "Remote-first emerging team"})
+
+    if not recommended_jobs:
+        recommended_jobs = [
+            {"title": f"Senior {persona}", "company": "TechGlobal", "location": "Remote", "link": "/jobs"},
+            {"title": f"{level} {persona}", "company": "DataFlow Systems", "location": "San Francisco", "link": "/jobs"},
+            {"title": f"Staff {persona}", "company": "Alpha Innovations", "location": "New York", "link": "/jobs"},
+        ]
+    if not top_companies:
+        top_companies = [
+            {"name": "Stripe", "reason": f"Leading compensation for {persona}s"},
+            {"name": "Anthropic", "reason": "High demand tier"},
+            {"name": "Rippling", "reason": "Aggressive scaling"},
+        ]
+    if not niche_companies:
+        niche_companies = [
+            {"name": "Supabase", "reason": "Open-source remote-first culture"},
+            {"name": "Vercel", "reason": "Frontend & design focused"},
+            {"name": "Linear", "reason": "High product velocity"},
+        ]
+
+    # Re-build terminal logs with match context
+    terminal_logs = _build_terminal_logs(
+        file_label=file_label,
+        ats_score=ats_score,
+        strengths=strengths,
+        risk_flags=risk_flags,
+        word_count=len(words),
+        unique_count=len(unique_words),
+        persona=persona,
+        level=level,
+        years=years,
+        top_skills=top_skills,
+        matched_keywords=matched_keywords,
+        missing_keywords=missing_keywords,
+        structure_score=structure_score,
+        impact_score=impact_score,
+        narrative_score=narrative_score,
+        narrative_confidence=confidence,
+        normalized=normalized,
+        headline=headline,
+        jobs=recommended_jobs,
+        companies=top_companies
+    )
 
     return {
         "overview": {
@@ -316,6 +404,11 @@ def build_mock_analysis(cv_text: str, *, file_label: str = "uploaded_cv") -> dic
             "summary": chat_summary,
             "suggestedPrompts": suggested_prompts,
         },
+        "matches": {
+            "jobs": recommended_jobs,
+            "top_companies": top_companies,
+            "niche_companies": niche_companies,
+        }
     }
 
 
@@ -475,6 +568,13 @@ def generate_chat_reply(message: str, chat_context: dict[str, Any]) -> str:
         base = "I am Carl on this CV snapshot - ask about ATS, gaps, or a rewrite."
         return _out(base + tail)
 
+    # Scope Guardrail for out of bounds questions
+    carl_topics = ("rewrite", "resume", "cv", "ats", "interview", "score", "skill", "job", "career", "gap", "bullet", "metrics", "impact", "summary")
+    if text := prompt.split():
+        # A simple check: if the prompt doesn't trigger any heuristics above and doesn't contain CV keywords
+        if not any(t in prompt for t in carl_topics):
+            return _out(f"I specialize in CV coaching and ATS optimization. Let's stay focused on your {level} {persona} profile!")
+
     out = summary or "I analyzed your CV. Ask about ATS, bullet rewriting, or risk flags for concrete guidance."
     return _out(out)
 
@@ -535,8 +635,12 @@ def _rank_skills(text_lower: str, rng: random.Random) -> list[dict[str, Any]]:
     ranked = []
     for skill in catalog:
         key = skill.lower()
-        base = 45 + (12 if key in text_lower else 0)
-        bonus = rng.randint(8, 38)
+        if key in text_lower:
+            base = 65
+            bonus = rng.randint(8, 32)
+        else:
+            base = 15
+            bonus = rng.randint(0, 10)
         ranked.append({"skill": skill, "score": min(97, base + bonus)})
     ranked.sort(key=lambda item: item["score"], reverse=True)
     return ranked[:6]
@@ -613,20 +717,37 @@ def market_research_index():
     )
 
 
-@bp.get("/troy")
-def troy_redirect_carl():
-    """Legacy path; Carl lives at ``/carl``."""
+@bp.get("/legacy-carl")
+def carl_legacy_redirect():
+    """Placeholder for any old path needing a redirect."""
     return redirect(url_for("carl.carl_dashboard"), code=301)
 
 
 @bp.get("/carl")
 def carl_dashboard():
     """Render Carl CV dashboard demo page."""
-    if not session.get("user"):
+    user = session.get("user")
+    if not user:
         session["redirect_after_login"] = url_for("carl.carl_dashboard")
         flash("Sign in to use Carl.", "info")
         return redirect(url_for("auth.register"))
-    return render_template("carl.html", wide_layout=True)
+    
+    uid = user.get("id")
+    preloaded = None
+    if uid and SUPABASE_URL:
+        # Check for eternal persistence
+        try:
+            from ..models.db import get_db
+            db = get_db()
+            with db.cursor() as cur:
+                cur.execute("SELECT cv_analysis_full FROM profiles WHERE id = %s::uuid", (uid,))
+                row = cur.fetchone()
+                if row and row[0]:
+                    preloaded = row[0]
+        except Exception as exc:
+            logger.warning("Carl: failed to preload eternal state for %s: %s", uid, exc)
+
+    return render_template("carl.html", wide_layout=True, preloaded_analysis=preloaded)
 
 
 @bp.post("/carl/analyze")
@@ -638,9 +759,14 @@ def carl_analyze():
         return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
     upload = request.files.get("cv_file")
+    has_file = bool(upload and (upload.filename or "").strip())
     text_fallback = (request.form.get("cv_text") or "").strip()
-    if not upload and not text_fallback:
+    
+    if not has_file and not text_fallback:
         return api_error_response("missing_cv_input", "Upload a PDF/DOCX file or paste CV text.", 400)
+    
+    if has_file and text_fallback:
+        return api_error_response("conflicting_inputs", "Please provide either a file upload OR pasted text, not both.", 400)
 
     source: Dict[str, Any] = {}
     try:
@@ -672,6 +798,25 @@ def carl_analyze():
     ats_block = analysis.get("atsScore") or {}
     chat_ctx = analysis.get("chatContext") or {}
 
+    user = session.get("user") or {}
+    user_id = user.get("id")
+    
+    cv_url = None
+    if user_id and has_file:
+        try:
+            # Persistent PDF storage
+            upload.seek(0)
+            file_bytes = upload.read()
+            cv_url = upload_cv_to_storage(str(user_id), source.get("filename", "cv.pdf"), file_bytes)
+            if cv_url:
+                 # Update document source in analysis
+                 docs = analysis.get("documents") or []
+                 if docs:
+                     docs[0]["subtitle"] = f"Vault · {source.get('filename')} · {source.get('byteSize', 0)} bytes"
+                     docs[0]["badge"] = "Persistent"
+        except Exception as exc:
+             logger.warning("Carl persistence upload skipped: %s", exc)
+
     saved_at_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
     carl_snapshot = {
         "headline": str(overview.get("headline") or ""),
@@ -684,18 +829,19 @@ def carl_analyze():
     }
     persist_meta: Dict[str, Any] = {**source, "carl": carl_snapshot}
 
-    user = session.get("user") or {}
-    user_id = user.get("id")
     profile_sync: Dict[str, Any] = {"status": "skipped", "message": None, "saved_at": None}
     if not user_id or not SUPABASE_URL:
         profile_sync["message"] = "Database not configured or missing user."
     else:
         try:
+            from ..models.db import upsert_profile_cv_extract
             saved = upsert_profile_cv_extract(
                 str(user_id),
                 cv_text,
                 persist_meta,
                 email=str(user.get("email") or "").strip() or None,
+                analysis_full=analysis,
+                cv_url=cv_url
             )
             if saved == "ok":
                 logger.debug("Carl: CV text persisted to profiles for user %s", str(user_id)[:8])
