@@ -834,7 +834,6 @@ def carl_analyze():
         profile_sync["message"] = "Database not configured or missing user."
     else:
         try:
-            from ..models.db import upsert_profile_cv_extract
             saved = upsert_profile_cv_extract(
                 str(user_id),
                 cv_text,
