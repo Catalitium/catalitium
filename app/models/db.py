@@ -199,6 +199,31 @@ def upsert_profile_cv_extract(
         return "error"
 
 
+def upsert_profile_carl4b2b_analysis(user_id: str, analysis: Optional[Dict[str, Any]] = None) -> str:
+    """Update ``profiles.last_carl4b2b_analysis`` for signed-in users (row must exist). Returns ``ok`` or ``error``."""
+    uid = (user_id or "").strip()
+    if not uid or not SUPABASE_URL:
+        return "error"
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE profiles
+                SET last_carl4b2b_analysis = %s::jsonb,
+                    updated_at = NOW()
+                WHERE id = %s::uuid
+                """,
+                (json.dumps(analysis or {}), uid),
+            )
+            if cur.rowcount == 0:
+                return "error"
+        return "ok"
+    except Exception as exc:
+        logger.warning("upsert_profile_carl4b2b_analysis failed: %s", exc, exc_info=True)
+        return "error"
+
+
 # ----------------------------- Schema Init -----------------------------------
 
 def init_db():
@@ -263,6 +288,9 @@ def init_db():
             )
             cur.execute(
                 "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cv_analysis_full JSONB"
+            )
+            cur.execute(
+                "ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_carl4b2b_analysis JSONB"
             )
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS salary_submissions (
