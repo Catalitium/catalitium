@@ -455,16 +455,14 @@
       if (index >= lines.length) {
         terminalTimer = null;
         if (terminalStatus) {
-            var meterDelay = REVEAL_BASE_DELAY_MS + 2 * REVEAL_STAGGER_MS + METER_START_OFFSET_MS;
-             setTimeout(function() {
-                terminalStatus.textContent = "Complete";
-                if (terminal) {
-                   terminal.style.transition = "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)";
-                   terminal.style.maxHeight = "32px";
-                   terminal.style.opacity = "0.45";
-                   terminal.style.filter = "grayscale(100%)";
-                }
-            }, 300);
+          setTimeout(function () {
+            terminalStatus.textContent = "Complete";
+            if (terminal) {
+              terminal.style.transition = "opacity 0.45s ease";
+              terminal.style.opacity = "0.94";
+              terminal.style.filter = "none";
+            }
+          }, 300);
         }
         return;
       }
@@ -554,11 +552,11 @@
     nRoot.innerHTML = "";
 
     function makeCard(title, subtitle, actionText, linkStr) {
-      return '<div class="group relative rounded-2xl border border-white/5 bg-white/[0.03] p-5 transition-all hover:bg-white/[0.06] hover:border-white/10">' +
-             '<div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1a73e8]/10 to-transparent opacity-0 transition group-hover:opacity-100 pointer-events-none"></div>' +
-             '<p class="relative text-[15px] font-bold text-white mb-1 leading-tight">' + escapeHtml(title) + '</p>' +
-             '<p class="relative text-[12px] text-[#9CA3AF] mb-4">' + escapeHtml(subtitle) + '</p>' +
-             '<a href="' + escapeHtml(linkStr) + '" class="relative inline-flex items-center justify-center w-full rounded-xl bg-white/5 py-2 text-[11px] font-bold uppercase tracking-wider text-white hover:bg-[#1a73e8] transition">' + escapeHtml(actionText) + '</a>' +
+      return '<div class="group relative min-h-[9rem] rounded-2xl border border-[#17305b] bg-[linear-gradient(165deg,rgba(6,20,48,0.92),rgba(4,14,36,0.88))] p-4 shadow-[0_14px_34px_-18px_rgba(0,191,255,0.38)] transition-all duration-300 hover:-translate-y-[1px] hover:border-[#1f4f8f] hover:shadow-[0_18px_36px_-18px_rgba(0,191,255,0.5)] sm:p-5">' +
+             '<div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1a73e8]/16 via-transparent to-[#18a7ec]/10 opacity-0 transition group-hover:opacity-100 pointer-events-none"></div>' +
+             '<p class="relative text-[15px] font-bold text-white mb-1.5 leading-tight tracking-tight">' + escapeHtml(title) + '</p>' +
+             '<p class="relative text-[12px] text-[#A7B8D7] mb-4 line-clamp-2">' + escapeHtml(subtitle) + '</p>' +
+             '<a href="' + escapeHtml(linkStr) + '" class="relative inline-flex w-full items-center justify-center rounded-xl border border-[#214f86] bg-[#0b1f44]/78 py-2 text-[10px] font-bold uppercase tracking-[0.11em] text-[#dbeafe] transition hover:border-[#2b71b8] hover:bg-[#123166] hover:text-white">' + escapeHtml(actionText) + '</a>' +
              '</div>';
     }
 

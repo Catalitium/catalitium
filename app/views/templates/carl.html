@@ -24,6 +24,26 @@
     --carl-card-fill: linear-gradient(165deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.25) 100%);
     --carl-card-border: rgba(255, 255, 255, 0.12);
   }
+  html:has(body.carl-carl-page),
+  body.carl-carl-page {
+    background: #020617 !important;
+  }
+  /* Full-bleed on /carl as soon as the page loads (not only after dashboard hydrate).
+     Fixes main staying max-w-6xl when wide_layout is missing or overridden. */
+  body.carl-carl-page #content {
+    max-width: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-bottom: 0 !important;
+    background: transparent !important;
+    box-sizing: border-box;
+  }
+  body.carl-carl-page #carl-shell {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
   /* Okara-style Carl: full-bleed dashboard, hide site chrome when active */
   body.carl-dashboard-active header { display: none !important; }
   body.carl-dashboard-active footer { display: none !important; }
@@ -35,8 +55,9 @@
     padding-left: 0 !important;
     padding-right: 0 !important;
     padding-top: 0 !important;
-    padding-bottom: 0.5rem !important;
+    padding-bottom: 0 !important;
     max-width: none !important;
+    background: transparent !important;
   }
   #carl-shell {
     background: 
@@ -228,6 +249,30 @@
     body.carl-dashboard-active #content {
       padding-bottom: 3rem !important;
     }
+    .carl-main-grid {
+      grid-template-columns: minmax(16rem, 1fr) minmax(21rem, 1.35fr) minmax(10.5rem, 0.78fr) minmax(16rem, 1.05fr);
+      align-items: stretch;
+    }
+    .carl-main-grid > #carl-sidebar,
+    .carl-main-grid > #carl-analytics-container,
+    .carl-main-grid > #carl-actions-container,
+    .carl-main-grid > #carl-chat-container {
+      grid-column: auto / span 1;
+    }
+  }
+  #carl-actions {
+    min-height: 0;
+  }
+  #carl-actions .carl-action-details {
+    background: rgba(10, 24, 54, 0.7);
+  }
+  #carl-actions .carl-action-details summary {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+  #carl-actions .carl-action-details p {
+    font-size: 0.7rem;
+    line-height: 1.35;
   }
   .carl-card {
     background: var(--carl-card-fill);
@@ -372,7 +417,7 @@
 {% endblock %}
 
 {% block content %}
-  <div id="carl-shell" class="relative flex flex-col font-sans text-slate-200">
+  <div id="carl-shell" class="relative flex w-full min-w-0 flex-col font-sans text-slate-200">
     {% if preloaded_analysis %}
     <script id="preloaded-carl-data" type="application/json">
         {{ preloaded_analysis | tojson | safe }}
@@ -408,7 +453,7 @@
     </div>
   </div>
 
-  <div id="carl-individuals-workspace" class="hidden">
+  <div id="carl-individuals-workspace" class="hidden w-full min-w-0">
     <!-- Landing: upload -->
     <div id="carl-upload-hero" class="mx-auto max-w-2xl px-4 py-16">
       <div class="text-center">
@@ -476,7 +521,7 @@
   </div>
 
   <!-- Full-page dashboard (shown after analyze) -->
-  <div id="carl-workspace" class="hidden min-h-[calc(100dvh-3.5rem)] flex-col xl:overflow-y-auto carl-scroll-dark">
+  <div id="carl-workspace" class="hidden w-full min-w-0 min-h-[calc(100dvh-3.5rem)] flex-col xl:overflow-y-auto carl-scroll-dark">
     <!-- Terminal strip (top) -->
     <div data-carl-reveal class="bg-[#050505] border border-[#22c55e]/30 rounded-xl mx-3 mt-2 shrink-0 p-3 sm:mx-4 sm:p-4 xl:p-3 shadow-[inset_0_2px_18px_rgba(0,0,0,0.8)]">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#22c55e]/30 pb-2 mb-2 xl:pb-2 xl:mb-2 text-[#22c55e]">
@@ -492,13 +537,13 @@
           <span id="carl-terminal-status" class="text-xs font-bold text-[#4ade80]">Ready</span>
         </div>
       </div>
-      <div id="carl-terminal" class="carl-scroll-dark max-h-32 overflow-y-auto overflow-x-hidden font-mono text-[13px] leading-[1.45] text-[#4ade80] xl:max-h-[5.25rem]"></div>
+      <div id="carl-terminal" class="carl-scroll-dark max-h-32 overflow-y-auto overflow-x-hidden font-mono text-[13px] leading-[1.45] text-[#4ade80] xl:max-h-[5.75rem]"></div>
     </div>
 
     <!-- Main grid -->
-    <div class="grid grid-cols-1 gap-4 p-4 xl:grid-cols-12 xl:items-start">
+    <div class="carl-main-grid grid w-full min-w-0 grid-cols-1 gap-4 p-4 xl:items-start">
       <!-- Panel 1: Sidebar (3/12) -->
-      <div id="carl-sidebar" class="space-y-4 xl:col-span-3 min-w-0">
+      <div id="carl-sidebar" class="space-y-4 min-w-0">
         <div class="carl-card p-4">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Candidate</p>
           <div class="mt-3 flex gap-3">
@@ -535,17 +580,16 @@
       </div>
 
       <!-- Panel 2: Analytics (5/12) -->
-      <div id="carl-analytics-container" data-carl-reveal class="carl-card flex flex-col p-4 xl:col-span-5 min-w-0 h-full">
+      <div id="carl-analytics-container" data-carl-reveal class="carl-card flex flex-col p-5 min-w-0 h-full">
           <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Analytics</p>
           <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
             <button type="button" data-carl-tab="overview" class="carl-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium transition-colors">Overview</button>
             <button type="button" data-carl-tab="suggestions" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Suggestions</button>
             <button type="button" data-carl-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Skills</button>
             <button type="button" data-carl-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Signals</button>
-            <button type="button" data-carl-tab="actions" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-[#9CA3AF] hover:text-white transition-colors">Actions</button>
           </div>
 
-          <div id="carl-panel-overview" class="carl-tab-panel carl-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto xl:gap-3">
+          <div id="carl-panel-overview" class="carl-tab-panel carl-scroll-dark mt-5 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             <div class="relative bg-white/5 rounded-2xl p-4 overflow-hidden">
               <div class="absolute inset-0 bg-gradient-to-br from-[#1a73e8]/10 to-transparent pointer-events-none"></div>
               <p class="text-xs font-medium text-[#9CA3AF]">ATS Match Integrity</p>
@@ -658,11 +702,16 @@
               <ul id="carl-suggestions-certs" class="mt-2 list-disc space-y-2 pl-4 text-xs text-[#E5E5E5]"></ul>
             </div>
           </div>
-
       </div>
 
-      <!-- Panel 3: Talk to Carl (4/12) -->
-      <aside id="carl-chat-container" data-carl-reveal class="carl-card flex min-h-[480px] flex-col p-4 xl:col-span-4 min-w-0 h-full">
+      <!-- Panel 3: Actions -->
+      <aside id="carl-actions-container" data-carl-reveal class="carl-card flex min-h-[480px] flex-col p-4 min-w-0 h-full">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Actions</p>
+        <div id="carl-actions" class="carl-scroll-dark mt-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto"></div>
+      </aside>
+
+      <!-- Panel 4: Talk to Carl -->
+      <aside id="carl-chat-container" data-carl-reveal class="carl-card flex min-h-[480px] flex-col p-4 min-w-0 h-full">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
         <p class="mt-1 text-[11px] text-[#6B7280]">Three short questions about <span class="text-[#9CA3AF]">this</span> analysis only—use the chips or mention keywords from your pass.</p>
         <div id="carl-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
@@ -696,7 +745,8 @@
     </div>
 
     <!-- Carl's Career Radar -->
-    <div id="carl-matches-section" data-carl-reveal class="hidden mt-6 mx-3 sm:mx-4 xl:mx-0 w-full rounded-3xl border border-white/10 bg-[#111]/30 p-6 sm:p-8 shadow-2xl backdrop-blur-md transition-all">
+    <div class="mt-6 px-3 sm:px-4">
+    <div id="carl-matches-section" data-carl-reveal class="hidden w-full rounded-3xl border border-white/10 bg-[#111]/30 p-6 sm:p-8 shadow-2xl backdrop-blur-md transition-all">
       <div class="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
           <svg class="h-5 w-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
@@ -721,6 +771,7 @@
           <div id="carl-match-niche" class="flex flex-col gap-3"></div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>
