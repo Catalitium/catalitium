@@ -288,6 +288,30 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+  /* Force a unified blue-glass border system across CARL workspace. */
+  #carl-workspace {
+    --carl-glass-border: rgba(47, 115, 186, 0.62);
+    --carl-glass-border-strong: rgba(72, 156, 235, 0.78);
+    --carl-glass-glow: 0 14px 30px -22px rgba(0, 191, 255, 0.72);
+  }
+  #carl-workspace [class*="border-white/"],
+  #carl-workspace [class*="border-[#22c55e"],
+  #carl-workspace [class*="border-[#18a7ec"],
+  #carl-workspace [class*="border-[#1a73e8"] {
+    border-color: var(--carl-glass-border) !important;
+  }
+  #carl-workspace .carl-card,
+  #carl-workspace .carl-card-soft,
+  #carl-workspace #carl-matches-section,
+  #carl-workspace #carl-analytics-container > .relative,
+  #carl-workspace #carl-analytics-container .rounded-2xl,
+  #carl-workspace #carl-terminal {
+    border-color: var(--carl-glass-border) !important;
+    box-shadow: inset 0 1px 0 rgba(151, 213, 255, 0.08), var(--carl-glass-glow);
+  }
+  #carl-workspace #carl-analytics-container [class*="border-b"] {
+    border-bottom-color: var(--carl-glass-border) !important;
+  }
   #carl-analytics-container {
     border-color: rgba(38, 116, 199, 0.58);
     box-shadow: 0 18px 44px -22px rgba(0, 191, 255, 0.28), inset 0 1px 0 rgba(150, 214, 255, 0.1);
