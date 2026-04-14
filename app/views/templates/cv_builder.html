@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}CV Builder — Harvard Format · Catalitium{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Upload your CV and instantly download a clean Harvard-format DOCX. Powered by AI." />
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-2xl flex-col items-center justify-center px-4 py-16">
+
+  <!-- Hero -->
+  <div class="mb-10 text-center">
+    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#22c55e]">CV Builder</p>
+    <h1 class="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Harvard format, instantly</h1>
+    <p class="mt-3 max-w-md mx-auto text-sm text-[#9CA3AF] leading-relaxed">
+      Upload any CV (PDF or DOCX) and download a clean, minimalist Harvard-style document ready to send.
+    </p>
+  </div>
+
+  <!-- Upload card -->
+  <div class="w-full rounded-3xl border border-dashed border-white/20 bg-[#111]/60 p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:border-[#22c55e]/40 shadow-xl">
+
+    <form id="cv-builder-form" method="POST" action="{{ url_for('cv_builder.cv_builder_generate') }}" enctype="multipart/form-data">
+
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <!-- Upload icon -->
+      <div class="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-white/40">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+
+      <!-- File picker -->
+      <div class="relative inline-block group cursor-pointer">
+        <input id="cv-file-input" name="cv_file" type="file" accept=".pdf,.docx"
+               class="absolute inset-0 z-50 w-full h-full opacity-0 cursor-pointer">
+        <span class="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-7 py-3 text-sm font-bold text-black transition-transform group-hover:scale-105 shadow-lg shadow-[#22c55e]/20">
+          Choose PDF or DOCX
+        </span>
+      </div>
+
+      <p id="cv-file-name" class="mt-4 hidden text-sm font-medium text-[#4ade80] truncate"></p>
+
+      <!-- Text toggle -->
+      <div class="mt-5">
+        <button type="button" id="btn-toggle-paste"
+                class="text-[13px] font-medium text-[#9CA3AF] hover:text-white underline underline-offset-4 transition">
+          Or paste CV text instead
+        </button>
+      </div>
+
+      <!-- Textarea fallback -->
+      <div id="cv-paste-zone" class="mt-5 hidden text-left">
+        <textarea id="cv-text-input" name="cv_text" rows="6"
+                  placeholder="Paste your CV text here…"
+                  class="w-full rounded-2xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-[#22c55e] focus:ring-1 focus:ring-[#22c55e] transition shadow-inner resize-none"></textarea>
+      </div>
+
+      <!-- Submit -->
+      <div class="mt-8 border-t border-white/10 pt-8">
+        <button id="cv-submit-btn" type="submit"
+                class="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-sm font-bold text-black transition hover:bg-gray-200 disabled:opacity-50 shadow-md">
+          <span id="cv-btn-label">Build Harvard CV</span>
+          <svg id="cv-spinner" class="hidden h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error banner -->
+      <div id="cv-error-banner"
+           class="mt-5 hidden rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+      </div>
+
+    </form>
+  </div>
+
+  <!-- Footer note -->
+  <p class="mt-8 text-xs text-[#6B7280] text-center max-w-sm">
+    Your CV is processed in memory only — nothing is stored or shared.
+    Bullets are rewritten in Harvard action-verb format automatically.
+  </p>
+
+</div>
+
+<script>
+(function () {
+  const form = document.getElementById('cv-builder-form');
+  const fileInput = document.getElementById('cv-file-input');
+  const fileName = document.getElementById('cv-file-name');
+  const toggleBtn = document.getElementById('btn-toggle-paste');
+  const pasteZone = document.getElementById('cv-paste-zone');
+  const submitBtn = document.getElementById('cv-submit-btn');
+  const btnLabel = document.getElementById('cv-btn-label');
+  const spinner = document.getElementById('cv-spinner');
+  const errorBanner = document.getElementById('cv-error-banner');
+
+  function csrfToken() {
+    const field = form.querySelector('input[name="csrf_token"]');
+    return field && field.value ? String(field.value).trim() : '';
+  }
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files[0];
+    if (f) {
+      fileName.textContent = f.name;
+      fileName.classList.remove('hidden');
+      pasteZone.classList.add('hidden');
+      document.getElementById('cv-text-input').value = '';
+    }
+  });
+
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = pasteZone.classList.contains('hidden');
+    pasteZone.classList.toggle('hidden', !isHidden);
+    toggleBtn.textContent = isHidden ? 'Use file upload instead' : 'Or paste CV text instead';
+    if (isHidden) {
+      fileInput.value = '';
+      fileName.classList.add('hidden');
+    }
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorBanner.classList.add('hidden');
+    submitBtn.disabled = true;
+    btnLabel.textContent = 'Building…';
+    spinner.classList.remove('hidden');
+
+    try {
+      const fd = new FormData(form);
+      const resp = await fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: {
+          'X-CSRF-Token': csrfToken(),
+        },
+      });
+
+      if (!resp.ok) {
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const j = await resp.json();
+          throw new Error(j.error?.message || j.message || 'Something went wrong.');
+        }
+        throw new Error(`Server error ${resp.status}`);
+      }
+
+      // Trigger download
+      const blob = await resp.blob();
+      const disposition = resp.headers.get('content-disposition') || '';
+      let dlName = 'cv_harvard.docx';
+      const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (match) dlName = match[1].replace(/['"]/g, '');
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = dlName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      btnLabel.textContent = 'Downloaded!';
+      setTimeout(() => { btnLabel.textContent = 'Build Harvard CV'; }, 3000);
+    } catch (err) {
+      errorBanner.textContent = err.message || 'Unexpected error. Please try again.';
+      errorBanner.classList.remove('hidden');
+      btnLabel.textContent = 'Build Harvard CV';
+    } finally {
+      submitBtn.disabled = false;
+      spinner.classList.add('hidden');
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -27,6 +27,7 @@ jobs:
       - name: Run tests
         env:
           SECRET_KEY: "ci-test-secret-key-not-for-production"
-          DATABASE_URL: ""
+          # Non-empty placeholder so ``app.config.SUPABASE_URL`` is set; no DB server in CI.
+          DATABASE_URL: "postgresql://127.0.0.1:65534/ci_pytest_no_server"
           FLASK_ENV: testing
         run: pytest tests/ -m "not smoke" --cov=app --cov-report=term-missing

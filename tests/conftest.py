@@ -23,12 +23,13 @@ except ImportError:
     pass
 
 os.environ.setdefault("SECRET_KEY", "pytest-secret-key-not-for-production")
-# Do not inject a fake DATABASE_URL if ``.env`` (or the shell) already set ``SUPABASE_URL`` only.
-if not (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip():
-    os.environ.setdefault(
-        "DATABASE_URL",
-        "postgresql://127.0.0.1:65534/pytest_nonexistent",
-    )
+# ``app.config.SUPABASE_URL`` must be non-empty or ``create_app()`` exits. GitHub Actions
+# sometimes sets ``DATABASE_URL=""`` (key present, value empty); ``setdefault`` would not
+# override that, so we assign explicitly when no usable URL is configured.
+_PYTEST_DB_PLACEHOLDER = "postgresql://127.0.0.1:65534/pytest_nonexistent"
+_effective_db = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
+if not _effective_db:
+    os.environ["DATABASE_URL"] = _PYTEST_DB_PLACEHOLDER
 
 
 @pytest.fixture()
