@@ -663,8 +663,8 @@
         <p class="mt-4 text-center text-xs text-[#6B7280]">Need a Harvard-format .docx without the live dashboard? <a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e]/90 hover:text-[#4ade80] underline-offset-2 hover:underline">Carl CV Builder</a></p>
       </div>
 
-      {# method/action/enctype: default form method is GET; without POST, a native submit puts fields in the URL and skips JS fetch (breaks prod when carl.js is delayed or blocked). #}
-      <form id="carl-upload-form" method="post" action="{{ url_for('carl.carl_analyze') }}" enctype="multipart/form-data" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl">
+      {# method post + no action URL: avoids GET ?csrf&cv_file in query. Analyze uses type=button + JS fetch only — never full-page POST to /carl/analyze (that showed raw JSON in prod). #}
+      <form id="carl-upload-form" method="post" enctype="multipart/form-data" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl" onsubmit="event.preventDefault(); return false;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <!-- Drag Drop Visuals -->
@@ -691,7 +691,7 @@
         </div>
 
         <div class="mt-8 border-t border-white/10 pt-8 flex justify-center">
-          <button type="submit" id="carl-upload-btn" class="carl-btn-analyze flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-white text-black px-6 py-3.5 font-bold transition hover:bg-gray-200 disabled:opacity-50 shadow-md">
+          <button type="button" id="carl-upload-btn" class="carl-btn-analyze flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-white text-black px-6 py-3.5 font-bold transition hover:bg-gray-200 disabled:opacity-50 shadow-md">
             <svg id="carl-analyze-spinner" class="hidden h-5 w-5 animate-spin text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             <span id="carl-analyze-text" class="text-[15px]">Analyze Profile</span>
           </button>

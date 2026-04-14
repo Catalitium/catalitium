@@ -237,7 +237,7 @@ def test_http_jobs_second_page_ok(client):
     assert client.get("/jobs?page=2").status_code == 200
 
 
-def test_http_health_ok(client):
+def test_http_health_ok(client, mock_db_health_ok):
     r = client.get("/health")
     assert r.status_code == 200
     data = r.get_json()
@@ -331,7 +331,7 @@ def test_http_security_headers_on_homepage(client):
     assert r.headers.get("Cross-Origin-Opener-Policy")
 
 
-def test_http_x_request_id_header(client):
+def test_http_x_request_id_header(client, mock_db_health_ok):
     r = client.get("/health")
     assert r.status_code == 200
     assert r.headers.get("X-Request-ID")
@@ -378,7 +378,7 @@ def test_http_salary_tools_renders_with_csrf(client):
     assert 'name="csrf_token"' in html
 
 
-def test_http_health_deep_includes_db_latency(client):
+def test_http_health_deep_includes_db_latency(client, mock_db_health_ok):
     r = client.get("/health?deep=1")
     assert r.status_code == 200
     inner = r.get_json().get("data", {})

@@ -910,9 +910,7 @@
     });
   }
 
-  if (form) {
-  form.addEventListener("submit", function (event) {
-    event.preventDefault();
+  function runCarlUploadAnalyze() {
     if ((!fileInput || !fileInput.value) && (!textFallback || !textFallback.value.trim())) {
       setError("Please upload a file or paste your CV text to begin analysis.");
       return;
@@ -972,7 +970,18 @@
       .finally(function () {
         setUploadLoading(false);
       });
-  });
+  }
+
+  if (form) {
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+    });
+  }
+  if (form && uploadBtn) {
+    uploadBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      runCarlUploadAnalyze();
+    });
   }
 
   if (chatForm) {

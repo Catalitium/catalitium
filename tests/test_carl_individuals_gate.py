@@ -60,10 +60,11 @@ def test_carl_guest_redirects_no_gate(app):
     assert "btn-select-individual" not in (r.get_data(as_text=True) or "")
 
 
-def test_carl_js_linked_and_upload_form_posts_to_analyze(carl_logged_in_client):
+def test_carl_js_linked_and_upload_form_no_fullpage_analyze(carl_logged_in_client):
     r = carl_logged_in_client.get("/carl")
     html = r.get_data(as_text=True)
     assert re.search(r'<script[^>]+src=["\'][^"\']*js/carl\.js', html) is not None
     assert 'id="carl-upload-form"' in html
     assert 'method="post"' in html
-    assert "/carl/analyze" in html
+    assert 'id="carl-upload-btn"' in html and 'type="button"' in html
+    assert "onsubmit=" in html

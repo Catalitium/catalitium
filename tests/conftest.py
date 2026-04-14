@@ -57,3 +57,28 @@ def app():
 def client(app):
     """HTTP client for route tests (smoke, prod readiness, most integration tests)."""
     return app.test_client()
+
+
+@pytest.fixture
+def mock_db_health_ok(monkeypatch):
+    """Stub ``get_db`` so ``GET /health`` returns 200 when CI has no Postgres (connection refused)."""
+    from app.models import db as db_mod
+
+    class _Cur:
+        def execute(self, *a, **k):
+            return None
+
+        def fetchone(self):
+            return (1,)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    class _Conn:
+        def cursor(self):
+            return _Cur()
+
+    monkeypatch.setattr(db_mod, "get_db", lambda: _Conn())
