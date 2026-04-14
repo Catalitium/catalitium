@@ -836,6 +836,9 @@
 
   function hydrateDashboard(analysis, extras) {
     extras = extras || {};
+    try {
+      sessionStorage.removeItem("carl_skip_preload_once");
+    } catch (eSkip) {}
     analysisState = analysis || {};
     if (gateGate) gateGate.classList.add("hidden");
     if (gateWorkspace) gateWorkspace.classList.remove("hidden");
@@ -908,6 +911,63 @@
         }
       }, meterDelay);
     });
+  }
+
+  /** Return to upload UI so the user can analyze a different CV (also skips one server preload on next full page load). */
+  function resetCarlToUploadView() {
+    try {
+      sessionStorage.setItem("carl_skip_preload_once", "1");
+    } catch (eSt) {}
+    analysisState = null;
+    stopTerminalLiveFeed();
+    if (terminalTimer) {
+      clearTimeout(terminalTimer);
+      terminalTimer = null;
+    }
+    if (terminal) terminal.innerHTML = "";
+    if (terminalStatus) terminalStatus.textContent = "Ready";
+
+    document.body.classList.remove("carl-dashboard-active");
+
+    if (gateGate) gateGate.classList.add("hidden");
+    if (gateWorkspace) gateWorkspace.classList.remove("hidden");
+    if (uploadHero) uploadHero.classList.remove("hidden");
+    if (workspace) {
+      workspace.classList.add("hidden");
+      workspace.classList.remove("flex");
+    }
+
+    var matchesSection = document.getElementById("carl-matches-section");
+    if (matchesSection) {
+      matchesSection.classList.add("hidden");
+      matchesSection.classList.remove("carl-reveal-in");
+    }
+    document.querySelectorAll("[data-carl-reveal]").forEach(function (el) {
+      el.classList.remove("carl-reveal-in");
+    });
+
+    clearLoadingStatusTimer();
+    hideUploadPremiumLoading(0, null);
+    setUploadLoading(false);
+
+    if (fileInput) fileInput.value = "";
+    if (textFallback) textFallback.value = "";
+    if (fileNameDisplay) fileNameDisplay.classList.add("hidden");
+    if (zonePaste) zonePaste.classList.add("hidden");
+    setError("");
+
+    if (chatLog) chatLog.innerHTML = "";
+    if (chatInput) chatInput.value = "";
+    var counter = document.getElementById("chat-char-counter");
+    if (counter) counter.textContent = "0/280";
+    resetCarlChatGate();
+    if (chatChips) {
+      chatChips.innerHTML = "";
+      chatChips.classList.add("hidden");
+    }
+
+    initTabs();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function runCarlUploadAnalyze() {
@@ -1040,8 +1100,31 @@
     });
   }
 
+  var btnCarlNewUpload = document.getElementById("btn-carl-new-upload");
+  if (btnCarlNewUpload) {
+    btnCarlNewUpload.addEventListener("click", function () {
+      resetCarlToUploadView();
+    });
+  }
+
   // --- Eternal Persistence Recovery ---
   document.addEventListener("DOMContentLoaded", function () {
+    var skipPreload = false;
+    try {
+      skipPreload = sessionStorage.getItem("carl_skip_preload_once") === "1";
+      if (skipPreload) sessionStorage.removeItem("carl_skip_preload_once");
+    } catch (eSkip) {}
+    if (skipPreload) {
+      if (gateGate) gateGate.classList.add("hidden");
+      if (gateWorkspace) gateWorkspace.classList.remove("hidden");
+      if (uploadHero) uploadHero.classList.remove("hidden");
+      if (workspace) {
+        workspace.classList.add("hidden");
+        workspace.classList.remove("flex");
+      }
+      document.body.classList.remove("carl-dashboard-active");
+      return;
+    }
     var preloadedEl = document.getElementById("preloaded-carl-data");
     if (preloadedEl && preloadedEl.textContent) {
        try {
