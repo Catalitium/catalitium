@@ -134,6 +134,20 @@
     errorEl.classList.remove("hidden");
   }
 
+  function carlAnalyzeErrorMessage(data) {
+    if (!data) return "Could not analyze CV. Please try again.";
+    var code = data.code;
+    var msg = (data.message && String(data.message).trim()) || "";
+    if (code === "login_required") return "Sign in to use Carl, then try again.";
+    if (code === "invalid_csrf")
+      return "Your session expired or the page is stale. Refresh and try again.";
+    if (code === "conflicting_inputs")
+      return "Use either a file upload or pasted text, not both.";
+    if (code === "missing_cv_input") return "Upload a PDF or DOCX, or paste your CV text.";
+    if (msg) return msg;
+    return "Could not analyze CV. Please try again.";
+  }
+
   function safeList(items, fallback) {
     return Array.isArray(items) && items.length ? items : fallback;
   }
@@ -930,11 +944,7 @@
       })
       .then(function (result) {
         if (!result.ok || !result.data || result.data.ok === false) {
-          var em = (result.data && result.data.message) || "Could not analyze CV.";
-          if (result.data && result.data.code === "login_required") {
-            em = "Sign in to use Carl, then try again.";
-          }
-          throw new Error(em);
+          throw new Error(carlAnalyzeErrorMessage(result.data));
         }
         var inner = (result.data && result.data.data) || {};
         var analysis = inner.analysis;

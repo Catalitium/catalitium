@@ -728,7 +728,8 @@ def carl_dashboard():
     """Render Carl CV dashboard demo page."""
     user = session.get("user")
     if not user:
-        session["redirect_after_login"] = url_for("carl.carl_dashboard")
+        qs = (request.query_string or b"").decode("utf-8", "replace")
+        session["redirect_after_login"] = request.path + ("?" + qs if qs else "")
         flash("Sign in to use Carl.", "info")
         return redirect(url_for("auth.register"))
     

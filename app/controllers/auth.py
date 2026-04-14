@@ -32,6 +32,24 @@ _HIRE_ACCOUNT_TYPES = {"recruiter", "company"}
 _HIRE_FIELDS = ("company_name", "company_website", "company_size", "hiring_regions")
 
 
+def _redirect_after_login_allowed(next_path: str) -> bool:
+    """Same-origin relative paths only; blocks open redirects and header injection."""
+    if not isinstance(next_path, str):
+        return False
+    if "\n" in next_path or "\r" in next_path:
+        return False
+    if not next_path.startswith("/") or next_path.startswith("//"):
+        return False
+    path_only = next_path.split("?", 1)[0].split("#", 1)[0]
+    if path_only.startswith("/market-research/"):
+        return True
+    if path_only == "/carl":
+        return True
+    if path_only.startswith("/carl/b2b"):
+        return True
+    return False
+
+
 def _derive_supabase_project_url() -> str:
     project_url = os.getenv("SUPABASE_PROJECT_URL", "").strip()
     if project_url:
@@ -263,13 +281,7 @@ def register():
             "hire_access": existing_hire_access if action == "login" else False,
         }
         next_path = session.pop("redirect_after_login", None)
-        if (
-            isinstance(next_path, str)
-            and next_path.startswith("/market-research/")
-            and (not next_path.startswith("//"))
-            and "\n" not in next_path
-            and "\r" not in next_path
-        ):
+        if isinstance(next_path, str) and _redirect_after_login_allowed(next_path):
             return redirect(next_path)
         return redirect(url_for("auth.studio"))
     except Exception as exc:
@@ -356,13 +368,7 @@ def auth_session_from_tokens():
             "hire_access": existing_hire_access,
         }
         next_path = session.pop("redirect_after_login", None)
-        if (
-            isinstance(next_path, str)
-            and next_path.startswith("/market-research/")
-            and (not next_path.startswith("//"))
-            and "\n" not in next_path
-            and "\r" not in next_path
-        ):
+        if isinstance(next_path, str) and _redirect_after_login_allowed(next_path):
             return jsonify({"ok": True, "redirect": next_path})
         return jsonify({"ok": True, "redirect": url_for("auth.studio")})
     except Exception as exc:
