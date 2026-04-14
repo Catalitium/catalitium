@@ -7,6 +7,22 @@ from pathlib import Path
 
 import pytest
 
+_PYTEST_DB_PLACEHOLDER = "postgresql://127.0.0.1:65534/pytest_nonexistent"
+
+
+def _ensure_test_db_url() -> None:
+    """``app.config.SUPABASE_URL`` must be non-empty or ``create_app()`` exits.
+
+    Run before/after dotenv: CI may export ``DATABASE_URL=""``, and ``app.config`` is
+    populated at import time — this must run before any ``import app`` loads config.
+    """
+    effective = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
+    if not effective:
+        os.environ["DATABASE_URL"] = _PYTEST_DB_PLACEHOLDER
+
+
+_ensure_test_db_url()
+
 # Load repo ``.env`` first so local/prod-like credentials win over pytest fallbacks
 # (``.env`` is gitignored; CI should inject env vars instead).
 try:
@@ -22,14 +38,9 @@ try:
 except ImportError:
     pass
 
+_ensure_test_db_url()
+
 os.environ.setdefault("SECRET_KEY", "pytest-secret-key-not-for-production")
-# ``app.config.SUPABASE_URL`` must be non-empty or ``create_app()`` exits. GitHub Actions
-# sometimes sets ``DATABASE_URL=""`` (key present, value empty); ``setdefault`` would not
-# override that, so we assign explicitly when no usable URL is configured.
-_PYTEST_DB_PLACEHOLDER = "postgresql://127.0.0.1:65534/pytest_nonexistent"
-_effective_db = (os.getenv("DATABASE_URL") or os.getenv("SUPABASE_URL") or "").strip()
-if not _effective_db:
-    os.environ["DATABASE_URL"] = _PYTEST_DB_PLACEHOLDER
 
 
 @pytest.fixture()
