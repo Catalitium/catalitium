@@ -1263,26 +1263,25 @@ def compute_ai_exposure(function_category: Optional[str] = None) -> List[Dict[st
     """Rank function categories by AI-keyword prevalence in job descriptions.
 
     Returns a list of AIExposure dicts sorted by exposure_pct desc.
+    function_category is required — passing None would fetch the full jobs table.
     """
+    if not function_category:
+        raise ValueError("function_category is required for compute_ai_exposure")
     ai_pattern = _ensure_ai_pattern()
     try:
         db = get_db()
         with db.cursor() as cur:
-            where = ""
-            params: list = []
-            if function_category:
-                where = "WHERE LOWER(job_title_norm) LIKE %s ESCAPE '\\'"
-                params.append(f"%{function_category.lower()}%")
             cur.execute(
-                f"""
+                """
                 SELECT
                     COALESCE(NULLIF(job_title_norm, ''), LOWER(job_title)) AS func,
                     job_description,
                     job_salary
                 FROM jobs
-                {where}
+                WHERE LOWER(job_title_norm) LIKE %s ESCAPE '\\'
+                LIMIT 5000
                 """,
-                params,
+                [f"%{function_category.lower()}%"],
             )
             rows = cur.fetchall()
     except Exception as exc:
@@ -1484,28 +1483,57 @@ def get_career_paths(title_norm: str) -> Dict[str, Any]:
     next_steps: List[Dict] = []
     lateral_moves: List[Dict] = []
 
+    # Collect all search terms first, then issue ONE bulk query instead of N individual ones.
+    next_step_terms: List[str] = []
+    lateral_terms: List[str] = []
+
     ic_next = _IC_LADDER[level_idx + 1:level_idx + 3] if level_idx + 1 < len(_IC_LADDER) else []
     for level in ic_next:
-        search_term = f"{level} {base_function}"
-        _add_path_node(search_term, next_steps)
+        next_step_terms.append(f"{level} {base_function}")
 
     if track == "ic" and level_idx >= 2:
         for level in _MGMT_LADDER[:2]:
-            search_term = f"{level} {base_function}"
-            _add_path_node(search_term, next_steps)
+            next_step_terms.append(f"{level} {base_function}")
     elif track == "mgmt":
         mgmt_next = _MGMT_LADDER[level_idx + 1:level_idx + 3] if level_idx + 1 < len(_MGMT_LADDER) else []
         for level in mgmt_next:
-            search_term = f"{level} {base_function}"
-            _add_path_node(search_term, next_steps)
+            next_step_terms.append(f"{level} {base_function}")
 
     lateral_functions = _get_lateral_functions(base_function)
     current_level = _IC_LADDER[level_idx] if track == "ic" and level_idx < len(_IC_LADDER) else (
         _MGMT_LADDER[level_idx] if track == "mgmt" and level_idx < len(_MGMT_LADDER) else ""
     )
     for func in lateral_functions[:4]:
-        search_term = f"{current_level} {func}" if current_level else func
-        _add_path_node(search_term, lateral_moves)
+        lateral_terms.append(f"{current_level} {func}" if current_level else func)
+
+    # Single bulk query for all terms combined (1 query vs up to 8)
+    all_terms = next_step_terms + lateral_terms
+    bulk = _fetch_path_nodes_bulk(all_terms) if all_terms else {}
+
+    def _build_node(search_term: str) -> Optional[Dict]:
+        results = bulk.get(search_term.lower(), [])
+        if not results:
+            return None
+        salaries = []
+        for r in results:
+            sal = r.get("job_salary") or parse_salary_range_string(r.get("job_salary_range") or "")
+            if sal:
+                salaries.append(float(sal))
+        median_sal = None
+        if salaries:
+            salaries.sort()
+            median_sal = salaries[len(salaries) // 2]
+        return {"title": search_term.title(), "median_salary": median_sal, "job_count": len(results)}
+
+    for term in next_step_terms:
+        node = _build_node(term)
+        if node:
+            next_steps.append(node)
+
+    for term in lateral_terms:
+        node = _build_node(term)
+        if node:
+            lateral_moves.append(node)
 
     companies_hiring = _get_top_employers(title_lower)
 
@@ -1602,29 +1630,82 @@ def _get_lateral_functions(base_function: str) -> List[str]:
     return ["software engineer", "data analyst", "product manager"]
 
 
-def _add_path_node(search_term: str, target_list: List[Dict]) -> None:
-    """Query jobs for *search_term* and append a summary node to *target_list*."""
+def _fetch_path_nodes_bulk(search_terms: List[str]) -> Dict[str, List[Dict]]:
+    """Single-query alternative to calling Job.search() once per term.
+
+    Returns a dict mapping each search_term (lowercased) to its matching rows.
+    Replaces the N+1 loop in get_career_paths — 1 query instead of 6-8.
+    """
+    if not search_terms:
+        return {}
     try:
-        results = Job.search(title=search_term, limit=50)
-        if not results:
-            return
-        salaries = []
-        for r in results:
-            sal = r.get("job_salary") or parse_salary_range_string(r.get("job_salary_range") or "")
-            if sal:
-                salaries.append(float(sal))
-        median_sal = None
-        if salaries:
-            salaries.sort()
-            mid = len(salaries) // 2
-            median_sal = salaries[mid]
-        target_list.append({
-            "title": search_term.title(),
-            "median_salary": median_sal,
-            "job_count": len(results),
-        })
+        db = get_db()
+        # Build: WHERE (job_title_norm ILIKE %t1% OR job_title_norm ILIKE %t2% ...)
+        like_clauses = " OR ".join(
+            "(job_title_norm ILIKE %s ESCAPE '\\' OR LOWER(job_title) LIKE %s ESCAPE '\\')"
+            for _ in search_terms
+        )
+        params: List = []
+        for term in search_terms:
+            pattern = f"%{Job._escape_like(term.lower())}%"
+            params.extend([pattern, pattern])
+        params.append(50 * len(search_terms))  # generous cap
+        with db.cursor() as cur:
+            cur.execute(
+                f"""
+                SELECT
+                    id, job_title, job_title_norm, company_name,
+                    location, link, date,
+                    COALESCE(salary, '') AS job_salary_range
+                FROM jobs
+                WHERE {like_clauses}
+                ORDER BY date DESC NULLS LAST
+                LIMIT %s
+                """,
+                params,
+            )
+            cols = [d[0] for d in cur.description]
+            rows = [dict(zip(cols, r)) for r in cur.fetchall()]
     except Exception as exc:
-        logger.debug("_add_path_node(%s) failed: %s", search_term, exc)
+        logger.debug("_fetch_path_nodes_bulk failed: %s", exc)
+        return {}
+
+    # Partition rows by which term first matches
+    grouped: Dict[str, List[Dict]] = {t.lower(): [] for t in search_terms}
+    for row in rows:
+        title_norm = (row.get("job_title_norm") or row.get("job_title") or "").lower()
+        for term in search_terms:
+            if term.lower() in title_norm and len(grouped[term.lower()]) < 50:
+                grouped[term.lower()].append(row)
+                break
+    return grouped
+
+
+def _add_path_node(search_term: str, target_list: List[Dict]) -> None:
+    """Append a career-path summary node for *search_term* to *target_list*.
+
+    Single-term convenience wrapper around _fetch_path_nodes_bulk.
+    Prefer calling get_career_paths() which batches all terms in one query.
+    """
+    grouped = _fetch_path_nodes_bulk([search_term])
+    results = grouped.get(search_term.lower(), [])
+    if not results:
+        return
+    salaries = []
+    for r in results:
+        sal = r.get("job_salary") or parse_salary_range_string(r.get("job_salary_range") or "")
+        if sal:
+            salaries.append(float(sal))
+    median_sal = None
+    if salaries:
+        salaries.sort()
+        mid = len(salaries) // 2
+        median_sal = salaries[mid]
+    target_list.append({
+        "title": search_term.title(),
+        "median_salary": median_sal,
+        "job_count": len(results),
+    })
 
 
 def _get_top_employers(title_lower: str) -> List[Dict]:

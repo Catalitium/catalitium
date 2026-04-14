@@ -327,6 +327,11 @@ def init_db():
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_salary_country ON salary(LOWER(country))"
             )
+            # -- perf indexes: salary_submissions LIKE query targets
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_salary_sub_title_loc "
+                "ON salary_submissions (job_title, location)"
+            )
             cur.execute(
                 "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_salary INTEGER"
             )
