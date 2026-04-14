@@ -1088,7 +1088,7 @@ def _base_url() -> str:
 
 
 def _send_mail(to: str, subject: str, body: str) -> None:
-    """Send a plain-text email via SMTP. Best-effort; logs on failure, never raises."""
+    """Send a plain-text email via SMTP. Best-effort; retries 3x, logs on final failure, never raises."""
     host = os.getenv("SMTP_HOST", "").strip()
     port = int(os.getenv("SMTP_PORT", "587"))
     user = os.getenv("SMTP_USER", "").strip()
@@ -1097,20 +1097,26 @@ def _send_mail(to: str, subject: str, body: str) -> None:
     if not host:
         logger.warning("_send_mail: SMTP_HOST not configured, skipping email to %s", to)
         return
-    try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["From"] = frm
-        msg["To"] = to
-        with smtplib.SMTP(host, port, timeout=10) as s:
-            s.ehlo()
-            s.starttls()
-            s.ehlo()
-            if user:
-                s.login(user, pw)
-            s.send_message(msg)
-    except Exception as exc:
-        logger.warning("_send_mail failed (to=%s): %s", to, exc)
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = frm
+    msg["To"] = to
+    last_exc: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            with smtplib.SMTP(host, port, timeout=10) as s:
+                s.ehlo()
+                s.starttls()
+                s.ehlo()
+                if user:
+                    s.login(user, pw)
+                s.send_message(msg)
+            return  # success
+        except Exception as exc:
+            last_exc = exc
+            if attempt < 3:
+                time.sleep(2)
+    logger.warning("_send_mail failed after 3 attempts (to=%s): %s", to, last_exc)
 
 
 def send_subscribe_welcome(email: str, focus: str = "") -> None:

@@ -298,10 +298,6 @@ ENVIRONMENT = os.getenv("FLASK_ENV") or os.getenv("ENV") or "production"
 
 _sitemap_cache: dict = {"data": None, "ts": 0.0}
 
-# Guest daily limit helpers live in app/utils.py (guest_daily_remaining / guest_daily_consume).
-# Aliased here for backward-compat with call sites in this file.
-_guest_daily_remaining = guest_daily_remaining
-_guest_daily_consume = guest_daily_consume
 
 
 def safe_parse_search_params(raw_title: str, raw_country: str) -> Tuple[str, str, Optional[int], Optional[int]]:
@@ -363,7 +359,7 @@ def query_jobs_payload(*, raw_title: str, raw_country: str, page: int, per_page:
         total = len(rows)
 
     # Freemium gate for API: anonymous users get up to 5K jobs per day
-    _remaining = _guest_daily_remaining()
+    _remaining = guest_daily_remaining()
     if _remaining != -1:
         if _remaining <= 0:
             rows = []
@@ -371,7 +367,7 @@ def query_jobs_payload(*, raw_title: str, raw_country: str, page: int, per_page:
         else:
             rows = rows[:_remaining]
             total = min(total if total is not None else 0, _remaining)
-            _guest_daily_consume(len(rows))
+            guest_daily_consume(len(rows))
 
     items: List[Dict[str, Any]] = []
     for row in rows:
@@ -527,7 +523,7 @@ def jobs():
 
     # Freemium gate: anonymous users get up to 5K jobs per day across all searches
     subscribe_gate = False
-    _remaining = _guest_daily_remaining()
+    _remaining = guest_daily_remaining()
     if _remaining != -1 and (q_title or q_country):
         if _remaining <= 0:
             subscribe_gate = True
@@ -536,7 +532,7 @@ def jobs():
         else:
             rows = rows[:_remaining]
             total = min(total, _remaining)
-            _guest_daily_consume(len(rows))
+            guest_daily_consume(len(rows))
             if _remaining < 20:          # near limit: show soft warning
                 subscribe_gate = True
 

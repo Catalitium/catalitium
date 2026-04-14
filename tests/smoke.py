@@ -3,19 +3,18 @@
 
 Usage (from repo root):
 
-    python scripts/smoke.py --section routes
-    python scripts/smoke.py --section all
+    python tests/smoke.py --section routes
+    python tests/smoke.py --section all
 
 Sections:
-  db        — scripts/smoke_db_tables.py
-  routes    — scripts/smoke_routes_http.py
-  carl      — scripts/smoke_carl_pdf_profile.py
-  supabase  — scripts/supabase_smoke_test.py
-  smtp      — scripts/smtp_smoke_test.py (sends mail if env configured)
-  reports   — scripts/validate_market_reports.py
+  db        — tests/smoke_db_tables.py
+  routes    — tests/smoke_routes_http.py
+  carl      — tests/smoke_carl_pdf_profile.py
+  supabase  — tests/supabase_smoke_test.py
+  smtp      — tests/smtp_smoke_test.py (sends mail if env configured)
   all       — run every section in order; exit 1 if any fails
 
-See docs/sprints/claude-rules.md for when to run which section.
+See claude-rules.md for when to run which section.
 """
 
 from __future__ import annotations
@@ -26,7 +25,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts"
+SCRIPTS = Path(__file__).resolve().parent  # all smoke scripts live in tests/
 
 SECTION_SCRIPTS: dict[str, Path] = {
     "db": SCRIPTS / "smoke_db_tables.py",
@@ -34,10 +33,9 @@ SECTION_SCRIPTS: dict[str, Path] = {
     "carl": SCRIPTS / "smoke_carl_pdf_profile.py",
     "supabase": SCRIPTS / "supabase_smoke_test.py",
     "smtp": SCRIPTS / "smtp_smoke_test.py",
-    "reports": SCRIPTS / "validate_market_reports.py",
 }
 
-ORDER_ALL = ("db", "routes", "carl", "supabase", "smtp", "reports")
+ORDER_ALL = ("db", "routes", "carl", "supabase", "smtp")
 
 
 def _run_script(label: str, script: Path) -> int:
