@@ -76,11 +76,9 @@ See `.env.example` for full list. Key vars:
 - All JSON responses use `api_error_response()` / `api_success_response()` from `utils.py`
 - All SQL is parameterized — no f-string queries
 - Secrets only via `os.getenv()` — never hardcoded
-- `models/identity.py` owns: subscribers, job postings, Stripe orders, API keys
+- `models/subscribers.py` owns: subscribers, contact-form inserts
+- `models/job_orders.py` owns: job postings, Stripe order CRUD
+- `models/subscriptions.py` owns: user subscription upsert/lookup
+- `models/api_keys.py` owns: API key lifecycle (create/confirm/revoke/quota)
 - `models/catalog.py` owns: job search, career intelligence, company queries
 - `models/money.py` owns: salary data, PPP, compensation confidence
-
-## Ongoing refactors (plan: drifting-petting-beaver.md)
-
-Active cleanup plan at `~/.claude/plans/drifting-petting-beaver.md`.
-Worktree branches in progress: `fix/housekeeping`, `feature/ci-cd`, `refactor/utils-split`, `fix/perf`.
