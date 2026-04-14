@@ -16,6 +16,7 @@ REPORTS: list[dict] = [
             "salaries by region (US, Europe, India), and the fastest growing roles for 2025-2026."
         ),
         "published": "2025-11-01",
+        "updated": "2025-11-01",
         "published_display": "November 2025",
         "pdf_path": "reports/R01- Catalitium Global Tech & AI Careers Report  November 2025 Edition.pdf",
         "read_time": "12 min read",
@@ -39,6 +40,7 @@ REPORTS: list[dict] = [
             "37 sources, April 2026."
         ),
         "published": "2026-03-01",
+        "updated": "2026-03-01",
         "published_display": "March 2026",
         "pdf_path": "",
         "read_time": "22 min read",
@@ -64,6 +66,7 @@ REPORTS: list[dict] = [
             "43% with 2+ AI skills, LLM and safety specializations, myths vs reality. February 2026."
         ),
         "published": "2026-02-15",
+        "updated": "2026-02-15",
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "18 min read",
@@ -88,6 +91,7 @@ REPORTS: list[dict] = [
             "API pricing tiers, and talent benchmarks. 20+ sources, February 2026."
         ),
         "published": "2026-02-01",
+        "updated": "2026-02-01",
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "24 min read",
@@ -113,6 +117,7 @@ REPORTS: list[dict] = [
             "in software engineering compensation in 2025\u20132026. 69 sources."
         ),
         "published": "2026-02-01",
+        "updated": "2026-02-01",
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "18 min read",
@@ -138,6 +143,7 @@ REPORTS: list[dict] = [
             "and the structural transformation of software work. 74 sources, February 2026."
         ),
         "published": "2026-02-01",
+        "updated": "2026-02-01",
         "published_display": "February 2026",
         "pdf_path": "",
         "read_time": "20 min read",
@@ -164,6 +170,7 @@ REPORTS: list[dict] = [
             "collapsing junior demand, and creating an unprecedented senior skill premium."
         ),
         "published": "2025-12-01",
+        "updated": "2025-12-01",
         "published_display": "December 2025",
         "pdf_path": "reports/R02- AI Didn\u2019t Kill Jobs \u2014 It Killed Junior Roles.pdf",
         "read_time": "15 min read",
@@ -190,6 +197,7 @@ REPORTS: list[dict] = [
             "YC, Retool, Deloitte, and Emergence Capital."
         ),
         "published": "2026-02-01",
+        "updated": "2026-02-01",
         "published_display": "February 2026",
         "pdf_path": "reports/R03- The Death of SaaS How Vibecoding Is Killing a 315 Billion Industry.pdf",
         "read_time": "18 min read",

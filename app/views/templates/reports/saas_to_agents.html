@@ -714,7 +714,7 @@
   "author": {"@type": "Organization", "name": "Catalitium", "url": "{{ url_for('jobs.jobs', _external=True) }}"},
   "publisher": {"@type": "Organization", "name": "Catalitium", "url": "{{ url_for('jobs.jobs', _external=True) }}"},
   "datePublished": "{{ report.published }}",
-  "dateModified": "{{ report.published }}",
+  "dateModified": "{{ report.updated or report.published }}",
   "mainEntityOfPage": {"@type": "WebPage", "@id": "{{ url_for('carl.market_research_report', slug=report.slug, _external=True) }}"},
   "keywords": "{{ report.keywords | join(', ') }}",
   "inLanguage": "en",

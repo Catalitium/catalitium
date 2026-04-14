@@ -4,10 +4,12 @@ import os
 from datetime import timezone
 from typing import Optional
 
-from flask import Blueprint, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
 
 from ..utils import (
     _SALARY_SEED,
+    api_error_response,
+    api_success_response,
     csrf_valid,
     get_salary_percentiles,
     parse_int_arg,
@@ -117,7 +119,7 @@ def salary_contribute():
 def salary_contribute_post():
     """Accept a salary submission; return percentile data."""
     if not csrf_valid():
-        return jsonify({"error": "invalid_csrf"}), 400
+        return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
     payload = request.get_json(silent=True) or {}
     job_title  = parse_str_arg(payload, "job_title",  max_len=120)
@@ -130,7 +132,7 @@ def salary_contribute_post():
     years_exp   = parse_int_arg(payload, "years_exp",   default=0, minimum=0, maximum=50)
 
     if not job_title or not location or not seniority or base_salary < 1:
-        return jsonify({"error": "missing_fields"}), 400
+        return api_error_response("missing_fields", "job_title, location, seniority, and base_salary are required.", 400)
 
     _VALID_CURRENCIES = {"CHF", "EUR"}
     currency = currency.upper() if currency.upper() in _VALID_CURRENCIES else "CHF"
@@ -153,10 +155,10 @@ def salary_contribute_post():
         email=email,
     )
     if status != "ok":
-        return jsonify({"error": "save_failed"}), 500
+        return api_error_response("save_failed", "Could not save salary submission.", 500)
 
     percentiles = get_salary_percentiles(job_title, location)
-    return jsonify({"ok": True, "percentiles": percentiles})
+    return api_success_response({"percentiles": percentiles or {}}, code="ok", message="ok")
 
 
 # ------------------------------------------------------------------

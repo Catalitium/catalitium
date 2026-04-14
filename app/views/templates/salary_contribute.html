@@ -323,10 +323,10 @@
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (!data.ok) {
-        if (data.error === 'save_failed') throw new Error('Could not save your submission. Please try again in a moment.');
-        throw new Error(data.error || 'Submission failed');
+        if (data.code === 'save_failed') throw new Error('Could not save your submission. Please try again in a moment.');
+        throw new Error(data.message || data.code || 'Submission failed');
       }
-      var p = data.percentiles;
+      var p = (data.data && data.data.percentiles) || data.percentiles;
       var cur = p.currency;
       var fmt = function (n) { return cur + ' ' + Number(n).toLocaleString(); };
       document.getElementById('res-title').textContent    = payload.job_title + ' · ' + payload.seniority;

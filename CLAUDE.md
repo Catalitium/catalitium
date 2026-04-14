@@ -74,6 +74,7 @@ See `.env.example` for full list. Key vars:
 
 - `factory.py` is wiring-only — no routes, no business logic, ever
 - All JSON responses use `api_error_response()` / `api_success_response()` from `utils.py`
+- **Exception:** `POST /auth/session` (`auth_session_from_tokens`) uses a small SPA-oriented contract: `{"ok": bool, "error": "...", "redirect": "..."}` — not the `api_fail` envelope. Do not migrate without updating the auth flow JS.
 - All SQL is parameterized — no f-string queries
 - Secrets only via `os.getenv()` — never hardcoded
 - `models/subscribers.py` owns: subscribers, contact-form inserts

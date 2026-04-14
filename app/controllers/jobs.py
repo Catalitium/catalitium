@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from flask import (
     Blueprint,
     Response,
+    abort,
     current_app,
     flash,
     g,
@@ -890,12 +891,12 @@ def subscribe():
     payload = request.get_json(silent=True) or {} if is_json else request.form
     if not csrf_valid():
         if is_json:
-            return jsonify({"error": "invalid_csrf"}), 400
+            return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("jobs.jobs"))
     if honeypot_triggered(payload):
         if is_json:
-            return jsonify({"error": "invalid_request"}), 400
+            return api_error_response("invalid_request", "Invalid request.", 400)
         flash("Unable to complete that request. Please refresh the page and try again.", "error")
         return redirect(url_for("jobs.jobs"))
     email = (payload.get("email") or "").strip()
@@ -913,13 +914,13 @@ def subscribe():
         email = validate_email(email, check_deliverability=False).normalized
     except EmailNotValidError:
         if is_json:
-            return jsonify({"error": "invalid_email"}), 400
+            return api_error_response("invalid_email", "Please provide a valid email.", 400)
         flash("Please enter a valid email.", "error")
         return redirect(url_for("jobs.jobs"))
 
     if disposable_email_domain(email):
         if is_json:
-            return jsonify({"error": "invalid_email"}), 400
+            return api_error_response("invalid_email", "Please provide a valid email.", 400)
         flash("Please use a permanent email address.", "error")
         return redirect(url_for("jobs.jobs"))
 
@@ -937,7 +938,7 @@ def subscribe():
     if job_link:
         if status == "error":
             if is_json:
-                return jsonify({"error": "subscribe_failed"}), 500
+                return api_error_response("subscribe_failed", "Could not complete subscription.", 500)
             flash("We couldn't process your email. Please try again later.", "error")
             return redirect(url_for("jobs.jobs"))
         if is_json:
@@ -971,8 +972,8 @@ def subscribe():
         flash(message, "success")
     elif status == "duplicate":
         if is_json:
-            body = {
-                "error": "duplicate",
+            dup_data = {
+                "status": "duplicate",
                 "digest": {
                     "title": search_title,
                     "country": search_country,
@@ -980,12 +981,16 @@ def subscribe():
                 },
             }
             if job_link:
-                body["redirect"] = job_link
-            return jsonify(body), 200
+                dup_data["redirect"] = job_link
+            return api_success_response(
+                dup_data,
+                code="duplicate",
+                message="Already subscribed",
+            )
         flash("You're already subscribed to the weekly digest.", "success")
     else:
         if is_json:
-            return jsonify({"error": "subscribe_failed"}), 500
+            return api_error_response("subscribe_failed", "Could not complete subscription.", 500)
         flash("We couldn't process your email. Please try again later.", "error")
         return redirect(url_for("jobs.jobs"))
 
@@ -1005,12 +1010,12 @@ def contact():
     payload = request.get_json(silent=True) or {} if is_json else request.form
     if not csrf_valid():
         if is_json:
-            return jsonify({"error": "invalid_csrf"}), 400
+            return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("jobs.jobs"))
     if honeypot_triggered(payload):
         if is_json:
-            return jsonify({"error": "invalid_request"}), 400
+            return api_error_response("invalid_request", "Invalid request.", 400)
         flash("Unable to complete that request. Please refresh the page and try again.", "error")
         return redirect(url_for("jobs.jobs"))
     email_raw = (payload.get("email") or "").strip()
@@ -1021,32 +1026,32 @@ def contact():
         email = validate_email(email_raw, check_deliverability=False).normalized
     except EmailNotValidError:
         if is_json:
-            return jsonify({"error": "invalid_email"}), 400
+            return api_error_response("invalid_email", "Please provide a valid email.", 400)
         flash("Please enter a valid email.", "error")
         return redirect(url_for("jobs.jobs"))
 
     if disposable_email_domain(email):
         if is_json:
-            return jsonify({"error": "invalid_email"}), 400
+            return api_error_response("invalid_email", "Please provide a valid email.", 400)
         flash("Please use a permanent email address.", "error")
         return redirect(url_for("jobs.jobs"))
 
     if not name_raw or len(name_raw) < 2:
         if is_json:
-            return jsonify({"error": "invalid_name"}), 400
+            return api_error_response("invalid_name", "Name or company is required.", 400)
         flash("Please add your name or company.", "error")
         return redirect(url_for("jobs.jobs"))
 
     if not message_raw or len(message_raw) < 5:
         if is_json:
-            return jsonify({"error": "invalid_message"}), 400
+            return api_error_response("invalid_message", "Message is too short or invalid.", 400)
         flash("Please add a short message.", "error")
         return redirect(url_for("jobs.jobs"))
 
     prepared = prepare_contact_submission(name_raw, message_raw)
     if prepared is None:
         if is_json:
-            return jsonify({"error": "invalid_message"}), 400
+            return api_error_response("invalid_message", "Message is too short or invalid.", 400)
         flash("Your message could not be sent. Please shorten links or remove unusual text and try again.", "error")
         return redirect(url_for("jobs.jobs"))
     name_clean, msg_clean = prepared
@@ -1055,7 +1060,7 @@ def contact():
 
     if status != "ok":
         if is_json:
-            return jsonify({"error": "contact_failed"}), 500
+            return api_error_response("contact_failed", "Could not send your message.", 500)
         flash("We could not send your message. Please try again.", "error")
         return redirect(url_for("jobs.jobs"))
 
@@ -1079,14 +1084,18 @@ def job_posting():
     user = session.get("user")
     if not user:
         if is_json:
-            return jsonify({"error": "auth_required"}), 401
+            return api_error_response("auth_required", "Sign in to post a job.", 401)
         flash("Sign in to post a job.", "error")
         return redirect(url_for("auth.register"))
 
     account_type = (user.get("account_type") or "").lower()
     if account_type not in ("recruiter", "company"):
         if is_json:
-            return jsonify({"error": "recruiter_account_required"}), 403
+            return api_error_response(
+                "recruiter_account_required",
+                "Job posting requires a recruiter or company account.",
+                403,
+            )
         flash("Job posting is available for recruiter and company accounts only.", "error")
         return redirect(url_for("auth.hire_onboarding"))
 
@@ -1103,7 +1112,7 @@ def job_posting():
 
     if not csrf_valid():
         if is_json:
-            return jsonify({"error": "invalid_csrf"}), 400
+            return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("jobs.jobs"))
 
@@ -1121,7 +1130,7 @@ def job_posting():
         contact_email = validate_email(contact_email_raw, check_deliverability=False).normalized
     except EmailNotValidError:
         if is_json:
-            return jsonify({"error": "invalid_email"}), 400
+            return api_error_response("invalid_email", "Please provide a valid email.", 400)
         flash("Please enter a valid contact email.", "error")
         return redirect(url_for("auth.post_job_form"))
 
@@ -1132,25 +1141,25 @@ def job_posting():
 
     if len(job_title_raw) < 2:
         if is_json:
-            return jsonify({"error": "invalid_title"}), 400
+            return api_error_response("invalid_title", "Please add a job title.", 400)
         flash("Please add a job title.", "error")
         return redirect(url_for("auth.post_job_form"))
 
     if len(company_raw) < 2:
         if is_json:
-            return jsonify({"error": "invalid_company"}), 400
+            return api_error_response("invalid_company", "Please add a company name.", 400)
         flash("Please add a company name.", "error")
         return redirect(url_for("auth.post_job_form"))
 
     if len(description_raw) < 10:
         if is_json:
-            return jsonify({"error": "invalid_description"}), 400
+            return api_error_response("invalid_description", "Please add a job description.", 400)
         flash("Please add a short description.", "error")
         return redirect(url_for("auth.post_job_form"))
 
     if _word_count(description_raw) > 5000:
         if is_json:
-            return jsonify({"error": "description_too_long"}), 400
+            return api_error_response("description_too_long", "Description is too long.", 400)
         flash("Description is too long (max ~5000 words).", "error")
         return redirect(url_for("auth.post_job_form"))
 
@@ -1176,7 +1185,7 @@ def job_posting():
 
     if status != "ok":
         if is_json:
-            return jsonify({"error": "job_posting_failed"}), 500
+            return api_error_response("job_posting_failed", "Could not submit the job posting.", 500)
         flash("We could not submit the job. Please try again.", "error")
         return redirect(url_for("auth.post_job_form"))
 
@@ -1403,18 +1412,26 @@ def legal():
     """Display combined privacy policy and terms information."""
     return render_template("legal.html")
 
+def _robots_crawl_directives() -> list[str]:
+    """Shared allow/disallow lines for default and named AI crawlers."""
+    return [
+        "Allow: /",
+        "Disallow: /api/keys/",
+        "Disallow: /v1/",
+        "Disallow: /health",
+        "Disallow: /profile",
+        "Disallow: /subscription/",
+    ]
+
+
 @bp.get("/robots.txt")
 def robots_txt():
     """Expose robots.txt with sitemap reference and crawl directives."""
-    body = "\n".join(
+    parts: list[str] = ["User-agent: *", *_robots_crawl_directives(), ""]
+    for ua in ("GPTBot", "ClaudeBot", "PerplexityBot", "CCBot"):
+        parts.extend([f"User-agent: {ua}", *_robots_crawl_directives(), ""])
+    parts.extend(
         [
-            "User-agent: *",
-            "Allow: /",
-            "Disallow: /api/",
-            "Disallow: /health",
-            "Disallow: /profile",
-            "Disallow: /subscription/",
-            "",
             "User-agent: AdsBot-Google",
             "Allow: /",
             "",
@@ -1424,6 +1441,7 @@ def robots_txt():
             f"Sitemap: {url_for('jobs.sitemap', _external=True)}",
         ]
     )
+    body = "\n".join(parts)
     resp = Response(body, mimetype="text/plain")
     resp.headers["Cache-Control"] = "public, max-age=86400"
     return resp
@@ -1558,7 +1576,7 @@ def job_detail(job_id: str):
     numeric_id = m.group(1) if m else job_id
     row = Job.get_by_id(numeric_id)
     if not row:
-        return jsonify({"error": "not found"}), 404
+        abort(404)
 
     title = re.sub(r"\s+", " ", (row.get("job_title") or "(Untitled)").strip())
     # Redirect bare /jobs/<id> to canonical /jobs/<id>-<slug> (301 permanent)

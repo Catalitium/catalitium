@@ -690,6 +690,18 @@
 {% endblock %}
 
 {% block body_extra %}
+{% set _saas_faq_pairs = [
+  ("Is SaaS actually dying or just changing shape?",
+   "Not dying in aggregate, the global SaaS market is valued at $315-$408 billion and still growing. What is dying is a specific category: horizontal, seat-based, undifferentiated SaaS without AI-native capabilities. AI-native SaaS is growing at 4.3x the rate of traditional SaaS, with 100% median growth vs. 23%."),
+  ("Will every company start building instead of buying SaaS?",
+   "No. 35% have already replaced at least one SaaS tool, not all of them. Building wins for commodity and internal tools. SaaS still wins for complex compliance workflows, multi-organization platforms, deeply regulated verticals, and tools where the moat is proprietary data or network effects rather than the interface."),
+  ("How do we know if our SaaS product is replaceable by vibecoding?",
+   "Ask three questions: (1) Can the core workflow be described in under 500 words? (2) Does our value come from the interface, or from proprietary data and integrations? (3) Would a developer with Cursor and four weeks deliver 80% of our value? If yes to all three, your category is structurally exposed."),
+  ("What should enterprises track quarterly to know if this is hitting their category?",
+   "Track: renewal pushback rate from internal stakeholders; build-vs-buy requests from your engineering team; number of internal tools deployed vs. the same period last year; SaaS spend as a percentage of headcount (it should be declining). Also watch whether your top SaaS vendors are announcing pricing model changes, that signals they are feeling the pressure."),
+  ('What is "Software as Labor" and why does it matter?',
+   "a16z's framing for AI that delivers outcomes rather than tools. Instead of buying a seat in a platform, you buy a result. Salesforce's Agentforce is the first mainstream commercial implementation. Gartner projects 30%+ of enterprise SaaS will incorporate outcome-based components. This is the business model transition that makes per-seat pricing obsolete, not vibecoding per se, but the AI agent layer above it."),
+] %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -707,7 +719,7 @@
     "url": "{{ url_for('jobs.jobs', _external=True) }}"
   },
   "datePublished": "{{ report.published }}",
-  "dateModified": "{{ report.published }}",
+  "dateModified": "{{ report.updated or report.published }}",
   "mainEntityOfPage": {
     "@type": "WebPage",
     "@id": "{{ url_for('carl.market_research_report', slug=report.slug, _external=True) }}"
@@ -721,6 +733,24 @@
     {"@type": "Thing", "name": "Vibecoding"},
     {"@type": "Thing", "name": "Build vs Buy"},
     {"@type": "Thing", "name": "AI Coding Tools"}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for question, answer in _saas_faq_pairs %}
+    {
+      "@type": "Question",
+      "name": {{ question|tojson }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ answer|tojson }}
+      }
+    }{{ "," if not loop.last }}
+    {% endfor %}
   ]
 }
 </script>

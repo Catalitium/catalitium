@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Pricing | Catalitium{% endblock %}
+{% block title %}Plans & Pricing: Salary Intel, Job Tools & API Access | Catalitium{% endblock %}
 
 {% block meta %}
 <meta name="description" content="Catalitium pricing: Market Intelligence, job search tools, and recruiter plans. Compare features, upgrade or cancel anytime.">
 <link rel="canonical" href="{{ url_for('payments.pricing', _external=True) }}">
-<meta property="og:title" content="Pricing | Catalitium">
+<meta property="og:title" content="Plans & Pricing: Salary Intel, Job Tools & API Access | Catalitium">
 <meta property="og:description" content="Choose the plan that fits your career or hiring goals. Market intelligence, salary insights, and job tools.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ url_for('payments.pricing', _external=True) }}">
 <meta property="og:site_name" content="Catalitium">
 <meta property="og:locale" content="en_US">
-<meta name="twitter:title" content="Pricing | Catalitium">
+<meta name="twitter:title" content="Plans & Pricing: Salary Intel, Job Tools & API Access | Catalitium">
 <meta name="twitter:description" content="Compare Catalitium plans for job search, salary insights, and recruiter tools.">
 {% endblock %}
 
@@ -243,6 +243,25 @@
 
     </div>
   </div>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {% for question, answer in faqs %}
+      {
+        "@type": "Question",
+        "name": {{ question|tojson }},
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": {{ answer|tojson }}
+        }
+      }{{ "," if not loop.last }}
+      {% endfor %}
+    ]
+  }
+  </script>
 
   <p class="mt-10 text-center text-sm text-slate-400 dark:text-slate-500">
     Payments processed securely by Stripe. Cancel any time. Questions?

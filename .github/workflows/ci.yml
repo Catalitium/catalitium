@@ -27,4 +27,4 @@ jobs:
           SECRET_KEY: "ci-test-secret-key-not-for-production"
           DATABASE_URL: ""
           FLASK_ENV: testing
-        run: pytest tests/ -m "not integration and not smoke" --cov=app --cov-report=term-missing
+        run: pytest tests/ -m "not smoke" --cov=app --cov-report=term-missing

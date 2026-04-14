@@ -174,6 +174,12 @@
       </div>
       {% endif %}
     </div>
+    {% elif job.description %}
+    {# Crawler-visible preview when AI cache is cold; JS may replace with bullets #}
+    <div class="ai-skeleton hidden" aria-hidden="true"></div>
+    <div class="ai-content">
+      <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{{ job.description|truncate(500, True, '…') }}</p>
+    </div>
     {% else %}
     {# Skeleton shown until JS fetches from /api/summary/<id> #}
     <div class="ai-skeleton space-y-2.5" aria-hidden="true">

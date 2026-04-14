@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 
-from ..utils import csrf_valid
+from ..utils import api_error_response, csrf_valid
 from ..models.db import logger
 from ..models.api_keys import (
     create_api_key,
@@ -627,7 +627,7 @@ def stripe_cancel():
 def stripe_webhook():
     """Handle incoming Stripe webhook events."""
     if not _stripe:
-        return jsonify({"error": "stripe_unavailable"}), 503
+        return api_error_response("stripe_unavailable", "Stripe SDK not configured.", 503)
 
     _stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
@@ -638,10 +638,10 @@ def stripe_webhook():
         event = _stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except _stripe.error.SignatureVerificationError:
         logger.warning("stripe_webhook: invalid signature")
-        return jsonify({"error": "invalid_signature"}), 400
+        return api_error_response("invalid_signature", "Invalid Stripe webhook signature.", 400)
     except Exception as exc:
         logger.warning("stripe_webhook parse error: %s", exc)
-        return jsonify({"error": "bad_payload"}), 400
+        return api_error_response("bad_payload", "Could not parse Stripe webhook payload.", 400)
 
     event_type = event.get("type", "")
     data_obj = event["data"]["object"]

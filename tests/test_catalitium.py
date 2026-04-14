@@ -257,7 +257,12 @@ def test_http_sitemap_xml(client):
 def test_http_robots_txt(client):
     r = client.get("/robots.txt")
     assert r.status_code == 200
-    assert b"Sitemap:" in r.data
+    body = r.data.decode("utf-8", errors="replace")
+    assert "Sitemap:" in body
+    assert "\nDisallow: /api/\n" not in body
+    assert "Disallow: /api/keys/" in body
+    assert "Disallow: /v1/" in body
+    assert "User-agent: GPTBot" in body
 
 
 def test_http_safe_parse_search_params_basic():
@@ -304,7 +309,9 @@ def test_http_api_jobs_json_envelope(client):
 def test_http_v1_jobs_without_key_401(client):
     r = client.get("/v1/jobs")
     assert r.status_code == 401
-    assert r.get_json().get("error") == "invalid_key"
+    data = r.get_json()
+    assert data.get("ok") is False
+    assert data.get("code") == "invalid_key"
 
 
 def test_http_api_unknown_path_404_envelope(client):
@@ -335,7 +342,8 @@ def test_http_unknown_html_path_404(client):
     assert r.status_code == 404
     data = r.get_json()
     assert data is not None
-    assert data.get("error") == "not found"
+    assert data.get("ok") is False
+    assert data.get("code") == "not_found"
 
 
 def test_http_remote_redirects_to_jobs(client):

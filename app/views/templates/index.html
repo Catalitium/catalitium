@@ -630,6 +630,12 @@
          "Yes. Our free Application Tracker lets you move roles through a Kanban pipeline: Applied, Phone Screen, Interview, Offer, and Closed. It requires no account and stores everything privately in your browser. Hit the Track button on any job card to add it. You can also export your full pipeline as a CSV."),
         ("How does Catalitium differ from LinkedIn Jobs?",
          "LinkedIn optimises for engagement and premium upgrades. Catalitium is built exclusively for tech candidates who want signal over noise: every listing shows salary estimates, ghost jobs are flagged, AI-powered summaries save you time reading descriptions, and the application tracker replaces the black-hole Easy Apply experience. No premium paywall, no recruiter spam."),
+        ("Can I filter to remote-only jobs?",
+         "Yes. Choose Remote in the location/country field or tap a Remote shortcut chip. Results are limited to roles that advertise remote or hybrid where the listing text supports it, and remote-friendly rows show a Remote badge."),
+        ("Which tech stacks are most in demand?",
+         "Across Catalitium tech listings, Python, TypeScript/JavaScript, Go, Java, and cloud platforms (AWS, GCP, Azure, Kubernetes) recur most often; AI and data roles add PyTorch, TensorFlow, and LLM tooling. Title and AI summary chips reflect the employer's stated stack."),
+        ("Which Swiss cities pay the most for software roles?",
+         "Zurich and Geneva typically lead Switzerland for software, data, and platform engineering compensation; smaller hubs follow at a discount. Swiss ranges often sit above neighbouring EU markets for comparable seniority—check Est. salary on each card when you filter by Switzerland."),
       ] %}
 
       {% for q, a in faqs %}
@@ -645,6 +651,25 @@
     </div>
   </div>
 </section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for q, a in faqs %}
+    {
+      "@type": "Question",
+      "name": {{ q|tojson }},
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": {{ a|tojson }}
+      }
+    }{{ "," if not loop.last }}
+    {% endfor %}
+  ]
+}
+</script>
 
 {% set has_search_ctx = (title_q or country_q or salary_band) %}
 <section id="saved-search-sticky"
@@ -810,38 +835,6 @@
       }
     }{{ "," if not loop.last }}
     {% endfor %}
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {
-      "@type": "Question",
-      "name": "Are remote AI roles hiring in the EU?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Yes, our EU feed includes remote-friendly AI roles. Use the AI and EU filters together to surface them quickly."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "How fresh are the postings?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "We refresh listings regularly and tag new arrivals. Look for the \u201cNew\u201d badge and the posted date pill on each card."
-      }
-    },
-    {
-      "@type": "Question",
-      "name": "Do roles include salary estimates?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Many cards show an Est. salary pill. If a range is missing, we flag it so you know before clicking through."
-      }
-    }
   ]
 }
 </script>

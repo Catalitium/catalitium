@@ -21,7 +21,12 @@ from flask import (
 
 from .config import PER_PAGE_MAX
 from .models.db import SECRET_KEY, SUPABASE_URL, close_db, init_db, logger
-from .utils import api_fail, coerce_datetime as _coerce_datetime, generate_request_id, slugify as _slugify
+from .utils import (
+    api_error_response,
+    coerce_datetime as _coerce_datetime,
+    generate_request_id,
+    slugify as _slugify,
+)
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
@@ -170,16 +175,6 @@ def create_app() -> Flask:
             return True
         return False
 
-    def _api_error(code: str, message: str, status: int = 400, details: Optional[Dict[str, Any]] = None):
-        return jsonify(
-            api_fail(
-                code=code,
-                message=message,
-                request_id=getattr(g, "request_id", ""),
-                details=details or {},
-            )
-        ), status
-
     def _apply_cache_control_headers(response: Response) -> None:
         """Set Cache-Control by response type: static (long), API (no-store), auth HTML (private), else short public."""
         path = request.path or ""
@@ -285,36 +280,36 @@ def create_app() -> Flask:
     @app.errorhandler(404)
     def handle_not_found(_error):
         if _api_request():
-            return _api_error("not_found", "Resource not found", 404)
+            return api_error_response("not_found", "Resource not found", 404)
         if _wants_html():
             return render_template("errors/404.html"), 404
-        return jsonify({"error": "not found"}), 404
+        return api_error_response("not_found", "Resource not found", 404)
 
     @app.errorhandler(500)
     def handle_server_error(error):
         logger.exception("Unhandled error", exc_info=error)
         if _api_request():
-            return _api_error("internal_error", "Internal server error", 500)
+            return api_error_response("internal_error", "Internal server error", 500)
         if _wants_html():
             return render_template("errors/500.html"), 500
-        return jsonify({"error": "internal error"}), 500
+        return api_error_response("internal_error", "Internal server error", 500)
 
     @app.errorhandler(413)
     def handle_payload_too_large(_error):
         if _api_request():
-            return _api_error("payload_too_large", "Payload too large", 413)
-        return jsonify({"error": "payload_too_large"}), 413
+            return api_error_response("payload_too_large", "Payload too large", 413)
+        return api_error_response("payload_too_large", "Payload too large", 413)
 
     @app.errorhandler(429)
     def handle_rate_limited(_error):
         if _api_request():
-            out, status = _api_error(
+            out, status_code = api_error_response(
                 "rate_limited",
                 "Too many requests. Please wait about a minute, then try again.",
                 429,
             )
             out.headers.setdefault("Retry-After", "60")
-            return out, status
+            return out, status_code
         flash("Too many requests. Please wait about a minute, then try again.", "error")
         return redirect(request.referrer or url_for("jobs.jobs"))
 

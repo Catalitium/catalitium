@@ -748,18 +748,20 @@ def require_api_key(f):
             or ""
         ).strip()
         if not raw_key:
-            return jsonify({"error": "invalid_key"}), 401
+            return api_error_response("invalid_key", "A valid API key is required.", 401)
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         now = datetime.now(timezone.utc)
         from .models.api_keys import check_and_increment_api_key  # noqa: PLC0415
         usage = check_and_increment_api_key(key_hash, now)
         if usage is None:
-            return jsonify({"error": "invalid_key"}), 401
+            return api_error_response("invalid_key", "Invalid or revoked API key.", 401)
         if isinstance(usage, dict) and usage.get("error") == "quota_exceeded":
-            return jsonify({
-                "error": "quota_exceeded",
-                "window": usage.get("window", "daily"),
-            }), 429
+            return api_error_response(
+                "quota_exceeded",
+                "API quota exceeded for this key.",
+                429,
+                details={"window": usage.get("window", "daily")},
+            )
         g.api_key_record = usage
 
         @after_this_request

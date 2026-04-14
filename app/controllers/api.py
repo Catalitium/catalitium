@@ -41,12 +41,16 @@ def api_keys_register():
     """Register a new API key. Requires an active Catalitium account (session login)."""
     user = session.get("user")
     if not user:
-        return jsonify({"error": "login_required", "detail": "Sign in to your Catalitium account first."}), 401
+        return api_error_response(
+            "login_required",
+            "Sign in to your Catalitium account first.",
+            401,
+        )
 
     email = (user.get("email") or "").strip()
     user_id = str(user.get("id") or "")
     if not email:
-        return jsonify({"error": "account_email_missing"}), 400
+        return api_error_response("account_email_missing", "Account email is missing.", 400)
 
     existing = get_api_key_by_email(email)
     if existing:
@@ -71,7 +75,7 @@ def api_keys_register():
         user_id=user_id,
     )
     if not ok:
-        return jsonify({"error": "registration_failed"}), 500
+        return api_error_response("registration_failed", "Could not register API key.", 500)
 
     base_url = request.host_url.rstrip("/")
     confirm_url = f"{base_url}/api/keys/confirm?token={confirm_token}"
@@ -85,10 +89,10 @@ def api_keys_confirm():
     """Activate an API key using the token from the confirmation email."""
     token = (request.args.get("token") or "").strip()
     if not token:
-        return jsonify({"error": "token_required"}), 400
+        return api_error_response("token_required", "Confirmation token is required.", 400)
     ok = confirm_api_key_by_token(token, datetime.now(timezone.utc))
     if not ok:
-        return jsonify({"error": "invalid_or_expired_token"}), 400
+        return api_error_response("invalid_or_expired_token", "Invalid or expired confirmation token.", 400)
     return jsonify({"message": "Key activated. Your API key was included in the confirmation email you received."}), 200
 
 
@@ -120,11 +124,11 @@ def api_keys_revoke():
         or ""
     ).strip()
     if not raw_key:
-        return jsonify({"error": "invalid_key"}), 401
+        return api_error_response("invalid_key", "A valid API key is required.", 401)
     key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
     ok = revoke_api_key(key_hash)
     if not ok:
-        return jsonify({"error": "invalid_key"}), 401
+        return api_error_response("invalid_key", "Invalid or revoked API key.", 401)
     return jsonify({"message": "Key revoked."}), 200
 
 
@@ -208,7 +212,7 @@ def v1_job_detail(job_id: int):
     """Return a single job as JSON."""
     row = Job.get_by_id(str(job_id))
     if not row:
-        return jsonify({"error": "not_found"}), 404
+        return api_error_response("not_found", "Job not found", 404)
     link = row.get("link")
     if link in BLACKLIST_LINKS:
         link = None
@@ -243,7 +247,7 @@ def v1_salary():
     except Exception:
         rec = None
     if not rec:
-        return jsonify({"error": "no_data"}), 404
+        return api_error_response("no_data", "No salary data for this location.", 404)
     median, currency = rec[0], rec[1]
     return jsonify({
         "location": location,

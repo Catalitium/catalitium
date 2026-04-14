@@ -15,6 +15,44 @@ from .db import get_db, logger, _pg_connect
 from .money import get_salary_for_location, parse_salary_range_string
 from ..utils import COUNTRY_NORM, LOCATION_COUNTRY_HINTS, SWISS_LOCATION_TERMS
 
+
+class TtlBoundedCache:
+    """In-memory TTL cache with a maximum entry count (oldest evicted first)."""
+
+    __slots__ = ("_ttl", "_max", "_store")
+
+    def __init__(self, ttl: float, max_entries: int) -> None:
+        self._ttl = float(ttl)
+        self._max = int(max_entries)
+        self._store: Dict[Any, Tuple[float, Any]] = {}
+
+    def get(self, key: Any) -> Any:
+        hit = self._store.get(key)
+        if hit is None:
+            return None
+        ts, val = hit
+        if time.time() - ts >= self._ttl:
+            self._store.pop(key, None)
+            return None
+        return val
+
+    def set(self, key: Any, value: Any) -> None:
+        self._store[key] = (time.time(), value)
+        self._prune()
+
+    def _prune(self) -> None:
+        if len(self._store) <= self._max:
+            return
+        oldest = sorted(self._store.items(), key=lambda kv: kv[1][0])[
+            : len(self._store) - self._max
+        ]
+        for k, _ in oldest:
+            self._store.pop(k, None)
+
+
+_JOB_COUNT_CACHE = TtlBoundedCache(120.0, 128)
+_JOB_SEARCH_CACHE = TtlBoundedCache(120.0, 128)
+
 # =============================================================================
 # TAXONOMY
 # =============================================================================
@@ -189,44 +227,24 @@ class Job:
         "IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"
     }
     _EU_FILTER_CODES: Set[str] = set(_EU_CODES)
-    _CACHE_TTL = 120  # seconds
-    _CACHE_MAX = 128
-    _cache_count: Dict[Tuple, Tuple[float, int]] = {}
-    _cache_search: Dict[Tuple, Tuple[float, List[Dict]]] = {}
-
-    @staticmethod
-    def _cache_prune(target: Dict):
-        if len(target) <= Job._CACHE_MAX:
-            return
-        oldest = sorted(target.items(), key=lambda kv: kv[1][0])[: len(target) - Job._CACHE_MAX]
-        for key, _ in oldest:
-            target.pop(key, None)
 
     @staticmethod
     def _cache_get_count(key: Tuple) -> Optional[int]:
-        now = time.time()
-        hit = Job._cache_count.get(key)
-        if hit and now - hit[0] < Job._CACHE_TTL:
-            return hit[1]
-        return None
+        v = _JOB_COUNT_CACHE.get(key)
+        return int(v) if v is not None else None
 
     @staticmethod
     def _cache_set_count(key: Tuple, value: int) -> None:
-        Job._cache_count[key] = (time.time(), int(value))
-        Job._cache_prune(Job._cache_count)
+        _JOB_COUNT_CACHE.set(key, int(value))
 
     @staticmethod
     def _cache_get_search(key: Tuple) -> Optional[List[Dict]]:
-        now = time.time()
-        hit = Job._cache_search.get(key)
-        if hit and now - hit[0] < Job._CACHE_TTL:
-            return hit[1]
-        return None
+        v = _JOB_SEARCH_CACHE.get(key)
+        return v if isinstance(v, list) else None
 
     @staticmethod
     def _cache_set_search(key: Tuple, value: List[Dict]) -> None:
-        Job._cache_search[key] = (time.time(), value)
-        Job._cache_prune(Job._cache_search)
+        _JOB_SEARCH_CACHE.set(key, value)
 
     @staticmethod
     def _normalize_title(value: Optional[str]) -> str:
@@ -837,27 +855,18 @@ class Job:
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# In-memory LRU cache (same pattern as jobs.py)
+# In-memory LRU cache (explore hub aggregations)
 # ---------------------------------------------------------------------------
 
-_CACHE_TTL = 300  # 5 minutes for expensive aggregation queries
-_CACHE_MAX = 64
-_cache: Dict[tuple, tuple] = {}
+_EXPLORE_HUB_CACHE = TtlBoundedCache(300.0, 64)
 
 
 def _cache_get(key: tuple):
-    hit = _cache.get(key)
-    if hit and time.time() - hit[0] < _CACHE_TTL:
-        return hit[1]
-    return None
+    return _EXPLORE_HUB_CACHE.get(key)
 
 
 def _cache_set(key: tuple, value):
-    _cache[key] = (time.time(), value)
-    if len(_cache) > _CACHE_MAX:
-        oldest = sorted(_cache.items(), key=lambda kv: kv[1][0])[: len(_cache) - _CACHE_MAX]
-        for k, _ in oldest:
-            _cache.pop(k, None)
+    _EXPLORE_HUB_CACHE.set(key, value)
 
 
 # ---------------------------------------------------------------------------

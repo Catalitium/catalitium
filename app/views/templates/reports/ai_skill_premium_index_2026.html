@@ -517,7 +517,7 @@
   "description": "{{ report.description }}",
   "author": {"@type": "Organization", "name": "Catalitium"},
   "datePublished": "{{ report.published }}",
-  "dateModified": "{{ report.published }}",
+  "dateModified": "{{ report.updated or report.published }}",
   "keywords": "{{ report.keywords | join(', ') }}"
 }
 </script>
