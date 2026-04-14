@@ -641,6 +641,19 @@
   </div>
 
   <div id="carl-individuals-workspace" class="hidden w-full min-w-0">
+    {# Inline gate wire: runs during parse (before deferred carl.js). Survives Cookiebot/consent delays on external JS. #}
+    <script data-carl-gate-wire="1">
+(function () {
+  var btn = document.getElementById("btn-select-individual");
+  var gate = document.getElementById("carl-persona-gate");
+  var workspace = document.getElementById("carl-individuals-workspace");
+  if (!btn || !gate || !workspace) return;
+  btn.addEventListener("click", function () {
+    gate.classList.add("hidden");
+    workspace.classList.remove("hidden");
+  });
+})();
+    </script>
     <!-- Landing: upload -->
     <div id="carl-upload-hero" class="mx-auto max-w-2xl px-4 py-16">
       <div class="text-center">

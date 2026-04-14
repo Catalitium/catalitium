@@ -60,6 +60,7 @@
   var btnSelectIndividual = document.getElementById("btn-select-individual");
   var gateGate = document.getElementById("carl-persona-gate");
   var gateWorkspace = document.getElementById("carl-individuals-workspace");
+  /* Persona gate is also wired inline in carl.html (data-carl-gate-wire) so it works if this file loads late. */
   if (btnSelectIndividual) {
     btnSelectIndividual.addEventListener("click", function () {
       if (gateGate) gateGate.classList.add("hidden");
