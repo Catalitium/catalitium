@@ -751,7 +751,7 @@ def require_api_key(f):
             return jsonify({"error": "invalid_key"}), 401
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
         now = datetime.now(timezone.utc)
-        from .models.identity import check_and_increment_api_key  # noqa: PLC0415
+        from .models.api_keys import check_and_increment_api_key  # noqa: PLC0415
         usage = check_and_increment_api_key(key_hash, now)
         if usage is None:
             return jsonify({"error": "invalid_key"}), 401

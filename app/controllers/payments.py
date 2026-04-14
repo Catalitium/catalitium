@@ -19,17 +19,21 @@ from flask import (
 
 from ..utils import csrf_valid
 from ..models.db import logger
-from ..models.identity import (
+from ..models.api_keys import (
     create_api_key,
     get_api_key_by_email,
+    sync_api_key_quota_for_api_access,
+)
+from ..models.job_orders import (
     get_stripe_order,
-    get_subscription_by_stripe_id,
-    get_user_subscriptions,
     insert_job_posting,
     insert_stripe_order,
     mark_stripe_order_job_submitted,
     mark_stripe_order_paid,
-    sync_api_key_quota_for_api_access,
+)
+from ..models.subscriptions import (
+    get_subscription_by_stripe_id,
+    get_user_subscriptions,
     upsert_user_subscription,
 )
 from ..utils import (

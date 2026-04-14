@@ -17,7 +17,8 @@ except ImportError:
     _sb_create_client = None  # type: ignore[assignment]
 
 from ..models.db import logger
-from ..models.identity import get_api_key_by_email, get_user_subscriptions
+from ..models.api_keys import get_api_key_by_email
+from ..models.subscriptions import get_user_subscriptions
 from ..utils import csrf_valid, validate_email
 
 bp = Blueprint("auth", __name__)

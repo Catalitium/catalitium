@@ -43,7 +43,8 @@ from ..models.catalog import (
     get_job_summary,
 )
 from ..models.db import get_db, logger, parse_job_description
-from ..models.identity import insert_contact, insert_job_posting, insert_subscriber
+from ..models.job_orders import insert_job_posting
+from ..models.subscribers import insert_contact, insert_subscriber
 from ..models.money import (
     _compact_salary_number,
     compute_compensation_confidence,

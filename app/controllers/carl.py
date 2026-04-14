@@ -19,7 +19,7 @@ from ..config import (
 from ..utils import REPORTS
 from ..models.cv import CVExtractionError, extract_cv_from_upload, normalize_cv_text
 from ..models.db import SUPABASE_URL, logger, upsert_profile_cv_extract
-from ..models.identity import get_user_subscriptions
+from ..models.subscriptions import get_user_subscriptions
 from ..utils import api_error_response, api_success_response, csrf_valid
 from .auth import upload_cv_to_storage
 

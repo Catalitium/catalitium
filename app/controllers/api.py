@@ -20,7 +20,7 @@ from ..utils import (
 )
 from ..models.catalog import Job, clean_job_description_text, get_job_summary, save_job_summary
 from ..models.db import logger
-from ..models.identity import (
+from ..models.api_keys import (
     confirm_api_key_by_token,
     create_api_key,
     get_api_key_by_email,
