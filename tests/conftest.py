@@ -61,7 +61,13 @@ def client(app):
 
 @pytest.fixture
 def mock_db_health_ok(monkeypatch):
-    """Stub ``get_db`` so ``GET /health`` returns 200 when CI has no Postgres (connection refused)."""
+    """Stub ``get_db`` so ``GET /health`` returns 200 when CI has no Postgres (connection refused).
+
+    ``/health`` lives in ``app.controllers.jobs`` and uses a module-level ``from ..models.db import
+    get_db``, so patching only ``app.models.db.get_db`` does not replace that bound name. Patch
+    both the definition and the consumer used by the route.
+    """
+    from app.controllers import jobs as jobs_mod
     from app.models import db as db_mod
 
     class _Cur:
@@ -81,4 +87,7 @@ def mock_db_health_ok(monkeypatch):
         def cursor(self):
             return _Cur()
 
-    monkeypatch.setattr(db_mod, "get_db", lambda: _Conn())
+    fake = lambda: _Conn()
+
+    monkeypatch.setattr(db_mod, "get_db", fake)
+    monkeypatch.setattr(jobs_mod, "get_db", fake)
