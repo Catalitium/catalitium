@@ -96,6 +96,9 @@ node_modules/
 # Windows shell crash dumps
 *.stackdump
 
+# GitHub Actions (not used; keep local workflows untracked)
+.github/workflows/
+
 # Local agent/skill dirs
 .agent/
 .agents/
