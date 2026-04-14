@@ -1,7 +1,8 @@
 """Carl /carl: Individuals persona gate must work for signed-in users (HTML + inline wire).
 
-Regression: deferred ``carl.js`` alone can fail to bind if blocked/delayed by consent tools;
-inline ``data-carl-gate-wire`` runs during parse so ``For Individuals`` always reveals the workspace.
+Regression: inline ``data-carl-gate-wire`` runs during parse so ``For Individuals`` reveals the workspace.
+Upload form must use POST to ``/carl/analyze`` so a missed JS intercept does not default to GET (query-string URL).
+carl.js loads without ``defer`` so handlers bind sooner on production (consent/Cookiebot delays).
 """
 
 from __future__ import annotations
@@ -59,8 +60,10 @@ def test_carl_guest_redirects_no_gate(app):
     assert "btn-select-individual" not in (r.get_data(as_text=True) or "")
 
 
-def test_carl_deferred_carl_js_linked(carl_logged_in_client):
+def test_carl_js_linked_and_upload_form_posts_to_analyze(carl_logged_in_client):
     r = carl_logged_in_client.get("/carl")
     html = r.get_data(as_text=True)
     assert re.search(r'<script[^>]+src=["\'][^"\']*js/carl\.js', html) is not None
-    assert "defer" in html  # carl.js must stay deferred for hydrate after full DOM
+    assert 'id="carl-upload-form"' in html
+    assert 'method="post"' in html
+    assert "/carl/analyze" in html

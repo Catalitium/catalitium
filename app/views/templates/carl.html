@@ -663,7 +663,8 @@
         <p class="mt-4 text-center text-xs text-[#6B7280]">Need a Harvard-format .docx without the live dashboard? <a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e]/90 hover:text-[#4ade80] underline-offset-2 hover:underline">Carl CV Builder</a></p>
       </div>
 
-      <form id="carl-upload-form" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl">
+      {# method/action/enctype: default form method is GET; without POST, a native submit puts fields in the URL and skips JS fetch (breaks prod when carl.js is delayed or blocked). #}
+      <form id="carl-upload-form" method="post" action="{{ url_for('carl.carl_analyze') }}" enctype="multipart/form-data" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         
         <!-- Drag Drop Visuals -->
@@ -983,5 +984,6 @@
 {% endblock %}
 
 {% block body_extra %}
-<script defer src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}"></script>
+{# No defer: run as soon as parsed so submit handler binds before Cookiebot/consent delays typical of deferred external scripts on production. #}
+<script src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}"></script>
 {% endblock %}
