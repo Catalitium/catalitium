@@ -14,7 +14,7 @@ Sections:
   smtp      — tests/smtp_smoke_test.py (sends mail if env configured)
   all       — run every section in order; exit 1 if any fails
 
-See claude-rules.md for when to run which section.
+Run the sections that match what you changed (DB vs routes vs integrations).
 """
 
 from __future__ import annotations

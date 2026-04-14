@@ -1,11 +1,11 @@
 ---
-description: How Catalitium coding agents plan, verify, and stay minimal — mirrors claude-rules.md
+description: How Catalitium coding agents plan, verify, and stay minimal
 alwaysApply: true
 ---
 
 # Catalitium agent behavior (Cursor)
 
-Canonical copy with rationale: **`claude-rules.md`** at the repository root. This rule is the **operating checklist** in chat.
+This rule is the **operating checklist** in chat (stack and commands: **`README.md`**).
 
 ## Plan and scope
 
@@ -26,7 +26,3 @@ Canonical copy with rationale: **`claude-rules.md`** at the repository root. Thi
 
 - Never commit secrets or real `.env` content; align env docs with **`.env.example`**.
 - No force-push, mass delete, or production data changes without explicit user instruction.
-
-## Tasks (optional)
-
-- If `tasks/todo.md` exists: short checkable plan + brief completion note with paths cited.
