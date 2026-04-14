@@ -29,6 +29,7 @@
 
   var analysisState = null;
   var terminalTimer = null;
+  var terminalLiveTimer = null;
   var loadingStatusTimer = null;
   var MIN_ANALYZE_MS = 3600;
   var LOADING_STATUS_MS = 1080;
@@ -441,38 +442,129 @@
     if (el) el.textContent = value || "";
   }
 
-  function playTerminal(logs) {
+  function stopTerminalLiveFeed() {
+    if (terminalLiveTimer) {
+      clearInterval(terminalLiveTimer);
+      terminalLiveTimer = null;
+    }
+    var liveEl = document.getElementById("carl-terminal-live");
+    if (liveEl) {
+      liveEl.textContent = "";
+    }
+  }
+
+  function buildCvSentencePool(analysis) {
+    var pool = [];
+    var seen = {};
+    function addOne(t) {
+      t = String(t || "")
+        .trim()
+        .replace(/\s+/g, " ");
+      if (t.length < 22 || t.length > 280) return;
+      var k = t.toLowerCase().slice(0, 64);
+      if (seen[k]) return;
+      seen[k] = true;
+      pool.push(t);
+    }
+    function addFromBlob(blob) {
+      if (!blob) return;
+      String(blob)
+        .split(/[.!?]+/)
+        .forEach(function (chunk) {
+          addOne(chunk);
+        });
+    }
+    if (!analysis) {
+      return ["Sign in and run an analysis to populate this feed."];
+    }
+    var ov = analysis.overview || {};
+    addOne(ov.headline);
+    addFromBlob(ov.fitSummary);
+    (analysis.documents || []).forEach(function (d) {
+      addOne((d.title || "") + " — " + (d.subtitle || ""));
+    });
+    (analysis.strengths || []).forEach(function (s) {
+      addOne(s);
+    });
+    (analysis.experienceTimeline || []).forEach(function (x) {
+      addOne((x.period || "") + ": " + (x.role || "") + " — " + (x.impact || ""));
+    });
+    (analysis.quickWins || []).forEach(function (x) {
+      addOne(x);
+    });
+    (analysis.riskFlags || []).forEach(function (x) {
+      addOne(x);
+    });
+    (analysis.terminalLogs || []).forEach(function (line) {
+      addOne(String(line).replace(/^\[Carl\]\s*/i, "").trim());
+    });
+    var cc = analysis.chatContext || {};
+    addFromBlob(cc.summary);
+    (analysis.actionFeed || []).forEach(function (a) {
+      addOne((a.title || "") + ": " + (a.subtitle || "") + (a.detail ? " — " + a.detail : ""));
+    });
+    if (!pool.length) {
+      addOne("Carl is ready — ask about ATS match, keyword gaps, or quick wins in chat.");
+    }
+    return pool.slice(0, 40);
+  }
+
+  function startTerminalLiveFeed() {
+    stopTerminalLiveFeed();
+    if (!analysisState) return;
+    var pool = buildCvSentencePool(analysisState);
+    var liveEl = document.getElementById("carl-terminal-live");
+    if (!liveEl || !pool.length) return;
+    var idx = 0;
+    function show() {
+      liveEl.style.opacity = "0";
+      setTimeout(function () {
+        liveEl.textContent = pool[idx % pool.length];
+        liveEl.style.opacity = "1";
+        idx += 1;
+      }, 120);
+    }
+    show();
+    terminalLiveTimer = setInterval(show, 15000);
+  }
+
+  function playTerminal(logs, onComplete) {
     if (!terminal) return;
+    stopTerminalLiveFeed();
     if (terminalTimer) {
       clearTimeout(terminalTimer);
       terminalTimer = null;
     }
     terminal.innerHTML = "";
+    var liveClear = document.getElementById("carl-terminal-live");
+    if (liveClear) liveClear.textContent = "";
     var lines = safeList(logs, ["[Carl] no terminal lines"]);
     var index = 0;
-    if (terminalStatus) terminalStatus.textContent = "Streaming";
+    if (terminalStatus) terminalStatus.textContent = "stream";
     function tick() {
       if (index >= lines.length) {
         terminalTimer = null;
         if (terminalStatus) {
           setTimeout(function () {
-            terminalStatus.textContent = "Complete";
-            if (terminal) {
-              terminal.style.transition = "opacity 0.45s ease";
-              terminal.style.opacity = "0.94";
-              terminal.style.filter = "none";
-            }
-          }, 300);
+            terminalStatus.textContent = "idle";
+            if (onComplete) onComplete();
+          }, 280);
+        } else if (onComplete) {
+          onComplete();
         }
         return;
       }
       var row = document.createElement("div");
-      row.className = "carl-terminal-row-in whitespace-pre-wrap border-l-2 border-[#18A7EC]/45 pl-2";
-      row.textContent = "> " + lines[index];
+      row.className = "carl-terminal-row-in carl-term-log-line";
+      row.innerHTML =
+        '<span class="carl-term-prompt-mono">carl<span class="carl-term-at">@</span>cv<span class="carl-term-at">:</span>~<span class="carl-term-at">$</span></span>' +
+        '<span class="carl-term-line-text">' +
+        escapeHtml(lines[index]) +
+        "</span>";
       terminal.appendChild(row);
       terminal.scrollTop = terminal.scrollHeight;
       index += 1;
-      terminalTimer = setTimeout(tick, 25);
+      terminalTimer = setTimeout(tick, 22);
     }
     tick();
   }
@@ -767,8 +859,7 @@
     }
     resetCarlChatGate();
     renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
-    if (terminalStatus) terminalStatus.textContent = "Streaming";
-    playTerminal(analysisState.terminalLogs || []);
+    playTerminal(analysisState.terminalLogs || [], startTerminalLiveFeed);
     initTabs();
 
     requestAnimationFrame(function () {
@@ -800,6 +891,7 @@
       return;
     }
     setError("");
+    stopTerminalLiveFeed();
     setUploadLoading(true);
     startUploadPremiumLoading();
 

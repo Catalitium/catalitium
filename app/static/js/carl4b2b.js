@@ -18,6 +18,7 @@
 
   var analysisState = null;
   var terminalTimer = null;
+  var terminalLiveTimer = null;
   var MIN_ANALYZE_MS = 1200;
   var REVEAL_BASE_DELAY_MS = 120;
   var REVEAL_STAGGER_MS = 200;
@@ -309,29 +310,128 @@
     setMetric("carl4b2b-metric-evidence", premium.evidenceDensity);
   }
 
-  function playTerminal(logs) {
+  function stopB2bTerminalLiveFeed() {
+    if (terminalLiveTimer) {
+      clearInterval(terminalLiveTimer);
+      terminalLiveTimer = null;
+    }
+    var liveEl = document.getElementById("carl4b2b-terminal-live");
+    if (liveEl) liveEl.textContent = "";
+  }
+
+  function buildMarketSentencePool(analysis) {
+    var pool = [];
+    var seen = {};
+    function addOne(t) {
+      t = String(t || "")
+        .trim()
+        .replace(/\s+/g, " ");
+      if (t.length < 22 || t.length > 280) return;
+      var k = t.toLowerCase().slice(0, 64);
+      if (seen[k]) return;
+      seen[k] = true;
+      pool.push(t);
+    }
+    function addFromBlob(blob) {
+      if (!blob) return;
+      String(blob)
+        .split(/[.!?]+/)
+        .forEach(function (chunk) {
+          addOne(chunk);
+        });
+    }
+    if (!analysis) {
+      return ["Run a market map from your company URL to populate this feed."];
+    }
+    var mm = analysis.marketMeta || {};
+    addOne("Source URL: " + (mm.business_url || ""));
+    addOne("Catalog slice: " + (mm.title_q || "") + " · " + (mm.country_q || "global hint"));
+    var ov = analysis.overview || {};
+    addOne(ov.headline);
+    addFromBlob(ov.fitSummary);
+    var cc = analysis.chatContext || {};
+    addFromBlob(cc.summary);
+    (analysis.documents || []).forEach(function (d) {
+      addOne((d.title || "") + " — " + (d.subtitle || ""));
+    });
+    (analysis.strengths || []).forEach(function (s) {
+      addOne(s);
+    });
+    (analysis.riskFlags || []).forEach(function (x) {
+      addOne(x);
+    });
+    (analysis.quickWins || []).forEach(function (x) {
+      addOne(x);
+    });
+    (analysis.terminalLogs || []).forEach(function (line) {
+      addOne(String(line).replace(/^\[Carl4B2B\]\s*/i, "").trim());
+    });
+    var matches = analysis.matches || {};
+    (matches.top_companies || []).slice(0, 6).forEach(function (c) {
+      addOne((c.name || "") + " — " + (c.reason || ""));
+    });
+    if (!pool.length) {
+      addOne("Catalog pass ready — ask Carl about saturation, competitors, or sample limits.");
+    }
+    return pool.slice(0, 40);
+  }
+
+  function startB2bTerminalLiveFeed() {
+    stopB2bTerminalLiveFeed();
+    if (!analysisState) return;
+    var pool = buildMarketSentencePool(analysisState);
+    var liveEl = document.getElementById("carl4b2b-terminal-live");
+    if (!liveEl || !pool.length) return;
+    var idx = 0;
+    function show() {
+      liveEl.style.opacity = "0";
+      setTimeout(function () {
+        liveEl.textContent = pool[idx % pool.length];
+        liveEl.style.opacity = "1";
+        idx += 1;
+      }, 120);
+    }
+    show();
+    terminalLiveTimer = setInterval(show, 15000);
+  }
+
+  function playTerminal(logs, onComplete) {
     if (!terminal) return;
+    stopB2bTerminalLiveFeed();
     if (terminalTimer) {
       clearTimeout(terminalTimer);
       terminalTimer = null;
     }
     terminal.innerHTML = "";
+    var liveClear = document.getElementById("carl4b2b-terminal-live");
+    if (liveClear) liveClear.textContent = "";
     var lines = safeList(logs, ["[Carl4B2B] no terminal lines"]);
     var index = 0;
-    if (terminalStatus) terminalStatus.textContent = "Streaming";
+    if (terminalStatus) terminalStatus.textContent = "stream";
     function tick() {
       if (index >= lines.length) {
         terminalTimer = null;
-        if (terminalStatus) terminalStatus.textContent = "Complete";
+        if (terminalStatus) {
+          setTimeout(function () {
+            terminalStatus.textContent = "idle";
+            if (onComplete) onComplete();
+          }, 260);
+        } else if (onComplete) {
+          onComplete();
+        }
         return;
       }
       var row = document.createElement("div");
-      row.className = "c4b-terminal-row-in whitespace-pre-wrap border-l-2 border-amber-400/50 pl-2";
-      row.textContent = "> " + lines[index];
+      row.className = "c4b-terminal-row-in c4b-term-log-line";
+      row.innerHTML =
+        '<span class="c4b-term-prompt-mono">b2b<span class="c4b-term-at">@</span>catalog<span class="c4b-term-at">:</span>~<span class="c4b-term-at">$</span></span>' +
+        '<span class="c4b-term-line-text">' +
+        escapeHtml(lines[index]) +
+        "</span>";
       terminal.appendChild(row);
       terminal.scrollTop = terminal.scrollHeight;
       index += 1;
-      terminalTimer = setTimeout(tick, 28);
+      terminalTimer = setTimeout(tick, 22);
     }
     tick();
   }
@@ -527,8 +627,7 @@
     }
     resetChatGate();
     renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
-    if (terminalStatus) terminalStatus.textContent = "Streaming";
-    playTerminal(analysisState.terminalLogs || []);
+    playTerminal(analysisState.terminalLogs || [], startB2bTerminalLiveFeed);
     initTabs();
     requestAnimationFrame(function () {
       if (!workspace) return;
@@ -601,21 +700,18 @@
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
-    var title = (document.getElementById("carl4b2b-title") && document.getElementById("carl4b2b-title").value) || "";
-    var country = (document.getElementById("carl4b2b-country") && document.getElementById("carl4b2b-country").value) || "";
-    if (String(title).trim().length < 2 && String(country).trim().length < 2) {
-      setError("Enter at least a meaningful title or country (two+ characters).");
+    var urlEl = document.getElementById("carl4b2b-url");
+    var businessUrl = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
+    if (!businessUrl) {
+      setError("Enter your company or careers page URL.");
       return;
     }
     setError("");
+    stopB2bTerminalLiveFeed();
     setAnalyzeLoading(true);
     var started = performance.now();
     var payload = {
-      title_q: String(title).trim(),
-      country_q: String(country).trim(),
-      exclude_company: (document.getElementById("carl4b2b-exclude") && document.getElementById("carl4b2b-exclude").value) || "",
-      business_url: (document.getElementById("carl4b2b-url") && document.getElementById("carl4b2b-url").value) || "",
-      company_email: (document.getElementById("carl4b2b-email") && document.getElementById("carl4b2b-email").value) || "",
+      business_url: businessUrl,
     };
     fetch("/carl/b2b/analyze", {
       method: "POST",

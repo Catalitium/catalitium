@@ -79,7 +79,7 @@ def test_carl4b2b_get_ok_when_logged_in(carl4b2b_client):
 
 
 def test_carl4b2b_analyze_requires_login(carl4b2b_client):
-    r = carl4b2b_client.post("/carl/b2b/analyze", json={"title_q": "python", "country_q": "CH"})
+    r = carl4b2b_client.post("/carl/b2b/analyze", json={"business_url": "https://example.com"})
     assert r.status_code == 401
 
 
@@ -89,13 +89,13 @@ def test_carl4b2b_analyze_validation(carl4b2b_client):
     csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
     r = carl4b2b_client.post(
         "/carl/b2b/analyze",
-        json={"title_q": "x", "country_q": ""},
+        json={"business_url": ""},
         headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
     )
     assert r.status_code == 400
     body = r.get_json()
     assert body.get("ok") is False
-    assert body.get("code") == "missing_market_query"
+    assert body.get("code") == "invalid_company_url"
 
 
 def test_carl4b2b_analyze_happy_path_json(carl4b2b_client, monkeypatch):
@@ -105,13 +105,7 @@ def test_carl4b2b_analyze_happy_path_json(carl4b2b_client, monkeypatch):
     csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
     r = carl4b2b_client.post(
         "/carl/b2b/analyze",
-        json={
-            "title_q": "python",
-            "country_q": "CH",
-            "exclude_company": "",
-            "business_url": "",
-            "company_email": "",
-        },
+        json={"business_url": "https://example.com/careers"},
         headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
     )
     assert r.status_code == 200
@@ -135,7 +129,7 @@ def test_carl4b2b_chat_grounded_chip(carl4b2b_client, monkeypatch):
     csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
     ar = carl4b2b_client.post(
         "/carl/b2b/analyze",
-        json={"title_q": "python engineer", "country_q": "CH"},
+        json={"business_url": "https://example.ch/jobs"},
         headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
     )
     assert ar.status_code == 200

@@ -6,7 +6,8 @@ import math
 import re
 from collections import Counter
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+from urllib.parse import urlparse, urlunparse
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
@@ -29,6 +30,88 @@ bp = Blueprint("carl4b2b", __name__, url_prefix="/carl/b2b")
 
 _MAX_LINE = 140
 _SAMPLE_CAP = 400
+
+# Default catalog title family when the user only supplies a company URL (bounded search).
+_DEFAULT_TITLE_FAMILY = "software"
+
+# Last-label TLD → country hint string for ``normalize_country`` (best-effort).
+_TLD_COUNTRY_RAW: Dict[str, str] = {
+    "de": "germany",
+    "at": "austria",
+    "ch": "switzerland",
+    "fr": "france",
+    "uk": "uk",
+    "nl": "netherlands",
+    "es": "spain",
+    "it": "italy",
+    "be": "belgium",
+    "pl": "poland",
+    "cz": "czech republic",
+    "se": "sweden",
+    "no": "norway",
+    "dk": "denmark",
+    "ie": "ireland",
+    "pt": "portugal",
+    "fi": "finland",
+    "in": "india",
+    "jp": "japan",
+    "au": "australia",
+    "ca": "canada",
+    "us": "united states",
+    "br": "brazil",
+    "mx": "mexico",
+}
+
+
+def _brand_token_from_host(host: str) -> str:
+    """Heuristic: company name segment from hostname (substring match on catalog company_name)."""
+    h = (host or "").lower().strip().rstrip(".")
+    if h.startswith("www."):
+        h = h[4:]
+    parts = [p for p in h.split(".") if p]
+    if not parts:
+        return ""
+    if len(parts) >= 3:
+        return parts[-2]
+    return parts[0]
+
+
+def _country_raw_hint_from_host(host: str) -> str:
+    h = (host or "").lower().strip().rstrip(".")
+    parts = h.split(".")
+    if len(parts) >= 3 and parts[-2] == "co" and parts[-1] == "uk":
+        return "uk"
+    tld = parts[-1] if parts else ""
+    return _TLD_COUNTRY_RAW.get(tld, "")
+
+
+def parse_company_url_for_market_map(raw: str) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str], Optional[str]]:
+    """Return ``(canonical_url, title_raw, country_raw, exclude_company, error_code)``.
+
+    ``error_code`` is ``invalid_company_url`` when the string is not a usable http(s) URL with a host.
+    """
+    s = (raw or "").strip()
+    if not s:
+        return None, None, None, None, "invalid_company_url"
+    if "://" not in s:
+        s = "https://" + s
+    parsed = urlparse(s)
+    if parsed.scheme not in ("http", "https"):
+        return None, None, None, None, "invalid_company_url"
+    netloc = (parsed.netloc or "").strip()
+    if not netloc:
+        return None, None, None, None, "invalid_company_url"
+    if "@" in netloc:
+        netloc = netloc.split("@")[-1]
+    netloc = netloc.lower()
+    path = parsed.path or ""
+    canonical = urlunparse((parsed.scheme, netloc, path, "", parsed.query, parsed.fragment))
+    if not path:
+        canonical = f"{parsed.scheme}://{netloc}/"
+
+    exclude = _brand_token_from_host(netloc)
+    country_raw = _country_raw_hint_from_host(netloc)
+    return canonical, _DEFAULT_TITLE_FAMILY, country_raw, exclude, None
 
 
 def _truncate(text: str, max_len: int) -> str:
@@ -247,6 +330,8 @@ def build_market_map_analysis(
             "total_count": total_catalog,
             "business_url": (meta.get("business_url") or "").strip(),
             "company_email": (meta.get("company_email") or "").strip(),
+            "inferred_from_url": bool(meta.get("inferred_from_url")),
+            "inferred_title_family": (meta.get("inferred_title_family") or "").strip(),
         },
     }
     return analysis
@@ -452,28 +537,58 @@ def carl4b2b_analyze():
         return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
 
     payload = request.get_json(silent=True) or {}
-    title_raw = str(payload.get("title_q") or payload.get("title") or "").strip()
-    country_raw = str(payload.get("country_q") or payload.get("country") or "").strip()
-    exclude_company = str(payload.get("exclude_company") or "").strip()
-    business_url = str(payload.get("business_url") or "").strip()
-    company_email = str(payload.get("company_email") or "").strip()
+    business_url_in = str(payload.get("business_url") or "").strip()
 
-    title_q = normalize_title(title_raw)
-    country_q = normalize_country(country_raw)
-    if len(title_q) < 2 and len(country_q) < 2:
+    if not business_url_in:
         return api_error_response(
-            "missing_market_query",
-            "Provide at least a meaningful job title or country (two or more normalized characters).",
+            "invalid_company_url",
+            "Provide your company or careers page URL.",
             400,
         )
 
-    meta = {"business_url": business_url, "company_email": company_email}
+    canonical_url, title_raw, country_raw, exclude_company, url_err = parse_company_url_for_market_map(
+        business_url_in
+    )
+    if url_err:
+        return api_error_response(
+            "invalid_company_url",
+            "Enter a valid http(s) URL with a hostname (e.g. https://yourcompany.com).",
+            400,
+        )
+
+    company_email = str(payload.get("company_email") or "").strip()
+
+    meta = {
+        "business_url": canonical_url or business_url_in,
+        "company_email": company_email,
+        "inferred_from_url": True,
+        "inferred_title_family": _DEFAULT_TITLE_FAMILY,
+    }
     analysis = build_market_map_analysis(
-        title_raw=title_raw,
-        country_raw=country_raw,
-        exclude_company=exclude_company,
+        title_raw=title_raw or "",
+        country_raw=country_raw or "",
+        exclude_company=exclude_company or "",
         meta=meta,
     )
+
+    mm = analysis.get("marketMeta") or {}
+    title_q = str(mm.get("title_q") or "")
+    country_q = str(mm.get("country_q") or "")
+    if len(title_q) < 2 and len(country_q) < 2:
+        return api_error_response(
+            "invalid_company_url",
+            "Could not derive a catalog query from that URL.",
+            400,
+        )
+
+    pre_logs = [
+        _truncate(f"[Carl4B2B] company_url: {canonical_url}", _MAX_LINE),
+        _truncate(
+            f"[Carl4B2B] inferred: title≈{title_q} country≈{country_q or '—'} exclude≈{(exclude_company or '—').lower()}",
+            _MAX_LINE,
+        ),
+    ]
+    analysis["terminalLogs"] = pre_logs + list(analysis.get("terminalLogs") or [])
 
     user = session.get("user") or {}
     user_id = user.get("id")
@@ -516,11 +631,11 @@ def carl4b2b_analyze():
     session.modified = True
 
     source = {
-        "inputType": "market_query",
+        "inputType": "company_url",
         "title_q": title_q,
         "country_q": country_q,
-        "exclude_company": exclude_company,
-        "business_url": business_url,
+        "exclude_company": exclude_company or "",
+        "business_url": canonical_url or business_url_in,
         "company_email": company_email,
     }
 
