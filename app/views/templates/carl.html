@@ -611,8 +611,9 @@
   <!-- Persona Gateway -->
   <div id="carl-persona-gate" class="mx-auto flex min-h-[calc(100dvh-3.5rem)] flex-col items-center justify-center p-6 text-center">
     <h1 class="text-4xl font-bold tracking-tight text-white mb-3">Who is Carl helping today?</h1>
-    <p class="text-[#9CA3AF] max-w-lg mb-12">Select your persona to unlock specialized AI tools for hiring teams or active job seekers.</p>
-    
+    <p class="text-[#9CA3AF] max-w-lg mb-3">Select your persona to unlock specialized AI tools for hiring teams or active job seekers.</p>
+    <p class="mb-12 text-sm text-[#6B7280]"><a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e] underline-offset-2 hover:underline">Harvard-format CV (DOCX)</a> — instant download, no analysis step.</p>
+
     <div class="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
       <!-- Companies Card -->
       <a href="{{ url_for('carl4b2b.carl4b2b_dashboard') }}" class="group relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-[#111]/40 p-10 text-left transition hover:border-[#18a7ec]/50 hover:bg-[#18a7ec]/5 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18a7ec]/60">

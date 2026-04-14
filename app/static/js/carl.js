@@ -1,8 +1,9 @@
 (function () {
-  var form = document.getElementById("carl-upload-form");
-  if (!form) return;
+  var carlShell = document.getElementById("carl-shell");
+  if (!carlShell) return;
   document.body.classList.add("carl-carl-page");
 
+  var form = document.getElementById("carl-upload-form");
   var uploadBtn = document.getElementById("carl-upload-btn");
   var fileInput = document.getElementById("carl-file-input");
   var textFallback = document.getElementById("carl-text-fallback");
@@ -20,9 +21,6 @@
   var apiCta = document.getElementById("carl-api-cta");
   var chatSubmit = document.getElementById("carl-chat-submit");
 
-  var btnSelectIndividual = document.getElementById("btn-select-individual");
-  var gateGate = document.getElementById("carl-persona-gate");
-  var gateWorkspace = document.getElementById("carl-individuals-workspace");
   var btnTogglePaste = document.getElementById("btn-toggle-text-paste");
   var zonePaste = document.getElementById("carl-text-paste-zone");
   var fileNameDisplay = document.getElementById("carl-file-name-display");
@@ -54,8 +52,19 @@
   var ROW_STAGGER_SKILL_MS = 120;
 
   function csrfToken() {
+    if (!form) return "";
     var field = form.querySelector('input[name="csrf_token"]');
     return field && field.value ? String(field.value).trim() : "";
+  }
+
+  var btnSelectIndividual = document.getElementById("btn-select-individual");
+  var gateGate = document.getElementById("carl-persona-gate");
+  var gateWorkspace = document.getElementById("carl-individuals-workspace");
+  if (btnSelectIndividual) {
+    btnSelectIndividual.addEventListener("click", function () {
+      if (gateGate) gateGate.classList.add("hidden");
+      if (gateWorkspace) gateWorkspace.classList.remove("hidden");
+    });
   }
 
   function setUploadLoading(on) {
@@ -886,6 +895,7 @@
     });
   }
 
+  if (form) {
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     if ((!fileInput || !fileInput.value) && (!textFallback || !textFallback.value.trim())) {
@@ -952,6 +962,7 @@
         setUploadLoading(false);
       });
   });
+  }
 
   if (chatForm) {
     chatForm.addEventListener("submit", function (event) {
@@ -995,13 +1006,6 @@
     });
   }
 
-  // Gate interactions
-  if (btnSelectIndividual) {
-    btnSelectIndividual.addEventListener("click", function() {
-      if (gateGate) gateGate.classList.add("hidden");
-      if (gateWorkspace) gateWorkspace.classList.remove("hidden");
-    });
-  }
   if (btnTogglePaste) {
     btnTogglePaste.addEventListener("click", function() {
       if (zonePaste) zonePaste.classList.toggle("hidden");
