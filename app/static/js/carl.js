@@ -813,6 +813,8 @@
   function hydrateDashboard(analysis, extras) {
     extras = extras || {};
     analysisState = analysis || {};
+    if (gateGate) gateGate.classList.add("hidden");
+    if (gateWorkspace) gateWorkspace.classList.remove("hidden");
     document.body.classList.add("carl-dashboard-active");
     if (uploadHero) uploadHero.classList.add("hidden");
     if (workspace) {
