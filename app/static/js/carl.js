@@ -74,7 +74,7 @@
     var spinner = document.getElementById("carl-analyze-spinner");
     var textSpan = document.getElementById("carl-analyze-text");
     if (spinner) spinner.classList.toggle("hidden", !on);
-    if (textSpan) textSpan.textContent = on ? "Running analysis…" : "Analyze CV";
+    if (textSpan) textSpan.textContent = on ? "Running analysis…" : "Analyze Profile";
   }
 
   function delay(ms) {
@@ -134,8 +134,16 @@
     errorEl.classList.remove("hidden");
   }
 
-  function carlAnalyzeErrorMessage(data) {
-    if (!data) return "Could not analyze CV. Please try again.";
+  function carlAnalyzeErrorMessage(data, httpStatus) {
+    var st = Number(httpStatus) || 0;
+    if (!data) {
+      if (st === 401) return "Sign in to use Carl, then try again.";
+      if (st === 413)
+        return "This file is too large for the server. Try a PDF under 4MB, or paste your CV text instead.";
+      if (st === 429) return "Too many attempts. Please wait about a minute and try again.";
+      if (st >= 500) return "Server error (HTTP " + st + "). Please try again in a few minutes.";
+      return "Could not analyze CV. Please try again.";
+    }
     var code = data.code;
     var msg = (data.message && String(data.message).trim()) || "";
     if (code === "login_required") return "Sign in to use Carl, then try again.";
@@ -144,6 +152,7 @@
     if (code === "conflicting_inputs")
       return "Use either a file upload or pasted text, not both.";
     if (code === "missing_cv_input") return "Upload a PDF or DOCX, or paste your CV text.";
+    if (code === "non_json_response" && msg) return msg;
     if (msg) return msg;
     return "Could not analyze CV. Please try again.";
   }
@@ -982,6 +991,19 @@
 
     var started = performance.now();
     var payload = new FormData(form);
+    var controller = new AbortController();
+    var analyzeTimeoutMs = 120000;
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, analyzeTimeoutMs);
+
+    function clearAnalyzeTimeout() {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    }
+
     fetch("/carl/analyze", {
       method: "POST",
       body: payload,
@@ -989,20 +1011,38 @@
       headers: {
         "X-CSRF-Token": csrfToken(),
       },
+      signal: controller.signal,
     })
       .then(function (resp) {
-        return resp
-          .json()
-          .catch(function () {
-            return {};
-          })
-          .then(function (data) {
-            return { ok: resp.ok, data: data };
-          });
+        return resp.text().then(function (text) {
+          var data = null;
+          try {
+            data = text ? JSON.parse(text) : null;
+          } catch (eJson) {
+            data = {
+              ok: false,
+              code: "non_json_response",
+              message:
+                "Server returned an invalid response (HTTP " +
+                resp.status +
+                "). Try a smaller PDF, paste text instead, or refresh the page.",
+            };
+          }
+          return { ok: resp.ok, status: resp.status, data: data };
+        });
       })
       .then(function (result) {
+        clearAnalyzeTimeout();
+        if (result.status === 413) {
+          throw new Error(
+            "This file is too large for the server. Try under 4MB, or paste your CV text instead."
+          );
+        }
+        if (result.status === 429) {
+          throw new Error("Too many requests. Please wait about a minute and try again.");
+        }
         if (!result.ok || !result.data || result.data.ok === false) {
-          throw new Error(carlAnalyzeErrorMessage(result.data));
+          throw new Error(carlAnalyzeErrorMessage(result.data, result.status));
         }
         var inner = (result.data && result.data.data) || {};
         var analysis = inner.analysis;
@@ -1023,8 +1063,16 @@
         });
       })
       .catch(function (err) {
+        clearAnalyzeTimeout();
         hideUploadPremiumLoading(220, function () {
-          setError(err && err.message ? err.message : "Could not analyze CV. Please try again.");
+          var name = err && err.name ? String(err.name) : "";
+          if (name === "AbortError") {
+            setError(
+              "The request took too long and was stopped. Check your connection, try a smaller file, or paste CV text."
+            );
+          } else {
+            setError(err && err.message ? err.message : "Could not analyze CV. Please try again.");
+          }
         });
       })
       .finally(function () {

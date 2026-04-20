@@ -1024,6 +1024,6 @@
 {% endblock %}
 
 {% block body_extra %}
-{# No defer: run as soon as parsed so submit handler binds before Cookiebot/consent delays typical of deferred external scripts on production. #}
-<script src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}"></script>
+{# No defer: run as soon as parsed. data-cookieconsent=ignore: Cookiebot auto-blocking must not delay core app JS (otherwise Analyze does nothing until marketing consent). #}
+<script src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}" data-cookieconsent="ignore"></script>
 {% endblock %}
