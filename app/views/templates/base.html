@@ -244,7 +244,7 @@
     </div>
   </div>
 
-  <main id="content" class="{% if wide_layout %}pb-20 md:pb-8{% else %}mx-auto max-w-6xl px-4 py-8 pb-20 md:pb-8{% endif %}">
+  <main id="content" class="{% if wide_layout %}{% if request.endpoint == 'jobs.landing' %}pb-0 md:pb-0{% else %}pb-20 md:pb-8{% endif %}{% else %}mx-auto max-w-6xl px-4 {% if request.endpoint == 'jobs.landing' %}pt-8 pb-0{% else %}py-8 pb-20 md:pb-8{% endif %}{% endif %}">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="space-y-2 mb-6">
@@ -263,8 +263,8 @@
     {% block content %}{% endblock %}
   </main>
   <!-- Footer -->
-  <footer class="mt-16 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-    <div class="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-600 transition-colors duration-300">
+  <footer class="{% if request.endpoint == 'jobs.landing' %}mt-0 bg-white dark:bg-slate-950{% else %}mt-16 bg-slate-50 dark:bg-slate-900/50{% endif %} border-t border-slate-200 dark:border-slate-800">
+    <div class="mx-auto max-w-6xl px-4 {% if request.endpoint == 'jobs.landing' %}py-6{% else %}py-10{% endif %} text-sm text-slate-600 transition-colors duration-300">
       <div class="grid grid-cols-2 sm:grid-cols-[1fr_auto_auto_auto] gap-8">
 
         <!-- Brand -->

@@ -58,7 +58,7 @@ html { scroll-behavior: smooth; }
 }
 .landing-gradient-orb--violet {
   width: 550px; height: 550px;
-  background: radial-gradient(circle, #8b5cf635, transparent 70%);
+  background: radial-gradient(circle, #0ea5e935, transparent 70%);
   bottom: -15%; left: 30%;
   animation-delay: -14s;
 }
