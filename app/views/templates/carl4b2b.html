@@ -135,6 +135,7 @@
     border-radius: 10px;
     overflow: hidden;
   }
+  /* Titlebar metrics match B2C Carl (`carl.html` .carl-term-titlebar). */
   .carl-term-window .carl-term-titlebar {
     display: flex;
     align-items: center;
@@ -190,20 +191,22 @@
     background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.2) 2px, rgba(0, 0, 0, 0.2) 3px);
     mix-blend-mode: multiply;
   }
+  /* Log viewport: same min/max/padding/font as B2C `#carl-terminal` in `carl.html`. */
   .carl-term-window #carl4b2b-terminal {
     position: relative;
     z-index: 1;
-    min-height: 6.5rem;
-    max-height: 9.5rem;
-    padding: 0.65rem 0.75rem;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    min-height: 4.3rem;
+    max-height: 5.6rem;
+    padding: 0.44rem 0.72rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 12px;
     line-height: 1.5;
     color: #fde68a;
     text-shadow: 0 0 12px rgba(251, 191, 36, 0.12);
-    background: transparent;
-    border: none;
-    box-shadow: none;
   }
   .carl-term-window .c4b-term-log-line {
     margin-bottom: 0.35rem;
@@ -218,19 +221,20 @@
   }
   .carl-term-window .c4b-term-prompt-mono .c4b-term-at { color: #fcd34d; opacity: 0.9; }
   .carl-term-window .c4b-term-line-text { color: #fef3c7; word-break: break-word; }
+  /* Live row: same layout/sizing as B2C `.carl-term-live` (amber palette for B2B). */
   .carl-term-window .carl-term-live {
     position: relative;
     z-index: 3;
     display: flex;
     align-items: flex-start;
     gap: 0.35rem;
-    padding: 0.5rem 0.75rem 0.65rem;
+    padding: 0.28rem 0.72rem 0.34rem;
     border-top: 1px solid rgba(251, 191, 36, 0.12);
-    background: linear-gradient(180deg, rgba(20, 14, 6, 0.95), rgba(12, 9, 4, 0.98));
+    background: linear-gradient(180deg, rgba(20, 17, 13, 0.95), rgba(6, 8, 12, 0.98));
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 11px;
-    line-height: 1.45;
-    min-height: 2.75rem;
+    line-height: 1.35;
+    min-height: 1.7rem;
   }
   .carl-term-window .c4b-term-live-prompt {
     flex-shrink: 0;
@@ -249,6 +253,7 @@
     flex-shrink: 0;
     color: #fbbf24;
     animation: c4b-term-blink 1.1s step-end infinite;
+    opacity: 0.9;
   }
   @keyframes c4b-term-blink {
     50% { opacity: 0; }
@@ -283,17 +288,32 @@
     <div class="text-center">
       <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Carl for Companies</p>
       <h1 class="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Competitive hiring map</h1>
-      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Paste your company or careers site URL. We infer a bounded catalog query (default role family and optional country from the domain) and show posting concentration and active hirers — not a legal market definition.</p>
+      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Pick a role and geography, or paste a careers URL for a quick default slice. We query Catalitium’s indexed job catalog only — directional hiring concentration, not a legal market definition.</p>
     </div>
 
     <form id="carl4b2b-market-form" class="mt-8 space-y-4 rounded-3xl border border-white/10 bg-slate-950/50 p-6 sm:p-8 backdrop-blur-md">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div id="carl4b2b-url-form-wrap">
-        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Company or careers page URL
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Role or title family
+          <input name="title" id="carl4b2b-title" type="text" autocomplete="organization-title" placeholder="e.g. software engineer, data analyst"
+                 class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+        </label>
+        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Country or region
+          <input name="country" id="carl4b2b-country" type="text" autocomplete="country-name" placeholder="e.g. Germany, UK, remote EU"
+                 class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+        </label>
+      </div>
+      <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Exclude employer (optional)
+        <input name="exclude_company" id="carl4b2b-exclude" type="text" autocomplete="organization" placeholder="Substring match on company name, e.g. Acme"
+               class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+      </label>
+      <div id="carl4b2b-url-form-wrap" class="rounded-xl border border-white/10 bg-black/30 p-4">
+        <p class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">Or quick-fill from URL</p>
+        <label class="mt-2 block text-left text-xs font-semibold text-[#9CA3AF]">Company or careers page URL (optional)
           <input name="business_url" id="carl4b2b-url" type="url" inputmode="url" autocomplete="url" placeholder="https://www.yourcompany.com"
                  class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
         </label>
-        <p class="mt-2 text-left text-[11px] leading-relaxed text-[#6B7280]">Role family defaults to a broad software-oriented catalog slice; country is guessed from the domain when possible. Your URL is stored with this pass for context.</p>
+        <p class="mt-2 text-left text-[11px] leading-relaxed text-[#6B7280]">URL-only still works: we default to a broad software-oriented title slice and guess country from the domain. With role + country filled, we use your filters and only use the URL for context or exclude-token hints.</p>
       </div>
       <div class="flex justify-center pt-2">
         <button type="submit" id="carl4b2b-analyze-btn" class="c4b-btn-analyze flex items-center gap-2">
@@ -306,14 +326,14 @@
   </div>
 
   <div id="carl4b2b-workspace" class="hidden min-h-[calc(100dvh-3.5rem)] flex-col c4b-scroll-dark pb-8">
-    <div id="c4b-terminal-shell" data-c4b-reveal class="carl-term-window mx-3 mt-2 shrink-0 sm:mx-4">
+    <div id="c4b-terminal-shell" data-c4b-reveal class="carl-term-window mx-3 mt-1 shrink-0 sm:mx-4">
       <div class="carl-term-titlebar">
         <div class="carl-term-traffic" aria-hidden="true">
           <span class="carl-term-dot carl-term-dot-r"></span>
           <span class="carl-term-dot carl-term-dot-y"></span>
           <span class="carl-term-dot carl-term-dot-g"></span>
         </div>
-        <span class="carl-term-title">carl — catalog — ~/market/url_slice</span>
+        <span class="carl-term-title">carl — catalog — ~/market/query_slice</span>
         <span id="carl4b2b-terminal-status" class="carl-term-badge">ready</span>
       </div>
       <div class="carl-term-screen">

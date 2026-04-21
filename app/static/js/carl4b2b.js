@@ -341,11 +341,13 @@
         });
     }
     if (!analysis) {
-      return ["Run a market map from your company URL to populate this feed."];
+      return ["Run a market map with role + country or a company URL to populate this feed."];
     }
     var mm = analysis.marketMeta || {};
-    addOne("Source URL: " + (mm.business_url || ""));
-    addOne("Catalog slice: " + (mm.title_q || "") + " · " + (mm.country_q || "global hint"));
+    if (mm.business_url) {
+      addOne("Source URL: " + mm.business_url);
+    }
+    addOne("Catalog slice: " + (mm.title_q || "") + " · " + (mm.country_q || "—"));
     var ov = analysis.overview || {};
     addOne(ov.headline);
     addFromBlob(ov.fitSummary);
@@ -701,18 +703,31 @@
   form.addEventListener("submit", function (event) {
     event.preventDefault();
     var urlEl = document.getElementById("carl4b2b-url");
+    var titleEl = document.getElementById("carl4b2b-title");
+    var countryEl = document.getElementById("carl4b2b-country");
+    var excludeEl = document.getElementById("carl4b2b-exclude");
     var businessUrl = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
-    if (!businessUrl) {
-      setError("Enter your company or careers page URL.");
+    var title = titleEl && titleEl.value ? String(titleEl.value).trim() : "";
+    var country = countryEl && countryEl.value ? String(countryEl.value).trim() : "";
+    var excludeCompany = excludeEl && excludeEl.value ? String(excludeEl.value).trim() : "";
+    if (!title && !country && !businessUrl) {
+      setError("Enter a role title and country, or a company / careers URL.");
+      return;
+    }
+    if ((title && !country) || (!title && country)) {
+      setError("Enter both role title and country, or leave both empty and use a URL only.");
       return;
     }
     setError("");
     stopB2bTerminalLiveFeed();
     setAnalyzeLoading(true);
     var started = performance.now();
-    var payload = {
-      business_url: businessUrl,
-    };
+    var payload = { business_url: businessUrl };
+    if (title && country) {
+      payload.title = title;
+      payload.country = country;
+      if (excludeCompany) payload.exclude_company = excludeCompany;
+    }
     fetch("/carl/b2b/analyze", {
       method: "POST",
       credentials: "same-origin",
