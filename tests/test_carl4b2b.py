@@ -76,6 +76,8 @@ def test_carl4b2b_get_ok_when_logged_in(carl4b2b_client):
     r = carl4b2b_client.get("/carl/b2b")
     assert r.status_code == 200
     assert b"carl4b2b-market-form" in r.data
+    assert b"btn-carl4b2b-new-map" in r.data
+    assert b"menu=1" in r.data
 
 
 def test_carl4b2b_analyze_requires_login(carl4b2b_client):

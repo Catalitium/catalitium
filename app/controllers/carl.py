@@ -734,8 +734,10 @@ def carl_dashboard():
         return redirect(url_for("auth.register"))
     
     uid = user.get("id")
+    # Returning from B2B or terminal "Menu" — show persona gate without embedding saved analysis.
+    skip_preload = str(request.args.get("menu") or "").strip().lower() in ("1", "true", "yes", "pick")
     preloaded = None
-    if uid and SUPABASE_URL:
+    if not skip_preload and uid and SUPABASE_URL:
         # Check for eternal persistence
         try:
             from ..models.db import get_db

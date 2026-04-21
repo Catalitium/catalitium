@@ -586,6 +586,58 @@
     activate("overview");
   }
 
+  /** Return to the market-map form; skip one server preload on next full page load (mirrors B2C `carl_skip_preload_once`). */
+  function resetCarl4b2bToFormView() {
+    try {
+      sessionStorage.setItem("carl4b2b_skip_preload_once", "1");
+    } catch (eSt) {}
+    analysisState = null;
+    stopB2bTerminalLiveFeed();
+    if (terminalTimer) {
+      clearTimeout(terminalTimer);
+      terminalTimer = null;
+    }
+    if (terminal) terminal.innerHTML = "";
+    var liveClear = document.getElementById("carl4b2b-terminal-live");
+    if (liveClear) liveClear.textContent = "";
+    if (terminalStatus) terminalStatus.textContent = "ready";
+
+    document.body.classList.remove("carl4b2b-dashboard-active");
+
+    if (hero) hero.classList.remove("hidden");
+    if (workspace) {
+      workspace.classList.add("hidden");
+      workspace.classList.remove("flex");
+    }
+
+    var matchesSection = document.getElementById("carl4b2b-matches-section");
+    if (matchesSection) {
+      matchesSection.classList.add("hidden");
+      matchesSection.classList.remove("c4b-reveal-in");
+    }
+    document.querySelectorAll("[data-c4b-reveal]").forEach(function (el) {
+      el.classList.remove("c4b-reveal-in");
+    });
+
+    setAnalyzeLoading(false);
+    setError("");
+    renderProfileSync(null, null);
+
+    resetDashboardMeters();
+    if (chatLog) chatLog.innerHTML = "";
+    if (chatInput) chatInput.value = "";
+    var cc = document.getElementById("carl4b2b-chat-counter");
+    if (cc) cc.textContent = "0/280";
+    resetChatGate();
+    if (chatChips) {
+      chatChips.innerHTML = "";
+      chatChips.classList.add("hidden");
+    }
+
+    initTabs();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function hydrate(analysis, extras) {
     extras = extras || {};
     analysisState = analysis || {};
@@ -776,6 +828,13 @@
       });
   });
 
+  var btnCarl4b2bNewMap = document.getElementById("btn-carl4b2b-new-map");
+  if (btnCarl4b2bNewMap) {
+    btnCarl4b2bNewMap.addEventListener("click", function () {
+      resetCarl4b2bToFormView();
+    });
+  }
+
   if (chatForm) {
     chatForm.addEventListener("submit", function (event) {
       event.preventDefault();
@@ -795,6 +854,20 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    var skipPreload = false;
+    try {
+      skipPreload = sessionStorage.getItem("carl4b2b_skip_preload_once") === "1";
+      if (skipPreload) sessionStorage.removeItem("carl4b2b_skip_preload_once");
+    } catch (eSkip) {}
+    if (skipPreload) {
+      document.body.classList.remove("carl4b2b-dashboard-active");
+      if (hero) hero.classList.remove("hidden");
+      if (workspace) {
+        workspace.classList.add("hidden");
+        workspace.classList.remove("flex");
+      }
+      return;
+    }
     var pre = document.getElementById("preloaded-carl4b2b-data");
     if (pre && pre.textContent) {
       try {
