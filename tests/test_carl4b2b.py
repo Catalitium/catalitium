@@ -95,7 +95,43 @@ def test_carl4b2b_analyze_validation(carl4b2b_client):
     assert r.status_code == 400
     body = r.get_json()
     assert body.get("ok") is False
-    assert body.get("code") == "invalid_company_url"
+    assert body.get("code") == "invalid_input"
+
+
+def test_carl4b2b_analyze_manual_ignores_bad_url(carl4b2b_client, monkeypatch):
+    _stub_jobs(monkeypatch)
+    _b2b_login(carl4b2b_client)
+    page = carl4b2b_client.get("/carl/b2b")
+    csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
+    r = carl4b2b_client.post(
+        "/carl/b2b/analyze",
+        json={"title": "Python engineer", "country": "Switzerland", "business_url": "ftp://example.com"},
+        headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
+    )
+    assert r.status_code == 200
+    logs = " ".join((r.get_json().get("data") or {}).get("analysis", {}).get("terminalLogs") or [])
+    assert "ignored" in logs.lower()
+    assert ((r.get_json().get("data") or {}).get("source") or {}).get("inputType") == "manual"
+
+
+def test_carl4b2b_analyze_manual_title_country(carl4b2b_client, monkeypatch):
+    _stub_jobs(monkeypatch)
+    _b2b_login(carl4b2b_client)
+    page = carl4b2b_client.get("/carl/b2b")
+    csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
+    r = carl4b2b_client.post(
+        "/carl/b2b/analyze",
+        json={"title": "Python engineer", "country": "Switzerland", "exclude_company": "Acme"},
+        headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
+    )
+    assert r.status_code == 200
+    env = r.get_json()
+    assert env.get("ok") is True
+    data = env.get("data") or {}
+    assert (data.get("source") or {}).get("inputType") == "manual"
+    mm = (data.get("analysis") or {}).get("marketMeta") or {}
+    assert mm.get("input_type") == "manual"
+    assert mm.get("inferred_from_url") is False
 
 
 def test_carl4b2b_analyze_happy_path_json(carl4b2b_client, monkeypatch):

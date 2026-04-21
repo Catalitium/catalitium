@@ -332,6 +332,7 @@ def build_market_map_analysis(
             "company_email": (meta.get("company_email") or "").strip(),
             "inferred_from_url": bool(meta.get("inferred_from_url")),
             "inferred_title_family": (meta.get("inferred_title_family") or "").strip(),
+            "input_type": str(meta.get("input_type") or "").strip(),
         },
     }
     return analysis
@@ -538,31 +539,75 @@ def carl4b2b_analyze():
 
     payload = request.get_json(silent=True) or {}
     business_url_in = str(payload.get("business_url") or "").strip()
+    title_in = str(payload.get("title") or payload.get("role_title") or "").strip()
+    country_in = str(payload.get("country") or payload.get("location") or "").strip()
+    exclude_in = str(payload.get("exclude_company") or "").strip()
 
-    if not business_url_in:
+    structured_ok = bool(title_in and country_in)
+    had_url_input = bool(business_url_in)
+
+    if not structured_ok and not had_url_input:
         return api_error_response(
-            "invalid_company_url",
-            "Provide your company or careers page URL.",
+            "invalid_input",
+            "Enter a role title and country/region, or a company careers URL.",
             400,
         )
 
-    canonical_url, title_raw, country_raw, exclude_company, url_err = parse_company_url_for_market_map(
-        business_url_in
-    )
-    if url_err:
-        return api_error_response(
-            "invalid_company_url",
-            "Enter a valid http(s) URL with a hostname (e.g. https://yourcompany.com).",
-            400,
+    canonical_url: Optional[str] = None
+    url_title: Optional[str] = None
+    url_country: Optional[str] = None
+    url_exclude: Optional[str] = None
+    url_parse_ignored = False
+    if had_url_input:
+        canonical_url, url_title, url_country, url_exclude, url_err = parse_company_url_for_market_map(
+            business_url_in
         )
+        if url_err:
+            if structured_ok:
+                url_parse_ignored = True
+                canonical_url = None
+                url_title = None
+                url_country = None
+                url_exclude = None
+            else:
+                return api_error_response(
+                    "invalid_company_url",
+                    "Enter a valid http(s) URL with a hostname (e.g. https://yourcompany.com).",
+                    400,
+                )
+
+    has_valid_url = bool(canonical_url)
+
+    if structured_ok:
+        title_raw = title_in
+        country_raw = country_in
+        if exclude_in:
+            exclude_company = exclude_in
+        elif url_exclude:
+            exclude_company = url_exclude
+        else:
+            exclude_company = ""
+        inferred_from_url = False
+        inferred_title_family = title_in
+        input_type = "manual"
+        if has_valid_url:
+            input_type = "mixed"
+    else:
+        title_raw = url_title or ""
+        country_raw = url_country or ""
+        exclude_company = url_exclude or ""
+        inferred_from_url = True
+        inferred_title_family = _DEFAULT_TITLE_FAMILY
+        input_type = "company_url"
 
     company_email = str(payload.get("company_email") or "").strip()
 
     meta = {
-        "business_url": canonical_url or business_url_in,
+        "business_url": (canonical_url or ""),
         "company_email": company_email,
-        "inferred_from_url": True,
-        "inferred_title_family": _DEFAULT_TITLE_FAMILY,
+        "inferred_from_url": inferred_from_url,
+        "inferred_title_family": inferred_title_family,
+        "input_type": input_type,
     }
     analysis = build_market_map_analysis(
         title_raw=title_raw or "",
@@ -576,18 +621,33 @@ def carl4b2b_analyze():
     country_q = str(mm.get("country_q") or "")
     if len(title_q) < 2 and len(country_q) < 2:
         return api_error_response(
-            "invalid_company_url",
-            "Could not derive a catalog query from that URL.",
+            "invalid_input",
+            "Could not build a catalog query from those filters. Try a clearer role title and country.",
             400,
         )
 
-    pre_logs = [
-        _truncate(f"[Carl4B2B] company_url: {canonical_url}", _MAX_LINE),
-        _truncate(
-            f"[Carl4B2B] inferred: title≈{title_q} country≈{country_q or '—'} exclude≈{(exclude_company or '—').lower()}",
-            _MAX_LINE,
-        ),
-    ]
+    if structured_ok:
+        pre_logs = [
+            _truncate(
+                f"[Carl4B2B] input={input_type} title≈{title_q} country≈{country_q or '—'} "
+                f"exclude≈{(exclude_company or '—').lower()}",
+                _MAX_LINE,
+            ),
+        ]
+        if canonical_url:
+            pre_logs.append(_truncate(f"[Carl4B2B] company_url: {canonical_url}", _MAX_LINE))
+        if url_parse_ignored:
+            pre_logs.append(
+                "[Carl4B2B] note: careers URL was invalid and ignored; using role + country only."
+            )
+    else:
+        pre_logs = [
+            _truncate(f"[Carl4B2B] company_url: {canonical_url}", _MAX_LINE),
+            _truncate(
+                f"[Carl4B2B] inferred: title≈{title_q} country≈{country_q or '—'} exclude≈{(exclude_company or '—').lower()}",
+                _MAX_LINE,
+            ),
+        ]
     analysis["terminalLogs"] = pre_logs + list(analysis.get("terminalLogs") or [])
 
     user = session.get("user") or {}
@@ -631,11 +691,11 @@ def carl4b2b_analyze():
     session.modified = True
 
     source = {
-        "inputType": "company_url",
+        "inputType": input_type,
         "title_q": title_q,
         "country_q": country_q,
         "exclude_company": exclude_company or "",
-        "business_url": canonical_url or business_url_in,
+        "business_url": canonical_url or "",
         "company_email": company_email,
     }
 
