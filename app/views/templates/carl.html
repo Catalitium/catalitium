@@ -404,6 +404,36 @@
     outline: 2px solid rgba(52, 211, 153, 0.65);
     outline-offset: 2px;
   }
+  a.carl-term-btn-menu,
+  .carl-term-btn-menu {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #cbd5e1;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+  a.carl-term-btn-menu:hover,
+  .carl-term-btn-menu:hover {
+    background: rgba(148, 163, 184, 0.2);
+    border-color: rgba(226, 232, 240, 0.45);
+    color: #f1f5f9;
+  }
+  a.carl-term-btn-menu:focus-visible,
+  .carl-term-btn-menu:focus-visible {
+    outline: 2px solid rgba(52, 211, 153, 0.55);
+    outline-offset: 2px;
+  }
   .carl-term-screen {
     position: relative;
     background: #070b0f;
@@ -698,6 +728,7 @@
         <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Upload your CV to begin</h1>
         <p class="mt-3 text-[#9CA3AF] max-w-lg mx-auto">See an instant dashboard with tailored analytics, relevant job matches, and clear structural feedback on your CV.</p>
         <p class="mt-4 text-center text-xs text-[#6B7280]">Need a Harvard-format .docx without the live dashboard? <a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e]/90 hover:text-[#4ade80] underline-offset-2 hover:underline">Carl CV Builder</a></p>
+        <p class="mt-3 text-center text-xs text-[#6B7280]">Hiring market snapshot? <a href="{{ url_for('carl4b2b.carl4b2b_dashboard') }}" class="font-medium text-[#38bdf8] hover:text-[#7dd3fc] underline-offset-2 hover:underline">Carl for companies</a></p>
       </div>
 
       {# method post + no action URL: avoids GET ?csrf&cv_file in query. Analyze uses type=button + JS fetch only — never full-page POST to /carl/analyze (that showed raw JSON in prod). #}
@@ -771,6 +802,7 @@
         </div>
         <span class="carl-term-title">carl — zsh — ~/Documents/cv_analysis</span>
         <div class="flex shrink-0 items-center gap-1.5">
+          <a href="{{ url_for('carl.carl_dashboard', menu=1) }}" class="carl-term-btn-menu" title="Who is Carl helping today? — pick Companies or Individuals" aria-label="Carl persona menu">Menu</a>
           <span id="carl-terminal-status" class="carl-term-badge">Ready</span>
           <button type="button" id="btn-carl-new-upload" class="carl-term-btn-new" title="Upload a different CV and run a new analysis" aria-label="Analyze another CV">New CV</button>
         </div>
