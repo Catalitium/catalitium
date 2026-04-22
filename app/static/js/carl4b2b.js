@@ -330,6 +330,169 @@
     if (noteEl) noteEl.textContent = drift.note || "";
   }
 
+  var braveBusy = false;
+  var braveRemaining = null;
+
+  function renderBraveCard(show) {
+    var card = document.getElementById("carl4b2b-brave-card");
+    if (!card) return;
+    if (!show) {
+      card.classList.add("hidden");
+      return;
+    }
+    card.classList.remove("hidden");
+    if (braveRemaining === null) braveRemaining = 3;
+    var rem = document.getElementById("carl4b2b-brave-remaining");
+    if (rem) rem.textContent = String(braveRemaining) + " left";
+    var status = document.getElementById("carl4b2b-brave-status");
+    var list = document.getElementById("carl4b2b-brave-results");
+    var footer = document.getElementById("carl4b2b-brave-footer");
+    if (status) {
+      status.classList.add("hidden");
+      status.textContent = "";
+    }
+    if (list) {
+      list.classList.add("hidden");
+      list.innerHTML = "";
+    }
+    if (footer) footer.classList.add("hidden");
+    setBraveButtonsDisabled(false);
+  }
+
+  function setBraveButtonsDisabled(disabled) {
+    var btns = document.querySelectorAll(".c4b-brave-btn");
+    btns.forEach(function (btn) {
+      btn.disabled = !!disabled;
+    });
+  }
+
+  function setBraveStatus(text, tone) {
+    var status = document.getElementById("carl4b2b-brave-status");
+    if (!status) return;
+    if (!text) {
+      status.classList.add("hidden");
+      status.textContent = "";
+      return;
+    }
+    status.textContent = text;
+    status.className =
+      "mt-2 text-[10px] " +
+      (tone === "warn" ? "text-amber-300" : "text-slate-400");
+    status.classList.remove("hidden");
+  }
+
+  function renderBraveResults(items) {
+    var list = document.getElementById("carl4b2b-brave-results");
+    var footer = document.getElementById("carl4b2b-brave-footer");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!items || !items.length) {
+      list.classList.add("hidden");
+      if (footer) footer.classList.add("hidden");
+      return;
+    }
+    items.forEach(function (it) {
+      var li = document.createElement("li");
+      li.className = "rounded-lg border border-white/10 bg-slate-950/40 p-2";
+      var a = document.createElement("a");
+      a.href = String(it.url || "#");
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "font-semibold text-sky-300 hover:text-white";
+      a.textContent = String(it.title || "—");
+      li.appendChild(a);
+      if (it.description) {
+        var p = document.createElement("p");
+        p.className = "mt-1 text-[10px] text-slate-400";
+        p.textContent = String(it.description);
+        li.appendChild(p);
+      }
+      if (it.age) {
+        var meta = document.createElement("p");
+        meta.className = "mt-0.5 text-[10px] text-slate-500";
+        meta.textContent = String(it.age);
+        li.appendChild(meta);
+      }
+      list.appendChild(li);
+    });
+    list.classList.remove("hidden");
+    if (footer) footer.classList.remove("hidden");
+  }
+
+  function updateBraveRemaining(remaining) {
+    braveRemaining = typeof remaining === "number" ? Math.max(0, remaining) : braveRemaining;
+    var rem = document.getElementById("carl4b2b-brave-remaining");
+    if (rem) rem.textContent = String(braveRemaining) + " left";
+    if (braveRemaining === 0) setBraveButtonsDisabled(true);
+  }
+
+  function onBraveClick(ctxType) {
+    if (braveBusy) return;
+    if (braveRemaining === 0) return;
+    braveBusy = true;
+    setBraveButtonsDisabled(true);
+    setBraveStatus("Fetching external context…");
+    fetch("/carl/b2b/brave/context", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfToken(),
+      },
+      body: JSON.stringify({ context_type: ctxType }),
+    })
+      .then(function (resp) {
+        return resp.json().catch(function () {
+          return {};
+        });
+      })
+      .then(function (data) {
+        var payload = (data && data.ok && data.data) || data || {};
+        var status = payload.status || "unavailable";
+        if (typeof payload.remaining === "number") {
+          updateBraveRemaining(payload.remaining);
+        }
+        if (status === "ok") {
+          renderBraveResults(payload.items || []);
+          setBraveStatus("");
+        } else if (status === "no_results") {
+          renderBraveResults([]);
+          setBraveStatus("No external signals for this query.", "warn");
+        } else if (status === "limit_reached") {
+          renderBraveResults([]);
+          updateBraveRemaining(0);
+          setBraveStatus("External context limit reached for this session.", "warn");
+        } else if (status === "unavailable") {
+          renderBraveResults([]);
+          setBraveStatus("External context temporarily unavailable.", "warn");
+        } else {
+          renderBraveResults([]);
+          setBraveStatus("Could not fetch external context.", "warn");
+        }
+      })
+      .catch(function () {
+        renderBraveResults([]);
+        setBraveStatus("Network error while fetching external context.", "warn");
+      })
+      .finally(function () {
+        braveBusy = false;
+        if (braveRemaining > 0) setBraveButtonsDisabled(false);
+      });
+  }
+
+  function wireBraveButtons() {
+    var btns = document.querySelectorAll(".c4b-brave-btn");
+    btns.forEach(function (btn) {
+      if (btn.dataset.c4bBraveWired === "1") return;
+      btn.dataset.c4bBraveWired = "1";
+      btn.addEventListener("click", function () {
+        var t = btn.getAttribute("data-brave-type") || "";
+        if (!t) return;
+        onBraveClick(t);
+      });
+    });
+  }
+
   function animateDashboardMeters(overview, ats) {
     var scores = (overview && overview.signalScores) || {};
     var premium = (overview && overview.premiumSignals) || {};
@@ -762,6 +925,9 @@
     renderOverview(analysisState.overview || {}, true);
     renderAts(analysisState.atsScore || {}, true);
     renderSalaryDrift(analysisState.salaryDrift || null);
+    braveRemaining = 3;
+    renderBraveCard(true);
+    wireBraveButtons();
     renderSkills(analysisState.skillsRadar || []);
     renderDocuments(analysisState.documents || []);
     renderProfileSync(extras.profileSync, extras.source);
