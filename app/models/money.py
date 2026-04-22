@@ -117,15 +117,64 @@ def get_salary_for_location(location: str):
 
 def parse_money_numbers(text: str) -> List[int]:
     """Parse money numbers from text."""
-    if not text:
+    if not text or not isinstance(text, str):
         return []
-    nums = []
-    for raw in re.findall(r'(?i)\d[\d,.\s]*k?', text):
-        clean = raw.lower().replace(",", "").replace(" ", "")
-        mult = 1000 if clean.endswith("k") else 1
-        clean = clean.rstrip("k").replace(".", "")
-        if clean.isdigit():
-            nums.append(int(clean) * mult)
+
+    s = text.strip()
+    if not s:
+        return []
+
+    if re.fullmatch(r'(?i)\s*(?:n/?a|null|none|nil|na)\s*', s):
+        return []
+
+    def _parse_numeric_token(raw: str) -> Optional[float]:
+        token = raw.strip().lower().replace(" ", "")
+        if not token:
+            return None
+
+        mult = 1.0
+        if token.endswith("k"):
+            mult = 1000.0
+            token = token[:-1]
+        elif token.endswith("m"):
+            mult = 1_000_000.0
+            token = token[:-1]
+
+        if not token:
+            return None
+
+        if "," in token and "." in token:
+            last_comma = token.rfind(",")
+            last_dot = token.rfind(".")
+            if last_dot > last_comma:
+                # e.g. 120,000.00 -> decimal separator is dot
+                token = token.replace(",", "")
+            else:
+                # e.g. 120.000,50 -> decimal separator is comma
+                token = token.replace(".", "").replace(",", ".")
+        elif "," in token:
+            if token.count(",") == 1 and 0 < len(token.split(",")[1]) <= 2:
+                token = token.replace(",", ".")
+            else:
+                token = token.replace(",", "")
+        elif "." in token:
+            if token.count(".") > 1:
+                token = token.replace(".", "")
+            else:
+                decimal_part = token.split(".")[1]
+                if len(decimal_part) > 2:
+                    token = token.replace(".", "")
+
+        try:
+            return float(token) * mult
+        except ValueError:
+            return None
+
+    nums: List[int] = []
+    for raw in re.findall(r'(?i)\d[\d,.\s]*[km]?', s):
+        parsed = _parse_numeric_token(raw)
+        if parsed is not None and parsed >= 0:
+            nums.append(int(round(parsed)))
     return nums
 
 
@@ -227,25 +276,39 @@ def parse_salary_range_string(s: str) -> Optional[float]:
     s = s.strip()
     if not s:
         return None
+    if re.fullmatch(r'(?i)\s*(?:n/?a|null|none|nil|na)\s*', s):
+        return None
 
     s_clean = re.sub(r'^(USD|CHF|EUR|GBP|USD\$|\$)\s*', '', s, flags=re.IGNORECASE)
+    is_hourly = bool(
+        re.search(
+            r'(?i)(?:/\s*(?:h|hr|hrs|hour|hours|hora|horas)|\bper\s+hour\b|\bhourly\b|\bpor\s+hora\b)',
+            s_clean,
+        )
+    )
 
     range_match = re.search(r'(\d[\d,.\s]*k?)\s*[-–—]\s*(\d[\d,.\s]*k?)', s_clean)
+    midpoint: Optional[float] = None
     if range_match:
         low_vals = parse_money_numbers(range_match.group(1))
         high_vals = parse_money_numbers(range_match.group(2))
         if low_vals and high_vals:
-            return float((low_vals[0] + high_vals[-1]) / 2.0)
+            midpoint = float((low_vals[0] + high_vals[-1]) / 2.0)
         elif low_vals:
-            return float(low_vals[0])
+            midpoint = float(low_vals[0])
         elif high_vals:
-            return float(high_vals[-1])
+            midpoint = float(high_vals[-1])
 
-    single_vals = parse_money_numbers(s_clean)
-    if single_vals:
-        return float(single_vals[0])
+    if midpoint is None:
+        single_vals = parse_money_numbers(s_clean)
+        if single_vals:
+            midpoint = float(single_vals[0])
 
-    return None
+    if midpoint is None:
+        return None
+    if is_hourly:
+        return midpoint * 2080.0
+    return midpoint
 
 
 # --- Compensation (from compensation.py) ---
