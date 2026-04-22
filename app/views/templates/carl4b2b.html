@@ -89,6 +89,12 @@
   .c4b-ghost-active    { background: rgba(34,197,94,0.12);  border-color: rgba(34,197,94,0.35);  color: #86efac; }
   .c4b-ghost-uncertain { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fcd34d; }
   .c4b-ghost-low       { background: rgba(239,68,68,0.12);  border-color: rgba(239,68,68,0.4);   color: #fca5a5; }
+  .c4b-drift-arrow {
+    font-size: 18px; font-weight: 700; line-height: 1;
+  }
+  .c4b-drift-up   { color: #86efac; }
+  .c4b-drift-flat { color: #94a3b8; }
+  .c4b-drift-down { color: #fca5a5; }
   #carl4b2b-ghost-modal {
     position: fixed; inset: 0; z-index: 60;
     background: rgba(2,6,23,0.78); backdrop-filter: blur(4px);
@@ -578,6 +584,25 @@
                 <p id="carl4b2b-vital-narrative" class="mt-1 text-lg font-semibold tabular-nums text-amber-200">0</p>
               </div>
             </div>
+          </div>
+          <div id="carl4b2b-salary-drift-card" class="hidden">
+            <div class="flex items-baseline justify-between gap-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Salary drift (catalog sample)</p>
+              <span id="carl4b2b-salary-drift-arrow" class="c4b-drift-arrow c4b-drift-flat" aria-hidden="true">→</span>
+            </div>
+            <p id="carl4b2b-salary-drift-label" class="mt-1 text-sm font-semibold text-white">—</p>
+            <div id="carl4b2b-salary-drift-body" class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Newer half median</p>
+                <p id="carl4b2b-salary-drift-new" class="mt-0.5 font-semibold text-sky-200">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2">
+                <p class="text-[10px] uppercase text-slate-500">Older half median</p>
+                <p id="carl4b2b-salary-drift-old" class="mt-0.5 font-semibold text-amber-200">—</p>
+              </div>
+            </div>
+            <p id="carl4b2b-salary-drift-delta" class="mt-2 text-xs font-semibold text-white">—</p>
+            <p id="carl4b2b-salary-drift-note" class="mt-1 text-[10px] text-slate-500">—</p>
           </div>
           <div>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Premium scan</p>
