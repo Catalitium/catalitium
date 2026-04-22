@@ -18,6 +18,7 @@ from ..config import (
 )
 from ..models.catalog import Job
 from ..models.db import SUPABASE_URL, get_db, logger, upsert_profile_carl4b2b_analysis
+from .carl4b2b_ghost import compute_ghost_score, compute_repost_index
 from ..utils import (
     api_error_response,
     api_success_response,
@@ -185,7 +186,10 @@ def build_market_map_analysis(
         for n, _ in niche_pool
     ]
 
-    job_cards: List[Dict[str, str]] = []
+    now_utc = datetime.now(timezone.utc)
+    repost_index = compute_repost_index(rows)
+
+    job_cards: List[Dict[str, Any]] = []
     for r in rows[:8]:
         if exclude and exclude in str(r.get("company_name") or "").lower():
             continue
@@ -195,6 +199,7 @@ def build_market_map_analysis(
                 "company": str(r.get("company_name") or "—"),
                 "location": str(r.get("location") or r.get("city") or r.get("country") or "—"),
                 "link": str(r.get("link") or "/jobs"),
+                "ghost": compute_ghost_score(r, repost_index, now=now_utc),
             }
         )
 

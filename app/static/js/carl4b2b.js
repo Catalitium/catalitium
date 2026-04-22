@@ -509,27 +509,48 @@
     jRoot.innerHTML = "";
     cRoot.innerHTML = "";
     nRoot.innerHTML = "";
-    function card(title, subtitle, href) {
+    function ghostBadgeHtml(ghost) {
+      if (!ghost || typeof ghost.score !== "number") return "";
+      var tone = "c4b-ghost-active";
+      if (ghost.score >= 50) tone = "c4b-ghost-low";
+      else if (ghost.score >= 25) tone = "c4b-ghost-uncertain";
+      var payload = encodeURIComponent(JSON.stringify(ghost));
+      return (
+        '<button type="button" class="c4b-ghost-badge ' + tone + '"' +
+        ' data-ghost="' + payload + '"' +
+        ' aria-label="Ghost likelihood score: ' + escapeHtml(ghost.label || "") + '">' +
+        "Ghost " + ghost.score + " · " + escapeHtml(ghost.label || "") +
+        "</button>"
+      );
+    }
+    function card(title, subtitle, href, ghost) {
       return (
         '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">' +
-        '<p class="text-sm font-bold text-white">' +
-        escapeHtml(title) +
-        "</p>" +
-        '<p class="mt-1 text-xs text-slate-400">' +
-        escapeHtml(subtitle) +
-        '</p><a href="' +
-        escapeHtml(href || "/jobs") +
-        '" class="mt-3 inline-flex text-xs font-semibold text-sky-400 hover:text-white">Open →</a></div>'
+        '<div class="flex items-start justify-between gap-2">' +
+        '<p class="text-sm font-bold text-white">' + escapeHtml(title) + "</p>" +
+        ghostBadgeHtml(ghost) +
+        "</div>" +
+        '<p class="mt-1 text-xs text-slate-400">' + escapeHtml(subtitle) + "</p>" +
+        '<a href="' + escapeHtml(href || "/jobs") + '"' +
+        ' class="mt-3 inline-flex text-xs font-semibold text-sky-400 hover:text-white">Open →</a></div>'
       );
     }
     safeList(matches.jobs, []).forEach(function (j) {
-      jRoot.innerHTML += card(j.title, (j.company || "") + " · " + (j.location || ""), j.link);
+      jRoot.innerHTML += card(j.title, (j.company || "") + " · " + (j.location || ""), j.link, j.ghost);
     });
     safeList(matches.top_companies, []).forEach(function (c) {
       cRoot.innerHTML += card(c.name, c.reason || "", "/jobs");
     });
     safeList(matches.niche_companies, []).forEach(function (n) {
       nRoot.innerHTML += card(n.name, n.reason || "", "/jobs");
+    });
+    jRoot.querySelectorAll(".c4b-ghost-badge").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        try {
+          var ghost = JSON.parse(decodeURIComponent(btn.getAttribute("data-ghost") || ""));
+          openGhostModal(ghost);
+        } catch (err) { /* no-op */ }
+      });
     });
     var sec = document.getElementById("carl4b2b-matches-section");
     if (sec) {
@@ -539,6 +560,32 @@
       }, REVEAL_BASE_DELAY_MS * 3);
     }
   }
+
+  function openGhostModal(ghost) {
+    var modal = document.getElementById("carl4b2b-ghost-modal");
+    var body = document.getElementById("carl4b2b-ghost-modal-body");
+    if (!modal || !body || !ghost) return;
+    var rows = (ghost.factors || []).map(function (f) {
+      return (
+        '<tr><td class="py-1 pr-3 text-slate-300">' + escapeHtml(f.label || f.key || "") + "</td>" +
+        '<td class="py-1 pr-3 text-slate-400">' + escapeHtml(f.detail || "") + "</td>" +
+        '<td class="py-1 text-right font-semibold text-white">' + String(f.points || 0) + "</td></tr>"
+      );
+    }).join("");
+    body.innerHTML =
+      '<p class="text-xs uppercase tracking-wider text-slate-500">Ghost likelihood</p>' +
+      '<p class="mt-1 text-2xl font-bold text-white">' + String(ghost.score || 0) + " / 100</p>" +
+      '<p class="text-sm text-slate-300">' + escapeHtml(ghost.label || "") + "</p>" +
+      '<table class="mt-4 w-full text-xs"><tbody>' + rows + "</tbody></table>";
+    modal.classList.remove("hidden");
+  }
+  document.addEventListener("click", function (e) {
+    var modal = document.getElementById("carl4b2b-ghost-modal");
+    if (!modal) return;
+    if (e.target && (e.target.id === "carl4b2b-ghost-modal-close" || e.target.id === "carl4b2b-ghost-modal")) {
+      modal.classList.add("hidden");
+    }
+  });
 
   function renderProfileSync(sync, source) {
     var el = document.getElementById("carl4b2b-profile-sync");
