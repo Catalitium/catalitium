@@ -269,6 +269,67 @@
     setText("carl4b2b-keywords-missing", safeList(ats.missingKeywords, ["—"]).join(", "));
   }
 
+  function renderSalaryDrift(drift) {
+    var card = document.getElementById("carl4b2b-salary-drift-card");
+    if (!card) return;
+    if (!drift || !drift.status) {
+      card.classList.add("hidden");
+      return;
+    }
+    var arrow = document.getElementById("carl4b2b-salary-drift-arrow");
+    var labelEl = document.getElementById("carl4b2b-salary-drift-label");
+    var newEl = document.getElementById("carl4b2b-salary-drift-new");
+    var oldEl = document.getElementById("carl4b2b-salary-drift-old");
+    var deltaEl = document.getElementById("carl4b2b-salary-drift-delta");
+    var noteEl = document.getElementById("carl4b2b-salary-drift-note");
+    var body = document.getElementById("carl4b2b-salary-drift-body");
+    card.classList.remove("hidden");
+
+    if (drift.status !== "ok") {
+      if (body) body.classList.add("hidden");
+      if (deltaEl) deltaEl.classList.add("hidden");
+      if (arrow) {
+        arrow.textContent = "—";
+        arrow.className = "c4b-drift-arrow c4b-drift-flat";
+      }
+      if (labelEl) labelEl.textContent = "Insufficient salary data";
+      if (noteEl) noteEl.textContent = drift.note || "Sample too small to compute drift.";
+      return;
+    }
+
+    if (body) body.classList.remove("hidden");
+    if (deltaEl) deltaEl.classList.remove("hidden");
+
+    var dir = drift.direction || "flat";
+    var arrowGlyph = dir === "up" ? "↑" : dir === "down" ? "↓" : "→";
+    if (arrow) {
+      arrow.textContent = arrowGlyph;
+      arrow.className = "c4b-drift-arrow c4b-drift-" + dir;
+    }
+    if (labelEl) labelEl.textContent = drift.direction_label || "Stable";
+
+    function fmtUsd(n) {
+      var x = Math.round(Number(n) || 0);
+      return "$" + x.toLocaleString("en-US");
+    }
+    var newer = drift.newer_half || {};
+    var older = drift.older_half || {};
+    if (newEl) {
+      newEl.textContent = fmtUsd(newer.median_salary) + " · n=" + (newer.count || 0) +
+        " (" + (newer.age_min || 0) + "-" + (newer.age_max || 0) + "d)";
+    }
+    if (oldEl) {
+      oldEl.textContent = fmtUsd(older.median_salary) + " · n=" + (older.count || 0) +
+        " (" + (older.age_min || 0) + "-" + (older.age_max || 0) + "d)";
+    }
+    if (deltaEl) {
+      var signAbs = (drift.delta_abs > 0 ? "+" : "") + fmtUsd(drift.delta_abs);
+      var signPct = (drift.delta_pct > 0 ? "+" : "") + String(drift.delta_pct) + "%";
+      deltaEl.textContent = "Delta: " + signAbs + " (" + signPct + ")";
+    }
+    if (noteEl) noteEl.textContent = drift.note || "";
+  }
+
   function animateDashboardMeters(overview, ats) {
     var scores = (overview && overview.signalScores) || {};
     var premium = (overview && overview.premiumSignals) || {};
@@ -700,6 +761,7 @@
     resetDashboardMeters();
     renderOverview(analysisState.overview || {}, true);
     renderAts(analysisState.atsScore || {}, true);
+    renderSalaryDrift(analysisState.salaryDrift || null);
     renderSkills(analysisState.skillsRadar || []);
     renderDocuments(analysisState.documents || []);
     renderProfileSync(extras.profileSync, extras.source);

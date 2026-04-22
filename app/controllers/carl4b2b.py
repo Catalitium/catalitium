@@ -18,6 +18,7 @@ from ..config import (
 )
 from ..models.catalog import Job
 from ..models.db import SUPABASE_URL, get_db, logger, upsert_profile_carl4b2b_analysis
+from .carl4b2b_drift import compute_salary_drift
 from .carl4b2b_ghost import (
     compute_ghost_score,
     compute_repost_index,
@@ -193,6 +194,7 @@ def build_market_map_analysis(
     now_utc = datetime.now(timezone.utc)
     repost_index = compute_repost_index(rows)
     sample_median_age = compute_sample_median_age_days(rows, now=now_utc)
+    salary_drift = compute_salary_drift(rows, now=now_utc)
 
     job_cards: List[Dict[str, Any]] = []
     for r in rows[:8]:
@@ -325,6 +327,7 @@ def build_market_map_analysis(
             "matchedKeywords": matched_kw,
             "missingKeywords": missing_kw,
         },
+        "salaryDrift": salary_drift,
         "riskFlags": risk_flags,
         "quickWins": quick_wins,
         "terminalLogs": terminal_logs,
