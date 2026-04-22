@@ -50,9 +50,6 @@ AI and software handle the heavy lifting so humans do the meaningful work.
 | Database | Supabase (PostgreSQL) |
 | Auth | Supabase Auth (email + password) |
 | Frontend | Jinja2 + Tailwind CSS (pre-built `app/static/css/tailwind.css`) |
-| Payments | Stripe (pay-per-post) |
-| Server | Gunicorn · gthread · systemd |
-| Deployment | Hetzner VPS · Nginx reverse proxy |
 
 ---
 
