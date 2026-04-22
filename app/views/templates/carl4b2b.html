@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block body_class %} carl4b2b-page{% endblock %}
 {% block title %}Carl for Companies | Catalitium{% endblock %}
 
 {% block meta %}
@@ -20,6 +21,31 @@
     --c4b-card-fill: linear-gradient(165deg, rgba(30, 58, 138, 0.35) 0%, rgba(15, 23, 42, 0.28) 100%);
     --c4b-card-border: rgba(255, 255, 255, 0.12);
   }
+  html:has(body.carl4b2b-page),
+  body.carl4b2b-page {
+    background: #020617 !important;
+  }
+  body.carl4b2b-page #content {
+    max-width: none !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 0 !important;
+    background: transparent !important;
+    box-sizing: border-box;
+  }
+  body.carl4b2b-page #carl4b2b-shell {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 100dvh;
+  }
+  body.carl4b2b-page header { display: none !important; }
+  body.carl4b2b-page footer { display: none !important; }
+  body.carl4b2b-page nav[aria-label="Mobile navigation"] { display: none !important; }
   body.carl4b2b-dashboard-active header { display: none !important; }
   body.carl4b2b-dashboard-active footer { display: none !important; }
   body.carl4b2b-dashboard-active #carl4b2b-shell,
@@ -116,6 +142,27 @@
   .c4b-btn-analyze:disabled {
     opacity: 0.55;
     cursor: not-allowed;
+  }
+  /* Keep typed text high-contrast across browsers and password managers. */
+  #carl4b2b-market-form input[type="text"],
+  #carl4b2b-market-form input[type="url"] {
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.86);
+    caret-color: #f8fafc;
+  }
+  #carl4b2b-market-form input[type="text"]::placeholder,
+  #carl4b2b-market-form input[type="url"]::placeholder {
+    color: #94a3b8;
+  }
+  #carl4b2b-market-form input[type="text"]:-webkit-autofill,
+  #carl4b2b-market-form input[type="url"]:-webkit-autofill,
+  #carl4b2b-market-form input[type="text"]:-webkit-autofill:hover,
+  #carl4b2b-market-form input[type="url"]:-webkit-autofill:hover,
+  #carl4b2b-market-form input[type="text"]:-webkit-autofill:focus,
+  #carl4b2b-market-form input[type="url"]:-webkit-autofill:focus {
+    -webkit-text-fill-color: #f8fafc;
+    box-shadow: 0 0 0px 1000px rgba(15, 23, 42, 0.92) inset;
+    transition: background-color 9999s ease-in-out 0s;
   }
   #carl4b2b-url-form-wrap {
     color-scheme: dark;
@@ -341,7 +388,7 @@
     <div class="text-center">
       <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Carl for Companies</p>
       <h1 class="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Competitive hiring map</h1>
-      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Pick a role and geography, or paste a careers URL for a quick default slice. We query Catalitium’s indexed job catalog only — directional hiring concentration, not a legal market definition.</p>
+      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Pick a role and geography, or paste a careers URL for a quick default slice. We query Catalitium’s indexed job catalog only. This is directional hiring concentration, not a legal market definition.</p>
       <p class="mt-4 text-center text-xs text-slate-500">CV analysis instead? <a href="{{ url_for('carl.carl_dashboard') }}" class="font-medium text-sky-400 hover:text-white underline-offset-2 hover:underline">Carl for your CV</a></p>
     </div>
 
@@ -387,9 +434,9 @@
           <span class="carl-term-dot carl-term-dot-y"></span>
           <span class="carl-term-dot carl-term-dot-g"></span>
         </div>
-        <span class="carl-term-title">carl — catalog — ~/market/query_slice</span>
+        <span class="carl-term-title">carl - catalog - ~/market/query_slice</span>
         <div class="flex shrink-0 items-center gap-1.5">
-          <a href="{{ url_for('carl.carl_dashboard', menu=1) }}" class="c4b-term-btn-menu" title="Who is Carl helping today? — pick Companies or Individuals" aria-label="Carl persona menu">Menu</a>
+          <a href="{{ url_for('carl.carl_dashboard', menu=1) }}" class="c4b-term-btn-menu" title="Who is Carl helping today? Pick Companies or Individuals." aria-label="Carl persona menu">Menu</a>
           <span id="carl4b2b-terminal-status" class="carl-term-badge">ready</span>
           <button type="button" id="btn-carl4b2b-new-map" class="c4b-term-btn-new" title="Change role, country, or URL and run a new catalog pass" aria-label="New market map">New map</button>
         </div>
@@ -552,7 +599,7 @@
 
       <aside id="carl4b2b-chat-container" data-c4b-reveal class="c4b-card flex min-h-[min(28rem,70vh)] flex-col p-4 sm:min-h-[420px]">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Talk to Carl (companies)</p>
-        <p class="mt-1 text-[11px] text-slate-500">Grounded on this catalog pass — use chips or words from the analysis.</p>
+        <p class="mt-1 text-[11px] text-slate-500">Grounded on this catalog pass. Use chips or words from the analysis.</p>
         <div id="carl4b2b-chat-log" class="c4b-scroll-dark mt-3 flex min-h-[140px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/40 p-3"></div>
         <div id="carl4b2b-chat-chips" class="mt-2 hidden flex flex-wrap gap-2" aria-label="Suggested prompts"></div>
         <div id="carl4b2b-api-cta" class="mt-3 hidden rounded-xl border border-sky-500/30 bg-sky-500/10 p-3 text-xs text-slate-200">
