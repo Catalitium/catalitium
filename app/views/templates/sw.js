@@ -35,7 +35,9 @@ self.addEventListener('fetch', function(e){
   var networkFirst = (
     url.pathname.endsWith('/css/styles.css') ||
     url.pathname.endsWith('/js/main.js') ||
-    url.pathname.endsWith('/js/ai_summary.js')
+    url.pathname.endsWith('/js/ai_summary.js') ||
+    url.pathname.endsWith('/js/carl.js') ||
+    url.pathname.endsWith('/js/carl4b2b.js')
   );
   if (networkFirst) {
     e.respondWith(
