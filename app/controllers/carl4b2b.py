@@ -18,6 +18,11 @@ from ..config import (
 )
 from ..models.catalog import Job
 from ..models.db import SUPABASE_URL, get_db, logger, upsert_profile_carl4b2b_analysis
+from .carl4b2b_brave import (
+    BRAVE_SESSION_LIMIT,
+    build_query as build_brave_query,
+    fetch_brave_context,
+)
 from .carl4b2b_drift import compute_salary_drift
 from .carl4b2b_ghost import (
     compute_ghost_score,
@@ -706,6 +711,13 @@ def carl4b2b_analyze():
     snap = _chat_snapshot_from_analysis(analysis)
     session["carl4b2b_chat_context"] = snap
     session["carl4b2b_chat_turns"] = 0
+    session["carl4b2b_brave_count"] = 0
+    session["carl4b2b_brave_meta"] = _build_brave_session_meta(
+        analysis=analysis,
+        canonical_url=canonical_url,
+        title_q=title_q,
+        country_q=country_q,
+    )
     session.modified = True
 
     source = {
@@ -809,3 +821,124 @@ def carl4b2b_chat():
             "pricing": url_for("payments.pricing"),
         }
     return api_success_response(out)
+
+
+# ─── Brave Search integration (external context only) ───────────────────────
+# Never influences Ghost Score, Salary Drift, or any score. Explicit user clicks
+# only. Per-session hard cap (BRAVE_SESSION_LIMIT). 24h in-memory cache shared
+# across users. Silently disabled when BRAVE_SEARCH_API_KEY is unset.
+
+
+def _build_brave_session_meta(
+    analysis: Dict[str, Any],
+    canonical_url: Optional[str],
+    title_q: str,
+    country_q: str,
+) -> Dict[str, Any]:
+    """Extract Brave-query hints from a freshly built analysis + input context."""
+    matches = analysis.get("matches") if isinstance(analysis, dict) else None
+    jobs = (matches or {}).get("jobs") if isinstance(matches, dict) else None
+    company_names: List[str] = []
+    if isinstance(jobs, list):
+        for j in jobs:
+            name = str((j or {}).get("company") or "").strip()
+            if not name or name == "—":
+                continue
+            if name not in company_names:
+                company_names.append(name)
+            if len(company_names) >= 3:
+                break
+
+    company_hint = ""
+    if canonical_url:
+        try:
+            host = urlparse(canonical_url).hostname or ""
+        except Exception:
+            host = ""
+        company_hint = _brand_token_from_host(host).strip()
+    if not company_hint and company_names:
+        company_hint = company_names[0]
+
+    return {
+        "company": company_hint,
+        "title": title_q or "",
+        "country": country_q or "",
+        "top_hirers": company_names,
+    }
+
+
+@bp.post("/brave/context")
+def carl4b2b_brave_context():
+    """Fetch Brave Search external context for one of the 3 trigger buttons.
+
+    Response shape:
+        { status: "ok"|"limit_reached"|"unavailable"|"invalid_input",
+          items: [...], remaining: int }
+
+    The endpoint never affects scoring or persists anything to the database.
+    """
+    if not session.get("user"):
+        return api_error_response("login_required", "Sign in to use this feature.", 401)
+    if not csrf_valid():
+        return api_error_response("invalid_csrf", "Session expired. Please refresh and try again.", 400)
+
+    payload = request.get_json(silent=True) or {}
+    ctx_type = str(payload.get("context_type") or "").strip().lower()
+    if ctx_type not in ("company", "role_market", "competitor"):
+        return api_error_response("invalid_input", "Unknown context_type.", 400)
+
+    meta = session.get("carl4b2b_brave_meta") or {}
+    if not isinstance(meta, dict):
+        meta = {}
+
+    count = int(session.get("carl4b2b_brave_count") or 0)
+    remaining_before = max(0, BRAVE_SESSION_LIMIT - count)
+    if remaining_before <= 0:
+        return api_success_response(
+            {
+                "status": "limit_reached",
+                "items": [],
+                "remaining": 0,
+                "limit": BRAVE_SESSION_LIMIT,
+            }
+        )
+
+    query = build_brave_query(ctx_type, meta)
+    if not query:
+        # Not enough input context for this trigger (e.g. no top hirers yet).
+        return api_success_response(
+            {
+                "status": "unavailable",
+                "items": [],
+                "remaining": remaining_before,
+                "limit": BRAVE_SESSION_LIMIT,
+                "reason": "insufficient_context",
+            }
+        )
+
+    results = fetch_brave_context(query)
+    # Count every explicit click that reaches a backend call, cache hit or not.
+    session["carl4b2b_brave_count"] = count + 1
+    session.modified = True
+    remaining_after = max(0, BRAVE_SESSION_LIMIT - (count + 1))
+
+    if results is None:
+        return api_success_response(
+            {
+                "status": "unavailable",
+                "items": [],
+                "remaining": remaining_after,
+                "limit": BRAVE_SESSION_LIMIT,
+                "reason": "upstream_unavailable",
+            }
+        )
+
+    return api_success_response(
+        {
+            "status": "ok" if results else "no_results",
+            "items": results,
+            "remaining": remaining_after,
+            "limit": BRAVE_SESSION_LIMIT,
+            "contextType": ctx_type,
+        }
+    )

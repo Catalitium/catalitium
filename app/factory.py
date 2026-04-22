@@ -56,12 +56,14 @@ def create_app() -> Flask:
         raise SystemExit(1)
 
     asset_version = (os.getenv("ASSET_VERSION") or "20260320-stability1").strip() or "20260320-stability1"
+    brave_search_api_key = (os.getenv("BRAVE_SEARCH_API_KEY") or "").strip()
     app.config.update(
         SECRET_KEY=SECRET_KEY,
         TEMPLATES_AUTO_RELOAD=(env != "production"),
         PER_PAGE_MAX=PER_PAGE_MAX,
         SUPABASE_URL=SUPABASE_URL,
         ASSET_VERSION=asset_version,
+        BRAVE_SEARCH_API_KEY=brave_search_api_key,
         # Default 5MB so CV uploads match ``cv_extract`` (4MB) without extra .env tuning.
         MAX_CONTENT_LENGTH=int(os.getenv("MAX_CONTENT_LENGTH", str(5 * 1024 * 1024))),
         # Keep secure cookies in production, but allow local HTTP dev
@@ -106,6 +108,7 @@ def create_app() -> Flask:
             ("carl.carl_chat", "40 per minute"),
             ("carl4b2b.carl4b2b_analyze", "20 per minute"),
             ("carl4b2b.carl4b2b_chat", "40 per minute"),
+            ("carl4b2b.carl4b2b_brave_context", "10 per minute"),
             ("auth.register", "10 per minute"),
             ("auth.auth_forgot_password", "5 per minute"),
             ("auth.auth_session_from_tokens", "30 per minute"),
