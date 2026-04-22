@@ -225,9 +225,13 @@ def build_market_map_analysis(
         for n, c in top_pairs[:10]
     ]
 
-    headline = (
-        f"Hiring intensity: “{title_q or 'open titles'}” in {country_q or 'catalog geography'}"
-    )
+    mc = (meta.get("market_company") or "").strip()
+    if mc and (title_q or country_q):
+        headline = f"{mc} — “{title_q or 'open titles'}” in {country_q or 'catalog geography'}"
+    else:
+        headline = (
+            f"Hiring intensity: “{title_q or 'open titles'}” in {country_q or 'catalog geography'}"
+        )
     persona = "Indexed job market"
     level = f"{total_catalog} postings (catalog) · sample {sample_n} rows"
     strengths = [
@@ -235,14 +239,14 @@ def build_market_map_analysis(
         f"{distinct} distinct employers in the capped sample.",
     ]
     risk_flags = [
-        "Signals come from Catalitium’s indexed job catalog, not a legal market definition.",
+        "The index is a sample of public listings; not every employer or posting is represented.",
         f"Sample capped at {_SAMPLE_CAP} rows; company strings can be noisy or duplicated.",
         "Country/title filters mirror public job search normalization.",
     ]
     quick_wins = [
-        "Compare your own reqs to top posting titles in this band for wording drift.",
-        "If you excluded “our company”, sanity-check the string so you do not hide related brands.",
-        "Pair this view with recruiter outreach, not as sole sourcing truth.",
+        "Compare your reqs to the top posting titles in this band for wording drift.",
+        "Cross-check employer strings for subsidiaries and brand variants before outreach.",
+        "Use this as directional signal — pair with your own market context.",
     ]
 
     overview: Dict[str, Any] = {
@@ -250,8 +254,7 @@ def build_market_map_analysis(
         "persona": persona,
         "level": level,
         "fitSummary": _truncate(
-            "Lead-recruiter view: who is posting, how concentrated hiring is, and how saturated "
-            "the indexed slice looks for your filters.",
+            "Who is posting, how tight the field is, and how saturated this slice looks (indexed data).",
             350,
         ),
         "confidence": int(min(94, 58 + (distinct % 28))),
@@ -274,16 +277,16 @@ def build_market_map_analysis(
     if distinct < 5:
         missing_kw.append("more_posting_volume")
 
+    top_h = top_names[0] if top_names else "n/a"
     chat_summary = _truncate(
-        f"Catalog pass for {title_q or 'any title'} / {country_q or 'any country'}: "
-        f"{total_catalog} postings counted, {distinct} employers in the {_SAMPLE_CAP}-row sample. "
-        f"Top hirer: {top_names[0] if top_names else 'n/a'}.",
+        f"{title_q or '·'} / {country_q or '·'} — {total_catalog} postings, "
+        f"{distinct} employer strings in the {_SAMPLE_CAP}-row sample. Top by volume: {top_h}.",
         350,
     )
     suggested_prompts = [
-        "What does market saturation mean for this catalog slice?",
-        "Who are the heaviest hiring competitors in the sample?",
-        "How should we interpret catalog limits when briefing leadership?",
+        "Who posts the most in this sample — and is that concentration a sourcing risk?",
+        "Is the saturation score high given how many distinct employers we see here?",
+        "What should I double-check in the listings before I brief a hiring manager on this slice?",
     ]
 
     terminal_logs = [
@@ -292,7 +295,11 @@ def build_market_map_analysis(
         _truncate(f"[Carl4B2B] sample: pulled {sample_n} rows (cap {_SAMPLE_CAP})", _MAX_LINE),
         _truncate(f"[Carl4B2B] rollup: {distinct} distinct company_name values", _MAX_LINE),
         _truncate(f"[Carl4B2B] leaders: {_kw_join(top_names, 5)}", _MAX_LINE),
-        _truncate(f"[Carl4B2B] meta: exclude='{exclude or '—'}' url={meta.get('business_url') or '—'}", _MAX_LINE),
+        _truncate(
+            f"[Carl4B2B] meta: company={meta.get('market_company') or '—'} "
+            f"exclude={exclude or '—'} url={meta.get('business_url') or '—'}",
+            _MAX_LINE,
+        ),
         "[Carl4B2B] synthesis: dashboard payload assembled",
     ]
 
@@ -301,20 +308,20 @@ def build_market_map_analysis(
         "documents": [
             {
                 "title": "Market query",
-                "subtitle": f"{title_q or '—'} · {country_q or '—'}",
+                "subtitle": f"{(meta.get('market_company') or '').strip() or '—'} · {title_q or '—'} · {country_q or '—'}",
                 "badge": "Catalog",
             }
         ],
         "actionFeed": [
             {
-                "title": "Calibrate the filter",
-                "subtitle": "Tighten title tokens to reduce noise.",
-                "detail": "Try a role family plus a single country code to keep competitors comparable.",
+                "title": "Tighten the title tokens",
+                "subtitle": "Narrow the role family to cut noise in the sample.",
+                "detail": "One country or region at a time keeps peer employers comparable in this view.",
             },
             {
-                "title": "Watch duplicate employers",
-                "subtitle": "Subsidiaries may appear under different strings.",
-                "detail": "Use exclude string only for obvious self-matches; legal entity graphs are out of scope.",
+                "title": "Watch employer name variants",
+                "subtitle": "The same org can appear under more than one string in public listings.",
+                "detail": "Spot-check the top list before you treat counts as a headcount plan.",
             },
         ],
         "skillsRadar": skills_radar,
@@ -349,6 +356,7 @@ def build_market_map_analysis(
             "title_q": title_q,
             "country_q": country_q,
             "exclude_company": exclude_company.strip(),
+            "market_company": (meta.get("market_company") or "").strip(),
             "sample_rows": sample_n,
             "total_count": total_catalog,
             "business_url": (meta.get("business_url") or "").strip(),
@@ -564,15 +572,16 @@ def carl4b2b_analyze():
     business_url_in = str(payload.get("business_url") or "").strip()
     title_in = str(payload.get("title") or payload.get("role_title") or "").strip()
     country_in = str(payload.get("country") or payload.get("location") or "").strip()
+    market_company_in = str(payload.get("market_company") or "").strip()
     exclude_in = str(payload.get("exclude_company") or "").strip()
 
-    structured_ok = bool(title_in and country_in)
+    structured_ok = bool(title_in and country_in and market_company_in)
     had_url_input = bool(business_url_in)
 
     if not structured_ok and not had_url_input:
         return api_error_response(
             "invalid_input",
-            "Enter a role title and country/region, or a company careers URL.",
+            "Enter a valid company or careers URL, or industry, country or region, and company name for this market.",
             400,
         )
 
@@ -628,6 +637,7 @@ def carl4b2b_analyze():
     meta = {
         "business_url": (canonical_url or ""),
         "company_email": company_email,
+        "market_company": market_company_in,
         "inferred_from_url": inferred_from_url,
         "inferred_title_family": inferred_title_family,
         "input_type": input_type,
@@ -725,6 +735,7 @@ def carl4b2b_analyze():
         "title_q": title_q,
         "country_q": country_q,
         "exclude_company": exclude_company or "",
+        "market_company": market_company_in,
         "business_url": canonical_url or "",
         "company_email": company_email,
     }

@@ -224,6 +224,23 @@
     outline: 2px solid #00bfff;
     outline-offset: 2px;
   }
+  /* Paste CV: keep typed/placeholder text visible (incl. autofill on dark page). */
+  body.carl-carl-page #carl-text-fallback {
+    color: #e5e7eb !important;
+    background-color: rgba(0, 0, 0, 0.55) !important;
+    -webkit-text-fill-color: #e5e7eb;
+  }
+  body.carl-carl-page #carl-text-fallback::placeholder {
+    color: #6b7280;
+    opacity: 1;
+  }
+  body.carl-carl-page #carl-text-fallback:-webkit-autofill,
+  body.carl-carl-page #carl-text-fallback:-webkit-autofill:hover,
+  body.carl-carl-page #carl-text-fallback:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e5e7eb !important;
+    box-shadow: 0 0 0 1000px #0a0f1a inset !important;
+    transition: background-color 5000s ease-out;
+  }
   @media (prefers-reduced-motion: reduce) {
     .carl-btn-analyze,
     .carl-btn-analyze:hover:not(:disabled),
@@ -755,7 +772,7 @@
         <div id="carl-text-paste-zone" class="hidden mt-6 text-left">
             <textarea id="carl-text-fallback" name="cv_text" rows="5"
                       placeholder="Paste your CV or resume text here..."
-                      class="w-full rounded-2xl border border-white/10 bg-black/50 px-4 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-[#22c55e] focus:ring-1 focus:ring-[#22c55e] transition shadow-inner"></textarea>
+                      class="w-full rounded-2xl border border-white/10 bg-[#0a0f1a] px-4 py-3 text-sm text-slate-100 placeholder:text-[#6B7280] focus:border-[#22c55e] focus:ring-1 focus:ring-[#22c55e] transition shadow-inner"></textarea>
         </div>
 
         <div class="mt-8 border-t border-white/10 pt-8 flex justify-center">

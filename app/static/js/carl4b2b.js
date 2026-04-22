@@ -15,6 +15,7 @@
   var chatChips = document.getElementById("carl4b2b-chat-chips");
   var apiCta = document.getElementById("carl4b2b-api-cta");
   var chatSubmit = document.getElementById("carl4b2b-chat-submit");
+  var analyzeTextEl = document.getElementById("carl4b2b-analyze-text");
 
   var analysisState = null;
   var terminalTimer = null;
@@ -33,13 +34,38 @@
     return field && field.value ? String(field.value).trim() : "";
   }
 
+  function getInputMode() {
+    var m = form.querySelector('input[name="c4b_input_mode"]:checked');
+    return m && m.value === "market" ? "market" : "url";
+  }
+
+  function refreshCtaLabel() {
+    if (!analyzeTextEl) return;
+    analyzeTextEl.textContent =
+      getInputMode() === "url" ? "Map from this company URL" : "Map this market";
+  }
+
+  function applyInputMode() {
+    var mode = getInputMode();
+    var wUrl = document.getElementById("carl4b2b-mode-url");
+    var wMkt = document.getElementById("carl4b2b-mode-market");
+    if (wUrl) wUrl.classList.toggle("hidden", mode !== "url");
+    if (wMkt) wMkt.classList.toggle("hidden", mode !== "market");
+    refreshCtaLabel();
+  }
+
   function setAnalyzeLoading(on) {
     if (!analyzeBtn) return;
     analyzeBtn.disabled = !!on;
     var sp = document.getElementById("carl4b2b-analyze-spinner");
-    var tx = document.getElementById("carl4b2b-analyze-text");
     if (sp) sp.classList.toggle("hidden", !on);
-    if (tx) tx.textContent = on ? "Mapping catalog…" : "Run market map";
+    if (analyzeTextEl) {
+      if (on) {
+        analyzeTextEl.textContent = "Mapping catalog…";
+      } else {
+        refreshCtaLabel();
+      }
+    }
   }
 
   function delay(ms) {
@@ -571,7 +597,7 @@
     if (mm.business_url) {
       addOne("Source URL: " + mm.business_url);
     }
-    addOne("Catalog slice: " + (mm.title_q || "") + " · " + (mm.country_q || "—"));
+    addOne("Slice: " + (mm.title_q || "") + " · " + (mm.country_q || "—"));
     var ov = analysis.overview || {};
     addOne(ov.headline);
     addFromBlob(ov.fitSummary);
@@ -597,7 +623,7 @@
       addOne((c.name || "") + " — " + (c.reason || ""));
     });
     if (!pool.length) {
-      addOne("Catalog pass ready — ask Carl about saturation, competitors, or sample limits.");
+      addOne("Run ready — try prompts in chat or the terminal feed.");
     }
     return pool.slice(0, 40);
   }
@@ -831,6 +857,7 @@
     }
   }
 
+  var c4bTabsClickBound = false;
   function initTabs() {
     var tabs = document.querySelectorAll("[data-c4b-tab]");
     var panels = {
@@ -849,11 +876,14 @@
         btn.classList.toggle("hover:text-white", !on);
       });
     }
-    tabs.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        activate(btn.getAttribute("data-c4b-tab") || "overview");
+    if (!c4bTabsClickBound) {
+      c4bTabsClickBound = true;
+      tabs.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          activate(btn.getAttribute("data-c4b-tab") || "overview");
+        });
       });
-    });
+    }
     activate("overview");
   }
 
@@ -872,6 +902,11 @@
     var liveClear = document.getElementById("carl4b2b-terminal-live");
     if (liveClear) liveClear.textContent = "";
     if (terminalStatus) terminalStatus.textContent = "ready";
+    var tsReset = document.getElementById("carl4b2b-term-slice");
+    if (tsReset) {
+      tsReset.textContent = "";
+      tsReset.classList.add("hidden");
+    }
 
     document.body.classList.remove("carl4b2b-dashboard-active");
 
@@ -906,7 +941,15 @@
     }
 
     initTabs();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (hero) {
+      try {
+        hero.scrollIntoView({ block: "start", behavior: "smooth" });
+      } catch (eH) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   function hydrate(analysis, extras) {
@@ -951,8 +994,32 @@
       chatLog.innerHTML = "";
       addChatMessage(
         "assistant",
-        (analysisState.chatContext && analysisState.chatContext.summary) || "Market map ready. Ask about saturation or competitors."
+        (analysisState.chatContext && analysisState.chatContext.summary) ||
+          "This run is ready. Use a quick prompt or type your own question about this slice."
       );
+    }
+    var termSlice = document.getElementById("carl4b2b-term-slice");
+    if (termSlice) {
+      var mmx = (analysisState.marketMeta || {});
+      var pz = [];
+      if (mmx.business_url) {
+        try {
+          var ux = new URL(mmx.business_url);
+          pz.push(ux.hostname || mmx.business_url);
+        } catch (eU) {
+          pz.push(String(mmx.business_url).slice(0, 64));
+        }
+      }
+      if (mmx.market_company) pz.push(String(mmx.market_company));
+      if (mmx.title_q) pz.push(String(mmx.title_q));
+      if (mmx.country_q) pz.push(String(mmx.country_q));
+      var line2 = pz.filter(Boolean).join(" · ");
+      if (line2) {
+        termSlice.textContent = "Slice: " + line2;
+        termSlice.classList.remove("hidden");
+      } else {
+        termSlice.classList.add("hidden");
+      }
     }
     resetChatGate();
     renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
@@ -1019,7 +1086,7 @@
           return;
         }
         var inner = env.data || {};
-        addChatMessage("assistant", inner.reply || "Ask about this catalog pass.");
+        addChatMessage("assistant", inner.reply || "No reply. Ask about this run or retry.");
         if (inner.chat_limit_reached) applyChatLimit(inner);
       })
       .catch(function () {
@@ -1027,34 +1094,61 @@
       });
   }
 
+  var modeRadios = form.querySelectorAll('input[name="c4b_input_mode"]');
+  for (var ri = 0; ri < modeRadios.length; ri++) {
+    modeRadios[ri].addEventListener("change", function () {
+      setError("");
+      applyInputMode();
+    });
+  }
+  applyInputMode();
+
   form.addEventListener("submit", function (event) {
     event.preventDefault();
+    var mode = getInputMode();
     var urlEl = document.getElementById("carl4b2b-url");
     var titleEl = document.getElementById("carl4b2b-title");
     var countryEl = document.getElementById("carl4b2b-country");
-    var excludeEl = document.getElementById("carl4b2b-exclude");
-    var businessUrl = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
-    var title = titleEl && titleEl.value ? String(titleEl.value).trim() : "";
-    var country = countryEl && countryEl.value ? String(countryEl.value).trim() : "";
-    var excludeCompany = excludeEl && excludeEl.value ? String(excludeEl.value).trim() : "";
-    if (!title && !country && !businessUrl) {
-      setError("Enter a role title and country, or a company / careers URL.");
-      return;
-    }
-    if ((title && !country) || (!title && country)) {
-      setError("Enter both role title and country, or leave both empty and use a URL only.");
-      return;
+    var companyEl = document.getElementById("carl4b2b-company");
+    var payload;
+    if (mode === "url") {
+      var businessUrl = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
+      if (businessUrl) {
+        var norm = businessUrl;
+        if (!/^https?:\/\//i.test(norm)) {
+          norm = "https://" + norm;
+        }
+        try {
+          var parsed = new URL(norm);
+          if (!parsed.hostname) {
+            throw new Error("host");
+          }
+          businessUrl = parsed.href;
+        } catch (e) {
+          setError(
+            "Enter a valid company or careers URL (we accept example.com or https://example.com)."
+          );
+          return;
+        }
+      } else {
+        setError("Enter a company or careers URL.");
+        return;
+      }
+      payload = { business_url: businessUrl };
+    } else {
+      var title = titleEl && titleEl.value ? String(titleEl.value).trim() : "";
+      var country = countryEl && countryEl.value ? String(countryEl.value).trim() : "";
+      var mktCo = companyEl && companyEl.value ? String(companyEl.value).trim() : "";
+      if (!title || !country || !mktCo) {
+        setError("Enter industry, country or region, and company name for this market.");
+        return;
+      }
+      payload = { title: title, country: country, market_company: mktCo };
     }
     setError("");
     stopB2bTerminalLiveFeed();
     setAnalyzeLoading(true);
     var started = performance.now();
-    var payload = { business_url: businessUrl };
-    if (title && country) {
-      payload.title = title;
-      payload.country = country;
-      if (excludeCompany) payload.exclude_company = excludeCompany;
-    }
     fetch("/carl/b2b/analyze", {
       method: "POST",
       credentials: "same-origin",

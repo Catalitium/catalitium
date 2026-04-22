@@ -85,6 +85,19 @@ def test_carl4b2b_analyze_requires_login(carl4b2b_client):
     assert r.status_code == 401
 
 
+def test_carl4b2b_analyze_manual_requires_company_name(carl4b2b_client):
+    _b2b_login(carl4b2b_client)
+    page = carl4b2b_client.get("/carl/b2b")
+    csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
+    r = carl4b2b_client.post(
+        "/carl/b2b/analyze",
+        json={"title": "Python engineer", "country": "Switzerland", "market_company": ""},
+        headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
+    )
+    assert r.status_code == 400
+    assert r.get_json().get("code") == "invalid_input"
+
+
 def test_carl4b2b_analyze_validation(carl4b2b_client):
     _b2b_login(carl4b2b_client)
     page = carl4b2b_client.get("/carl/b2b")
@@ -107,7 +120,12 @@ def test_carl4b2b_analyze_manual_ignores_bad_url(carl4b2b_client, monkeypatch):
     csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
     r = carl4b2b_client.post(
         "/carl/b2b/analyze",
-        json={"title": "Python engineer", "country": "Switzerland", "business_url": "ftp://example.com"},
+        json={
+            "title": "Python engineer",
+            "country": "Switzerland",
+            "market_company": "Acme",
+            "business_url": "ftp://example.com",
+        },
         headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
     )
     assert r.status_code == 200
@@ -123,7 +141,11 @@ def test_carl4b2b_analyze_manual_title_country(carl4b2b_client, monkeypatch):
     csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
     r = carl4b2b_client.post(
         "/carl/b2b/analyze",
-        json={"title": "Python engineer", "country": "Switzerland", "exclude_company": "Acme"},
+        json={
+            "title": "Python engineer",
+            "country": "Switzerland",
+            "market_company": "Contoso",
+        },
         headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
     )
     assert r.status_code == 200
@@ -134,6 +156,21 @@ def test_carl4b2b_analyze_manual_title_country(carl4b2b_client, monkeypatch):
     mm = (data.get("analysis") or {}).get("marketMeta") or {}
     assert mm.get("input_type") == "manual"
     assert mm.get("inferred_from_url") is False
+
+
+def test_carl4b2b_analyze_bare_host_url(carl4b2b_client, monkeypatch):
+    """Server accepts bare hostname; same as browser-normalized https://..."""
+    _stub_jobs(monkeypatch)
+    _b2b_login(carl4b2b_client)
+    page = carl4b2b_client.get("/carl/b2b")
+    csrf = _csrf_from_b2b_page(page.get_data(as_text=True))
+    r = carl4b2b_client.post(
+        "/carl/b2b/analyze",
+        json={"business_url": "catalitium.com"},
+        headers={"X-CSRF-Token": csrf, "Content-Type": "application/json"},
+    )
+    assert r.status_code == 200
+    assert r.get_json().get("ok") is True
 
 
 def test_carl4b2b_analyze_happy_path_json(carl4b2b_client, monkeypatch):

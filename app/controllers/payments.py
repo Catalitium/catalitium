@@ -85,6 +85,7 @@ _STRIPE_B2C_PRODUCTS: Dict[str, Dict[str, Any]] = {
         ],
         "badge": "Best Value",
     },
+    # Public API/database access plan: $4.99/month—keep UI and STRIPE_PRICE_API_ACCESS in sync.
     "api_access": {
         "price_id": os.getenv("STRIPE_PRICE_API_ACCESS", ""),
         "product_line": "api_access",
