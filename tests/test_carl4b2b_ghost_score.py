@@ -12,6 +12,7 @@ import pytest
 from app.controllers.carl4b2b_ghost import (
     compute_ghost_score,
     compute_repost_index,
+    compute_sample_median_age_days,
     ghost_label,
     has_salary_signal,
     parse_posting_age_days,
@@ -44,6 +45,38 @@ class TestParsePostingAgeDays:
 
     def test_future_date_clamps_to_zero(self):
         assert parse_posting_age_days("2099-01-01", now=NOW) == 0
+
+
+class TestComputeSampleMedianAgeDays:
+    def test_empty_returns_none(self):
+        assert compute_sample_median_age_days([], now=NOW) is None
+
+    def test_below_min_parseable_returns_none(self):
+        rows = [{"date": "2026-04-20"}, {"date": "2026-04-10"}]
+        assert compute_sample_median_age_days(rows, now=NOW) is None
+
+    def test_mixed_garbage_uses_only_parseable(self):
+        rows = [
+            {"date": "2026-04-20"},
+            {"date": "not-a-date"},
+            {"date": "2026-04-10"},
+            {"date": None},
+            {"date": "2026-03-20"},
+        ]
+        assert compute_sample_median_age_days(rows, now=NOW) == 12
+
+    def test_odd_count(self):
+        rows = [{"date": "2026-04-20"}, {"date": "2026-04-10"}, {"date": "2026-03-20"}]
+        assert compute_sample_median_age_days(rows, now=NOW) == 12
+
+    def test_even_count_rounds(self):
+        rows = [
+            {"date": "2026-04-21"},  # 1d
+            {"date": "2026-04-18"},  # 4d
+            {"date": "2026-04-15"},  # 7d
+            {"date": "2026-04-12"},  # 10d
+        ]
+        assert compute_sample_median_age_days(rows, now=NOW) == 6
 
 
 class TestComputeRepostIndex:
@@ -124,12 +157,55 @@ class TestComputeGhostScore:
         factor_keys = [f["key"] for f in result["factors"]]
         assert factor_keys == ["age", "repost", "salary", "velocity"]
 
-    def test_stale_no_salary_is_low(self):
+    def test_stale_single_row_absolute_fallback_is_low(self):
+        # Single row: no median available, absolute bands apply; >60d + no salary = Low.
         row = self._row(date="2026-01-01", job_salary_range="")
         idx = compute_repost_index([row])
         result = compute_ghost_score(row, idx, now=NOW)
         assert result["score"] >= 50
         assert result["label"] == "Low hiring signal"
+
+    def test_outlier_stale_among_fresh_is_low(self):
+        fresh_rows = [self._row(company_name=f"Co{i}", date="2026-04-20") for i in range(5)]
+        stale = self._row(company_name="StaleCo", date="2026-01-01", job_salary_range="")
+        rows = fresh_rows + [stale]
+        idx = compute_repost_index(rows)
+        median_age = compute_sample_median_age_days(rows, now=NOW)
+        result = compute_ghost_score(
+            stale, idx, sample_median_age_days=median_age, now=NOW
+        )
+        age = next(f for f in result["factors"] if f["key"] == "age")
+        assert age["points"] == 40
+        assert result["label"] == "Low hiring signal"
+
+    def test_uniform_stale_is_typical_not_flagged(self):
+        # Screenshot scenario: every row ~60 days old, no salary, no reposts.
+        # Relative scoring must NOT produce a wall of 'Low hiring signal'.
+        rows = [
+            self._row(company_name=f"Co{i}", date="2026-02-21", job_salary_range="")
+            for i in range(6)
+        ]
+        idx = compute_repost_index(rows)
+        median_age = compute_sample_median_age_days(rows, now=NOW)
+        result = compute_ghost_score(
+            rows[0], idx, sample_median_age_days=median_age, now=NOW
+        )
+        age = next(f for f in result["factors"] if f["key"] == "age")
+        assert age["points"] == 10
+        assert result["label"] in {"Active", "Uncertain"}
+        assert result["label"] != "Low hiring signal"
+
+    def test_fresh_absolute_floor_wins_over_relative(self):
+        # If a row is <=14d old, it gets 0 pts even in an all-fresh sample
+        # where median is near zero.
+        rows = [self._row(company_name=f"Co{i}", date="2026-04-21") for i in range(5)]
+        idx = compute_repost_index(rows)
+        median_age = compute_sample_median_age_days(rows, now=NOW)
+        result = compute_ghost_score(
+            rows[0], idx, sample_median_age_days=median_age, now=NOW
+        )
+        age = next(f for f in result["factors"] if f["key"] == "age")
+        assert age["points"] == 0
 
     def test_repost_adds_points(self):
         row = self._row()

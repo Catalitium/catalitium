@@ -14,15 +14,19 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date, datetime, timezone
+from statistics import median
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from ..models.money import parse_salary_range_string
 
 _MAX_RAW_POINTS = 75
 
-_AGE_BAND_FRESH = 14
-_AGE_BAND_MILD = 30
-_AGE_BAND_STALE = 60
+_AGE_BAND_FRESH_ABS = 14
+_AGE_BAND_FRESHER_REL = -14
+_AGE_BAND_TYPICAL_REL = 14
+_AGE_BAND_OLDER_REL = 30
+
+_MIN_ROWS_FOR_MEDIAN = 3
 
 _LABEL_ACTIVE = "Active"
 _LABEL_UNCERTAIN = "Uncertain"
@@ -58,6 +62,26 @@ def parse_posting_age_days(value: Any, now: Optional[datetime] = None) -> Option
     return max(0, (today - posted).days)
 
 
+def compute_sample_median_age_days(
+    rows: Iterable[Mapping[str, Any]],
+    now: Optional[datetime] = None,
+) -> Optional[int]:
+    """Median posting age across parseable rows, or None if too few rows.
+
+    Used to turn the age factor into a sample-relative signal so a
+    globally stale or globally fresh catalog does not produce a wall of
+    identical scores.
+    """
+    ages: List[int] = []
+    for r in rows:
+        age = parse_posting_age_days(r.get("date"), now=now)
+        if age is not None:
+            ages.append(age)
+    if len(ages) < _MIN_ROWS_FOR_MEDIAN:
+        return None
+    return int(round(median(ages)))
+
+
 def _repost_key(row: Mapping[str, Any]) -> Tuple[str, str]:
     company = str(row.get("company_name") or "").strip().lower()
     title = str(row.get("job_title_norm") or row.get("job_title") or "").strip().lower()
@@ -83,7 +107,10 @@ def has_salary_signal(row: Mapping[str, Any]) -> bool:
     return 0 < parsed < 2_000_000
 
 
-def _age_factor(age_days: Optional[int]) -> Dict[str, Any]:
+def _age_factor(
+    age_days: Optional[int],
+    sample_median_age_days: Optional[int] = None,
+) -> Dict[str, Any]:
     if age_days is None:
         return {
             "key": "age",
@@ -91,13 +118,51 @@ def _age_factor(age_days: Optional[int]) -> Dict[str, Any]:
             "detail": "No usable date on this listing.",
             "points": 10,
         }
-    if age_days <= _AGE_BAND_FRESH:
-        return {"key": "age", "label": f"Fresh ({age_days}d)", "detail": "Posted within 2 weeks.", "points": 0}
-    if age_days <= _AGE_BAND_MILD:
-        return {"key": "age", "label": f"Mild ({age_days}d)", "detail": "Between 2 weeks and 1 month old.", "points": 10}
-    if age_days <= _AGE_BAND_STALE:
-        return {"key": "age", "label": f"Elevated ({age_days}d)", "detail": "Between 1 and 2 months old.", "points": 25}
-    return {"key": "age", "label": f"Stale ({age_days}d)", "detail": "Older than 2 months.", "points": 40}
+    if age_days <= _AGE_BAND_FRESH_ABS:
+        return {
+            "key": "age",
+            "label": f"Fresh ({age_days}d)",
+            "detail": "Posted within 2 weeks.",
+            "points": 0,
+        }
+    if sample_median_age_days is None:
+        # Too few rows to compute a meaningful sample median; fall back to
+        # absolute mild/elevated/stale bands so single-row callers still work.
+        if age_days <= 30:
+            return {"key": "age", "label": f"Mild ({age_days}d)", "detail": "Between 2 weeks and 1 month old.", "points": 10}
+        if age_days <= 60:
+            return {"key": "age", "label": f"Elevated ({age_days}d)", "detail": "Between 1 and 2 months old.", "points": 25}
+        return {"key": "age", "label": f"Stale ({age_days}d)", "detail": "Older than 2 months.", "points": 40}
+
+    delta = age_days - sample_median_age_days
+    median_note = f"median in sample {sample_median_age_days}d"
+    if delta <= _AGE_BAND_FRESHER_REL:
+        return {
+            "key": "age",
+            "label": f"Fresher than peers ({age_days}d)",
+            "detail": f"More than 2 weeks newer than the {median_note}.",
+            "points": 0,
+        }
+    if delta <= _AGE_BAND_TYPICAL_REL:
+        return {
+            "key": "age",
+            "label": f"Typical for sample ({age_days}d)",
+            "detail": f"Within 2 weeks of the {median_note}.",
+            "points": 10,
+        }
+    if delta <= _AGE_BAND_OLDER_REL:
+        return {
+            "key": "age",
+            "label": f"Older than peers ({age_days}d)",
+            "detail": f"Two to four weeks older than the {median_note}.",
+            "points": 25,
+        }
+    return {
+        "key": "age",
+        "label": f"Oldest in sample ({age_days}d)",
+        "detail": f"More than a month older than the {median_note}.",
+        "points": 40,
+    }
 
 
 def _repost_factor(count: int) -> Dict[str, Any]:
@@ -134,13 +199,15 @@ def ghost_label(score: int) -> str:
 def compute_ghost_score(
     row: Mapping[str, Any],
     repost_index: Mapping[Tuple[str, str], int],
+    *,
+    sample_median_age_days: Optional[int] = None,
     now: Optional[datetime] = None,
 ) -> Dict[str, Any]:
     try:
         age_days = parse_posting_age_days(row.get("date"), now=now)
         repost_count = int(repost_index.get(_repost_key(row), 1))
         factors: List[Dict[str, Any]] = [
-            _age_factor(age_days),
+            _age_factor(age_days, sample_median_age_days),
             _repost_factor(repost_count),
             _salary_factor(has_salary_signal(row)),
             _velocity_placeholder_factor(),
