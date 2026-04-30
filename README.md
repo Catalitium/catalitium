@@ -1,7 +1,5 @@
 # Catalitium
 
-> AI-powered job platform and automation tools for tech talent and companies.
-
 ---
 
 ## Soul
