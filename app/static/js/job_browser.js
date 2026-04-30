@@ -26,7 +26,7 @@
     if (typeof navigator !== "undefined" && crawlerPattern.test(navigator.userAgent || "")) {
       return true;
     }
-    return !(typeof sendAnalyticsPayload === "function" || typeof trackEvent === "function");
+    return typeof trackEvent !== "function";
   };
 
   const sendBrowserAnalytics = (status, resultCount, eventType = "job_browser_search") => {
@@ -47,14 +47,6 @@
         title: meta.title,
         country: meta.country,
         count: resultCount || 0,
-      });
-    }
-    if (typeof sendAnalyticsPayload === "function") {
-      sendAnalyticsPayload({
-        event_type: eventType,
-        status: status || "unknown",
-        source: "web",
-        meta: meta,
       });
     }
   };

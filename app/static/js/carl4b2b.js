@@ -3,6 +3,9 @@
   if (!form) return;
   document.body.classList.add("carl4b2b-page");
 
+  var c4bShell = document.getElementById("carl4b2b-shell");
+  var fallbackJobsHref = (c4bShell && c4bShell.getAttribute("data-fallback-jobs-href")) || "/jobs";
+
   var analyzeBtn = document.getElementById("carl4b2b-analyze-btn");
   var errEl = document.getElementById("carl4b2b-form-error");
   var hero = document.getElementById("carl4b2b-query-hero");
@@ -781,7 +784,7 @@
         ghostBadgeHtml(ghost) +
         "</div>" +
         '<p class="mt-1 text-xs text-slate-400">' + escapeHtml(subtitle) + "</p>" +
-        '<a href="' + escapeHtml(href || "/jobs") + '"' +
+        '<a href="' + escapeHtml(href || fallbackJobsHref) + '"' +
         ' class="mt-3 inline-flex text-xs font-semibold text-sky-400 hover:text-white">Open →</a></div>'
       );
     }
@@ -789,10 +792,10 @@
       jRoot.innerHTML += card(j.title, (j.company || "") + " · " + (j.location || ""), j.link, j.ghost);
     });
     safeList(matches.top_companies, []).forEach(function (c) {
-      cRoot.innerHTML += card(c.name, c.reason || "", "/jobs");
+      cRoot.innerHTML += card(c.name, c.reason || "", fallbackJobsHref);
     });
     safeList(matches.niche_companies, []).forEach(function (n) {
-      nRoot.innerHTML += card(n.name, n.reason || "", "/jobs");
+      nRoot.innerHTML += card(n.name, n.reason || "", fallbackJobsHref);
     });
     jRoot.querySelectorAll(".c4b-ghost-badge").forEach(function (btn) {
       btn.addEventListener("click", function () {

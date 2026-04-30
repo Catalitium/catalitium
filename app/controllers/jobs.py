@@ -1375,10 +1375,7 @@ def studio_contact():
         return api_error_response("contact_failed", "Unable to submit studio enquiry", 500)
     return api_success_response({"status": "ok"}, 201, code="created", message="Studio enquiry submitted")
 
-# Stripe + payment routes → app.routes.stripe_routes blueprint
-# (B2C subscriptions, B2B checkout, webhooks moved to routes/stripe_routes.py)
-
-# [Stripe helpers + routes removed — see app/routes/stripe_routes.py]
+# Stripe + B2B checkout + webhooks → ``app/controllers/payments.py`` (blueprint ``payments``, registered in ``app/controllers/__init__.py``).
 @bp.get("/health")
 def health():
     """Expose a readiness probe indicating the database is reachable."""

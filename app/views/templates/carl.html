@@ -686,7 +686,7 @@
 {% endblock %}
 
 {% block content %}
-  <div id="carl-shell" class="relative flex w-full min-w-0 flex-col font-sans text-slate-200">
+  <div id="carl-shell" class="relative flex w-full min-w-0 flex-col font-sans text-slate-200" data-fallback-jobs-href="{{ url_for('jobs.jobs') }}" data-fallback-salary-board-href="{{ url_for('jobs.recruiter_salary_board') }}">
     {% if preloaded_analysis %}
     <script id="preloaded-carl-data" type="application/json">
         {{ preloaded_analysis | tojson | safe }}
@@ -1047,7 +1047,7 @@
           <svg class="h-5 w-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
           Carl's Career Radar
         </h2>
-        <a href="/jobs" class="text-sm font-semibold text-[#18a7ec] hover:text-white transition">Search all jobs &rarr;</a>
+        <a href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-[#18a7ec] hover:text-white transition">Search all jobs &rarr;</a>
       </div>
       
       <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">

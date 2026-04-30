@@ -1,4 +1,4 @@
-"""Flask application factory and route definitions for Catalitium."""
+"""Flask application factory for Catalitium."""
 
 import hashlib
 import os
