@@ -6,11 +6,6 @@ function trackEvent(name, params){
   } catch(_){}
 }
 
-function sendAnalyticsPayload(_payload){
-  /* Intentionally empty: server /events/apply was removed to cut noise/egress.
-     Call sites remain so optional window.catalitiumTrack / trackEvent still work. */
-}
-
 function getCsrfToken(){
   try {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -280,12 +275,6 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
       closeUiOverlays({ keepDialogId: subscribeDialog.id || '' });
       applySubscribeContext(readSubscribeContext(trg));
       trackEvent('modal_open', { modal: 'subscribe', source: trg.getAttribute('data-open-subscribe') || 'cta' });
-      sendAnalyticsPayload({
-        event_type: 'modal_open',
-        status: 'ok',
-        source: 'web',
-        meta: { modal: 'subscribe', surface: trg.getAttribute('data-open-subscribe') || 'cta' }
-      });
       try { subscribeDialog.showModal(); } catch(_) { subscribeDialog.open = true; }
     });
   }
@@ -312,12 +301,6 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
     loadingText: 'Sending…',
     onOpen: function(source){
       trackEvent('modal_open', { modal: 'contact', source: source || 'cta' });
-      sendAnalyticsPayload({
-        event_type: 'modal_open',
-        status: 'ok',
-        source: 'web',
-        meta: { modal: 'contact', surface: source || 'cta' }
-      });
     },
     onSubmit: function(ctx){
       var email = (contactEmail && contactEmail.value || '').trim();
@@ -357,13 +340,7 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
             throw new Error(result.data && result.data.error || 'contact_failed');
           }
           ctx.showSuccess();
-          trackEvent('contact_submit', { status: 'ok' });
-          sendAnalyticsPayload({
-            event_type: 'contact',
-            status: 'ok',
-            source: 'web',
-            meta: { surface: contactModal.getSource() || 'cta' }
-          });
+          trackEvent('contact_submit', { status: 'ok', surface: contactModal.getSource() || 'cta' });
           if (contactForm) contactForm.reset();
         })
         .catch(function(err){
@@ -399,12 +376,12 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
         job_summary: meta.job_summary || meta.jobSummary || '',
         source: 'web'
       };
-      payload.event_type = 'apply';
-      sendAnalyticsPayload(payload);
       trackEvent('job_apply', {
         status: status || '',
         job_id: payload.job_id || '',
-        job_title: payload.job_title || ''
+        job_title: payload.job_title || '',
+        job_company: payload.job_company || '',
+        job_location: payload.job_location || ''
       });
     } catch(_){}
   }
@@ -874,13 +851,6 @@ try { window.__closeUiOverlays = closeUiOverlays; } catch(_){}
     trackEvent('filter_chip', {
       type: filterType,
       value: filterValue
-    });
-    sendAnalyticsPayload({
-      event_type: 'filter',
-      filter_type: filterType,
-      filter_value: filterValue,
-      source: 'web',
-      status: 'selected'
     });
   });
 })();

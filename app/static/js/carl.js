@@ -1,6 +1,8 @@
 (function () {
   var carlShell = document.getElementById("carl-shell");
   if (!carlShell) return;
+  var fallbackJobsHref = carlShell.getAttribute("data-fallback-jobs-href") || "/jobs";
+  var fallbackSalaryBoardHref = carlShell.getAttribute("data-fallback-salary-board-href") || "/recruiter-salary-board";
   document.body.classList.add("carl-carl-page");
 
   var form = document.getElementById("carl-upload-form");
@@ -687,17 +689,17 @@
 
     var jobs = safeList(matches.jobs, []);
     jobs.forEach(function(j) {
-      jRoot.innerHTML += makeCard(j.title, j.company + " · " + j.location, "Apply Setup", j.link || "/jobs");
+      jRoot.innerHTML += makeCard(j.title, j.company + " · " + j.location, "Apply Setup", j.link || fallbackJobsHref);
     });
 
     var comps = safeList(matches.top_companies, []);
     comps.forEach(function(c) {
-      cRoot.innerHTML += makeCard(c.name, c.reason, "View Scope", "/recruiter-salary-board");
+      cRoot.innerHTML += makeCard(c.name, c.reason, "View Scope", fallbackSalaryBoardHref);
     });
 
     var niches = safeList(matches.niche_companies, []);
     niches.forEach(function(n) {
-      nRoot.innerHTML += makeCard(n.name, n.reason, "View Scope", "/recruiter-salary-board");
+      nRoot.innerHTML += makeCard(n.name, n.reason, "View Scope", fallbackSalaryBoardHref);
     });
 
     var matchesSection = document.getElementById("carl-matches-section");

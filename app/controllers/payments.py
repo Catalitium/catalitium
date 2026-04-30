@@ -1,4 +1,7 @@
-"""Stripe payment routes: B2C subscriptions, B2B job posting checkout, webhooks."""
+"""Stripe payment routes: B2C subscriptions, B2B job posting checkout, webhooks.
+
+Blueprint ``payments`` — registered with the app via ``app/controllers/__init__.py``.
+"""
 
 import hashlib
 import os

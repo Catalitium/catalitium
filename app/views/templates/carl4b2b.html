@@ -474,7 +474,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="carl4b2b-shell" class="relative flex flex-col font-sans text-slate-200">
+<div id="carl4b2b-shell" class="relative flex flex-col font-sans text-slate-200" data-fallback-jobs-href="{{ url_for('jobs.jobs') }}">
   {% if preloaded_carl4b2b_analysis %}
   <script id="preloaded-carl4b2b-data" type="application/json">
       {{ preloaded_carl4b2b_analysis | tojson | safe }}
@@ -763,7 +763,7 @@
           <p class="mt-1 text-slate-400">Run another map or explore API plans.</p>
           <div class="mt-2 flex flex-wrap gap-2">
             <a id="carl4b2b-cta-developers" href="{{ url_for('jobs.developers') }}" class="inline-flex rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white hover:bg-white/15">Developers</a>
-            <a id="carl4b2b-cta-pricing" href="{{ url_for('payments.pricing') }}" class="inline-flex rounded-lg bg-amber-500 px-3 py-1.5 font-medium text-slate-900 hover:bg-amber-400">Pricing</a>
+            <a id="carl4b2b-cta-pricing" href="{{ url_for('payments.pricing') }}" class="inline-flex rounded-lg bg-amber-500 px-3 py-1.5 font-medium text-slate-900 hover:bg-amber-400">API pricing</a>
           </div>
         </div>
         <form id="carl4b2b-chat-form" class="mt-3">
@@ -786,7 +786,7 @@
         <h2 class="flex items-center gap-2 text-xl font-bold text-white">
           <span class="text-sky-400">◎</span> Competitive radar
         </h2>
-        <a href="/jobs" class="text-sm font-semibold text-sky-400 hover:text-white">Search jobs →</a>
+        <a href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-sky-400 hover:text-white">Search jobs →</a>
       </div>
       <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
         <div>

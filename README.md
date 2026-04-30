@@ -80,15 +80,15 @@ Commit the updated `tailwind.css` with your template changes.
 **Pre-deploy smoke** (with `.env` configured):
 
 ```bash
-python scripts/smoke.py --section routes   # recommended: Flask test_client smoke
-python scripts/smoke.py --section all      # db + routes + carl + supabase + smtp + reports (needs env)
-# Or run individual scripts: smoke_db_tables.py, supabase_smoke_test.py, smoke_routes_http.py
+python tests/smoke.py --section routes   # recommended: Flask test_client smoke
+python tests/smoke.py --section all      # db + routes + carl + supabase + smtp + reports (needs env)
+# Or run individual scripts: tests/smoke_db_tables.py, tests/supabase_smoke_test.py, tests/smoke_routes_http.py
 ```
 
 **Post-deploy (production URLs)** — after DNS/deploy:
 
-```powershell
-pwsh -File scripts/smoke_prod.ps1
+```bash
+python tests/smoke_prod.py
 ```
 
 ---
@@ -99,7 +99,6 @@ pwsh -File scripts/smoke_prod.ps1
 catalitium/
 ├── app/
 │   ├── factory.py              # Flask app factory — routes, rate limiting, auth
-│   ├── api_utils.py            # JSON envelopes, query param helpers, TTL cache
 │   ├── models/
 │   │   └── db.py               # DB queries, connection pool, API key management
 │   ├── static/
@@ -111,8 +110,7 @@ catalitium/
 │           ├── base.html       # Layout, nav, service worker, cookie consent
 │           ├── components/     # Reusable partials (job_card, promo_card)
 │           └── reports/        # Market research report pages
-├── scripts/                    # Utility scripts (email digest, DB/HTTP smoke tests)
-├── public/                     # Static assets served directly (testimonial images)
+├── scripts/                    # Utility scripts (email digest)
 ├── .env.example                # All required env vars — copy to .env to run locally
 ├── requirements.txt            # Pinned Python dependencies
 └── run.py                      # Local dev entry point (Gunicorn in prod)

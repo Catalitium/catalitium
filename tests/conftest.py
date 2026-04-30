@@ -42,6 +42,8 @@ _ensure_test_db_url()
 
 os.environ.setdefault("SECRET_KEY", "pytest-secret-key-not-for-production")
 
+# Live Carl + Postgres (opt-in): ``RUN_CARL_DB_INTEGRATION`` and ``CARL_TEST_USER_ID`` in ``tests/test_catalitium.py``.
+
 
 @pytest.fixture()
 def app():

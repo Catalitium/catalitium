@@ -77,6 +77,7 @@ def _init_pg_pool():
             min_size=1,
             max_size=max(1, DB_POOL_MAX),
             timeout=5,
+            open=True,
         )
     except Exception as exc:
         logger.warning("ConnectionPool init failed, falling back to direct connects: %s", exc)

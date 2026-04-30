@@ -5,7 +5,6 @@ Usage (from repo root):
     python tests/smoke_prod.py
 
 Exit 0 if all checks pass; non-zero if any URL returns unexpected status.
-Replaces tests/smoke_prod.ps1 (Windows-only).
 """
 
 from __future__ import annotations
