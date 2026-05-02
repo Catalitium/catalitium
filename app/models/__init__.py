@@ -1,7 +1,7 @@
 """Public model surface — import domain symbols from their owning modules."""
 
 from .catalog import FUNCTION_CATEGORIES, Job, categorize_function
-from .cv import CVExtractionError, ExtractedCV, extract_cv_from_upload, normalize_cv_text
+from ..cv import CVExtractionError, ExtractedCV, extract_cv_from_upload, normalize_cv_text
 from .db import close_db, get_db, init_db, logger, parse_job_description, SUPABASE_URL
 from .api_keys import (
     check_and_increment_api_key,
@@ -11,19 +11,17 @@ from .api_keys import (
     revoke_api_key,
     sync_api_key_quota_for_api_access,
 )
-from .job_orders import (
+from .billing import (
     get_stripe_order,
+    get_subscription_by_stripe_id,
+    get_user_subscriptions,
     insert_job_posting,
     insert_stripe_order,
     mark_stripe_order_job_submitted,
     mark_stripe_order_paid,
-)
-from .subscribers import insert_contact, insert_subscriber
-from .subscriptions import (
-    get_subscription_by_stripe_id,
-    get_user_subscriptions,
     upsert_user_subscription,
 )
+from .subscribers import insert_contact, insert_subscriber
 from .money import parse_salary_query, parse_salary_range_string, salary_range_around
 
 __all__ = [

@@ -27,14 +27,16 @@ from app.controllers.carl import (
     is_carl_message_grounded,
     normalize_carl_user_message,
 )
-from app.utils import (
-    disposable_email_domain,
+from app.models.subscribers import (
     honeypot_triggered,
     prepare_contact_submission,
     sanitize_search_country,
     sanitize_search_salary_band,
     sanitize_search_title,
     sanitize_subscriber_search_fields,
+)
+from app.utils import (
+    disposable_email_domain,
     slugify_job_title,
 )
 
@@ -389,17 +391,58 @@ def test_http_health_deep_includes_db_latency(client, mock_db_health_ok):
 # --- HTTP: Carl (stubbed profile write) -------------------------------------
 
 
-def test_carl_get_redirects_guest(carl_client):
+def test_carl_get_guest_ok(carl_client):
     r = carl_client.get("/carl", follow_redirects=False)
-    assert r.status_code in (302, 303)
-    assert "/register" in r.headers.get("Location", "")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert "csrf_token" in html
+    assert "carl-guest-banner" in html
+
+
+def test_carl_analyze_guest_invalid_csrf(carl_client):
+    r = carl_client.post(
+        "/carl/analyze",
+        data={"cv_text": "python engineer"},
+        headers={"X-CSRF-Token": "not-valid"},
+    )
+    assert r.status_code == 400
+    assert r.get_json().get("code") == "invalid_csrf"
+
+
+def test_carl_analyze_guest_quota_enforced(carl_client):
+    from app.config import CARL_GUEST_ANALYZE_LIMIT
+
+    page = carl_client.get("/carl")
+    assert page.status_code == 200
+    csrf = _csrf_from_carl_page(page.get_data(as_text=True))
+    cv = "python engineer aws docker"
+    for i in range(CARL_GUEST_ANALYZE_LIMIT):
+        r = carl_client.post(
+            "/carl/analyze",
+            data={"csrf_token": csrf, "cv_text": cv},
+            headers={"X-CSRF-Token": csrf},
+        )
+        assert r.status_code == 200, r.get_data(as_text=True)
+        data = r.get_json().get("data") or {}
+        assert data.get("guest_analyzes_remaining") == CARL_GUEST_ANALYZE_LIMIT - i - 1
+    r = carl_client.post(
+        "/carl/analyze",
+        data={"csrf_token": csrf, "cv_text": cv},
+        headers={"X-CSRF-Token": csrf},
+    )
+    assert r.status_code == 403
+    body = r.get_json()
+    assert body.get("code") == "signup_required"
+    assert (body.get("details") or {}).get("register_url")
 
 
 def test_carl_get_ok_when_logged_in(carl_client):
     _carl_login(carl_client)
     r = carl_client.get("/carl")
     assert r.status_code == 200
-    assert "csrf_token" in r.get_data(as_text=True)
+    html = r.get_data(as_text=True)
+    assert "csrf_token" in html
+    assert "carl-guest-banner" not in html
 
 
 def test_carl_dashboard_markup_three_column_grid(carl_client):
@@ -411,14 +454,6 @@ def test_carl_dashboard_markup_three_column_grid(carl_client):
     assert 'id="carl-chat-container"' in html
     assert 'id="carl-chat-form"' in html
     assert html.index("carl-analytics-container") < html.index("carl-chat-container")
-
-
-def test_carl_analyze_requires_login(carl_client):
-    r = carl_client.post("/carl/analyze", data={})
-    assert r.status_code == 401
-    body = r.get_json()
-    assert body.get("ok") is False
-    assert body.get("code") == "login_required"
 
 
 def test_carl_chat_turn_limit_and_grounding(carl_client):

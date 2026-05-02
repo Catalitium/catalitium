@@ -5,6 +5,14 @@
 i.env
 !.env.example
 
+# Local import logs
+import_errors.log
+
+# Company CSV imports (never commit raw dumps)
+/input-to-migrate-delete.csv
+/input.csv
+/companies_export.csv
+
 # Python
 __pycache__/
 *.py[cod]
@@ -83,6 +91,8 @@ logs/
 htmlcov/
 .pytest_cache/
 .tox/.env
+# Local-only pytest scratch (optional; see tests/test_carl_smoke.py docstring)
+tests/local_smoke.py
 
 .claude/
 app/ads.txt

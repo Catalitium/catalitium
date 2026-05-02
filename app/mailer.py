@@ -1,10 +1,10 @@
-"""Outbound email service — all SMTP dispatching lives here.
+"""Outbound email — all SMTP dispatching lives here.
 
 Sends plain-text emails only. Best-effort with 3-attempt linear-backoff
 retry. Never raises; logs on final failure.
 
 Usage:
-    from app.services.mailer import send_subscribe_welcome
+    from app.mailer import send_subscribe_welcome
     send_subscribe_welcome(email, focus="Python engineer")
 """
 

@@ -456,7 +456,7 @@
       <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">One weekly email with the best tech jobs and market signal. No spam. Unsubscribe anytime.</p>
       <form action="{{ url_for('jobs.subscribe') }}" method="post"
             class="relative flex flex-col sm:flex-row gap-3">
-{% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
+{% from "partials/_subscribe_security_fields.html" import subscribe_security %}
 {{ subscribe_security('report-generic') }}
         <input type="hidden" name="search_title" value="market-research">
         <label for="report-subscribe-email" class="sr-only">Your email</label>

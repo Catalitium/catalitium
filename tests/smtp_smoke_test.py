@@ -5,7 +5,7 @@ Sends a real test email via Gmail SMTP before touching the main app.
 Reads config from .env.
 
 Usage:
-    python scripts/smtp_smoke_test.py
+    python tests/smtp_smoke_test.py
 """
 
 import os

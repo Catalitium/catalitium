@@ -44,12 +44,28 @@ SALARY_INSIGHTS_CACHE_MAX: int = 250
 
 SITEMAP_CACHE_TTL: int = 3600       # sitemap.xml in-process cache + Cache-Control (seconds)
 
+
+def _int_clamped(name: str, default: int, *, min_v: int = 1, max_v: int = 500) -> int:
+    """Parse optional env int with safe bounds (Carl guest quotas)."""
+    raw = (os.getenv(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return max(min_v, min(max_v, int(raw)))
+    except ValueError:
+        return default
+
+
 # ---------------------------------------------------------------------------
 # Carl CV demo (Talk to Carl)
 # ---------------------------------------------------------------------------
 CARL_CHAT_MAX_TURNS: int = 3
 CARL_CHAT_MAX_MESSAGE_CHARS: int = 280
 CARL_CHAT_MAX_REPLY_CHARS: int = 360
+# Session-scoped anonymous trial: each successful POST .../analyze counts once.
+# Override via CARL_GUEST_ANALYZE_LIMIT / CARL4B2B_GUEST_ANALYZE_LIMIT if needed.
+CARL_GUEST_ANALYZE_LIMIT: int = _int_clamped("CARL_GUEST_ANALYZE_LIMIT", 10)
+CARL4B2B_GUEST_ANALYZE_LIMIT: int = _int_clamped("CARL4B2B_GUEST_ANALYZE_LIMIT", 8)
 
 # ---------------------------------------------------------------------------
 # Database pool

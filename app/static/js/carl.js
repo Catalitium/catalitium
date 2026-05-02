@@ -5,6 +5,45 @@
   var fallbackSalaryBoardHref = carlShell.getAttribute("data-fallback-salary-board-href") || "/recruiter-salary-board";
   document.body.classList.add("carl-carl-page");
 
+  function isCarlGuest() {
+    return carlShell.getAttribute("data-carl-guest") === "1";
+  }
+
+  function buildCarlJobsSearchUrl(title, country) {
+    var t = title != null ? String(title).trim() : "";
+    var co = country != null ? String(country).trim() : "";
+    try {
+      var u = new URL(fallbackJobsHref, window.location.origin);
+      if (t) u.searchParams.set("title", t);
+      if (co) u.searchParams.set("country", co);
+      return u.pathname + (u.search || "");
+    } catch (eU) {
+      return fallbackJobsHref;
+    }
+  }
+
+  function syncCarlMatchesJobsSearchLink() {
+    var a = document.getElementById("carl-matches-jobs-search");
+    if (!a || !analysisState || !analysisState.overview) return;
+    var persona = analysisState.overview.persona || "";
+    a.setAttribute("href", buildCarlJobsSearchUrl(persona, ""));
+  }
+
+  function applyCarlGuestChatUi() {
+    var gh = document.getElementById("carl-chat-guest-hint");
+    if (gh) gh.classList.remove("hidden");
+    setChatLocked(true);
+    if (chatChips) {
+      chatChips.innerHTML = "";
+      chatChips.classList.add("hidden");
+    }
+  }
+
+  function clearCarlGuestChatUi() {
+    var gh = document.getElementById("carl-chat-guest-hint");
+    if (gh) gh.classList.add("hidden");
+  }
+
   var form = document.getElementById("carl-upload-form");
   var uploadBtn = document.getElementById("carl-upload-btn");
   var fileInput = document.getElementById("carl-file-input");
@@ -76,7 +115,7 @@
     var spinner = document.getElementById("carl-analyze-spinner");
     var textSpan = document.getElementById("carl-analyze-text");
     if (spinner) spinner.classList.toggle("hidden", !on);
-    if (textSpan) textSpan.textContent = on ? "Running analysis…" : "Analyze Profile";
+    if (textSpan) textSpan.textContent = on ? "Running analysis…" : "Analyze my CV";
   }
 
   function delay(ms) {
@@ -127,12 +166,27 @@
 
   function setError(message) {
     if (!errorEl) return;
+    errorEl.innerHTML = "";
     if (!message) {
       errorEl.classList.add("hidden");
       errorEl.textContent = "";
       return;
     }
     errorEl.textContent = message;
+    errorEl.classList.remove("hidden");
+  }
+
+  function setSignupRequiredAnalyzeError(registerUrl) {
+    if (!errorEl) return;
+    var href = registerUrl || "/register";
+    errorEl.innerHTML =
+      '<p class="text-sm text-amber-100/95">' +
+      escapeHtml(
+        "You've reached this session's free CV analyses. Create a free account to keep analyzing and save results."
+      ) +
+      '</p><p class="mt-2"><a href="' +
+      escapeHtml(href) +
+      '" class="font-semibold text-sky-300 underline underline-offset-2 hover:text-white">Create an account</a></p>';
     errorEl.classList.remove("hidden");
   }
 
@@ -149,6 +203,10 @@
     var code = data.code;
     var msg = (data.message && String(data.message).trim()) || "";
     if (code === "login_required") return "Sign in to use Carl, then try again.";
+    if (code === "signup_required") {
+      return (msg ||
+        "You've reached this session's free CV analyses. Create a free account to continue.");
+    }
     if (code === "invalid_csrf")
       return "Your session expired or the page is stale. Refresh and try again.";
     if (code === "conflicting_inputs")
@@ -668,6 +726,124 @@
     });
   }
 
+  function pageScoreChipCarl(j) {
+    j = j || {};
+    var ps = j.page_score;
+    var matched = !!j.directory_match;
+    if (ps != null && ps !== "") {
+      var n = Number(ps);
+      if (!isNaN(n)) {
+        var band = "border-[#214f86]/60 bg-[#0b1f44]/65 text-[#A7B8D7]";
+        if (n >= 0.7) band = "border-emerald-500/40 bg-emerald-950/35 text-emerald-200";
+        else if (n >= 0.4) band = "border-amber-500/35 bg-amber-950/30 text-amber-200";
+        return (
+          '<span class="inline-flex rounded-full border ' +
+          band +
+          ' px-2 py-0.5 text-[10px] font-medium tabular-nums" title="Employer profile strength (directory page_score)">Score ' +
+          escapeHtml(String(n)) +
+          "</span>"
+        );
+      }
+    }
+    if (matched) {
+      return (
+        '<span class="inline-flex rounded-full border border-[#214f86]/40 bg-[#0b1324]/80 px-2 py-0.5 text-[10px] text-[#6B7280]" title="Matched to directory; no page_score on file">Profile score —</span>'
+      );
+    }
+    return "";
+  }
+
+  function jobMatchChipsHtml(j) {
+    if (!j) return "";
+    var parts = [];
+    if (j.industry_bucket) {
+      parts.push(
+        '<span class="inline-flex rounded-full border border-[#214f86]/70 bg-[#0b1f44]/65 px-2 py-0.5 text-[10px] text-[#A7B8D7]">' +
+          escapeHtml(j.industry_bucket) +
+          "</span>"
+      );
+    }
+    var psc = pageScoreChipCarl(j);
+    if (psc) parts.push(psc);
+    if (j.is_global) {
+      parts.push(
+        '<span class="inline-flex rounded-full border border-emerald-500/40 bg-emerald-950/35 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">Global</span>'
+      );
+    }
+    if (!parts.length) return "";
+    return '<div class="relative mt-1 mb-3 flex flex-wrap gap-1.5">' + parts.join("") + "</div>";
+  }
+
+  function makeJobMatchCard(j) {
+    var href = escapeHtml(j.link || fallbackJobsHref);
+    var sub = escapeHtml((j.company || "") + " · " + (j.location || ""));
+    var chips = jobMatchChipsHtml(j);
+    return (
+      '<div class="group relative min-h-[9rem] rounded-2xl border border-[#17305b] bg-[linear-gradient(165deg,rgba(6,20,48,0.92),rgba(4,14,36,0.88))] p-4 shadow-[0_14px_34px_-18px_rgba(0,191,255,0.38)] transition-all duration-300 hover:-translate-y-[1px] hover:border-[#1f4f8f] hover:shadow-[0_18px_36px_-18px_rgba(0,191,255,0.5)] sm:p-5">' +
+      '<div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1a73e8]/16 via-transparent to-[#18a7ec]/10 opacity-0 transition group-hover:opacity-100 pointer-events-none"></div>' +
+      '<p class="relative text-[15px] font-bold text-white mb-1.5 leading-tight tracking-tight">' +
+      escapeHtml(j.title) +
+      "</p>" +
+      '<p class="relative text-[12px] text-[#A7B8D7] mb-2 line-clamp-2">' +
+      sub +
+      "</p>" +
+      chips +
+      '<a href="' +
+      href +
+      '" class="relative inline-flex w-full items-center justify-center rounded-xl border border-[#214f86] bg-[#0b1f44]/78 py-2 text-[10px] font-bold uppercase tracking-[0.11em] text-[#dbeafe] transition hover:border-[#2b71b8] hover:bg-[#123166] hover:text-white">Apply Setup</a>' +
+      "</div>"
+    );
+  }
+
+  function renderCarlCompaniesKpi(cs) {
+    var block = document.getElementById("carl-companies-kpi-block");
+    if (!block) return;
+    cs = cs || {};
+    var sample = cs.sample_rows != null ? Number(cs.sample_rows) : 0;
+    if (!sample) {
+      block.classList.add("hidden");
+      return;
+    }
+    block.classList.remove("hidden");
+    var matched = cs.total_matched != null ? Number(cs.total_matched) : 0;
+    var elMatch = document.getElementById("carl-kpi-companies-matched");
+    var elLbl = document.getElementById("carl-kpi-companies-matched-label");
+    if (elLbl) elLbl.textContent = "Matched rows (sample " + sample + ")";
+    if (elMatch) elMatch.textContent = String(matched);
+    var elMr = document.getElementById("carl-kpi-match-rate");
+    if (elMr) {
+      elMr.textContent =
+        cs.match_rate_pct != null && cs.match_rate_pct !== ""
+          ? String(cs.match_rate_pct) + "%"
+          : "—";
+    }
+    var pg = document.getElementById("carl-kpi-pct-global");
+    if (pg) {
+      pg.textContent =
+        cs.pct_global != null && cs.pct_global !== "" ? String(cs.pct_global) + "%" : "—";
+    }
+    var av = document.getElementById("carl-kpi-avg-score");
+    if (av) {
+      av.textContent =
+        cs.avg_page_score != null && cs.avg_page_score !== "" ? String(cs.avg_page_score) : "—";
+    }
+    var spr = document.getElementById("carl-kpi-score-spread");
+    if (spr) {
+      var mn2 = cs.min_page_score,
+        mx2 = cs.max_page_score,
+        md2 = cs.median_page_score;
+      if (mn2 != null && md2 != null && mx2 != null && mn2 !== "" && md2 !== "" && mx2 !== "") {
+        spr.textContent = String(mn2) + " · " + String(md2) + " · " + String(mx2);
+      } else if (mn2 != null && mx2 != null && mn2 !== "" && mx2 !== "") {
+        spr.textContent = String(mn2) + "–" + String(mx2);
+      } else {
+        spr.textContent = "—";
+      }
+    }
+    var ti = document.getElementById("carl-kpi-top-industry");
+    if (ti) ti.textContent = cs.top_industry ? String(cs.top_industry) : "—";
+  }
+
   function renderMatches(matches) {
     var jRoot = document.getElementById("carl-match-jobs");
     var cRoot = document.getElementById("carl-match-companies");
@@ -688,20 +864,35 @@
     }
 
     var jobs = safeList(matches.jobs, []);
-    jobs.forEach(function(j) {
-      jRoot.innerHTML += makeCard(j.title, j.company + " · " + j.location, "Apply Setup", j.link || fallbackJobsHref);
-    });
+    var emptyMsg =
+      '<p class="text-xs text-[#9CA3AF]">No indexed postings matched this inferred role. Use <span class="text-[#18a7ec]">Search all jobs</span> with your own title and region.</p>';
+    if (!jobs.length) {
+      jRoot.innerHTML = emptyMsg;
+    } else {
+      jobs.forEach(function (j) {
+        jRoot.innerHTML += makeJobMatchCard(j);
+      });
+    }
 
     var comps = safeList(matches.top_companies, []);
-    comps.forEach(function(c) {
-      cRoot.innerHTML += makeCard(c.name, c.reason, "View Scope", fallbackSalaryBoardHref);
-    });
+    if (!comps.length) {
+      cRoot.innerHTML = emptyMsg;
+    } else {
+      comps.forEach(function (c) {
+        cRoot.innerHTML += makeCard(c.name, c.reason, "Salary board", fallbackSalaryBoardHref);
+      });
+    }
 
     var niches = safeList(matches.niche_companies, []);
-    niches.forEach(function(n) {
-      nRoot.innerHTML += makeCard(n.name, n.reason, "View Scope", fallbackSalaryBoardHref);
-    });
+    if (!niches.length) {
+      nRoot.innerHTML = emptyMsg;
+    } else {
+      niches.forEach(function (n) {
+        nRoot.innerHTML += makeCard(n.name, n.reason, "Salary board", fallbackSalaryBoardHref);
+      });
+    }
 
+    syncCarlMatchesJobsSearchLink();
     var matchesSection = document.getElementById("carl-matches-section");
     if (matchesSection) {
        matchesSection.classList.remove("hidden");
@@ -713,7 +904,7 @@
 
   function sendCarlChat(opts) {
     opts = opts || {};
-    if (!analysisState) return;
+    if (!analysisState || isCarlGuest()) return;
     if (chatInput && chatInput.disabled) return;
 
     var promptId = opts.promptId;
@@ -892,15 +1083,37 @@
 
     if (chatLog) {
       chatLog.innerHTML = "";
-      addChatMessage(
-        "assistant",
-        (analysisState.chatContext && analysisState.chatContext.summary) || "Analysis ready. Ask about ATS, rewrites, or risks."
-      );
+      var summary = (analysisState.chatContext && analysisState.chatContext.summary) || "";
+      var openMsg;
+      if (isCarlGuest()) {
+        openMsg =
+          (summary || "Here is your CV pass summary.") +
+          " Sign in to use chat for follow-ups; the full dashboard stays visible.";
+      } else {
+        openMsg = summary || "Analysis ready. Ask about ATS, rewrites, or risks.";
+      }
+      addChatMessage("assistant", openMsg);
     }
-    resetCarlChatGate();
-    renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
+    if (isCarlGuest()) {
+      applyCarlGuestChatUi();
+    } else {
+      clearCarlGuestChatUi();
+      resetCarlChatGate();
+    }
+    if (!isCarlGuest()) {
+      renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
+    }
     playTerminal(analysisState.terminalLogs || [], startTerminalLiveFeed);
     initTabs();
+
+    var saveSticky = document.getElementById("carl-guest-save-sticky");
+    if (saveSticky) {
+      if (isCarlGuest()) {
+        saveSticky.classList.remove("hidden");
+      } else {
+        saveSticky.classList.add("hidden");
+      }
+    }
 
     requestAnimationFrame(function () {
       if (!workspace) return;
@@ -915,6 +1128,10 @@
       var meterDelay = REVEAL_BASE_DELAY_MS + 2 * REVEAL_STAGGER_MS + METER_START_OFFSET_MS;
       setTimeout(function () {
         animateDashboardMeters(analysisState.overview || {}, analysisState.atsScore || {});
+        renderCarlCompaniesKpi(analysisState.companies_summary || null);
+        if (window.CarlCompanyHighlights) {
+          window.CarlCompanyHighlights.render("carl", analysisState);
+        }
         renderMatches(analysisState.matches || null);
         // Auto-scroll to results
         if (workspace) {
@@ -948,11 +1165,26 @@
       workspace.classList.remove("flex");
     }
 
+    var saveStickyReset = document.getElementById("carl-guest-save-sticky");
+    if (saveStickyReset) saveStickyReset.classList.add("hidden");
+
     var matchesSection = document.getElementById("carl-matches-section");
     if (matchesSection) {
       matchesSection.classList.add("hidden");
       matchesSection.classList.remove("carl-reveal-in");
     }
+    var ckb = document.getElementById("carl-companies-kpi-block");
+    if (ckb) {
+      ckb.classList.add("hidden");
+      ["carl-kpi-companies-matched", "carl-kpi-pct-global", "carl-kpi-avg-score", "carl-kpi-top-industry"].forEach(function (kid) {
+        var el = document.getElementById(kid);
+        if (el) el.textContent = "—";
+      });
+      var lb = document.getElementById("carl-kpi-companies-matched-label");
+      if (lb) lb.textContent = "Matched rows";
+    }
+    var chl = document.getElementById("carl-company-highlights");
+    if (chl) chl.classList.add("hidden");
     document.querySelectorAll("[data-carl-reveal]").forEach(function (el) {
       el.classList.remove("carl-reveal-in");
     });
@@ -971,6 +1203,7 @@
     if (chatInput) chatInput.value = "";
     var counter = document.getElementById("chat-char-counter");
     if (counter) counter.textContent = "0/280";
+    clearCarlGuestChatUi();
     resetCarlChatGate();
     if (chatChips) {
       chatChips.innerHTML = "";
@@ -1044,6 +1277,15 @@
           throw new Error("Too many requests. Please wait about a minute and try again.");
         }
         if (!result.ok || !result.data || result.data.ok === false) {
+          var failCode = result.data && result.data.code;
+          if (failCode === "signup_required") {
+            var det = (result.data && result.data.details) || {};
+            var regUrl = det.register_url || "/register";
+            var signupErr = new Error("signup_required");
+            signupErr.carlSignupRequired = true;
+            signupErr.registerUrl = regUrl;
+            throw signupErr;
+          }
           throw new Error(carlAnalyzeErrorMessage(result.data, result.status));
         }
         var inner = (result.data && result.data.data) || {};
@@ -1053,15 +1295,23 @@
           profileSync: inner.profile_sync,
           source: inner.source,
         };
+        var guestRem =
+          inner.guest_analyzes_remaining !== undefined && inner.guest_analyzes_remaining !== null ?
+            Number(inner.guest_analyzes_remaining) :
+            null;
         var elapsed = performance.now() - started;
         var remain = Math.max(0, MIN_ANALYZE_MS - elapsed);
         return delay(remain).then(function () {
-          return { analysis: analysis, extras: extras };
+          return { analysis: analysis, extras: extras, guestRemaining: guestRem };
         });
       })
       .then(function (payload) {
         hideUploadPremiumLoading(540, function () {
           hydrateDashboard(payload.analysis, payload.extras);
+          if (payload.guestRemaining !== null && !Number.isNaN(payload.guestRemaining)) {
+            var bc = document.getElementById("carl-guest-banner-count");
+            if (bc) bc.textContent = String(payload.guestRemaining);
+          }
         });
       })
       .catch(function (err) {
@@ -1072,6 +1322,8 @@
             setError(
               "The request took too long and was stopped. Check your connection, try a smaller file, or paste CV text."
             );
+          } else if (err && err.carlSignupRequired) {
+            setSignupRequiredAnalyzeError(err.registerUrl);
           } else {
             setError(err && err.message ? err.message : "Could not analyze CV. Please try again.");
           }
@@ -1097,7 +1349,7 @@
   if (chatForm) {
     chatForm.addEventListener("submit", function (event) {
       event.preventDefault();
-      if (!analysisState) return;
+      if (!analysisState || isCarlGuest()) return;
       var message = (chatInput && chatInput.value) || "";
       message = message.trim();
       if (!message) return;

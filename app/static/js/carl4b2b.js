@@ -21,6 +21,26 @@
   var analyzeTextEl = document.getElementById("carl4b2b-analyze-text");
 
   var analysisState = null;
+
+  function buildC4bJobsHref(mm) {
+    mm = mm || {};
+    try {
+      var u = new URL(fallbackJobsHref, window.location.origin);
+      if (mm.title_q) u.searchParams.set("title", String(mm.title_q));
+      if (mm.country_q) u.searchParams.set("country", String(mm.country_q));
+      return u.pathname + (u.search || "");
+    } catch (eB) {
+      return fallbackJobsHref;
+    }
+  }
+
+  function syncC4bJobsSearchLink() {
+    var el = document.getElementById("carl4b2b-matches-jobs-search");
+    if (!el) return;
+    var mm = (analysisState && analysisState.marketMeta) || {};
+    el.setAttribute("href", buildC4bJobsHref(mm));
+  }
+
   var terminalTimer = null;
   var terminalLiveTimer = null;
   var MIN_ANALYZE_MS = 1200;
@@ -37,24 +57,119 @@
     return field && field.value ? String(field.value).trim() : "";
   }
 
-  function getInputMode() {
-    var m = form.querySelector('input[name="c4b_input_mode"]:checked');
-    return m && m.value === "market" ? "market" : "url";
+  function hasUrlInput() {
+    var urlEl = document.getElementById("carl4b2b-url");
+    return !!(urlEl && String(urlEl.value || "").trim());
   }
 
-  function refreshCtaLabel() {
+  function updateCtaFromUrl() {
     if (!analyzeTextEl) return;
-    analyzeTextEl.textContent =
-      getInputMode() === "url" ? "Map from this company URL" : "Map this market";
+    analyzeTextEl.textContent = hasUrlInput() ? "Map this company" : "Map this market";
   }
 
-  function applyInputMode() {
-    var mode = getInputMode();
-    var wUrl = document.getElementById("carl4b2b-mode-url");
-    var wMkt = document.getElementById("carl4b2b-mode-market");
-    if (wUrl) wUrl.classList.toggle("hidden", mode !== "url");
-    if (wMkt) wMkt.classList.toggle("hidden", mode !== "market");
-    refreshCtaLabel();
+  var urlHintsTimer = null;
+  var urlDirectoryMatched = false;
+  var DEFAULT_REFINE_REGION = "Global";
+
+  function updateFieldsRowVisibility() {
+    var row = document.getElementById("carl4b2b-fields-row");
+    if (!row) return;
+    var show = !hasUrlInput() || !urlDirectoryMatched;
+    row.classList.toggle("hidden", !show);
+  }
+
+  function setDirectoryHint(msg) {
+    var el = document.getElementById("carl4b2b-directory-hint");
+    if (!el) return;
+    if (!msg) {
+      el.textContent = "";
+      el.classList.add("hidden");
+      return;
+    }
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
+
+  function scheduleDirectoryLookup() {
+    if (urlHintsTimer) clearTimeout(urlHintsTimer);
+    urlHintsTimer = setTimeout(runDirectoryLookup, 300);
+  }
+
+  function runDirectoryLookup() {
+    if (!hasUrlInput()) {
+      setDirectoryHint("");
+      urlDirectoryMatched = false;
+      updateFieldsRowVisibility();
+      return;
+    }
+    var urlEl = document.getElementById("carl4b2b-url");
+    if (!urlEl) return;
+    var raw = String(urlEl.value || "").trim();
+    if (!raw) {
+      setDirectoryHint("");
+      urlDirectoryMatched = false;
+      updateFieldsRowVisibility();
+      return;
+    }
+    var probe = raw;
+    if (!/^https?:\/\//i.test(probe)) probe = "https://" + probe;
+    try {
+      var parsedProbe = new URL(probe);
+      if (!parsedProbe.hostname) throw new Error("host");
+    } catch (eP) {
+      setDirectoryHint("");
+      urlDirectoryMatched = false;
+      updateFieldsRowVisibility();
+      return;
+    }
+    var q = encodeURIComponent(raw.length > 2048 ? raw.slice(0, 2048) : raw);
+    fetch("/carl/b2b/url-hints?url=" + q, { credentials: "same-origin" })
+      .then(function (r) {
+        return r
+          .json()
+          .catch(function () {
+            return {};
+          });
+      })
+      .then(function (env) {
+        if (!hasUrlInput()) return;
+        if (!env || env.ok !== true || !env.data) {
+          urlDirectoryMatched = false;
+          updateFieldsRowVisibility();
+          return;
+        }
+        var hints = env.data.hints;
+        if (!hints) {
+          setDirectoryHint("");
+          urlDirectoryMatched = false;
+          updateFieldsRowVisibility();
+          return;
+        }
+        var hasSignal = !!(hints.comp_name || hints.industry || hints.region);
+        if (!hasSignal) {
+          setDirectoryHint("");
+          urlDirectoryMatched = false;
+          updateFieldsRowVisibility();
+          return;
+        }
+        urlDirectoryMatched = true;
+        var refT = document.getElementById("carl4b2b-refine-title");
+        var refC = document.getElementById("carl4b2b-refine-country");
+        if (refT) refT.value = "";
+        if (refC) refC.value = DEFAULT_REFINE_REGION;
+        updateFieldsRowVisibility();
+        var parts = [];
+        if (hints.comp_name) parts.push(String(hints.comp_name));
+        if (hints.industry) parts.push(String(hints.industry));
+        if (hints.region) parts.push(String(hints.region));
+        if (parts.length) {
+          setDirectoryHint("Recognized: " + parts.join(" · "));
+        }
+      })
+      .catch(function () {
+        urlDirectoryMatched = false;
+        updateFieldsRowVisibility();
+      });
   }
 
   function setAnalyzeLoading(on) {
@@ -66,7 +181,7 @@
       if (on) {
         analyzeTextEl.textContent = "Mapping catalog…";
       } else {
-        refreshCtaLabel();
+        updateCtaFromUrl();
       }
     }
   }
@@ -82,9 +197,25 @@
     if (!msg) {
       errEl.classList.add("hidden");
       errEl.textContent = "";
+      errEl.innerHTML = "";
       return;
     }
+    errEl.innerHTML = "";
     errEl.textContent = msg;
+    errEl.classList.remove("hidden");
+  }
+
+  function setSignupRequiredMarketError(registerUrl) {
+    if (!errEl) return;
+    var href = registerUrl || "/register";
+    errEl.innerHTML =
+      '<p class="text-sm text-amber-100/95">' +
+      escapeHtml(
+        "You've reached this session's free market maps. Create a free account to keep mapping and save snapshots."
+      ) +
+      '</p><p class="mt-2"><a href="' +
+      escapeHtml(href) +
+      '" class="font-semibold text-sky-300 underline underline-offset-2 hover:text-white">Create an account</a></p>';
     errEl.classList.remove("hidden");
   }
 
@@ -151,6 +282,103 @@
       .replace(/'/g, "&#39;");
   }
 
+  function pageScoreChipHtml(jobMeta) {
+    jobMeta = jobMeta || {};
+    var ps = jobMeta.page_score;
+    var matched = !!jobMeta.directory_match;
+    if (ps != null && ps !== "") {
+      var n = Number(ps);
+      if (!isNaN(n)) {
+        var band = "border-slate-500/40 bg-slate-900/60 text-slate-300";
+        if (n >= 0.7) band = "border-emerald-500/35 bg-emerald-950/40 text-emerald-200";
+        else if (n >= 0.4) band = "border-amber-500/35 bg-amber-950/35 text-amber-200";
+        return (
+          '<span class="inline-flex rounded-full border ' +
+          band +
+          ' px-2 py-0.5 text-[10px] font-medium tabular-nums" title="Employer profile strength (directory page_score)">Score ' +
+          escapeHtml(String(n)) +
+          "</span>"
+        );
+      }
+    }
+    if (matched) {
+      return (
+        '<span class="inline-flex rounded-full border border-slate-600/40 bg-slate-950/50 px-2 py-0.5 text-[10px] text-slate-500" title="Matched to directory; no page_score on file">Profile score —</span>'
+      );
+    }
+    return "";
+  }
+
+  function jobCompanyChipsHtml(jobMeta) {
+    if (!jobMeta) return "";
+    var parts = [];
+    if (jobMeta.industry_bucket) {
+      parts.push(
+        '<span class="inline-flex rounded-full border border-sky-500/30 bg-slate-950/60 px-2 py-0.5 text-[10px] text-sky-100">' +
+          escapeHtml(jobMeta.industry_bucket) +
+          "</span>"
+      );
+    }
+    var psc = pageScoreChipHtml(jobMeta);
+    if (psc) parts.push(psc);
+    if (jobMeta.is_global) {
+      parts.push(
+        '<span class="inline-flex rounded-full border border-emerald-500/35 bg-emerald-950/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-200">Global</span>'
+      );
+    }
+    if (!parts.length) return "";
+    return '<div class="mt-2 flex flex-wrap gap-1.5">' + parts.join("") + "</div>";
+  }
+
+  function renderCompaniesKpi(cs) {
+    var block = document.getElementById("carl4b2b-companies-kpi-block");
+    if (!block) return;
+    cs = cs || {};
+    var sample = cs.sample_rows != null ? Number(cs.sample_rows) : 0;
+    if (!sample) {
+      block.classList.add("hidden");
+      return;
+    }
+    block.classList.remove("hidden");
+    var matched = cs.total_matched != null ? Number(cs.total_matched) : 0;
+    var elMatch = document.getElementById("carl4b2b-kpi-companies-matched");
+    var elLbl = document.getElementById("carl4b2b-kpi-companies-matched-label");
+    if (elLbl) elLbl.textContent = "Matched rows (sample " + sample + ")";
+    if (elMatch) elMatch.textContent = String(matched);
+    var elMr = document.getElementById("carl4b2b-kpi-match-rate");
+    if (elMr) {
+      elMr.textContent =
+        cs.match_rate_pct != null && cs.match_rate_pct !== ""
+          ? String(cs.match_rate_pct) + "%"
+          : "—";
+    }
+    var pg = document.getElementById("carl4b2b-kpi-pct-global");
+    if (pg) {
+      pg.textContent =
+        cs.pct_global != null && cs.pct_global !== "" ? String(cs.pct_global) + "%" : "—";
+    }
+    var av = document.getElementById("carl4b2b-kpi-avg-score");
+    if (av) {
+      av.textContent =
+        cs.avg_page_score != null && cs.avg_page_score !== "" ? String(cs.avg_page_score) : "—";
+    }
+    var sp = document.getElementById("carl4b2b-kpi-score-spread");
+    if (sp) {
+      var mn = cs.min_page_score,
+        mx = cs.max_page_score,
+        md = cs.median_page_score;
+      if (mn != null && md != null && mx != null && mn !== "" && md !== "" && mx !== "") {
+        sp.textContent = String(mn) + " · " + String(md) + " · " + String(mx);
+      } else if (mn != null && mx != null && mn !== "" && mx !== "") {
+        sp.textContent = String(mn) + "–" + String(mx);
+      } else {
+        sp.textContent = "—";
+      }
+    }
+    var ti = document.getElementById("carl4b2b-kpi-top-industry");
+    if (ti) ti.textContent = cs.top_industry ? String(cs.top_industry) : "—";
+  }
+
   function renderList(id, items, formatter) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -207,21 +435,26 @@
     root.innerHTML = "";
     var list = safeList(skills, []);
     if (!list.length) {
-      root.innerHTML = '<p class="text-xs text-slate-500">No radar rows.</p>';
+      root.innerHTML = '<p class="text-xs text-slate-500">No employers in this sample.</p>';
       return;
     }
     list.forEach(function (item, i) {
       var score = Number(item.score || 0);
+      var posts = item.post_count != null ? Number(item.post_count) : null;
+      var intensity = (item.intensity_label || "").trim();
+      var right = [];
+      if (intensity) right.push(intensity);
+      if (posts != null && !isNaN(posts)) right.push(posts + " posts");
       var row = document.createElement("div");
       row.className = "c4b-animate-row space-y-1.5";
       row.style.animationDelay = i * ROW_STAGGER_SKILL_MS + "ms";
       row.innerHTML =
-        '<div class="flex items-center justify-between text-xs">' +
-        '<span class="font-medium text-slate-200">' +
+        '<div class="flex items-center justify-between gap-2 text-xs">' +
+        '<span class="min-w-0 font-medium text-slate-200">' +
         escapeHtml(item.skill || "Employer") +
         "</span>" +
-        '<span class="tabular-nums text-amber-300">' +
-        score +
+        '<span class="shrink-0 tabular-nums text-amber-300">' +
+        escapeHtml(right.length ? right.join(" · ") : String(score)) +
         "</span></div>" +
         '<div class="h-1.5 overflow-hidden rounded-full bg-slate-900">' +
         '<div class="h-full rounded-full bg-gradient-to-r from-blue-600 via-sky-500 to-amber-400" style="width:' +
@@ -255,6 +488,12 @@
     el.textContent = String(Math.round(Number(v) || 0));
   }
 
+  function setMetricPercent(id, v) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = String(Math.round(Number(v) || 0)) + "%";
+  }
+
   function renderOverview(overview, skipMeters) {
     setText("carl4b2b-headline", overview.headline || "Analysis complete");
     setText("carl4b2b-fit-summary", overview.fitSummary || "");
@@ -273,8 +512,8 @@
     setVital("carl4b2b-vital-impact", scores.impact);
     setVital("carl4b2b-vital-narrative", scores.narrative);
     var premium = overview.premiumSignals || {};
-    setMetric("carl4b2b-metric-leadership", premium.leadership);
-    setMetric("carl4b2b-metric-role-match", premium.roleMatch);
+    setMetricPercent("carl4b2b-metric-leadership", premium.leadership);
+    setMetricPercent("carl4b2b-metric-role-match", premium.roleMatch);
     setMetric("carl4b2b-metric-evidence", premium.evidenceDensity);
   }
 
@@ -289,13 +528,205 @@
       el.textContent = "0";
       el.className = "mt-1 text-lg font-semibold tabular-nums text-slate-500";
     });
+    setText("carl4b2b-metric-leadership", "—");
+    setText("carl4b2b-metric-role-match", "—");
+    setText("carl4b2b-metric-evidence", "—");
   }
 
   function renderAts(ats, skipScore) {
-    if (!skipScore) setText("carl4b2b-ats-score", String(ats.score || 0));
-    setText("carl4b2b-ats-coverage", "Employer diversity · " + (ats.keywordCoverage || 0) + "%");
+    var bp = (analysisState && analysisState.b2bPanel) || {};
+    var mm = (analysisState && analysisState.marketMeta) || {};
+    var hero = bp.kpi_sample_rows != null ? Number(bp.kpi_sample_rows) : Math.round(Number((ats && ats.score) || 0));
+    if (!skipScore) setText("carl4b2b-ats-score", String(hero));
+    var cat = bp.kpi_catalog_total != null ? bp.kpi_catalog_total : mm.total_count;
+    var cap = bp.kpi_sample_cap != null ? bp.kpi_sample_cap : mm.sample_cap;
+    var pulled = bp.kpi_sample_rows != null ? bp.kpi_sample_rows : mm.sample_rows;
+    var scope = bp.scope_line || [mm.title_q || "—", mm.country_q || "—"].filter(Boolean).join(" · ");
+    setText(
+      "carl4b2b-ats-coverage",
+      "Scope: " +
+        scope +
+        " · Catalog " +
+        (cat != null ? String(cat) : "—") +
+        " postings · pulled " +
+        (pulled != null ? String(pulled) : "—") +
+        "/" +
+        (cap != null ? String(cap) : "—") +
+        " · spread " +
+        (ats.keywordCoverage != null ? String(ats.keywordCoverage) : "—") +
+        "% distinct hirers vs rows"
+    );
     setText("carl4b2b-keywords-hit", safeList(ats.matchedKeywords, ["—"]).join(", "));
-    setText("carl4b2b-keywords-missing", safeList(ats.missingKeywords, ["—"]).join(", "));
+    var missParts = safeList(ats.missingKeywords, []);
+    setText("carl4b2b-keywords-missing", missParts.length ? missParts.join(", ") : "No coverage flags");
+  }
+
+  function renderB2bAnalyticsChrome() {
+    var bp = (analysisState && analysisState.b2bPanel) || {};
+    var mm = (analysisState && analysisState.marketMeta) || {};
+    var scope =
+      bp.scope_line ||
+      [mm.title_q || "", mm.country_q || ""].filter(Boolean).join(" · ") ||
+      "";
+    setText("carl4b2b-analytics-scope", scope ? "Industry · Region: " + scope : "");
+    var rs = document.getElementById("carl4b2b-risks-scope");
+    if (rs) rs.textContent = scope ? "Scoped to: " + scope + "." : "";
+    var ss = document.getElementById("carl4b2b-skills-scope");
+    if (ss)
+      ss.textContent = scope
+        ? "Posting intensity (High / Medium / Low) is relative to this pulled sample for " + scope + "."
+        : "";
+    var na = document.getElementById("carl4b2b-next-actions");
+    if (na) {
+      na.innerHTML = "";
+      safeList(bp.next_actions, []).forEach(function (line) {
+        var li = document.createElement("li");
+        li.textContent = line;
+        na.appendChild(li);
+      });
+    }
+    var bh = document.getElementById("carl4b2b-brave-scope-hint");
+    if (bh) {
+      var t = mm.title_q || "";
+      var c = mm.country_q || "";
+      bh.textContent =
+        t || c
+          ? "Pins must stay relevant to " + (t || "your industry") + " in " + (c || "your region") + "."
+          : "";
+    }
+  }
+
+  function renderMarketFooter(mm) {
+    var wrap = document.getElementById("carl4b2b-catalog-footer");
+    var line = document.getElementById("carl4b2b-footer-metrics-line");
+    var dem = document.getElementById("carl4b2b-candidate-demand");
+    if (!wrap || !line) return;
+    if (!mm || mm.total_count == null) {
+      wrap.classList.add("hidden");
+      line.textContent = "";
+      if (dem) {
+        dem.textContent = "";
+        dem.classList.add("hidden");
+      }
+      return;
+    }
+    var parts = [];
+    parts.push("Catalog total postings (filtered): " + String(mm.total_count));
+    parts.push("Sample rows pulled: " + String(mm.sample_rows != null ? mm.sample_rows : "—"));
+    parts.push("Sample cap: " + String(mm.sample_cap != null ? mm.sample_cap : "—"));
+    parts.push("Distinct employers in sample: " + String(mm.distinct_employers_sample != null ? mm.distinct_employers_sample : "—"));
+    if (mm.title_q) parts.push("Title filter: " + mm.title_q);
+    if (mm.country_q) parts.push("Geo filter: " + mm.country_q);
+    if (mm.exclude_company && String(mm.exclude_company).trim()) {
+      parts.push('Exclude substring: "' + String(mm.exclude_company).trim() + '"');
+    }
+    line.textContent = parts.join(" · ");
+    wrap.classList.remove("hidden");
+    if (dem) {
+      var ds = mm.demandSignal;
+      if (ds && ds.count != null && Number(ds.count) > 0) {
+        var w = ds.window_days != null ? String(ds.window_days) : "90";
+        dem.textContent = "Candidate demand (" + w + "d): " + String(ds.count) + " profiles";
+        dem.classList.remove("hidden");
+      } else {
+        dem.textContent = "";
+        dem.classList.add("hidden");
+      }
+    }
+  }
+
+  function renderExecSummary(overview) {
+    var wrap = document.getElementById("carl4b2b-exec-summary-wrap");
+    var el = document.getElementById("carl4b2b-exec-summary");
+    if (!wrap || !el) return;
+    var h = (overview && overview.headline) || "";
+    var fs = (overview && overview.fitSummary) || "";
+    var text = [h, fs].filter(Boolean).join("\n\n");
+    if (!text.trim()) {
+      wrap.classList.add("hidden");
+      el.textContent = "";
+      return;
+    }
+    el.textContent = text;
+    wrap.classList.remove("hidden");
+  }
+
+  function buildStakeholderSummary() {
+    if (!analysisState) return "";
+    var mm = analysisState.marketMeta || {};
+    var ov = analysisState.overview || {};
+    var lines = [];
+    lines.push("Carl B2B — market map (Catalitium catalog)");
+    lines.push("");
+    lines.push(ov.headline || "");
+    lines.push(ov.fitSummary || "");
+    lines.push("");
+    lines.push(
+      "Catalog total: " +
+        String(mm.total_count != null ? mm.total_count : "—") +
+        " · Sample: " +
+        String(mm.sample_rows != null ? mm.sample_rows : "—") +
+        "/" +
+        String(mm.sample_cap != null ? mm.sample_cap : "—") +
+        " rows · Distinct employers in sample: " +
+        String(mm.distinct_employers_sample != null ? mm.distinct_employers_sample : "—")
+    );
+    if (mm.title_q) lines.push("Title: " + mm.title_q);
+    if (mm.country_q) lines.push("Geo: " + mm.country_q);
+    if (mm.exclude_company && String(mm.exclude_company).trim()) {
+      lines.push("Exclude: " + String(mm.exclude_company).trim());
+    }
+    var comps = ((analysisState.matches || {}).top_companies) || [];
+    if (comps.length) {
+      lines.push("");
+      lines.push("Top hirers (sample intensity):");
+      comps.slice(0, 8).forEach(function (c) {
+        var tier = c.intensity_label || "";
+        var cnt = c.post_count != null ? c.post_count : "";
+        lines.push("- " + (c.name || "") + " · " + tier + " · " + cnt + " postings in sample");
+      });
+    }
+    lines.push("");
+    lines.push("Full JSON export available from dashboard.");
+    return lines.join("\n");
+  }
+
+  function copySummaryToClipboard() {
+    var text = buildStakeholderSummary();
+    if (!text) return;
+    function fallback() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function exportAnalysisJson() {
+    if (!analysisState) return;
+    try {
+      var blob = new Blob([JSON.stringify(analysisState, null, 2)], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "carl-b2b-market-map-" + new Date().toISOString().slice(0, 19).replace(/:/g, "") + ".json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {}
   }
 
   function renderSalaryDrift(drift) {
@@ -305,6 +736,7 @@
       card.classList.add("hidden");
       return;
     }
+    var scopePrefix = drift.scope_context ? String(drift.scope_context) + " — " : "";
     var arrow = document.getElementById("carl4b2b-salary-drift-arrow");
     var labelEl = document.getElementById("carl4b2b-salary-drift-label");
     var newEl = document.getElementById("carl4b2b-salary-drift-new");
@@ -321,8 +753,10 @@
         arrow.textContent = "—";
         arrow.className = "c4b-drift-arrow c4b-drift-flat";
       }
-      if (labelEl) labelEl.textContent = "Insufficient salary data";
-      if (noteEl) noteEl.textContent = drift.note || "Sample too small to compute drift.";
+      if (labelEl) labelEl.textContent = "Insufficient listings for pay drift";
+      if (noteEl)
+        noteEl.textContent =
+          scopePrefix + (drift.note || "Not enough salary + date rows in this pulled sample.");
       return;
     }
 
@@ -356,7 +790,7 @@
       var signPct = (drift.delta_pct > 0 ? "+" : "") + String(drift.delta_pct) + "%";
       deltaEl.textContent = "Delta: " + signAbs + " (" + signPct + ")";
     }
-    if (noteEl) noteEl.textContent = drift.note || "";
+    if (noteEl) noteEl.textContent = scopePrefix + (drift.note || "");
   }
 
   var braveBusy = false;
@@ -423,6 +857,16 @@
     items.forEach(function (it) {
       var li = document.createElement("li");
       li.className = "rounded-lg border border-white/10 bg-slate-950/40 p-2";
+      var host = "";
+      try {
+        host = new URL(String(it.url || "")).hostname;
+      } catch (eH) {
+        host = "";
+      }
+      var cite = document.createElement("p");
+      cite.className = "mb-1 font-mono text-[10px] text-slate-500";
+      cite.textContent = (host || "web") + " · external source";
+      li.appendChild(cite);
       var a = document.createElement("a");
       a.href = String(it.url || "#");
       a.target = "_blank";
@@ -525,7 +969,11 @@
   function animateDashboardMeters(overview, ats) {
     var scores = (overview && overview.signalScores) || {};
     var premium = (overview && overview.premiumSignals) || {};
-    var atsScore = Math.round(Number((ats && ats.score) || 0));
+    var bp = (analysisState && analysisState.b2bPanel) || {};
+    var atsScore =
+      bp.kpi_sample_rows != null
+        ? Math.round(Number(bp.kpi_sample_rows))
+        : Math.round(Number((ats && ats.score) || 0));
     var dur = METER_ANIMATION_MS;
     animateGaugeTo(
       document.getElementById("carl4b2b-gauge-structure"),
@@ -558,8 +1006,8 @@
     animateNumberEl(document.getElementById("carl4b2b-vital-narrative"), 0, scores.narrative, dur, function () {
       setVital("carl4b2b-vital-narrative", scores.narrative);
     });
-    setMetric("carl4b2b-metric-leadership", premium.leadership);
-    setMetric("carl4b2b-metric-role-match", premium.roleMatch);
+    setMetricPercent("carl4b2b-metric-leadership", premium.leadership);
+    setMetricPercent("carl4b2b-metric-role-match", premium.roleMatch);
     setMetric("carl4b2b-metric-evidence", premium.evidenceDensity);
   }
 
@@ -776,7 +1224,7 @@
         "</button>"
       );
     }
-    function card(title, subtitle, href, ghost) {
+    function card(title, subtitle, href, ghost, jobMeta) {
       return (
         '<div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">' +
         '<div class="flex items-start justify-between gap-2">' +
@@ -784,15 +1232,19 @@
         ghostBadgeHtml(ghost) +
         "</div>" +
         '<p class="mt-1 text-xs text-slate-400">' + escapeHtml(subtitle) + "</p>" +
+        jobCompanyChipsHtml(jobMeta) +
         '<a href="' + escapeHtml(href || fallbackJobsHref) + '"' +
         ' class="mt-3 inline-flex text-xs font-semibold text-sky-400 hover:text-white">Open →</a></div>'
       );
     }
     safeList(matches.jobs, []).forEach(function (j) {
-      jRoot.innerHTML += card(j.title, (j.company || "") + " · " + (j.location || ""), j.link, j.ghost);
+      jRoot.innerHTML += card(j.title, (j.company || "") + " · " + (j.location || ""), j.link, j.ghost, j);
     });
     safeList(matches.top_companies, []).forEach(function (c) {
-      cRoot.innerHTML += card(c.name, c.reason || "", fallbackJobsHref);
+      var tier = c.intensity_label ? String(c.intensity_label) + " intensity · " : "";
+      var pc = c.post_count != null ? String(c.post_count) + " postings in sample · " : "";
+      var sub = tier + pc + (c.reason || "");
+      cRoot.innerHTML += card(c.name, sub, fallbackJobsHref);
     });
     safeList(matches.niche_companies, []).forEach(function (n) {
       nRoot.innerHTML += card(n.name, n.reason || "", fallbackJobsHref);
@@ -924,6 +1376,20 @@
       matchesSection.classList.add("hidden");
       matchesSection.classList.remove("c4b-reveal-in");
     }
+    var shareRowR = document.getElementById("carl4b2b-share-row");
+    if (shareRowR) shareRowR.classList.add("hidden");
+    var execW = document.getElementById("carl4b2b-exec-summary-wrap");
+    if (execW) {
+      execW.classList.add("hidden");
+      var execEl = document.getElementById("carl4b2b-exec-summary");
+      if (execEl) execEl.textContent = "";
+    }
+    var foot = document.getElementById("carl4b2b-catalog-footer");
+    if (foot) {
+      foot.classList.add("hidden");
+      var fl = document.getElementById("carl4b2b-footer-metrics-line");
+      if (fl) fl.textContent = "";
+    }
     document.querySelectorAll("[data-c4b-reveal]").forEach(function (el) {
       el.classList.remove("c4b-reveal-in");
     });
@@ -933,6 +1399,24 @@
     renderProfileSync(null, null);
 
     resetDashboardMeters();
+    setText("carl4b2b-analytics-scope", "");
+    var ck = document.getElementById("carl4b2b-companies-kpi-block");
+    if (ck) {
+      ck.classList.add("hidden");
+      ["carl4b2b-kpi-companies-matched", "carl4b2b-kpi-pct-global", "carl4b2b-kpi-avg-score", "carl4b2b-kpi-top-industry"].forEach(
+        function (kid) {
+          var el = document.getElementById(kid);
+          if (el) el.textContent = "—";
+        }
+      );
+      var lb = document.getElementById("carl4b2b-kpi-companies-matched-label");
+      if (lb) lb.textContent = "Matched rows";
+    }
+    setText("carl4b2b-risks-scope", "");
+    setText("carl4b2b-skills-scope", "");
+    setText("carl4b2b-brave-scope-hint", "");
+    var naClear = document.getElementById("carl4b2b-next-actions");
+    if (naClear) naClear.innerHTML = "";
     if (chatLog) chatLog.innerHTML = "";
     if (chatInput) chatInput.value = "";
     var cc = document.getElementById("carl4b2b-chat-counter");
@@ -970,7 +1454,12 @@
     resetDashboardMeters();
     renderOverview(analysisState.overview || {}, true);
     renderAts(analysisState.atsScore || {}, true);
+    renderB2bAnalyticsChrome();
     renderSalaryDrift(analysisState.salaryDrift || null);
+    renderCompaniesKpi(analysisState.companies_summary || null);
+    if (window.CarlCompanyHighlights) {
+      window.CarlCompanyHighlights.render("carl4b2b", analysisState);
+    }
     braveRemaining = 3;
     renderBraveCard(true);
     wireBraveButtons();
@@ -1026,6 +1515,11 @@
     }
     resetChatGate();
     renderSuggestedChips((analysisState.chatContext && analysisState.chatContext.suggestedPrompts) || []);
+    renderExecSummary(analysisState.overview || {});
+    renderMarketFooter(analysisState.marketMeta || {});
+    syncC4bJobsSearchLink();
+    var shareRow = document.getElementById("carl4b2b-share-row");
+    if (shareRow) shareRow.classList.remove("hidden");
     playTerminal(analysisState.terminalLogs || [], startB2bTerminalLiveFeed);
     initTabs();
     requestAnimationFrame(function () {
@@ -1097,57 +1591,87 @@
       });
   }
 
-  var modeRadios = form.querySelectorAll('input[name="c4b_input_mode"]');
-  for (var ri = 0; ri < modeRadios.length; ri++) {
-    modeRadios[ri].addEventListener("change", function () {
-      setError("");
-      applyInputMode();
+  function deriveMarketCompany(titleStr, businessUrlNorm) {
+    var t = titleStr && String(titleStr).trim();
+    if (t) return t.length > 64 ? t.slice(0, 64) : t;
+    if (businessUrlNorm) {
+      try {
+        var pu = new URL(businessUrlNorm);
+        var h = String(pu.hostname || "").replace(/^www\./i, "");
+        if (h) return h.length > 64 ? h.slice(0, 64) : h;
+      } catch (eMc) {}
+    }
+    return "Market";
+  }
+
+  var urlElHints = document.getElementById("carl4b2b-url");
+  if (urlElHints) {
+    urlElHints.addEventListener("input", function () {
+      setDirectoryHint("");
+      urlDirectoryMatched = false;
+      updateFieldsRowVisibility();
+      updateCtaFromUrl();
+      scheduleDirectoryLookup();
+    });
+    urlElHints.addEventListener("blur", function () {
+      scheduleDirectoryLookup();
     });
   }
-  applyInputMode();
+  updateCtaFromUrl();
+  updateFieldsRowVisibility();
+
+  var btnCopySummary = document.getElementById("btn-c4b-copy-summary");
+  if (btnCopySummary) {
+    btnCopySummary.addEventListener("click", function () {
+      copySummaryToClipboard();
+    });
+  }
+  var btnExportJson = document.getElementById("btn-c4b-export-json");
+  if (btnExportJson) {
+    btnExportJson.addEventListener("click", function () {
+      exportAnalysisJson();
+    });
+  }
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
-    var mode = getInputMode();
     var urlEl = document.getElementById("carl4b2b-url");
-    var titleEl = document.getElementById("carl4b2b-title");
-    var countryEl = document.getElementById("carl4b2b-country");
-    var companyEl = document.getElementById("carl4b2b-company");
-    var payload;
-    if (mode === "url") {
-      var businessUrl = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
-      if (businessUrl) {
-        var norm = businessUrl;
-        if (!/^https?:\/\//i.test(norm)) {
-          norm = "https://" + norm;
-        }
-        try {
-          var parsed = new URL(norm);
-          if (!parsed.hostname) {
-            throw new Error("host");
-          }
-          businessUrl = parsed.href;
-        } catch (e) {
-          setError(
-            "Enter a valid company or careers URL (we accept example.com or https://example.com)."
-          );
-          return;
-        }
-      } else {
-        setError("Enter a company or careers URL.");
+    var refT = document.getElementById("carl4b2b-refine-title");
+    var refC = document.getElementById("carl4b2b-refine-country");
+    var businessUrlRaw = urlEl && urlEl.value ? String(urlEl.value).trim() : "";
+    var title = refT && refT.value ? String(refT.value).trim() : "";
+    var region = refC && refC.value ? String(refC.value).trim() : "";
+    if (!region) region = DEFAULT_REFINE_REGION;
+
+    var businessUrlNorm = "";
+    if (businessUrlRaw) {
+      var norm = businessUrlRaw;
+      if (!/^https?:\/\//i.test(norm)) norm = "https://" + norm;
+      try {
+        var parsed = new URL(norm);
+        if (!parsed.hostname) throw new Error("host");
+        businessUrlNorm = parsed.href;
+      } catch (eUrl) {
+        setError("Enter a valid URL (we accept example.com or https://example.com).");
         return;
       }
-      payload = { business_url: businessUrl };
-    } else {
-      var title = titleEl && titleEl.value ? String(titleEl.value).trim() : "";
-      var country = countryEl && countryEl.value ? String(countryEl.value).trim() : "";
-      var mktCo = companyEl && companyEl.value ? String(companyEl.value).trim() : "";
-      if (!title || !country || !mktCo) {
-        setError("Enter industry, country or region, and company name for this market.");
-        return;
-      }
-      payload = { title: title, country: country, market_company: mktCo };
     }
+
+    if (!businessUrlNorm && !title) {
+      setError("Enter a URL or choose an industry to continue.");
+      return;
+    }
+
+    var omitRefinements = !!(businessUrlNorm && urlDirectoryMatched);
+    var payload = {
+      market_company: deriveMarketCompany(omitRefinements ? "" : title, businessUrlNorm || null),
+    };
+    if (businessUrlNorm) payload.business_url = businessUrlNorm;
+    if (!omitRefinements) {
+      if (title) payload.title = title;
+      payload.country = region;
+    }
+
     setError("");
     stopB2bTerminalLiveFeed();
     setAnalyzeLoading(true);
@@ -1173,6 +1697,15 @@
       })
       .then(function (result) {
         if (!result.ok || !result.data || result.data.ok === false) {
+          var failCode = result.data && result.data.code;
+          if (failCode === "signup_required") {
+            var det = (result.data && result.data.details) || {};
+            var regUrl = det.register_url || "/register";
+            var signupErr = new Error("signup_required");
+            signupErr.carl4b2bSignupRequired = true;
+            signupErr.registerUrl = regUrl;
+            throw signupErr;
+          }
           var em = (result.data && result.data.message) || "Could not build market map.";
           if (result.data && result.data.code === "login_required") {
             em = "Sign in first, then try again.";
@@ -1183,17 +1716,29 @@
         var analysis = inner.analysis;
         if (!analysis) throw new Error("Missing analysis payload.");
         var extras = { profileSync: inner.profile_sync, source: inner.source };
+        var guestRem =
+          inner.guest_analyzes_remaining !== undefined && inner.guest_analyzes_remaining !== null ?
+            Number(inner.guest_analyzes_remaining) :
+            null;
         var elapsed = performance.now() - started;
         var remain = Math.max(0, MIN_ANALYZE_MS - elapsed);
         return delay(remain).then(function () {
-          return { analysis: analysis, extras: extras };
+          return { analysis: analysis, extras: extras, guestRemaining: guestRem };
         });
       })
       .then(function (pack) {
         hydrate(pack.analysis, pack.extras);
+        if (pack.guestRemaining !== null && !Number.isNaN(pack.guestRemaining)) {
+          var bc = document.getElementById("carl4b2b-guest-banner-count");
+          if (bc) bc.textContent = String(pack.guestRemaining);
+        }
       })
       .catch(function (err) {
-        setError(err && err.message ? err.message : "Request failed.");
+        if (err && err.carl4b2bSignupRequired) {
+          setSignupRequiredMarketError(err.registerUrl);
+        } else {
+          setError(err && err.message ? err.message : "Request failed.");
+        }
       })
       .finally(function () {
         setAnalyzeLoading(false);

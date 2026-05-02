@@ -27,19 +27,17 @@ from ..models.api_keys import (
     get_api_key_by_email,
     sync_api_key_quota_for_api_access,
 )
-from ..models.job_orders import (
+from ..models.billing import (
     get_stripe_order,
+    get_subscription_by_stripe_id,
+    get_user_subscriptions,
     insert_job_posting,
     insert_stripe_order,
     mark_stripe_order_job_submitted,
     mark_stripe_order_paid,
-)
-from ..models.subscriptions import (
-    get_subscription_by_stripe_id,
-    get_user_subscriptions,
     upsert_user_subscription,
 )
-from ..utils import (
+from ..mailer import (
     send_api_access_key_provisioned,
     send_api_access_payment_confirmed,
     send_api_key_activation_reminder,
@@ -296,7 +294,7 @@ def pricing():
     if user:
         subs = get_user_subscriptions(user.get("id", ""))
     return render_template(
-        "pricing.html",
+        "billing/pricing.html",
         user=user,
         products=_STRIPE_B2C_PRODUCTS,
         subs=subs,
@@ -389,7 +387,7 @@ def subscription_success():
             "success",
         )
         return redirect(url_for("auth.studio", api_welcome="1"))
-    return render_template("subscription_success.html", user=user, product=product)
+    return render_template("billing/subscription_success.html", user=user, product=product)
 
 
 @bp.get("/account/subscription")
@@ -400,7 +398,7 @@ def subscription_manage():
         return redirect(url_for("auth.register"))
     subs = get_user_subscriptions(user.get("id", ""))
     return render_template(
-        "subscription_manage.html",
+        "billing/subscription_manage.html",
         user=user,
         subs=subs,
         products=_STRIPE_B2C_PRODUCTS,
@@ -447,7 +445,7 @@ def post_a_job():
     """B2B pricing page for companies to post jobs."""
     user = session.get("user")
     return render_template(
-        "post_job_pricing.html",
+        "account/post_job_pricing.html",
         user=user,
         products=_STRIPE_PRODUCTS,
         stripe_key=os.getenv("STRIPE_PUBLISHABLE_KEY", ""),
@@ -532,7 +530,7 @@ def stripe_success():
 
     product = _STRIPE_PRODUCTS.get(order.get("plan_key", ""))
     return render_template(
-        "post_job_submit.html",
+        "account/post_job_submit.html",
         user=user,
         order=order,
         product=product,
@@ -624,7 +622,7 @@ def stripe_submit_job():
 def stripe_cancel():
     """Landing page when a user cancels Stripe Checkout."""
     user = session.get("user")
-    return render_template("stripe_cancel.html", user=user)
+    return render_template("billing/stripe_cancel.html", user=user)
 
 
 @bp.post("/stripe/webhook")

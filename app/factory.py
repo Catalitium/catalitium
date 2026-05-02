@@ -106,9 +106,9 @@ def create_app() -> Flask:
         for _ep, _rule in (
             ("carl.carl_analyze", "20 per minute"),
             ("carl.carl_chat", "40 per minute"),
-            ("carl4b2b.carl4b2b_analyze", "20 per minute"),
-            ("carl4b2b.carl4b2b_chat", "40 per minute"),
-            ("carl4b2b.carl4b2b_brave_context", "10 per minute"),
+            ("carl_business.carl_business_analyze", "20 per minute"),
+            ("carl_business.carl_business_chat", "40 per minute"),
+            ("carl_business.carl_business_brave_context", "10 per minute"),
             ("auth.register", "10 per minute"),
             ("auth.auth_forgot_password", "5 per minute"),
             ("auth.auth_session_from_tokens", "30 per minute"),

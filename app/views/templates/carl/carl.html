@@ -686,7 +686,17 @@
 {% endblock %}
 
 {% block content %}
-  <div id="carl-shell" class="relative flex w-full min-w-0 flex-col font-sans text-slate-200" data-fallback-jobs-href="{{ url_for('jobs.jobs') }}" data-fallback-salary-board-href="{{ url_for('jobs.recruiter_salary_board') }}">
+  <div id="carl-shell" class="relative flex w-full min-w-0 flex-col font-sans text-slate-200" data-carl-guest="{{ '1' if is_guest else '0' }}" data-fallback-jobs-href="{{ url_for('jobs.jobs') }}" data-fallback-salary-board-href="{{ url_for('jobs.recruiter_salary_board') }}">
+    {% if is_guest and carl_guest_remaining is not none %}
+    <div id="carl-guest-banner" class="mx-auto w-full max-w-5xl px-4 pt-4">
+      <div class="rounded-xl border border-amber-400/40 bg-amber-950/35 px-4 py-3 text-sm text-amber-100/95">
+        <span class="font-medium">Guest preview:</span>
+        <span id="carl-guest-banner-count">{{ carl_guest_remaining }}</span> free analys{% if carl_guest_remaining == 1 %}is{% else %}es{% endif %} left this session.
+        <a href="{{ url_for('auth.register') }}" class="ml-1 font-semibold text-sky-300 underline underline-offset-2 hover:text-white">Create an account</a>
+        to save results and keep going.
+      </div>
+    </div>
+    {% endif %}
     {% if preloaded_analysis %}
     <script id="preloaded-carl-data" type="application/json">
         {{ preloaded_analysis | tojson | safe }}
@@ -699,12 +709,12 @@
 
     <div class="grid w-full max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
       <!-- Companies Card -->
-      <a href="{{ url_for('carl4b2b.carl4b2b_dashboard') }}" class="group relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-[#111]/40 p-10 text-left transition hover:border-[#18a7ec]/50 hover:bg-[#18a7ec]/5 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18a7ec]/60">
+      <a href="{{ url_for('carl_business.carl_business_dashboard') }}" class="group relative flex flex-col items-center overflow-hidden rounded-3xl border border-white/10 bg-[#111]/40 p-10 text-left transition hover:border-[#18a7ec]/50 hover:bg-[#18a7ec]/5 backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18a7ec]/60">
         <div class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#18a7ec]/10 text-[#00bfff]">
           <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
         </div>
         <h2 class="text-2xl font-bold text-white">For Companies</h2>
-        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Competitive hiring map from the indexed job catalog — paste your company URL to see active hirers and market heuristics.</p>
+        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Competitive hiring map from the indexed job catalog — paste a company URL (we match our directory when we can) or define industry + geography.</p>
         <div class="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-[#00bfff] opacity-0 transition group-hover:opacity-100">
           Enter workspace <span>→</span>
         </div>
@@ -716,7 +726,7 @@
           <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         </div>
         <h2 class="text-2xl font-bold text-white">For Individuals</h2>
-        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Analyze your CV for ATS fit, get targeted writing improvements, and discover matching jobs instantly. Harvard DOCX export is available inside this workspace (Carl CV Builder).</p>
+        <p class="mt-3 text-center text-sm text-[#9CA3AF] leading-relaxed">Analyze your CV for ATS fit, targeted improvements, and job matches from the same catalog Carl for Companies uses — industry labels line up with our company directory.</p>
         <div class="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-[#4ade80] opacity-0 transition group-hover:opacity-100">
           Enter Workspace <span>→</span>
         </div>
@@ -741,33 +751,37 @@
     <!-- Landing: upload -->
     <div id="carl-upload-hero" class="mx-auto max-w-2xl px-4 py-16">
       <div class="text-center">
-        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#22c55e]">Carl Intelligence Workspace</p>
-        <h1 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Upload your CV to begin</h1>
-        <p class="mt-3 text-[#9CA3AF] max-w-lg mx-auto">See an instant dashboard with tailored analytics, relevant job matches, and clear structural feedback on your CV.</p>
-        <p class="mt-4 text-center text-xs text-[#6B7280]">Need a Harvard-format .docx without the live dashboard? <a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e]/90 hover:text-[#4ade80] underline-offset-2 hover:underline">Carl CV Builder</a></p>
-        <p class="mt-3 text-center text-xs text-[#6B7280]">Hiring market snapshot? <a href="{{ url_for('carl4b2b.carl4b2b_dashboard') }}" class="font-medium text-[#38bdf8] hover:text-[#7dd3fc] underline-offset-2 hover:underline">Carl for companies</a></p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Start with your CV</h1>
+        <p class="mt-3 text-[#9CA3AF] max-w-lg mx-auto leading-relaxed">Drop a PDF or DOCX — or paste text — and Carl builds your hiring snapshot in seconds. Same job catalog and industry labels as <a href="{{ url_for('carl_business.carl_business_dashboard') }}" class="font-medium text-[#38bdf8] hover:text-[#7dd3fc] underline-offset-2 hover:underline">Carl for companies</a>.</p>
+        <p class="mt-4 text-center text-xs text-[#6B7280]"><a href="{{ url_for('cv_builder.cv_builder_page') }}" class="font-medium text-[#22c55e]/90 hover:text-[#4ade80] underline-offset-2 hover:underline">Carl CV Builder</a> for a Harvard-style .docx without this dashboard.</p>
       </div>
 
       {# method post + no action URL: avoids GET ?csrf&cv_file in query. Analyze uses type=button + JS fetch only — never full-page POST to /carl/analyze (that showed raw JSON in prod). #}
       <form id="carl-upload-form" method="post" enctype="multipart/form-data" class="mt-8 border border-dashed border-white/20 bg-[#111]/60 rounded-[2rem] p-8 sm:p-12 text-center backdrop-blur-sm transition-colors hover:bg-[#111]/80 hover:border-[#22c55e]/40 shadow-xl" onsubmit="event.preventDefault(); return false;">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        
+        <datalist id="carl-industry-datalist">
+          {% for ind in carl_company_industries or [] %}
+          <option value="{{ ind }}"></option>
+          {% endfor %}
+        </datalist>
+
         <!-- Drag Drop Visuals -->
         <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-white/50 mb-5">
           <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </div>
 
-        <div class="relative group cursor-pointer inline-block">
-          <input id="carl-file-input" name="cv_file" type="file" accept=".pdf,.docx" class="absolute inset-0 z-50 w-full h-full opacity-0 cursor-pointer">
-          <span class="inline-flex items-center justify-center rounded-full bg-[#22c55e] px-7 py-3 text-sm font-bold text-black transition-transform group-hover:scale-105 shadow-lg shadow-[#22c55e]/20">
-             Choose PDF or DOCX
-          </span>
+        <div class="flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+          <div class="relative group cursor-pointer inline-block">
+            <input id="carl-file-input" name="cv_file" type="file" accept=".pdf,.docx" class="absolute inset-0 z-50 w-full h-full opacity-0 cursor-pointer">
+            <span class="inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#22c55e] px-7 py-3 text-sm font-bold text-black transition-transform group-hover:scale-105 shadow-lg shadow-[#22c55e]/20">
+              Choose PDF or DOCX
+            </span>
+          </div>
+          <button type="button" id="btn-toggle-text-paste" class="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-[#22c55e]/50 hover:bg-[#22c55e]/10 hover:text-white">
+            Paste text instead
+          </button>
         </div>
         <p id="carl-file-name-display" class="mt-4 text-sm font-medium text-[#4ade80] hidden truncate max-w-full"></p>
-
-        <div class="mt-6">
-          <button type="button" id="btn-toggle-text-paste" class="text-[13px] font-medium text-[#9CA3AF] hover:text-white underline underline-offset-4">Or paste raw text instead</button>
-        </div>
 
         <div id="carl-text-paste-zone" class="hidden mt-6 text-left">
             <textarea id="carl-text-fallback" name="cv_text" rows="5"
@@ -778,7 +792,7 @@
         <div class="mt-8 border-t border-white/10 pt-8 flex justify-center">
           <button type="button" id="carl-upload-btn" class="carl-btn-analyze flex w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-white text-black px-6 py-3.5 font-bold transition hover:bg-gray-200 disabled:opacity-50 shadow-md">
             <svg id="carl-analyze-spinner" class="hidden h-5 w-5 animate-spin text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span id="carl-analyze-text" class="text-[15px]">Analyze Profile</span>
+            <span id="carl-analyze-text" class="text-[15px]">Analyze my CV</span>
           </button>
         </div>
       </form>
@@ -858,7 +872,7 @@
               <p id="carl-level" class="text-xs font-semibold text-white">—</p>
             </div>
             <div class="carl-card-soft rounded-lg py-2">
-              <p class="text-[10px] uppercase text-[#6B7280]">Confidence</p>
+              <p class="text-[10px] uppercase text-[#6B7280]">Heuristic fit</p>
               <p id="carl-confidence" class="text-xs font-semibold text-[#00bfff]">—</p>
             </div>
             <div class="carl-card-soft rounded-lg py-2">
@@ -994,6 +1008,7 @@
             </div>
             <div>
               <p class="text-[11px] font-semibold uppercase text-[#6B7280]">Recommended Certifications</p>
+              <p class="mt-1 text-[10px] leading-snug text-[#6B7280]">Examples for this persona — not parsed from your CV.</p>
               <ul id="carl-suggestions-certs" class="mt-2 list-disc space-y-2 pl-4 text-xs text-[#E5E5E5]"></ul>
             </div>
           </div>
@@ -1008,7 +1023,8 @@
       <!-- Panel 4: Talk to Carl -->
       <aside id="carl-chat-container" data-carl-reveal class="carl-card flex min-h-[480px] flex-col p-4 min-w-0 h-full">
         <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Talk to Carl</p>
-        <p class="mt-1 text-[11px] text-[#6B7280]">Three short questions about <span class="text-[#9CA3AF]">this</span> analysis only—use the chips or mention keywords from your pass.</p>
+        <p class="mt-1 text-[11px] text-[#6B7280]">Three short questions about <span class="text-[#9CA3AF]">this</span> analysis only—signed-in users can use the chips or keywords from your pass.</p>
+        <p id="carl-chat-guest-hint" class="mt-2 hidden rounded-lg border border-amber-400/30 bg-amber-950/25 px-3 py-2 text-[11px] text-amber-100/95">Sign in to ask Carl follow-up questions. Your dashboard and summary stay visible.</p>
         <div id="carl-chat-log" class="carl-scroll-dark mt-3 flex min-h-[160px] flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-white/12 bg-[rgba(8,18,42,0.35)] p-3 backdrop-blur-md xl:min-h-0"></div>
         <div id="carl-chat-chips" class="mt-2 flex flex-wrap gap-2 hidden" aria-label="Suggested prompts"></div>
         <div id="carl-api-cta" class="mt-3 hidden rounded-xl border border-[#1a73e8]/35 bg-[#1a73e8]/12 p-3 text-xs text-[#E5E5E5]">
@@ -1047,7 +1063,40 @@
           <svg class="h-5 w-5 text-[#22c55e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
           Carl's Career Radar
         </h2>
-        <a href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-[#18a7ec] hover:text-white transition">Search all jobs &rarr;</a>
+        <a id="carl-matches-jobs-search" href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-[#18a7ec] hover:text-white transition">Search all jobs &rarr;</a>
+      </div>
+      {% set highlights_prefix = 'carl' %}
+      {% set highlights_variant = 'b2c' %}
+      {% include 'carl/partials/_company_highlights.html' %}
+      <div id="carl-companies-kpi-block" class="mb-6 hidden rounded-2xl border border-[#214f86]/40 bg-[#0b1324]/70 p-4">
+        <p class="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">Companies (catalog bridge)</p>
+        <p class="mt-1 text-[10px] leading-snug text-[#6B7280]">Same job sample as the roles above.</p>
+        <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div title="Rows in this sample linked to companies.comp_id">
+            <p id="carl-kpi-companies-matched-label" class="text-[10px] uppercase text-[#6B7280]">Matched rows</p>
+            <p id="carl-kpi-companies-matched" class="mt-1 text-lg font-semibold tabular-nums text-emerald-300">—</p>
+          </div>
+          <div title="% of sample job rows (with id) that linked to the directory">
+            <p class="text-[10px] uppercase text-[#6B7280]">Match % (sample)</p>
+            <p id="carl-kpi-match-rate" class="mt-1 text-lg font-semibold tabular-nums text-emerald-200">—</p>
+          </div>
+          <div title="Among matched rows only, when is_global is set in directory">
+            <p class="text-[10px] uppercase text-[#6B7280]">% global (matched)</p>
+            <p id="carl-kpi-pct-global" class="mt-1 text-lg font-semibold tabular-nums text-[#7dd3fc]">—</p>
+          </div>
+          <div title="Mean page_score among matched rows with scores">
+            <p class="text-[10px] uppercase text-[#6B7280]">Avg page score</p>
+            <p id="carl-kpi-avg-score" class="mt-1 text-lg font-semibold tabular-nums text-amber-200">—</p>
+          </div>
+          <div title="Min · median · max page_score among matched rows with scores">
+            <p class="text-[10px] uppercase text-[#6B7280]">Score spread</p>
+            <p id="carl-kpi-score-spread" class="mt-1 text-sm font-semibold tabular-nums leading-tight text-amber-100">—</p>
+          </div>
+          <div title="Most common industry bucket among matched rows">
+            <p class="text-[10px] uppercase text-[#6B7280]">Top industry</p>
+            <p id="carl-kpi-top-industry" class="mt-1 line-clamp-2 text-sm font-semibold leading-tight text-white">—</p>
+          </div>
+        </div>
       </div>
       
       <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
@@ -1069,10 +1118,21 @@
     </div>
     </div>
   </div>
+  {% if is_guest %}
+  <div id="carl-guest-save-sticky" class="pointer-events-none fixed inset-x-0 bottom-0 z-50 hidden px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div class="pointer-events-auto mx-auto flex max-w-3xl items-center justify-center gap-2 rounded-t-2xl border border-emerald-500/35 bg-[#020617]/96 px-4 py-3 text-center text-sm text-slate-100 shadow-[0_-12px_40px_rgba(0,0,0,0.45)] backdrop-blur-md">
+      <span class="hidden sm:inline font-medium text-emerald-200">Save this analysis</span>
+      <span class="sm:hidden font-medium text-emerald-200">Save analysis</span>
+      <span class="text-slate-500">·</span>
+      <a href="{{ url_for('auth.register') }}" class="font-semibold text-sky-300 underline underline-offset-2 hover:text-white">Create a free account</a>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block body_extra %}
 {# No defer: run as soon as parsed. data-cookieconsent=ignore: Cookiebot auto-blocking must not delay core app JS (otherwise Analyze does nothing until marketing consent). #}
+<script src="{{ url_for('static', filename='js/carl_company_highlights.js', v=asset_version) }}" data-cookieconsent="ignore"></script>
 <script src="{{ url_for('static', filename='js/carl.js', v=asset_version) }}" data-cookieconsent="ignore"></script>
 {% endblock %}

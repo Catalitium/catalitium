@@ -707,3 +707,80 @@ def safe_salary_context(location: str) -> Dict[str, Any]:
         "currency": None,
         "raw": None,
     }
+
+
+# ---------------------------------------------------------------------------
+# Salary display / percentile seed (moved from app.utils)
+# ---------------------------------------------------------------------------
+
+TITLE_BUCKET2_KEYWORDS = (
+    "principal", "staff", "lead ", "lead-", "head of", "director",
+)
+
+TITLE_BUCKET1_KEYWORDS = (
+    "senior", "sr ", "sr.", "expert",
+)
+
+_SALARY_SEED: dict[tuple[str, str], dict] = {
+    ("engineer", "zurich"):  {"p25": 110_000, "p50": 130_000, "p75": 155_000, "currency": "CHF"},
+    ("engineer", "geneva"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
+    ("engineer", "basel"):   {"p25": 100_000, "p50": 118_000, "p75": 140_000, "currency": "CHF"},
+    ("engineer", "berlin"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
+    ("engineer", "munich"):  {"p25":  72_000, "p50":  90_000, "p75": 110_000, "currency": "EUR"},
+    ("engineer", "vienna"):  {"p25":  58_000, "p50":  72_000, "p75":  88_000, "currency": "EUR"},
+    ("product",  "zurich"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
+    ("product",  "geneva"):  {"p25": 100_000, "p50": 120_000, "p75": 142_000, "currency": "CHF"},
+    ("product",  "berlin"):  {"p25":  62_000, "p50":  78_000, "p75":  96_000, "currency": "EUR"},
+    ("product",  "munich"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
+    ("data",     "zurich"):  {"p25": 108_000, "p50": 128_000, "p75": 152_000, "currency": "CHF"},
+    ("data",     "berlin"):  {"p25":  60_000, "p50":  76_000, "p75":  94_000, "currency": "EUR"},
+    ("data",     "munich"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
+    ("design",   "zurich"):  {"p25":  90_000, "p50": 108_000, "p75": 128_000, "currency": "CHF"},
+    ("design",   "berlin"):  {"p25":  52_000, "p50":  66_000, "p75":  82_000, "currency": "EUR"},
+    ("devops",   "zurich"):  {"p25": 112_000, "p50": 132_000, "p75": 158_000, "currency": "CHF"},
+    ("devops",   "berlin"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
+    ("manager",  "zurich"):  {"p25": 120_000, "p50": 145_000, "p75": 175_000, "currency": "CHF"},
+    ("manager",  "berlin"):  {"p25":  75_000, "p50":  95_000, "p75": 118_000, "currency": "EUR"},
+}
+
+_DACH_CHF_CITIES = ("zurich", "geneva", "basel")
+
+
+def get_salary_percentiles(title: str, location: str) -> dict:
+    """Return P25/P50/P75 from seed data; fall back to generic DACH estimates."""
+    loc = location.lower()
+    title_lower = title.lower()
+    for (kw, city), data in _SALARY_SEED.items():
+        if city in loc and kw in title_lower:
+            return data
+    currency = "CHF" if any(c in loc for c in _DACH_CHF_CITIES) else "EUR"
+    return {"p25": 70_000, "p50": 90_000, "p75": 115_000, "currency": currency}
+
+
+def estimate_salary_display(
+    title: str,
+    median: float,
+) -> Tuple[Optional[str], Optional[int], Optional[int]]:
+    """Compute estimated salary range string and min/max for a given title and median.
+
+    Returns (display_string, sal_min, sal_max) or (None, None, None) on failure.
+    """
+    try:
+        title_lc = title.lower()
+        uplift = (
+            1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else
+            1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else
+            1.0
+        )
+        base_rng = salary_range_around(float(median), pct=0.2)
+        if not base_rng:
+            return None, None, None
+        base_low, base_high, base_low_s, base_high_s = base_rng
+        if uplift > 1.0:
+            amt = float(median) * (uplift - 1.0)
+            low_s = _compact_salary_number(base_low + amt)
+            high_s = _compact_salary_number(base_high + amt)
+            return f"{low_s}\u2013{high_s}", int(base_low + amt), int(base_high + amt)
+        return f"{base_low_s}\u2013{base_high_s}", base_low, base_high
+    except Exception:
+        return None, None, None

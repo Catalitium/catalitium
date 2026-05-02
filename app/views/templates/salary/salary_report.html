@@ -215,7 +215,7 @@
               action="{{ url_for('jobs.subscribe') }}"
               class="relative space-y-2"
               data-gtm-salary-capture="inline">
-{% from "snippets/_subscribe_security_fields.html" import subscribe_security %}
+{% from "partials/_subscribe_security_fields.html" import subscribe_security %}
 {{ subscribe_security('salary-report') }}
           <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Stay on top of salary moves</p>
           <p class="text-xs text-slate-600">

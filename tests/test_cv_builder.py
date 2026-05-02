@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-import app.controllers.cv_builder as cv_builder_mod
+import app.controllers.carl as cv_builder_mod
 
 
 @pytest.fixture()

@@ -11,7 +11,8 @@ import re
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import Any, Dict, Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 try:
     import psycopg  # psycopg v3
@@ -200,6 +201,168 @@ def upsert_profile_cv_extract(
         return "error"
 
 
+def insert_cv_upload_row(
+    session_token: str,
+    cv_text: str,
+    cv_meta: Optional[Dict[str, Any]] = None,
+    *,
+    user_id: Optional[str] = None,
+    storage_path: Optional[str] = None,
+    cv_analysis_full: Optional[Dict[str, Any]] = None,
+    inferred_title: Optional[str] = None,
+    inferred_seniority: Optional[str] = None,
+    top_skills: Optional[List[str]] = None,
+    industry_bucket: Optional[str] = None,
+    inferred_country: Optional[str] = None,
+    source: str = "carl_individual",
+    consent_note: Optional[str] = None,
+) -> str:
+    """Persist a Carl CV upload row (anonymous or authenticated). Returns ``ok`` / ``skipped`` / ``error``."""
+    tok = (session_token or "").strip()
+    text = (cv_text or "").strip()
+    if not tok or not text or not SUPABASE_URL:
+        return "skipped"
+    uid = (user_id or "").strip() or None
+    expires_at: Optional[datetime] = None
+    if not uid:
+        expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO cv_uploads (
+                    session_token, user_id, storage_path,
+                    cv_extracted_text, cv_analysis_full, cv_meta,
+                    inferred_title, inferred_seniority, top_skills,
+                    industry_bucket, inferred_country,
+                    source, consent_note, expires_at
+                )
+                VALUES (
+                    %s, %s::uuid, %s,
+                    %s, %s::jsonb, %s::jsonb,
+                    %s, %s, %s::jsonb,
+                    %s, %s,
+                    %s, %s, %s
+                )
+                """,
+                (
+                    tok,
+                    uid,
+                    (storage_path or "").strip() or None,
+                    text,
+                    json.dumps(cv_analysis_full or {}),
+                    json.dumps(cv_meta or {}),
+                    (inferred_title or "").strip() or None,
+                    (inferred_seniority or "").strip() or None,
+                    json.dumps(top_skills or []),
+                    (industry_bucket or "").strip() or None,
+                    (inferred_country or "").strip() or None,
+                    (source or "carl_individual").strip() or "carl_individual",
+                    (consent_note or "").strip() or None,
+                    expires_at,
+                ),
+            )
+        return "ok"
+    except Exception as exc:
+        logger.warning("insert_cv_upload_row failed: %s", exc, exc_info=True)
+        return "error"
+
+
+def link_cv_upload_to_user(session_token: str, user_id: str) -> Optional[Dict[str, Any]]:
+    """Attach the latest anon row for ``session_token`` to ``user_id``. Returns merged row fields or ``None``."""
+    tok = (session_token or "").strip()
+    uid = (user_id or "").strip()
+    if not tok or not uid or not SUPABASE_URL:
+        return None
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            cur.execute(
+                """
+                WITH picked AS (
+                    SELECT id FROM cv_uploads
+                    WHERE session_token = %s AND user_id IS NULL
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                )
+                UPDATE cv_uploads u
+                SET user_id = %s::uuid, linked_at = NOW()
+                FROM picked p
+                WHERE u.id = p.id
+                RETURNING u.cv_extracted_text, u.cv_meta, u.cv_analysis_full, u.storage_path
+                """,
+                (tok, uid),
+            )
+            row = cur.fetchone()
+        if not row:
+            return None
+        raw_meta, raw_full = row[1], row[2]
+        meta: Dict[str, Any]
+        if isinstance(raw_meta, dict):
+            meta = raw_meta
+        else:
+            try:
+                meta = json.loads(raw_meta) if raw_meta else {}
+            except Exception:
+                meta = {}
+        analysis_full: Optional[Dict[str, Any]]
+        if isinstance(raw_full, dict):
+            analysis_full = raw_full
+        else:
+            try:
+                analysis_full = json.loads(raw_full) if raw_full else None
+            except Exception:
+                analysis_full = None
+        return {
+            "cv_text": row[0] or "",
+            "cv_meta": meta,
+            "cv_analysis_full": analysis_full,
+            "storage_path": row[3],
+        }
+    except Exception as exc:
+        logger.warning("link_cv_upload_to_user failed: %s", exc, exc_info=True)
+        return None
+
+
+def fetch_candidate_demand_signal(industry_bucket: str, country_q: str) -> Optional[Dict[str, Any]]:
+    """Return ``{count, window_days}`` from ``candidate_demand_signals`` or ``None`` if zero / unavailable."""
+    ib = (industry_bucket or "").strip()
+    if not ib or not SUPABASE_URL:
+        return None
+    cq = (country_q or "").strip()
+    try:
+        db = get_db()
+        with db.cursor() as cur:
+            if cq:
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(signal_count), 0)::bigint
+                    FROM candidate_demand_signals
+                    WHERE industry_bucket = %s
+                      AND inferred_country = %s
+                    """,
+                    (ib, cq),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT COALESCE(SUM(signal_count), 0)::bigint
+                    FROM candidate_demand_signals
+                    WHERE industry_bucket = %s
+                    """,
+                    (ib,),
+                )
+            r = cur.fetchone()
+            n = int(r[0] or 0) if r else 0
+            if n <= 0:
+                return None
+            return {"count": n, "window_days": 90}
+    except Exception as exc:
+        logger.info("fetch_candidate_demand_signal skipped: %s", exc)
+        return None
+
+
 def upsert_profile_carl4b2b_analysis(user_id: str, analysis: Optional[Dict[str, Any]] = None) -> str:
     """Update ``profiles.last_carl4b2b_analysis`` for signed-in users (row must exist). Returns ``ok`` or ``error``."""
     uid = (user_id or "").strip()
@@ -378,6 +541,48 @@ def init_db():
                 "UPDATE api_keys SET monthly_limit = 500 "
                 "WHERE monthly_limit = 100 AND tier IN ('free_pending', 'free')"
             )
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS cv_uploads (
+                    id                 SERIAL PRIMARY KEY,
+                    session_token      TEXT        NOT NULL,
+                    user_id            UUID,
+                    storage_path       TEXT,
+                    cv_extracted_text  TEXT        NOT NULL,
+                    cv_analysis_full   JSONB,
+                    cv_meta             JSONB       NOT NULL DEFAULT '{}'::jsonb,
+                    inferred_title      TEXT,
+                    inferred_seniority  TEXT,
+                    top_skills          JSONB,
+                    industry_bucket     TEXT,
+                    inferred_country    TEXT,
+                    source              TEXT        NOT NULL DEFAULT 'carl_individual',
+                    consent_note        TEXT,
+                    linked_at           TIMESTAMPTZ,
+                    expires_at          TIMESTAMPTZ,
+                    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cv_uploads_session ON cv_uploads(session_token)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cv_uploads_user ON cv_uploads(user_id) "
+                "WHERE user_id IS NOT NULL"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS idx_cv_uploads_created ON cv_uploads(created_at DESC)"
+            )
+            cur.execute("""
+                CREATE OR REPLACE VIEW candidate_demand_signals AS
+                SELECT
+                    industry_bucket,
+                    inferred_country,
+                    COUNT(*)::bigint AS signal_count
+                FROM cv_uploads
+                WHERE created_at > NOW() - INTERVAL '90 days'
+                  AND industry_bucket IS NOT NULL
+                GROUP BY industry_bucket, inferred_country
+            """)
             db.commit()
     except Exception as exc:
         logger.warning("init_db connectivity check failed: %s", exc)
