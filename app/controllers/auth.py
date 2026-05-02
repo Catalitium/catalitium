@@ -6,7 +6,7 @@ import os
 import re
 import secrets
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
@@ -18,7 +18,7 @@ except ImportError:
 
 from ..models.db import logger
 from ..models.api_keys import get_api_key_by_email
-from ..models.subscriptions import get_user_subscriptions
+from ..models.billing import get_user_subscriptions
 from ..utils import csrf_valid, validate_email
 
 bp = Blueprint("auth", __name__)
@@ -227,7 +227,7 @@ def register():
         tab = request.args.get("tab", "signup")
         if tab not in {"signup", "login"}:
             tab = "signup"
-        return render_template("register.html", tab=tab, account_type="candidate", from_source=from_source)
+        return render_template("account/register.html", tab=tab, account_type="candidate", from_source=from_source)
 
     action = request.form.get("action", "signup")
     if action not in {"signup", "login"}:
@@ -237,16 +237,16 @@ def register():
     account_type = _normalize_account_type(request.form.get("account_type", "candidate"))
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
-        return render_template("register.html", tab=action, account_type=account_type), 400
+        return render_template("account/register.html", tab=action, account_type=account_type), 400
     try:
         email = validate_email(email, check_deliverability=False).normalized
     except Exception:
         flash("Please enter a valid email.", "error")
-        return render_template("register.html", tab=action, account_type=account_type), 400
+        return render_template("account/register.html", tab=action, account_type=account_type), 400
 
     if action == "signup" and len(password) < 8:
         flash("Password must be at least 8 characters.", "error")
-        return render_template("register.html", tab=action, account_type=account_type), 400
+        return render_template("account/register.html", tab=action, account_type=account_type), 400
 
     sb = _get_supabase()
     if not sb:
@@ -254,7 +254,7 @@ def register():
             "Sign-in is temporarily unavailable. Refresh the page in a moment or try again shortly.",
             "error",
         )
-        return render_template("register.html", tab=action, account_type=account_type), 503
+        return render_template("account/register.html", tab=action, account_type=account_type), 503
     try:
         if action == "signup":
             res = sb.auth.sign_up({"email": email, "password": password})
@@ -263,7 +263,7 @@ def register():
         user = res.user
         if not user:
             flash("Invalid credentials. Please try again.", "error")
-            return render_template("register.html", tab=action, account_type=account_type), 401
+            return render_template("account/register.html", tab=action, account_type=account_type), 401
         user_id = str(user.id)
         user_metadata = getattr(user, "user_metadata", None) or {}
         existing_type = _normalize_account_type(str(user_metadata.get("account_type") or "candidate"))
@@ -273,13 +273,15 @@ def register():
             metadata_err = _update_auth_user_metadata(user_id, {"account_type": target_type, "hire_access": False})
             if metadata_err and action == "signup":
                 flash(metadata_err, "error")
-                return render_template("register.html", tab=action, account_type=account_type), 503
+                return render_template("account/register.html", tab=action, account_type=account_type), 503
         session["user"] = {
             "id": user_id,
             "email": user.email,
             "account_type": target_type,
             "hire_access": existing_hire_access if action == "login" else False,
         }
+        if _maybe_link_carl_session_upload(session["user"]):
+            flash("Your Carl analysis was saved to your profile.", "success")
         next_path = session.pop("redirect_after_login", None)
         if isinstance(next_path, str) and _redirect_after_login_allowed(next_path):
             return redirect(next_path)
@@ -299,7 +301,7 @@ def register():
                 flash("This email already has an account. Please sign in instead.", "error")
             else:
                 flash("Create account failed. Please try again.", "error")
-        return render_template("register.html", tab=action, account_type=account_type), 400
+        return render_template("account/register.html", tab=action, account_type=account_type), 400
 
 @bp.post("/auth/forgot")
 def auth_forgot_password():
@@ -336,7 +338,7 @@ def auth_confirm():
     """Landing page after Supabase redirects with tokens in the URL fragment (implicit flow)."""
     if session.get("user"):
         return redirect(url_for("auth.studio"))
-    return render_template("auth_confirm.html")
+    return render_template("account/auth_confirm.html")
 
 @bp.post("/auth/session")
 def auth_session_from_tokens():
@@ -367,6 +369,7 @@ def auth_session_from_tokens():
             "account_type": existing_type,
             "hire_access": existing_hire_access,
         }
+        _maybe_link_carl_session_upload(session["user"])
         next_path = session.pop("redirect_after_login", None)
         if isinstance(next_path, str) and _redirect_after_login_allowed(next_path):
             return jsonify({"ok": True, "redirect": next_path})
@@ -431,7 +434,7 @@ def studio():
                 "daily_limit": key_rec.get("daily_limit"),
             }
     return render_template(
-        "studio.html",
+        "account/studio.html",
         user=user,
         subs=subs,
         api_access_sub=api_access_sub,
@@ -441,7 +444,7 @@ def studio():
 @bp.get("/docs/api")
 def docs_api():
     """Public developer reference for the Catalitium HTTP API."""
-    return render_template("docs_api.html")
+    return render_template("site/docs_api.html")
 
 @bp.route("/profile", methods=["GET", "POST"])
 def profile():
@@ -457,7 +460,7 @@ def profile():
         profile_data, err = _get_user_profile_metadata(user_id)
         if err and err != "Auth service unavailable.":
             flash(err, "error")
-        return render_template("profile.html", user=user, profile=profile_data)
+        return render_template("account/profile.html", user=user, profile=profile_data)
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("auth.profile"))
@@ -465,7 +468,7 @@ def profile():
     err = _save_user_profile_metadata(user_id, payload)
     if err:
         flash(err, "error")
-        return render_template("profile.html", user=user, profile=_clean_profile_data(payload)), 503 if "unavailable" in err.lower() else 400
+        return render_template("account/profile.html", user=user, profile=_clean_profile_data(payload)), 503 if "unavailable" in err.lower() else 400
     flash("Profile updated.", "success")
     return redirect(url_for("auth.profile"))
 
@@ -488,7 +491,7 @@ def hire():
     if not _is_hire_eligible(account_type, hire_access):
         flash("Complete your company setup to access Hire.", "error")
         return redirect(url_for("auth.hire_onboarding"))
-    return render_template("hire.html", user=user, hire=hire_data)
+    return render_template("account/hire.html", user=user, hire=hire_data)
 
 @bp.get("/post-job")
 def post_job_form():
@@ -516,7 +519,7 @@ def post_job_form():
     hire_data, err = _get_hire_metadata(user_id)
     if err and err != "Auth service unavailable.":
         flash(err, "error")
-    return render_template("post_job_form.html", user=user, hire=hire_data)
+    return render_template("account/post_job_form.html", user=user, hire=hire_data)
 
 @bp.route("/hire/onboarding", methods=["GET", "POST"])
 def hire_onboarding():
@@ -531,7 +534,7 @@ def hire_onboarding():
         hire_data, err = _get_hire_metadata(user_id)
         if err and err != "Auth service unavailable.":
             flash(err, "error")
-        return render_template("hire_onboarding.html", user=user, hire=hire_data)
+        return render_template("account/hire_onboarding.html", user=user, hire=hire_data)
     if not csrf_valid():
         flash("Session expired. Please try again.", "error")
         return redirect(url_for("auth.hire_onboarding"))
@@ -540,33 +543,43 @@ def hire_onboarding():
     cleaned = _clean_hire_data(payload)
     if account_type not in _HIRE_ACCOUNT_TYPES:
         flash("Select recruiter or company account type.", "error")
-        return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
+        return render_template("account/hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
     if len(cleaned["company_name"]) < 2:
         flash("Please enter a valid company name.", "error")
-        return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
+        return render_template("account/hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 400
     err = _update_auth_user_metadata(user_id, {**cleaned, "account_type": account_type, "hire_access": True})
     if err:
         flash(err, "error")
-        return render_template("hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 503 if "unavailable" in err.lower() else 400
+        return render_template("account/hire_onboarding.html", user=user, hire={**cleaned, "account_type": account_type}), 503 if "unavailable" in err.lower() else 400
     session["user"]["account_type"] = account_type
     session["user"]["hire_access"] = True
     flash("Company profile saved. Welcome to Hire.", "success")
     return redirect(url_for("auth.hire"))
 
 
-def upload_cv_to_storage(user_id: str, filename: str, file_bytes: bytes) -> Optional[str]:
-    """Upload CV bytes to Supabase Storage for Carl persistence. Returns public URL or None."""
+def upload_cv_to_storage(
+    user_id: str,
+    filename: str,
+    file_bytes: bytes,
+    *,
+    path_prefix: Optional[str] = None,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Upload CV bytes to Supabase Storage. Returns ``(public_url, object_path)`` or ``(None, None)``."""
     uid = (user_id or "").strip()
-    if not uid or not file_bytes:
-        return None
+    prefix = (path_prefix or "").strip().strip("/")
+    if not file_bytes:
+        return None, None
+    if not uid and not prefix:
+        return None, None
     admin = _get_supabase_admin()
     if admin is None:
-        return None
+        return None, None
     bucket = (os.getenv("SUPABASE_CV_BUCKET") or "carl-cvs").strip()
     if not bucket:
-        return None
+        return None, None
     safe = re.sub(r"[^a-zA-Z0-9._-]+", "_", (filename or "cv.pdf").strip())[:120] or "cv.pdf"
-    path = f"{uid}/{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{safe}"
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    path = f"{prefix}/{ts}_{safe}" if prefix else f"{uid}/{ts}_{safe}"
     try:
         admin.storage.from_(bucket).upload(
             path,
@@ -575,13 +588,44 @@ def upload_cv_to_storage(user_id: str, filename: str, file_bytes: bytes) -> Opti
         )
     except Exception as exc:
         logger.warning("upload_cv_to_storage upload failed: %s", exc)
-        return None
+        return None, None
     try:
         res = admin.storage.from_(bucket).get_public_url(path)
         if isinstance(res, str):
-            return res
+            return res, path
         if isinstance(res, dict):
-            return str(res.get("publicUrl") or res.get("publicURL") or "") or None
+            url = str(res.get("publicUrl") or res.get("publicURL") or "") or None
+            return url, path
     except Exception as exc:
         logger.warning("upload_cv_to_storage public URL failed: %s", exc)
-    return None
+    return None, path
+
+
+def _maybe_link_carl_session_upload(user: Dict[str, Any]) -> bool:
+    """If the browser session had a guest Carl upload token, attach it to the new account."""
+    from ..models.db import link_cv_upload_to_user, upsert_profile_cv_extract
+
+    raw_tok = session.pop("carl_session_upload_id", None)
+    tok = str(raw_tok or "").strip()
+    uid = str(user.get("id") or "").strip()
+    if not tok or not uid:
+        return False
+    row = link_cv_upload_to_user(tok, uid)
+    if not row:
+        return False
+    cv_text = str(row.get("cv_text") or "")
+    meta = row.get("cv_meta") if isinstance(row.get("cv_meta"), dict) else {}
+    cv_url = None
+    if isinstance(meta, dict):
+        u = meta.get("anonCvPublicUrl") or meta.get("carlCvPublicUrl")
+        cv_url = str(u).strip() or None
+    email = str(user.get("email") or "").strip() or None
+    saved = upsert_profile_cv_extract(
+        uid,
+        cv_text,
+        meta,
+        email=email,
+        analysis_full=row.get("cv_analysis_full"),
+        cv_url=cv_url,
+    )
+    return saved == "ok"

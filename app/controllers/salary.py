@@ -7,25 +7,29 @@ from typing import Optional
 from flask import Blueprint, redirect, render_template, request, url_for
 
 from ..utils import (
-    _SALARY_SEED,
     api_error_response,
     api_success_response,
     csrf_valid,
-    get_salary_percentiles,
     parse_int_arg,
     parse_str_arg,
 )
+from ..models.catalog import Job
 from ..models.db import logger
-from ..models.money import get_salary_for_location, insert_salary_submission
 from ..models.money import (
+    _SALARY_SEED,
     compare_cities_salary,
     compute_percentile,
     get_function_benchmarks,
     get_ppp_indices,
+    get_salary_for_location,
+    get_salary_percentiles,
     get_salary_trends,
+    insert_salary_submission,
 )
 
 bp = Blueprint("salary", __name__)
+
+insights_bp = Blueprint("insights", __name__)
 
 _EMAIL_RE = __import__("re").compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -51,7 +55,7 @@ def _validate_email(email: str):
 @bp.get("/compensation/methodology")
 def compensation_methodology():
     """Static page explaining how salary estimates and confidence scores work."""
-    return render_template("compensation_methodology.html")
+    return render_template("salary/compensation_methodology.html")
 
 
 # ------------------------------------------------------------------
@@ -87,7 +91,7 @@ def salary_tool():
         "Munich": {"median":  90_000, "count": 3_200},
     }
     return render_template(
-        "salary_report.html",
+        "salary/salary_report.html",
         data=data,
         region_data=region_data,
         generated=_dt.now(timezone.utc).strftime("%B %Y"),
@@ -97,12 +101,12 @@ def salary_tool():
 
 @bp.get("/salary/by-title")
 def salary_by_title():
-    return render_template("salary_by_title.html")
+    return render_template("salary/salary_by_title.html")
 
 
 @bp.get("/salary/top-companies")
 def salary_top_companies():
-    return render_template("salary_top_companies.html")
+    return render_template("salary/salary_top_companies.html")
 
 
 # ------------------------------------------------------------------
@@ -112,7 +116,7 @@ def salary_top_companies():
 @bp.get("/salary/contribute")
 def salary_contribute():
     """Render the multi-step salary contribution form."""
-    return render_template("salary_contribute.html")
+    return render_template("salary/salary_contribute.html")
 
 
 @bp.post("/salary/contribute")
@@ -180,7 +184,7 @@ def salary_underpaid():
                 result = compute_percentile(title, location, user_salary, currency)
         except (ValueError, TypeError):
             pass
-    return render_template("salary_underpaid.html", result=result)
+    return render_template("salary/salary_underpaid.html", result=result)
 
 
 @bp.get("/salary/compare-cities")
@@ -195,7 +199,7 @@ def salary_compare_cities():
     if title and selected_cities:
         results = compare_cities_salary(title, selected_cities)
     return render_template(
-        "salary_compare_cities.html",
+        "salary/salary_compare_cities.html",
         ppp_cities=ppp_cities,
         selected_cities=selected_cities,
         results=results,
@@ -208,7 +212,7 @@ def salary_by_function():
     location_filter = request.args.get("location", "").strip() or None
     benchmarks = get_function_benchmarks(location=location_filter)
     return render_template(
-        "salary_by_function.html",
+        "salary/salary_by_function.html",
         benchmarks=benchmarks,
         location_filter=location_filter,
     )
@@ -229,9 +233,147 @@ def salary_trends():
         months=12,
     )
     return render_template(
-        "salary_trends.html",
+        "salary/salary_trends.html",
         trends=trends,
         categories=_CATEGORIES,
         selected_category=selected_category,
         selected_city=selected_city,
     )
+
+
+# ------------------------------------------------------------------
+# Career intelligence (/career/* — second blueprint; url_for("insights.*") unchanged)
+# ------------------------------------------------------------------
+
+
+@insights_bp.get("/career/evaluate")
+def career_evaluate():
+    """'Is This Worth It?' evaluator for a specific job."""
+    from ..models.catalog import compute_worth_it_score, find_alternatives
+
+    job_id = request.args.get("job_id", "").strip()
+    score = None
+    job = None
+    alternatives = []
+
+    if job_id:
+        try:
+            job = Job.get_by_id(job_id)
+        except Exception:
+            job = None
+        if job:
+            salary_ref = get_salary_for_location(job.get("location") or "")
+            company_stats = Job.company_detail(job.get("company_name") or "")
+            title = job.get("job_title") or ""
+            location = job.get("location") or ""
+            alternatives = find_alternatives(title, location, exclude_id=job.get("id"))
+            job["_alternatives_count"] = len(alternatives)
+            score = compute_worth_it_score(job, salary_ref, company_stats)
+
+    return render_template(
+        "career/career_evaluate.html",
+        job=job,
+        score=score,
+        alternatives=alternatives,
+    )
+
+
+@insights_bp.get("/career/ai-exposure")
+def career_ai_exposure():
+    """AI/Automation exposure ranking by job function."""
+    from ..models.catalog import compute_ai_exposure
+
+    exposures = []
+    try:
+        exposures = compute_ai_exposure()
+    except Exception as exc:
+        logger.debug("career_ai_exposure failed: %s", exc)
+
+    return render_template("career/career_ai_exposure.html", exposures=exposures)
+
+
+@insights_bp.get("/career/hiring-trends")
+def career_hiring_trends():
+    """Hiring velocity dashboard."""
+    from ..models.catalog import get_hiring_velocity
+
+    loc = request.args.get("location", "").strip() or None
+    func = request.args.get("function", "").strip() or None
+    velocity = []
+    try:
+        velocity = get_hiring_velocity(location=loc, function=func, limit=30)
+    except Exception as exc:
+        logger.debug("career_hiring_trends failed: %s", exc)
+
+    return render_template("career/career_hiring_trends.html", velocity=velocity)
+
+
+@insights_bp.get("/career/earnings")
+def career_earnings():
+    """First-year earnings estimator."""
+    from ..models.catalog import estimate_earnings
+
+    title = request.args.get("title", "").strip()
+    location = request.args.get("location", "").strip()
+    current_salary_raw = request.args.get("current_salary", "").strip()
+    currency = request.args.get("currency", "EUR").strip().upper()
+    current_salary = None
+    earnings = None
+
+    if title and location:
+        try:
+            earnings = estimate_earnings(title, location, currency=currency)
+        except Exception as exc:
+            logger.debug("career_earnings failed: %s", exc)
+        if current_salary_raw:
+            try:
+                current_salary = int(float(current_salary_raw))
+            except (TypeError, ValueError):
+                pass
+
+    return render_template(
+        "career/career_earnings.html",
+        earnings=earnings,
+        current_salary=current_salary,
+    )
+
+
+@insights_bp.get("/career/paths")
+def career_paths():
+    """Career path explorer."""
+    from ..models.catalog import get_career_paths
+
+    title = request.args.get("title", "").strip()
+    paths = None
+    if title:
+        try:
+            paths = get_career_paths(title)
+        except Exception as exc:
+            logger.debug("career_paths failed: %s", exc)
+
+    return render_template("career/career_paths.html", paths=paths)
+
+
+@insights_bp.get("/career/market-position")
+def career_market_position():
+    """Market position benchmarking tool."""
+    from ..models.catalog import compute_market_position
+
+    title = request.args.get("title", "").strip()
+    location = request.args.get("location", "").strip()
+    years_exp_raw = request.args.get("years_exp", "").strip()
+    current_salary_raw = request.args.get("current_salary", "").strip()
+    currency = request.args.get("currency", "EUR").strip().upper()
+    position = None
+
+    if title and location and years_exp_raw and current_salary_raw:
+        try:
+            years_exp = int(years_exp_raw)
+            current_salary = float(current_salary_raw)
+            position = compute_market_position(
+                title, location, years_exp, current_salary, currency
+            )
+        except Exception as exc:
+            logger.debug("career_market_position failed: %s", exc)
+
+    return render_template("career/career_market_position.html", position=position)

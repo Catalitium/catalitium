@@ -5,7 +5,7 @@ Requires DATABASE_URL (or SUPABASE_URL) like the main app — loads .env from re
 
 Usage (from repo root):
 
-    python scripts/smoke_routes_http.py
+    python tests/smoke_routes_http.py
 
 Exit: 0 all checks passed, 1 failure.
 """

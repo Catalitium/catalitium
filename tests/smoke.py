@@ -9,7 +9,7 @@ Usage (from repo root):
 Sections:
   db        — tests/smoke_db_tables.py
   routes    — tests/smoke_routes_http.py
-  carl      — tests/smoke_carl_pdf_profile.py
+  carl      — pytest tests/test_carl_smoke.py
   supabase  — tests/supabase_smoke_test.py
   smtp      — tests/smtp_smoke_test.py (sends mail if env configured)
   all       — run every section in order; exit 1 if any fails
@@ -25,17 +25,33 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = Path(__file__).resolve().parent  # all smoke scripts live in tests/
+SCRIPTS = Path(__file__).resolve().parent
 
 SECTION_SCRIPTS: dict[str, Path] = {
     "db": SCRIPTS / "smoke_db_tables.py",
     "routes": SCRIPTS / "smoke_routes_http.py",
-    "carl": SCRIPTS / "smoke_carl_pdf_profile.py",
     "supabase": SCRIPTS / "supabase_smoke_test.py",
     "smtp": SCRIPTS / "smtp_smoke_test.py",
 }
 
 ORDER_ALL = ("db", "routes", "carl", "supabase", "smtp")
+
+
+def _run_pytest_carl() -> int:
+    target = SCRIPTS / "test_carl_smoke.py"
+    if not target.is_file():
+        print(f"[FAIL] carl: missing {target}", file=sys.stderr)
+        return 1
+    print("\n=== smoke.py :: carl :: pytest test_carl_smoke.py ===\n", flush=True)
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", str(target), "-q"],
+        cwd=str(ROOT),
+    )
+    if proc.returncode != 0:
+        print(f"\n[FAIL] carl (pytest) exited with code {proc.returncode}", file=sys.stderr)
+    else:
+        print("\n[OK] carl")
+    return int(proc.returncode or 0)
 
 
 def _run_script(label: str, script: Path) -> int:
@@ -54,11 +70,17 @@ def _run_script(label: str, script: Path) -> int:
     return int(proc.returncode or 0)
 
 
+def _run_section(label: str) -> int:
+    if label == "carl":
+        return _run_pytest_carl()
+    return _run_script(label, SECTION_SCRIPTS[label])
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Run Catalitium smoke scripts by section.")
     p.add_argument(
         "--section",
-        choices=list(SECTION_SCRIPTS.keys()) + ["all"],
+        choices=list(SECTION_SCRIPTS.keys()) + ["carl", "all"],
         default="routes",
         help="Which smoke to run (default: routes)",
     )
@@ -67,8 +89,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.section == "all":
         failed: list[str] = []
         for key in ORDER_ALL:
-            script = SECTION_SCRIPTS[key]
-            rc = _run_script(key, script)
+            rc = _run_section(key)
             if rc != 0:
                 failed.append(f"{key} (exit {rc})")
         if failed:
@@ -79,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\n[OK] smoke.py --section all: every section passed.")
         return 0
 
-    return _run_script(args.section, SECTION_SCRIPTS[args.section])
+    return _run_section(args.section)
 
 
 if __name__ == "__main__":

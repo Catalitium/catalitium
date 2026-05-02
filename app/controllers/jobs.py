@@ -29,26 +29,34 @@ from flask import (
 )
 
 from ..config import SITEMAP_CACHE_TTL
-from ..utils import (
-    DEMO_JOBS,
-    REPORTS,
-    guest_daily_consume,
-    guest_daily_remaining,
-    send_subscribe_welcome,
-)
+from ..data.catalogs import DEMO_JOBS, REPORTS
+from ..mailer import send_subscribe_welcome
+from ..utils import guest_daily_consume, guest_daily_remaining
 from ..models.catalog import (
     Job,
     clean_job_description_text,
     compute_quality_score,
     format_job_date_string,
+    get_explore_data,
+    get_function_distribution,
     get_job_summary,
+    get_remote_companies,
 )
 from ..models.db import get_db, logger, parse_job_description
-from ..models.job_orders import insert_job_posting
-from ..models.subscribers import insert_contact, insert_subscriber
+from ..models.billing import insert_job_posting
+from ..models.subscribers import (
+    honeypot_triggered,
+    insert_contact,
+    insert_subscriber,
+    prepare_contact_submission,
+    sanitize_subscriber_search_fields,
+)
 from ..models.money import (
+    TITLE_BUCKET1_KEYWORDS,
+    TITLE_BUCKET2_KEYWORDS,
     _compact_salary_number,
     compute_compensation_confidence,
+    estimate_salary_display,
     get_salary_for_location,
     parse_salary_query,
     parse_salary_range_string,
@@ -61,23 +69,18 @@ from ..utils import (
     EmailNotValidError,
     SALARY_CACHE,
     SUMMARY_CACHE,
-    TITLE_BUCKET1_KEYWORDS,
-    TITLE_BUCKET2_KEYWORDS,
     api_error_response,
     api_success_response,
     coerce_datetime as _coerce_datetime,
     csrf_valid,
     disposable_email_domain,
-    honeypot_triggered,
     job_is_ghost as _job_is_ghost,
     job_is_new as _job_is_new,
     normalize_country,
     normalize_title,
     parse_int_arg,
     parse_str_arg,
-    prepare_contact_submission,
     resolve_pagination,
-    sanitize_subscriber_search_fields,
     slugify as _slugify,
     to_lc as _to_lc,
     validate_email,
@@ -446,7 +449,7 @@ def landing():
         pass
 
     return render_template(
-        "landing.html",
+        "jobs/landing.html",
         wide_layout=True,
         total_jobs=total_jobs,
         featured_jobs=featured_jobs,
@@ -725,7 +728,7 @@ def jobs():
             remote_count = 0
 
     return render_template(
-        "index.html",
+        "jobs/job_search.html",
         results=items,
         count=total,
         title_q=title_q,
@@ -748,7 +751,7 @@ def recruiter_salary_board():
     """Surface the dedicated job browser experience."""
     job_api_url = url_for("jobs.api_jobs")
     return render_template(
-        "job_browser.html",
+        "jobs/job_browser.html",
         job_api=job_api_url,
     )
 
@@ -1407,7 +1410,7 @@ def health():
 @bp.get("/legal")
 def legal():
     """Display combined privacy policy and terms information."""
-    return render_template("legal.html")
+    return render_template("site/legal.html")
 
 def _robots_crawl_directives() -> list[str]:
     """Shared allow/disallow lines for default and named AI crawlers."""
@@ -1697,7 +1700,7 @@ def job_detail(job_id: str):
     company_slug = _slugify(company) if company else ""
 
     return render_template(
-        "job_detail.html",
+        "jobs/job_detail.html",
         job=job,
         related=related,
         ai_summary=ai_summary,
@@ -1752,7 +1755,7 @@ def service_worker():
 @bp.get("/about")
 def about():
     """Render the About Catalitium page."""
-    return render_template("about.html")
+    return render_template("site/about.html")
 
 # Companies routes → app.routes.companies blueprint
 
@@ -1760,7 +1763,7 @@ def about():
 def developers():
     """Simple, human-facing overview of the v1 JSON API."""
     return render_template(
-        "developers.html",
+        "site/developers.html",
     )
 
 # ------------------------------------------------------------------
@@ -1772,4 +1775,195 @@ def developers():
 @bp.get("/tracker")
 def tracker():
     """Render the job application tracker page."""
-    return render_template("tracker.html")
+    return render_template("jobs/tracker.html")
+
+
+# ------------------------------------------------------------------
+# Browse: explore + companies (second blueprint; url_for("browse.*") unchanged)
+# ------------------------------------------------------------------
+
+browse_bp = Blueprint("browse", __name__)
+
+
+@browse_bp.get("/explore")
+def explore_hub():
+    """Render the Explore Hub with top titles, locations, and companies."""
+    try:
+        data = get_explore_data()
+    except Exception:
+        logger.exception("explore_hub data fetch failed")
+        data = {"top_titles": [], "top_locations": [], "top_companies": []}
+    return render_template(
+        "jobs/explore.html",
+        top_titles=data.get("top_titles", []),
+        top_locations=data.get("top_locations", []),
+        top_companies=data.get("top_companies", []),
+    )
+
+
+@browse_bp.get("/explore/remote-companies")
+def explore_remote():
+    """Render the remote-friendliness leaderboard."""
+    try:
+        companies = get_remote_companies(limit=50)
+    except Exception:
+        logger.exception("explore_remote data fetch failed")
+        companies = []
+    return render_template("jobs/explore_remote.html", companies=companies)
+
+
+@browse_bp.get("/explore/functions")
+def explore_functions():
+    """Render the function category browser."""
+    try:
+        functions = get_function_distribution()
+    except Exception:
+        logger.exception("explore_functions data fetch failed")
+        functions = []
+    return render_template("jobs/explore_functions.html", functions=functions)
+
+
+@browse_bp.get("/companies")
+def companies():
+    """Render the DB-driven company discovery hub."""
+    search = (request.args.get("search") or "").strip()
+    page, per_page = resolve_pagination(default_per_page=24)
+    offset = (page - 1) * per_page
+
+    try:
+        total = Job.company_count(search=search or None)
+        rows = Job.company_list(search=search or None, limit=per_page, offset=offset)
+    except Exception:
+        total = 0
+        rows = []
+
+    companies_data = []
+    for r in rows:
+        name = r.get("company_name") or ""
+        countries_raw = r.get("countries") or []
+        countries = sorted(set(c for c in countries_raw if c and c.strip()))
+        job_count = r.get("job_count", 0)
+        salary_count = r.get("salary_count", 0)
+        latest = r.get("latest_date")
+        latest_str = ""
+        if latest:
+            latest_str = format_job_date_string(str(latest).strip())
+        companies_data.append({
+            "slug": _slugify(name),
+            "name": name,
+            "job_count": job_count,
+            "locations": countries[:8],
+            "has_salary_data": salary_count > 0,
+            "salary_pct": round(100 * salary_count / job_count) if job_count else 0,
+            "latest_posting_date": latest_str,
+        })
+
+    pages_display = max(1, (total + per_page - 1) // per_page) if total else 1
+    pagination = {
+        "page": page,
+        "pages": pages_display,
+        "total": total,
+        "per_page": per_page,
+        "has_prev": page > 1,
+        "has_next": page < pages_display,
+        "prev_url": url_for("browse.companies", search=search or None, page=page - 1)
+        if page > 1 else None,
+        "next_url": url_for("browse.companies", search=search or None, page=page + 1)
+        if page < pages_display else None,
+    }
+
+    return render_template(
+        "jobs/companies.html",
+        companies=companies_data,
+        search_q=search,
+        pagination=pagination,
+    )
+
+
+@browse_bp.get("/companies/<slug>")
+def company_detail_page(slug: str):
+    """Render an individual company profile page."""
+    slug = (slug or "").strip().lower()
+    if not slug:
+        abort(404)
+
+    company_name = Job.company_name_by_slug(slug, slugify_fn=_slugify)
+    if not company_name:
+        abort(404)
+
+    detail = Job.company_detail(company_name)
+    if not detail:
+        abort(404)
+
+    job_count = detail.get("job_count", 0)
+    countries_raw = detail.get("countries") or []
+    countries = sorted(set(c for c in countries_raw if c and c.strip()))
+    titles_raw = detail.get("titles_norm") or []
+    salary_count = detail.get("salary_count", 0)
+    latest = detail.get("latest_date")
+    latest_str = format_job_date_string(str(latest).strip()) if latest else ""
+
+    from collections import Counter as _Counter
+
+    title_counts = _Counter(t.strip().title() for t in titles_raw if t and t.strip())
+    title_distribution = sorted(title_counts.items(), key=lambda x: (-x[1], x[0]))[:20]
+
+    salary_pct = round(100 * salary_count / job_count) if job_count else 0
+
+    job_rows = Job.company_jobs(company_name, limit=50)
+    jobs_display = []
+    for row in job_rows:
+        r_title = re.sub(r"\s+", " ", (row.get("job_title") or "").strip())
+        r_loc = row.get("location") or "Remote / Anywhere"
+        r_date = row.get("date")
+        r_date_str = format_job_date_string(str(r_date).strip()) if r_date else ""
+        is_new = _job_is_new(r_date, r_date)
+        is_ghost = _job_is_ghost(r_date)
+        salary_range = row.get("job_salary_range") or ""
+
+        estimated_display = None
+        median_currency = None
+        sal_min = sal_max = None
+        try:
+            rec = get_salary_for_location(r_loc)
+            if rec:
+                median, currency = rec[0], rec[1]
+                median_currency = currency
+                estimated_display, sal_min, sal_max = estimate_salary_display(r_title, median)
+        except Exception:
+            pass
+
+        jobs_display.append({
+            "id": row.get("id"),
+            "title": r_title,
+            "company": company_name,
+            "location": r_loc,
+            "description": parse_job_description(row.get("job_description") or ""),
+            "date_posted": r_date_str,
+            "date_raw": str(r_date).strip() if r_date else "",
+            "link": row.get("link"),
+            "is_new": is_new,
+            "is_ghost": is_ghost,
+            "salary_range": salary_range,
+            "estimated_salary_range_compact": estimated_display,
+            "median_salary_currency": median_currency,
+            "salary_min": sal_min,
+            "salary_max": sal_max,
+        })
+
+    company_data = {
+        "name": company_name,
+        "slug": slug,
+        "job_count": job_count,
+        "locations": countries,
+        "title_distribution": title_distribution,
+        "salary_pct": salary_pct,
+        "has_salary_data": salary_count > 0,
+        "latest_posting_date": latest_str,
+    }
+
+    return render_template(
+        "jobs/company_detail.html",
+        company=company_data,
+        jobs=jobs_display,
+    )

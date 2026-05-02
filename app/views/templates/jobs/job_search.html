@@ -443,7 +443,7 @@
     {% if results and results|length > 0 %}
       {% for j in results %}
         {% set card_index = loop.index %}
-        {% include 'components/job_card.html' %}
+        {% include 'partials/job_card.html' %}
         {% if loop.index % 8 == 0 %}
         <!-- Auto Ads in-feed zone every 8 results. Replace with real slot to use a manual in-feed unit. -->
         <div aria-label="Advertisement" class="my-1" data-ad-zone="infeed"></div>
@@ -735,7 +735,7 @@
     <p class="font-semibold text-slate-900 dark:text-white text-base">You've seen 5,000 jobs today</p>
     <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Subscribe free for unlimited access, no account, no credit card needed.</p>
   </div>
-  {% from "snippets/_honeypot_field.html" import honeypot_field %}
+  {% from "partials/_honeypot_field.html" import honeypot_field %}
   <form action="{{ url_for('jobs.subscribe') }}" method="POST" class="relative shrink-0 flex flex-col sm:flex-row items-center gap-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {{ honeypot_field('index-gate-hp-url') }}

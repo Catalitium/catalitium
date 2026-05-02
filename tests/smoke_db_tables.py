@@ -6,8 +6,8 @@ Optional ``--with-row-sample`` fetches at most one full row per table (can be la
 
 Usage (from repo root, with DATABASE_URL or SUPABASE_URL in .env):
 
-    python scripts/smoke_db_tables.py
-    python scripts/smoke_db_tables.py --with-row-sample
+    python tests/smoke_db_tables.py
+    python tests/smoke_db_tables.py --with-row-sample
 
 Exit codes: 0 all OK, 1 connection/config failure, 2 one or more tables missing/inaccessible.
 """

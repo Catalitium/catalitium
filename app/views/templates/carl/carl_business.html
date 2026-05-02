@@ -4,7 +4,7 @@
 
 {% block meta %}
 <meta name="description" content="Employer-facing hiring snapshot from the indexed job catalog (Carl4B2B).">
-<link rel="canonical" href="{{ url_for('carl4b2b.carl4b2b_dashboard', _external=True) }}">
+<link rel="canonical" href="{{ url_for('carl_business.carl_business_dashboard', _external=True) }}">
 {% endblock %}
 
 {% block head_extra %}
@@ -210,24 +210,48 @@
   }
   /* Keep typed text high-contrast across browsers and password managers. */
   #carl4b2b-market-form input[type="text"],
-  #carl4b2b-market-form input[type="url"] {
+  #carl4b2b-market-form input[type="url"],
+  #carl4b2b-market-form input[list] {
     color: #f8fafc;
     background: rgba(15, 23, 42, 0.86);
     caret-color: #f8fafc;
   }
   #carl4b2b-market-form input[type="text"]::placeholder,
-  #carl4b2b-market-form input[type="url"]::placeholder {
+  #carl4b2b-market-form input[type="url"]::placeholder,
+  #carl4b2b-market-form input[list]::placeholder {
     color: #94a3b8;
   }
   #carl4b2b-market-form input[type="text"]:-webkit-autofill,
   #carl4b2b-market-form input[type="url"]:-webkit-autofill,
+  #carl4b2b-market-form input[list]:-webkit-autofill,
   #carl4b2b-market-form input[type="text"]:-webkit-autofill:hover,
   #carl4b2b-market-form input[type="url"]:-webkit-autofill:hover,
+  #carl4b2b-market-form input[list]:-webkit-autofill:hover,
   #carl4b2b-market-form input[type="text"]:-webkit-autofill:focus,
-  #carl4b2b-market-form input[type="url"]:-webkit-autofill:focus {
+  #carl4b2b-market-form input[type="url"]:-webkit-autofill:focus,
+  #carl4b2b-market-form input[list]:-webkit-autofill:focus {
     -webkit-text-fill-color: #f8fafc;
     box-shadow: 0 0 0px 1000px rgba(15, 23, 42, 0.92) inset;
     transition: background-color 9999s ease-in-out 0s;
+  }
+  .c4b-dir-pill {
+    display: none;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    color: #a7f3d0;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+  }
+  .c4b-dir-pill:not(.hidden) {
+    display: inline-flex;
   }
   #carl4b2b-url-form-wrap {
     color-scheme: dark;
@@ -475,6 +499,16 @@
 
 {% block content %}
 <div id="carl4b2b-shell" class="relative flex flex-col font-sans text-slate-200" data-fallback-jobs-href="{{ url_for('jobs.jobs') }}">
+  {% if is_guest and carl4b2b_guest_remaining is not none %}
+  <div id="carl4b2b-guest-banner" class="mx-auto w-full max-w-3xl px-4 pt-4">
+    <div class="rounded-xl border border-amber-400/40 bg-amber-950/35 px-4 py-3 text-sm text-amber-100/95">
+      <span class="font-medium">Guest preview:</span>
+      <span id="carl4b2b-guest-banner-count">{{ carl4b2b_guest_remaining }}</span> free market map{% if carl4b2b_guest_remaining != 1 %}s{% endif %} left this session.
+      <a href="{{ url_for('auth.register') }}" class="ml-1 font-semibold text-sky-300 underline underline-offset-2 hover:text-white">Create an account</a>
+      to save snapshots and keep going.
+    </div>
+  </div>
+  {% endif %}
   {% if preloaded_carl4b2b_analysis %}
   <script id="preloaded-carl4b2b-data" type="application/json">
       {{ preloaded_carl4b2b_analysis | tojson | safe }}
@@ -485,50 +519,39 @@
     <div class="text-center">
       <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Carl for Companies</p>
       <h1 class="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">Competitive hiring map</h1>
-      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">URL to a company or careers page, or define the market: industry, geography, and a company label for this run.</p>
+      <p class="mt-3 text-sm text-slate-400 max-w-xl mx-auto">Paste a URL or pick an industry — we'll handle the rest.</p>
     </div>
-    <p class="mt-4 text-center text-xs text-slate-500">Need the candidate view? <a href="{{ url_for('carl.carl_dashboard') }}" class="font-medium text-sky-400 hover:text-white underline-offset-2 hover:underline">Carl for your CV</a></p>
+    <p class="mt-4 text-center text-xs text-slate-500">Need the candidate view? <a href="{{ url_for('carl.carl_dashboard') }}" class="font-medium text-sky-400 hover:text-white underline-offset-2 hover:underline">Open Carl for candidates</a></p>
 
     <form id="carl4b2b-market-form" class="mt-6 space-y-4 rounded-3xl border border-white/10 bg-slate-950/50 p-6 sm:p-8 backdrop-blur-md">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="mb-3 flex w-full justify-center" role="group" aria-label="Input mode">
-        <div class="c4b-mode-segment">
-          <label class="c4b-mode-pill cursor-pointer">
-            <input type="radio" name="c4b_input_mode" value="url" class="sr-only" checked>
-            <span class="c4b-mode-label border-white/10 bg-black/30 text-slate-300">Company URL</span>
-          </label>
-          <label class="c4b-mode-pill cursor-pointer">
-            <input type="radio" name="c4b_input_mode" value="market" class="sr-only">
-            <span class="c4b-mode-label border-white/10 bg-black/30 text-slate-300">Market (no URL)</span>
-          </label>
-        </div>
+      <datalist id="carl4b2b-industry-datalist">
+        {% for ind in carl_company_industries or [] %}
+        <option value="{{ ind }}"></option>
+        {% endfor %}
+      </datalist>
+      <div class="space-y-2">
+        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Company URL
+          <input name="business_url" id="carl4b2b-url" type="text" inputmode="url" autocomplete="url" placeholder="https://yourcompany.com"
+                 class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+        </label>
+        <p id="carl4b2b-directory-hint" class="c4b-dir-pill hidden text-left" role="status"></p>
       </div>
-      <div id="carl4b2b-mode-url" class="space-y-2">
-        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Company or careers page URL
-          <input name="business_url" id="carl4b2b-url" type="text" inputmode="url" autocomplete="url" placeholder="https://www.yourcompany.com"
+      <div id="carl4b2b-fields-row" class="grid gap-4 sm:grid-cols-2">
+        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Industry
+          <input id="carl4b2b-refine-title" type="text" list="carl4b2b-industry-datalist" name="title" autocomplete="off" spellcheck="false" placeholder="Pick a sector (e.g. Tech)"
+                 class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
+        </label>
+        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Region
+          <input id="carl4b2b-refine-country" type="text" name="country" value="Global" data-c4b-default-region="Global" autocomplete="country-name" placeholder="e.g. Global, Switzerland"
                  class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
         </label>
       </div>
-      <div id="carl4b2b-mode-market" class="hidden space-y-4">
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Industry
-            <input name="title" id="carl4b2b-title" type="text" autocomplete="on" placeholder="e.g. software engineer, data"
-                   class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
-          </label>
-          <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Country or region
-            <input name="country" id="carl4b2b-country" type="text" autocomplete="country-name" placeholder="e.g. Germany, UK, remote EU"
-                   class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
-          </label>
-        </div>
-        <label class="block text-left text-xs font-semibold text-[#9CA3AF]">Company name (label for this market)
-          <input name="market_company" id="carl4b2b-company" type="text" autocomplete="organization" placeholder="Your company or project name for this run"
-                 class="mt-1.5 w-full rounded-xl border border-white/15 bg-black/50 px-3 py-3 text-sm text-[#E5E5E5] placeholder:text-[#6B7280] focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/40">
-        </label>
-      </div>
+      <p class="text-[10px] leading-snug text-slate-500">If we don't recognize the URL, add industry and region. When we do, you can map from the URL alone.</p>
       <div class="flex justify-center pt-2">
         <button type="submit" id="carl4b2b-analyze-btn" class="c4b-btn-analyze flex items-center gap-2">
           <svg id="carl4b2b-analyze-spinner" class="hidden h-5 w-5 animate-spin text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          <span id="carl4b2b-analyze-text">Map from this company URL</span>
+          <span id="carl4b2b-analyze-text">Map this company</span>
         </button>
       </div>
     </form>
@@ -565,6 +588,21 @@
       </div>
     </div>
 
+    <div id="carl4b2b-share-row" class="mx-4 mb-2 hidden flex flex-wrap items-center gap-2">
+      <button type="button" id="btn-c4b-copy-summary"
+        class="rounded-lg border border-white/15 bg-slate-900/80 px-3 py-1.5 text-[11px] font-semibold text-sky-200 hover:border-sky-400/50 hover:text-white">
+        Copy summary
+      </button>
+      <button type="button" id="btn-c4b-export-json"
+        class="rounded-lg border border-white/15 bg-slate-900/80 px-3 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-amber-400/40 hover:text-white">
+        Export JSON
+      </button>
+    </div>
+    <div id="carl4b2b-exec-summary-wrap" class="mx-4 mb-3 hidden rounded-xl border border-sky-500/25 bg-sky-950/30 px-4 py-3">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-sky-400/90">Executive read</p>
+      <p id="carl4b2b-exec-summary" class="mt-2 text-sm leading-relaxed text-slate-200"></p>
+    </div>
+
     <div class="c4b-main-grid grid w-full min-w-0 max-w-full grid-cols-1 gap-4 p-4 lg:items-start xl:items-start">
       <div id="carl4b2b-sidebar" class="min-w-0 space-y-4">
         <div class="c4b-card p-4">
@@ -584,7 +622,7 @@
               <p id="carl4b2b-level" class="text-xs font-semibold text-white">—</p>
             </div>
             <div class="c4b-card-soft rounded-lg py-2">
-              <p class="text-[10px] uppercase text-slate-500">Confidence</p>
+              <p class="text-[10px] uppercase text-slate-500">Sample depth</p>
               <p id="carl4b2b-confidence" class="text-xs font-semibold text-sky-300">—</p>
             </div>
             <div class="c4b-card-soft rounded-lg py-2">
@@ -604,13 +642,15 @@
         <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Analytics</p>
         <div class="mt-3 flex flex-wrap gap-1.5" role="tablist">
           <button type="button" data-c4b-tab="overview" class="c4b-tab-active rounded-full border border-transparent px-3 py-1 text-xs font-medium">Overview</button>
-          <button type="button" data-c4b-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Competitive radar</button>
-          <button type="button" data-c4b-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Signals</button>
+          <button type="button" data-c4b-tab="skills" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Top hirers</button>
+          <button type="button" data-c4b-tab="risks" class="rounded-full border border-transparent px-3 py-1 text-xs font-medium text-slate-400 hover:text-white">Coverage &amp; risks</button>
         </div>
+        <p id="carl4b2b-analytics-scope" class="mt-2 text-[11px] font-medium text-sky-200/90"></p>
+        <p id="carl4b2b-candidate-demand" class="mt-2 hidden text-[11px] font-medium text-emerald-200/95" aria-live="polite"></p>
         <div id="carl4b2b-panel-overview" class="c4b-scroll-dark mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto sm:gap-4">
           <div class="relative overflow-hidden rounded-2xl border border-[#2f73ba]/55 bg-[linear-gradient(145deg,rgba(8,24,56,0.82),rgba(8,22,50,0.62))] p-4">
             <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#1a73e8]/10 to-transparent"></div>
-            <p class="text-xs font-medium text-[#9CA3AF]">Market saturation (heuristic)</p>
+            <p class="text-xs font-medium text-[#9CA3AF]">Sample size — Industry &amp; Region slice</p>
             <div class="relative mt-3 flex flex-col gap-2 sm:mt-2 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
               <span id="carl4b2b-ats-score" class="text-4xl font-bold tabular-nums leading-none text-[#00bfff] drop-shadow-[0_0_10px_rgba(0,191,255,0.42)]">0</span>
               <p id="carl4b2b-ats-coverage" class="text-left text-xs font-semibold text-[#00ffca] sm:max-w-[12rem] sm:text-right"></p>
@@ -618,14 +658,15 @@
           </div>
           <div class="mt-2 grid grid-cols-2 gap-2 text-[11px]">
             <div class="rounded-lg bg-sky-500/10 px-2 py-1.5 text-sky-100">
-              <span class="text-slate-500">Active hirers</span>
+              <span class="text-slate-500">Top hirers (sample)</span>
               <p id="carl4b2b-keywords-hit" class="mt-0.5 font-medium"></p>
             </div>
             <div class="rounded-lg bg-amber-500/10 px-2 py-1.5 text-amber-100">
-              <span class="text-slate-500">Gaps / flags</span>
+              <span class="text-slate-500">Coverage flags</span>
               <p id="carl4b2b-keywords-missing" class="mt-0.5 font-medium"></p>
             </div>
           </div>
+          <ul id="carl4b2b-next-actions" class="list-disc space-y-1 pl-4 text-[11px] leading-snug text-slate-300"></ul>
           <div class="flex flex-wrap items-center justify-center gap-6 py-3 sm:gap-8 sm:py-4">
             <div class="text-center">
               <div id="carl4b2b-gauge-structure" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
@@ -633,7 +674,7 @@
                   <span id="carl4b2b-gauge-structure-val">0</span>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-slate-500">Pipeline breadth</p>
+              <p class="mt-2 text-[11px] text-slate-500">Employer spread</p>
             </div>
             <div class="text-center">
               <div id="carl4b2b-gauge-keywords" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
@@ -641,7 +682,7 @@
                   <span id="carl4b2b-gauge-keywords-val">0</span>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-slate-500">Saturation</p>
+              <p class="mt-2 text-[11px] text-slate-500">Top-3 share</p>
             </div>
             <div class="text-center">
               <div id="carl4b2b-gauge-impact" class="c4b-gauge-track-small relative mx-auto h-[62px] w-[62px] rounded-full" style="--c4b-deg: 0deg;">
@@ -649,33 +690,66 @@
                   <span id="carl4b2b-gauge-impact-val">0</span>
                 </div>
               </div>
-              <p class="mt-2 text-[11px] text-slate-500">Posting momentum</p>
+              <p class="mt-2 text-[11px] text-slate-500">Listing freshness</p>
             </div>
           </div>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Core market signals</p>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Operational KPIs (same sample)</p>
             <div class="mt-2 grid grid-cols-2 gap-2">
               <div class="c4b-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-slate-500">Pipeline</p>
+                <p class="text-[10px] uppercase text-slate-500">Spread %</p>
                 <p id="carl4b2b-vital-structure" class="mt-1 text-lg font-semibold tabular-nums text-sky-300">0</p>
               </div>
               <div class="c4b-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-slate-500">Saturation</p>
+                <p class="text-[10px] uppercase text-slate-500">Top-3 %</p>
                 <p id="carl4b2b-vital-keywords" class="mt-1 text-lg font-semibold tabular-nums text-amber-300">0</p>
               </div>
               <div class="c4b-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-slate-500">Momentum</p>
+                <p class="text-[10px] uppercase text-slate-500">Freshness</p>
                 <p id="carl4b2b-vital-impact" class="mt-1 text-lg font-semibold tabular-nums text-sky-300">0</p>
               </div>
               <div class="c4b-card-soft rounded-lg p-2">
-                <p class="text-[10px] uppercase text-slate-500">Narrative</p>
+                <p class="text-[10px] uppercase text-slate-500">Sample depth</p>
                 <p id="carl4b2b-vital-narrative" class="mt-1 text-lg font-semibold tabular-nums text-amber-200">0</p>
+              </div>
+            </div>
+          </div>
+          {% set highlights_prefix = 'carl4b2b' %}
+          {% set highlights_variant = 'b2b' %}
+          {% include 'carl/partials/_company_highlights.html' %}
+          <div id="carl4b2b-companies-kpi-block" class="hidden">
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Companies (catalog bridge)</p>
+            <p class="mt-1 text-[10px] leading-snug text-slate-500">Same pulled sample as the metrics above.</p>
+            <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <div class="c4b-card-soft rounded-lg p-2" title="Rows in this sample linked to companies.comp_id via the name bridge">
+                <p id="carl4b2b-kpi-companies-matched-label" class="text-[10px] uppercase text-slate-500">Matched rows</p>
+                <p id="carl4b2b-kpi-companies-matched" class="mt-1 text-lg font-semibold tabular-nums text-emerald-300">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2" title="% of sample job rows (with id) that linked to the directory; global baseline is often low">
+                <p class="text-[10px] uppercase text-slate-500">Match % (sample)</p>
+                <p id="carl4b2b-kpi-match-rate" class="mt-1 text-lg font-semibold tabular-nums text-emerald-200">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2" title="Among matched rows only; shown only when companies.is_global is true in the directory">
+                <p class="text-[10px] uppercase text-slate-500">% global (matched)</p>
+                <p id="carl4b2b-kpi-pct-global" class="mt-1 text-lg font-semibold tabular-nums text-sky-300">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2" title="Mean page_score among matched rows that have a numeric score">
+                <p class="text-[10px] uppercase text-slate-500">Avg page score</p>
+                <p id="carl4b2b-kpi-avg-score" class="mt-1 text-lg font-semibold tabular-nums text-amber-200">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2" title="Min · median · max page_score among matched rows with scores">
+                <p class="text-[10px] uppercase text-slate-500">Score spread</p>
+                <p id="carl4b2b-kpi-score-spread" class="mt-1 text-sm font-semibold tabular-nums leading-tight text-amber-100">—</p>
+              </div>
+              <div class="c4b-card-soft rounded-lg p-2" title="Most common industry_bucket among matched rows">
+                <p class="text-[10px] uppercase text-slate-500">Top industry</p>
+                <p id="carl4b2b-kpi-top-industry" class="mt-1 line-clamp-2 text-sm font-semibold leading-tight text-white">—</p>
               </div>
             </div>
           </div>
           <div id="carl4b2b-salary-drift-card" class="hidden">
             <div class="flex items-baseline justify-between gap-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Salary drift (catalog sample)</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Pay drift (pulled sample)</p>
               <span id="carl4b2b-salary-drift-arrow" class="c4b-drift-arrow c4b-drift-flat" aria-hidden="true">→</span>
             </div>
             <p id="carl4b2b-salary-drift-label" class="mt-1 text-sm font-semibold text-white">—</p>
@@ -694,10 +768,11 @@
           </div>
           <div id="carl4b2b-brave-card" class="hidden">
             <div class="flex items-baseline justify-between gap-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">External context</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Context pins (Brave Search)</p>
               <span id="carl4b2b-brave-remaining" class="text-[10px] text-slate-500">3 left</span>
             </div>
-            <p class="mt-1 text-[10px] text-slate-500">Optional enrichment from Brave Search. Never affects scores.</p>
+            <p id="carl4b2b-brave-scope-hint" class="mt-1 text-[10px] text-slate-500"></p>
+            <p class="mt-1 text-[10px] text-slate-500">External snippets for situational notes — filter mentally against your Industry &amp; Region slice.</p>
             <div class="mt-2 flex flex-wrap gap-2">
               <button type="button" data-brave-type="company"
                 class="c4b-brave-btn rounded-full border border-white/15 bg-slate-950/50 px-3 py-1 text-[11px] font-medium text-slate-200 hover:border-sky-400/60 hover:text-white disabled:cursor-not-allowed disabled:opacity-50">
@@ -714,30 +789,32 @@
             </div>
             <p id="carl4b2b-brave-status" class="mt-2 hidden text-[10px] text-slate-400">—</p>
             <ul id="carl4b2b-brave-results" class="mt-2 hidden space-y-2 text-[11px] text-slate-200"></ul>
-            <p id="carl4b2b-brave-footer" class="mt-2 hidden text-[10px] text-slate-500">Powered by Brave Search · External sources</p>
+            <p id="carl4b2b-brave-footer" class="mt-2 hidden text-[10px] text-slate-500">Citations show title + host per result · Brave Search</p>
           </div>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Premium scan</p>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Hirer concentration</p>
             <div class="mt-2 grid grid-cols-3 gap-2">
               <div class="c4b-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-slate-500">Leadership</p>
+                <p class="text-[10px] uppercase text-slate-500">Largest share</p>
                 <p id="carl4b2b-metric-leadership" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-sky-300">—</p>
               </div>
               <div class="c4b-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-slate-500">Role match</p>
+                <p class="text-[10px] uppercase text-slate-500">Top-3 share</p>
                 <p id="carl4b2b-metric-role-match" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-amber-300">—</p>
               </div>
               <div class="c4b-card-soft rounded-lg p-2 text-center">
-                <p class="text-[10px] uppercase text-slate-500">Evidence</p>
+                <p class="text-[10px] uppercase text-slate-500">Distinct hirers</p>
                 <p id="carl4b2b-metric-evidence" class="mt-1 text-[11px] font-semibold uppercase tracking-wider text-sky-200">—</p>
               </div>
             </div>
           </div>
         </div>
         <div id="carl4b2b-panel-skills" class="c4b-scroll-dark mt-4 hidden max-h-[28rem] min-h-0 flex-1 flex-col overflow-y-auto">
+          <p id="carl4b2b-skills-scope" class="mb-3 text-[11px] text-slate-400"></p>
           <div id="carl4b2b-skills" class="space-y-3"></div>
         </div>
         <div id="carl4b2b-panel-risks" class="c4b-scroll-dark mt-4 hidden min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+          <p id="carl4b2b-risks-scope" class="text-[11px] text-slate-400"></p>
           <div>
             <p class="text-[11px] font-semibold uppercase text-slate-500">Roll-up</p>
             <ul id="carl4b2b-timeline" class="mt-2 space-y-2 text-xs text-slate-300"></ul>
@@ -781,12 +858,17 @@
       </aside>
     </div>
 
+    <div id="carl4b2b-catalog-footer" class="mx-3 mb-2 hidden rounded-xl border border-white/10 bg-slate-950/55 px-4 py-3 text-[11px] text-slate-400 sm:mx-4">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Catalog transparency</p>
+      <p id="carl4b2b-footer-metrics-line" class="mt-1.5 leading-relaxed"></p>
+    </div>
+
     <div id="carl4b2b-matches-section" data-c4b-reveal class="mx-3 mt-6 hidden rounded-3xl border border-white/10 bg-slate-950/40 p-6 sm:mx-4">
       <div class="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
         <h2 class="flex items-center gap-2 text-xl font-bold text-white">
           <span class="text-sky-400">◎</span> Competitive radar
         </h2>
-        <a href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-sky-400 hover:text-white">Search jobs →</a>
+        <a id="carl4b2b-matches-jobs-search" href="{{ url_for('jobs.jobs') }}" class="text-sm font-semibold text-sky-400 hover:text-white">Search jobs →</a>
       </div>
       <div class="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
         <div>
@@ -812,12 +894,13 @@
         <button type="button" id="carl4b2b-ghost-modal-close" class="text-slate-400 hover:text-white" aria-label="Close">✕</button>
       </div>
       <div id="carl4b2b-ghost-modal-body" class="mt-3"></div>
-      <p class="mt-4 text-[10px] uppercase tracking-wider text-slate-500">Heuristic; not employer-reported data.</p>
+      <p class="mt-4 text-[10px] uppercase tracking-wider text-slate-500">Estimate from public listing signals — not employer-reported.</p>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block body_extra %}
+<script defer src="{{ url_for('static', filename='js/carl_company_highlights.js', v=asset_version) }}"></script>
 <script defer src="{{ url_for('static', filename='js/carl4b2b.js', v=asset_version) }}"></script>
 {% endblock %}

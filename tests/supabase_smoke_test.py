@@ -5,7 +5,7 @@ Standalone script — no Flask required.
 Reads DATABASE_URL from .env and runs 5 checks against Supabase.
 
 Usage:
-    python scripts/supabase_smoke_test.py
+    python tests/supabase_smoke_test.py
 """
 
 import os

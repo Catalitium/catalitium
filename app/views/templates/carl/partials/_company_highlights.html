@@ -1,0 +1,27 @@
+{# Shared B2C/B2B: context ribbon, directory spotlight strip, quiet footnote.
+   Set highlights_prefix (e.g. 'carl' or 'carl4b2b') and highlights_variant ('b2c' | 'b2b') before include. #}
+{% set p = highlights_prefix|default('carl') %}
+{% set v = highlights_variant|default('b2c') %}
+{% if v == 'b2b' %}
+  {% set ribbon_muted = 'text-slate-400' %}
+  {% set label_muted = 'text-slate-500' %}
+  {% set strip_title = 'text-slate-500' %}
+{% else %}
+  {% set ribbon_muted = 'text-[#9CA3AF]' %}
+  {% set label_muted = 'text-[#6B7280]' %}
+  {% set strip_title = 'text-[#6B7280]' %}
+{% endif %}
+<div id="{{ p }}-company-highlights" class="mb-4 hidden">
+  <p id="{{ p }}-company-context-ribbon" class="text-xs leading-relaxed {{ ribbon_muted }}"></p>
+  <div id="{{ p }}-company-spotlight-wrap" class="mt-3 hidden">
+    <p class="text-[11px] font-medium uppercase tracking-wider {{ strip_title }}">Directory picks</p>
+    <div id="{{ p }}-company-spotlight-strip" class="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3"></div>
+    <p id="{{ p }}-company-spotlight-tail" class="mt-2 hidden text-[10px] {{ label_muted }}"></p>
+  </div>
+  <p id="{{ p }}-company-highlights-footnote" class="mt-2 text-[10px] leading-snug {{ label_muted }}" title="Employers appear when names align with our directory.">
+    When names line up with the directory, we show richer context — not every employer will.
+  </p>
+  <p id="{{ p }}-company-highlights-empty" class="mt-2 hidden text-[10px] leading-snug {{ label_muted }}">
+    Nothing linked this time — usually a naming mismatch, not a gap in the market.
+  </p>
+</div>

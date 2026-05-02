@@ -27,7 +27,7 @@ from ..models.api_keys import (
     revoke_api_key,
 )
 from ..models.money import get_salary_for_location
-from ..utils import send_api_key_activation
+from ..mailer import send_api_key_activation
 
 bp = Blueprint("api", __name__)
 

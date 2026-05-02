@@ -1,4 +1,4 @@
-{% from "snippets/_honeypot_field.html" import honeypot_field %}
+{% from "partials/_honeypot_field.html" import honeypot_field %}
 {# CSRF + honeypot for inline newsletter forms. Parent <form> should include class `relative`. #}
 {% macro subscribe_security(uid) %}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

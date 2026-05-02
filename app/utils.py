@@ -2,11 +2,11 @@
 
 Sections (in order):
   TTL caches · API response helpers · Pure utilities · Email validation
-  Normalization · Spam guards · Subscriber sanitization · Salary helpers
-  Flask route helpers (CSRF, pagination, rate-limit decorator)
-  Data re-exports: REPORTS (app/data/reports.py), DEMO_JOBS (app/data/demo_jobs.py)
+  Normalization · Link blacklist · Flask route helpers (CSRF, pagination, API)
   guest_daily_remaining/consume
-  Mailer re-exports (implementation: app/services/mailer.py)
+
+Subscriber sanitization / honeypot / salary percentiles: ``app.models.subscribers``,
+``app.models.money``.
 """
 
 from __future__ import annotations
@@ -22,7 +22,6 @@ import secrets
 import smtplib
 import time
 import uuid
-from collections import Counter
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -311,7 +310,7 @@ def disposable_email_domain(email: str) -> bool:
 
 
 def _load_country_norm() -> Dict[str, str]:
-    _path = Path(__file__).parent / "models" / "country_norm.json"
+    _path = Path(__file__).parent / "data" / "country_norm.json"
     try:
         with open(_path, encoding="utf-8") as fh:
             return json.load(fh)
@@ -402,285 +401,12 @@ def normalize_title(q: str) -> str:
 
 
 # ============================================================================
-# ── Spam & validation ─────────────────────────────────────────────────────────
+# ── Link blacklist (demo / test fixtures) ─────────────────────────────────────
 # ============================================================================
-
-# Must match `snippets/_honeypot_field.html` name= attribute.
-HONEYPOT_FIELD = "hp_company_url"
-
-_MAX_CONTACT_NAME = 120
-_MAX_CONTACT_MESSAGE = 1200
-_URL_RE = re.compile(r"https?://[^\s<>\"]+", re.IGNORECASE)
-
-
-def _payload_get(payload: Mapping[str, Any], key: str) -> str:
-    try:
-        v = payload.get(key)
-    except Exception:
-        return ""
-    if v is None:
-        return ""
-    if isinstance(v, (list, tuple)):
-        v = v[0] if v else ""
-    return str(v).strip()
-
-
-def honeypot_triggered(payload: Mapping[str, Any]) -> bool:
-    """True when the honeypot field is non-empty (typical bot behavior)."""
-    return bool(_payload_get(payload, HONEYPOT_FIELD))
-
-
-def _too_many_links(text: str, max_links: int = 5) -> bool:
-    return len(_URL_RE.findall(text or "")) > max_links
-
-
-def _only_urls(text: str) -> bool:
-    t = (text or "").strip()
-    if not t:
-        return False
-    remainder = _URL_RE.sub("", t)
-    remainder = re.sub(r"\s+", "", remainder)
-    return len(remainder) == 0
-
-
-def _repetition_spam(s: str) -> bool:
-    s2 = "".join(c for c in (s or "").lower() if c.isalnum())
-    if len(s2) < 16:
-        return False
-    top = Counter(s2).most_common(1)[0][1]
-    return (top / len(s2)) >= 0.55
-
-
-def prepare_contact_submission(name: str, message: str) -> Optional[Tuple[str, str]]:
-    """Return (name, message) ready for INSERT, or None if spam."""
-    n = (name or "").strip()
-    m = (message or "").strip()
-    if len(n) > _MAX_CONTACT_NAME:
-        n = n[:_MAX_CONTACT_NAME].strip()
-    if len(m) > _MAX_CONTACT_MESSAGE:
-        m = m[:_MAX_CONTACT_MESSAGE].strip()
-    low_msg = m.lower()
-    low_name = n.lower()
-    if "<script" in low_msg or "<script" in low_name:
-        return None
-    if _too_many_links(m) or _only_urls(m):
-        return None
-    if _repetition_spam(m) or _repetition_spam(n):
-        return None
-    return (n, m)
-
-
-# ============================================================================
-# ── Subscriber field sanitization ─────────────────────────────────────────────
-# ============================================================================
-
-VOWELS = frozenset("aeiouy")
-
-_TITLE_MARKERS = frozenset({
-    "eng", "soft", "data", "dev", "ops", "ml", "ai", "pm", "ux", "ui",
-    "product", "manage", "design", "analyst", "architect", "scientist",
-    "engineer", "developer", "research", "consult", "director", "lead",
-    "senior", "junior", "principal", "staff", "intern", "recruit", "market",
-    "finance", "security", "cloud", "network", "mobile", "full", "backend",
-    "frontend", "stack", "machine", "learning", "sales", "support", "quality",
-    "writer", "content", "business", "account", "customer", "success",
-    "growth", "founder", "executive", "head", "chief", "java", "python",
-    "rust", "ruby", "scala", "node", "react", "vue", "angular", "swift",
-    "kotlin", "kubernetes", "docker", "aws", "azure", "linux", "dba",
-    "oracle", "etl", "direct",
-})
-
-_SALARY_SIGNAL = re.compile(
-    r"[0-9]|[$€£]|chf|eur|usd|gbp|\d\s*[-–]\s*\d|[-–]\s*\d|\d\s*k\b",
-    re.IGNORECASE,
-)
-
-
-def _max_consonant_run(s: str) -> int:
-    best = cur = 0
-    for ch in s.lower():
-        if ch.isalpha() and ch not in VOWELS:
-            cur += 1
-            best = max(best, cur)
-        else:
-            cur = 0
-    return best
-
-
-def _vowel_ratio(s: str) -> float:
-    if not s:
-        return 0.0
-    v = sum(1 for c in s.lower() if c in VOWELS)
-    return v / len(s)
-
-
-def _country_from_location_hints(raw_lower: str) -> str:
-    if not raw_lower:
-        return ""
-    for token, code in sorted(LOCATION_COUNTRY_HINTS.items(), key=lambda kv: len(kv[0]), reverse=True):
-        if token in raw_lower:
-            c = (code or "").strip().upper()
-            if len(c) == 2 and c.isalpha():
-                return c
-    return ""
-
-
-def _country_from_norm_keys(raw_lower: str) -> str:
-    for key, code in sorted(COUNTRY_NORM.items(), key=lambda kv: len(kv[0]), reverse=True):
-        if key in raw_lower:
-            c = (code or "").strip().upper()
-            if len(c) == 2 and c.isalpha():
-                return c
-    return ""
-
-
-def sanitize_search_title(raw: str, *, max_len: int = 160) -> str:
-    s = normalize_title(raw or "").strip()
-    if not s:
-        return ""
-    if len(s) > max_len:
-        s = s[:max_len].strip()
-    if any(c.isdigit() for c in s):
-        return s
-    if any(ch in s for ch in (" ", ",", "/", "&", "(", ")", "-", "–")):
-        return s
-    low = s.lower()
-    if any(tok in low for tok in _TITLE_MARKERS):
-        return s
-    if len(low) <= 5:
-        return s
-    if not re.fullmatch(r"[a-z]+", low):
-        return s
-    if _vowel_ratio(low) < 0.3:
-        return ""
-    if _max_consonant_run(low) >= 5:
-        return ""
-    return s
-
-
-def sanitize_search_country(raw: str) -> str:
-    raw_s = (raw or "").strip()
-    if not raw_s:
-        return ""
-    n = normalize_country(raw_s)
-    t = (n or "").strip()
-    if len(t) == 2 and t.isalpha():
-        return t.upper()
-    low = raw_s.lower()
-    hint = _country_from_location_hints(low)
-    if hint:
-        return hint
-    return _country_from_norm_keys(low)
-
-
-def sanitize_search_salary_band(raw: str, *, max_len: int = 80) -> str:
-    s = (raw or "").strip()
-    if not s:
-        return ""
-    if len(s) > max_len:
-        s = s[:max_len].strip()
-    if _SALARY_SIGNAL.search(s):
-        return s
-    low = s.lower()
-    if re.fullmatch(r"[a-z]+", low) and len(low) >= 6:
-        return ""
-    return s
-
-
-def sanitize_subscriber_search_fields(
-    search_title: str,
-    search_country: str,
-    search_salary_band: str,
-) -> tuple[str, str, str]:
-    """Return cleaned (title, country, salary_band) safe to persist."""
-    return (
-        sanitize_search_title(search_title),
-        sanitize_search_country(search_country),
-        sanitize_search_salary_band(search_salary_band),
-    )
-
-
-# ============================================================================
-# ── Salary helpers (R4: helpers.py estimate functions) ───────────────────────
-# ============================================================================
-
-TITLE_BUCKET2_KEYWORDS = (
-    "principal", "staff", "lead ", "lead-", "head of", "director",
-)
-
-TITLE_BUCKET1_KEYWORDS = (
-    "senior", "sr ", "sr.", "expert",
-)
 
 BLACKLIST_LINKS = {
     "https://example.com/job/1",
 }
-
-_SALARY_SEED: dict[tuple[str, str], dict] = {
-    ("engineer", "zurich"):  {"p25": 110_000, "p50": 130_000, "p75": 155_000, "currency": "CHF"},
-    ("engineer", "geneva"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
-    ("engineer", "basel"):   {"p25": 100_000, "p50": 118_000, "p75": 140_000, "currency": "CHF"},
-    ("engineer", "berlin"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
-    ("engineer", "munich"):  {"p25":  72_000, "p50":  90_000, "p75": 110_000, "currency": "EUR"},
-    ("engineer", "vienna"):  {"p25":  58_000, "p50":  72_000, "p75":  88_000, "currency": "EUR"},
-    ("product",  "zurich"):  {"p25": 105_000, "p50": 125_000, "p75": 148_000, "currency": "CHF"},
-    ("product",  "geneva"):  {"p25": 100_000, "p50": 120_000, "p75": 142_000, "currency": "CHF"},
-    ("product",  "berlin"):  {"p25":  62_000, "p50":  78_000, "p75":  96_000, "currency": "EUR"},
-    ("product",  "munich"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
-    ("data",     "zurich"):  {"p25": 108_000, "p50": 128_000, "p75": 152_000, "currency": "CHF"},
-    ("data",     "berlin"):  {"p25":  60_000, "p50":  76_000, "p75":  94_000, "currency": "EUR"},
-    ("data",     "munich"):  {"p25":  65_000, "p50":  82_000, "p75": 100_000, "currency": "EUR"},
-    ("design",   "zurich"):  {"p25":  90_000, "p50": 108_000, "p75": 128_000, "currency": "CHF"},
-    ("design",   "berlin"):  {"p25":  52_000, "p50":  66_000, "p75":  82_000, "currency": "EUR"},
-    ("devops",   "zurich"):  {"p25": 112_000, "p50": 132_000, "p75": 158_000, "currency": "CHF"},
-    ("devops",   "berlin"):  {"p25":  68_000, "p50":  85_000, "p75": 104_000, "currency": "EUR"},
-    ("manager",  "zurich"):  {"p25": 120_000, "p50": 145_000, "p75": 175_000, "currency": "CHF"},
-    ("manager",  "berlin"):  {"p25":  75_000, "p50":  95_000, "p75": 118_000, "currency": "EUR"},
-}
-
-_DACH_CHF_CITIES = ("zurich", "geneva", "basel")
-
-
-def get_salary_percentiles(title: str, location: str) -> dict:
-    """Return P25/P50/P75 from seed data; fall back to generic DACH estimates."""
-    loc = location.lower()
-    title_lower = title.lower()
-    for (kw, city), data in _SALARY_SEED.items():
-        if city in loc and kw in title_lower:
-            return data
-    currency = "CHF" if any(c in loc for c in _DACH_CHF_CITIES) else "EUR"
-    return {"p25": 70_000, "p50": 90_000, "p75": 115_000, "currency": currency}
-
-
-def estimate_salary_display(
-    title: str,
-    median: float,
-) -> Tuple[Optional[str], Optional[int], Optional[int]]:
-    """Compute estimated salary range string and min/max for a given title and median.
-
-    Uses deferred import to avoid circular imports at module load time.
-    Returns (display_string, sal_min, sal_max) or (None, None, None) on failure.
-    """
-    try:
-        from .models.money import _compact_salary_number, salary_range_around  # noqa: PLC0415
-        title_lc = title.lower()
-        uplift = (
-            1.10 if any(k in title_lc for k in TITLE_BUCKET2_KEYWORDS) else
-            1.05 if any(k in title_lc for k in TITLE_BUCKET1_KEYWORDS) else
-            1.0
-        )
-        base_rng = salary_range_around(float(median), pct=0.2)
-        if not base_rng:
-            return None, None, None
-        base_low, base_high, base_low_s, base_high_s = base_rng
-        if uplift > 1.0:
-            amt = float(median) * (uplift - 1.0)
-            low_s = _compact_salary_number(base_low + amt)
-            high_s = _compact_salary_number(base_high + amt)
-            return f"{low_s}\u2013{high_s}", int(base_low + amt), int(base_high + amt)
-        return f"{base_low_s}\u2013{base_high_s}", base_low, base_high
-    except Exception:
-        return None, None, None
 
 
 # ============================================================================
@@ -783,12 +509,6 @@ def require_api_key(f):
     return decorated
 
 
-# ============================================================================
-# ── Data re-exports (moved to app/data/) ─────────────────────────────────────
-# ============================================================================
-from .data.reports import REPORTS  # noqa: E402
-from .data.demo_jobs import DEMO_JOBS  # noqa: E402
-
 
 # ============================================================================
 # ── Guest daily job-view limit (merged from controllers/jobs.py) ─────────────
@@ -814,21 +534,6 @@ def guest_daily_consume(count: int) -> None:
     session["_guest_seen"] = int(session.get("_guest_seen") or 0) + count
     session.modified = True
 
-
-# ============================================================================
-
-# ============================================================================
-# ── Mailer re-exports (implementation moved to app/services/mailer) ───────────
-# ============================================================================
-from .services.mailer import (  # noqa: E402
-    send_subscribe_welcome,
-    send_api_key_activation,
-    send_api_access_key_provisioned,
-    send_api_access_payment_confirmed,
-    send_api_key_activation_reminder,
-    send_job_posting_admin_notification,
-    send_job_posting_confirmation,
-)
 
 # ── Public API ────────────────────────────────────────────────────────────────
 # ============================================================================
@@ -864,41 +569,15 @@ __all__ = [
     "TITLE_SYNONYMS",
     "normalize_country",
     "normalize_title",
-    # Spam & validation
-    "HONEYPOT_FIELD",
-    "honeypot_triggered",
-    "prepare_contact_submission",
-    # Subscriber sanitization
-    "sanitize_search_title",
-    "sanitize_search_country",
-    "sanitize_search_salary_band",
-    "sanitize_subscriber_search_fields",
-    # Salary helpers
-    "TITLE_BUCKET1_KEYWORDS",
-    "TITLE_BUCKET2_KEYWORDS",
+    # Link blacklist
     "BLACKLIST_LINKS",
-    "_SALARY_SEED",
-    "get_salary_percentiles",
-    "estimate_salary_display",
     # Flask route helpers
     "csrf_valid",
     "resolve_pagination",
     "api_error_response",
     "api_success_response",
     "require_api_key",
-    # Market reports
-    "REPORTS",
-    # Demo jobs
-    "DEMO_JOBS",
     # Guest limits
     "guest_daily_remaining",
     "guest_daily_consume",
-    # Mailer
-    "send_subscribe_welcome",
-    "send_api_key_activation",
-    "send_api_access_key_provisioned",
-    "send_api_access_payment_confirmed",
-    "send_api_key_activation_reminder",
-    "send_job_posting_admin_notification",
-    "send_job_posting_confirmation",
 ]
